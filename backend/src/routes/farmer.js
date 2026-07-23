@@ -116,18 +116,64 @@ router.post('/loan-applications', async (req, res, next) => {
   }
 
   try {
-    const applicationId = await withSessionContext('farmer', subjectId, async (client) => {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
       const { rows } = await client.query(
         'SELECT underwriting.submit_application($1, $2, $3, $4, $5) AS application_id',
         [subjectId, lenderOrgId, relatedUnitId, requestedAmount, purpose || null],
       );
+      const applicationId = rows[0].application_id;
       // audit.access_log.action is constrained to ('read','write') only —
       // a new application is a write.
-      await logAccess(client, 'write', 'underwriting.loan_application', rows[0].application_id);
-      return rows[0].application_id;
+      await logAccess(client, 'write', 'underwriting.loan_application', applicationId);
+
+      // Run the automated underwriting evaluation immediately, in the same
+      // request, against the application we just created ourselves. This is
+      // safe to do unconditionally here — unlike exposing evaluate_application
+      // as its own endpoint, applicationId is guaranteed to belong to this
+      // farmer, since submit_application() just returned it — and it gives
+      // the farmer an instant decision (auto-approved / needs manual review /
+      // auto-declined) instead of the application sitting at 'pending'
+      // forever with nothing to move it forward. The Lender Portal then only
+      // ever needs to act on the subset that lands in 'manual_review'.
+      let decision;
+      try {
+        await client.query('SELECT underwriting.evaluate_application($1)', [applicationId]);
+        const { rows: decisionRows } = await client.query(
+          `SELECT status, risk_tier_at_decision, decision_reason, approved_amount
+             FROM underwriting.loan_application
+            WHERE application_id = $1`,
+          [applicationId],
+        );
+        decision = decisionRows[0];
+        await logAccess(client, 'write', 'underwriting.loan_application', applicationId);
+      } catch (evalErr) {
+        // evaluate_application() raises if the farmer has no credit score
+        // yet at all (risk.compute_credit_score() never ran for them — e.g.
+        // a newly-registered farmer with no production/delivery history) —
+        // it deliberately does not guess. The application itself was
+        // already inserted and stays at 'pending'; a real deployment would
+        // have a scheduled job compute the score and retry evaluation once
+        // enough history exists. This must not fail the whole request —
+        // the farmer still gets their application_id back either way.
+        console.error('[loan-applications] evaluate_application failed, leaving application pending:', evalErr.message);
+        decision = {
+          status: 'pending',
+          risk_tier_at_decision: null,
+          decision_reason: 'ยังไม่สามารถประเมินอัตโนมัติได้ในขณะนี้ (อาจยังไม่มีคะแนนสินเชื่อ) คำขอของท่านถูกบันทึกแล้วและรอการตรวจสอบ',
+          approved_amount: null,
+        };
+      }
+
+      return { applicationId, decision };
     });
 
-    return res.status(201).json({ application_id: applicationId });
+    return res.status(201).json({
+      application_id: result.applicationId,
+      status: result.decision.status,
+      risk_tier_at_decision: result.decision.risk_tier_at_decision,
+      decision_reason: result.decision.decision_reason,
+      approved_amount: result.decision.approved_amount,
+    });
   } catch (err) {
     return next(err);
   }

@@ -389,3 +389,43 @@ a { color: inherit; }
   .form-grid { grid-template-columns: 1fr; }
   .two-col { grid-template-columns: 1fr; }
 }
+
+/* ---------- Lender Portal: review-queue action controls ---------- */
+.btn-sm {
+  width: auto;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.btn-approve { background: var(--green-700); color: #fff; }
+.btn-approve:hover:not(:disabled) { background: var(--green-900); }
+
+.btn-decline { background: var(--red-600); color: #fff; }
+.btn-decline:hover:not(:disabled) { opacity: 0.85; }
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.action-row input[type="number"],
+.action-row input[type="text"] {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+.filter-bar .field { margin-bottom: 0; }

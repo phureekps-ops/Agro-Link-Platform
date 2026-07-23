@@ -1,11 +1,12 @@
-# AgroLink Platform — Farmer Portal Frontend
+# AgroLink Platform — Farmer Portal + Lender Portal Frontend
 
-The homepage/frontend for farmers, calling the Backend API Gateway built in
-the previous step (`../backend`). Plain HTML/CSS/JavaScript — no build step,
-no framework — so it runs anywhere a static file can be served, and every
-byte shipped here is what actually runs in the browser.
+The homepage/frontend for farmers, plus a separate portal for lenders,
+both calling the same Backend API Gateway (`../backend`). Plain
+HTML/CSS/JavaScript — no build step, no framework — so it runs anywhere a
+static file can be served, and every byte shipped here is what actually
+runs in the browser.
 
-## Pages
+## Pages — Farmer Portal (this directory)
 
 - `index.html` — login. A real form field for the identity claim (labeled
   and explained as a stand-in for a verified OIDC token's `sub` claim, since
@@ -20,6 +21,9 @@ byte shipped here is what actually runs in the browser.
   loan applications (list + a real submission form), and unread
   notifications. Every section is loaded independently and fails
   independently — one broken panel doesn't take down the rest of the page.
+  Submitting a loan application now shows the automated underwriting
+  decision immediately (auto-approved / needs manual review / auto-declined)
+  — see the backend README's `evaluate_application()` note.
 - `register.html` — farmer sign-up: full name, phone, national ID (13
   digits — hashed server-side, see backend README), and a province dropdown
   (`js/provinces.js`, all 77 Thai provinces with their real ISO 3166-2:TH
@@ -27,6 +31,33 @@ byte shipped here is what actually runs in the browser.
   farmers). On success the backend auto-issues a session token and the page
   goes straight to `dashboard.html`, same as logging in. Linked from
   `index.html` ("ยังไม่มีบัญชี? สมัครสมาชิกเกษตรกร").
+
+## Pages — Lender Portal (`lender/`)
+
+A separate small app in its own folder, not a section bolted onto the
+Farmer Portal — different audience, different session (own `localStorage`
+key `agrolink_lender_session`, so a farmer session and a lender session in
+the same browser never collide), same shared CSS (`../css/style.css`).
+
+- `lender/index.html` — login, same mock-claim pattern as the Farmer
+  Portal's login, with one demo button for the seeded Lender org
+  (สหกรณ์สินเชื่อเกษตรยั่งยืน จำกัด, `oidc|org-001`). Uses the *same*
+  `POST /auth/login` endpoint — no separate lender-login API exists, since
+  `security.resolve_subject_from_external_claim()` already resolves a claim
+  to either a farmer or an organization.
+- `lender/dashboard.html` — org overview (counts by application status,
+  active-contract count, outstanding principal); a **review queue** of
+  applications that need this lender's action (`manual_review` and
+  `approved`-but-not-yet-a-contract, both fetched via
+  `?status=action_needed`), each with an inline final-amount field and
+  approve/decline buttons; a filterable read-only list of every application
+  ever submitted to this lender; and a read-only contracts-portfolio list.
+
+If a farmer's token (or any non-Lender organization's token) is used
+against a `/lender/*` route, the backend returns `403`; `lender/js/api.js`
+treats that the same as an expired session — clears it and bounces back to
+`lender/index.html` with a reason shown inline, rather than a confusing
+blank/broken dashboard.
 
 ## Running
 
@@ -38,21 +69,30 @@ node serve.js          # serves this directory at http://localhost:5173
 ```
 
 No `npm install` needed — `serve.js` is a zero-dependency static file
-server (`http`/`fs` from Node's standard library only). Open
-`http://localhost:5173` in a browser.
+server (`http`/`fs` from Node's standard library only) and serves any
+subpath, so the Lender Portal is reachable at the same server, no separate
+process needed:
+
+- Farmer Portal: `http://localhost:5173/index.html`
+- Lender Portal: `http://localhost:5173/lender/index.html`
 
 If the API runs somewhere other than `localhost:4000`, change `API_BASE` at
-the top of `js/api.js`.
+the top of both `js/api.js` (Farmer Portal) and `lender/js/api.js` (Lender
+Portal) — they're separate copies, not shared, on purpose (see above).
 
 ## How it talks to the backend
 
-`js/api.js` is the only file that knows about HTTP — it wraps `fetch()`,
-attaches the `Authorization: Bearer <token>` header once logged in, and
-centralizes 401 handling (an expired/invalid token clears the stored
-session and bounces back to the login page, rather than the page just
-silently failing). The JWT is kept in `localStorage` under
-`agrolink_farmer_session` — normal practice for a real single-page app;
-logging out clears it.
+`js/api.js` (and its Lender Portal counterpart, `lender/js/api.js`) is the
+only file in each app that knows about HTTP — it wraps `fetch()`, attaches
+the `Authorization: Bearer <token>` header once logged in, and centralizes
+both 401 handling (expired/invalid token) and 403 handling (a
+structurally-valid token for the wrong kind of subject — e.g. a farmer
+token used against `/lender/*`): either way, it clears the stored session
+and bounces back to that app's own login page rather than the page just
+silently failing. The JWT is kept in `localStorage` under
+`agrolink_farmer_session` (Farmer Portal) or `agrolink_lender_session`
+(Lender Portal) — normal practice for a real single-page app; logging out
+clears it.
 
 ## Verified end-to-end (real browser, real backend, real database)
 
@@ -85,6 +125,20 @@ gateway — not a mock:
   "ยังไม่มีสัญญา", etc.) rather than errors; re-submitting the same
   phone/national ID from the form shows the duplicate error inline and
   correctly stays on the registration page.
+- **Lender Portal**, tested with Playwright the same way: logged in as the
+  seeded Lender org via its demo button; the dashboard showed the org's real
+  name and correct application counts; the review queue showed exactly the
+  applications actually awaiting this lender's action; clicking "อนุมัติ /
+  แปลงเป็นสัญญา" on a real application converted it into a real contract and
+  it disappeared from the queue, with a success toast and the summary counts
+  updating without a page reload; clicking "ปฏิเสธ" with a typed-in reason
+  correctly declined a different application; switching the "ทั้งหมด" status
+  filter to `converted` showed both just-actioned applications; the
+  contracts-portfolio section showed the newly-created contracts; logout
+  returned to the login page. Separately confirmed (via a real farmer JWT
+  placed in `agrolink_lender_session`) that the app correctly detects a
+  wrong-subject-type token and bounces to the login page with
+  "บัญชีนี้ไม่ใช่บัญชีผู้ปล่อยกู้" shown, rather than rendering a broken dashboard.
 
 ## New backend endpoints added while building this
 
@@ -96,6 +150,9 @@ gateway — not a mock:
 - `POST /auth/register` (in `../backend/src/routes/auth.js`) — backs
   `register.html`. See the backend README for the two real database grant
   gaps this surfaced.
+- The entire `/lender/*` slice (in `../backend/src/routes/lender.js`) —
+  backs `lender/dashboard.html`. See the backend README for what it does
+  and the real database/authorization gaps building it surfaced.
 
 ## What's next
 
@@ -107,3 +164,5 @@ gateway — not a mock:
   attributes only).
 - Pagination/filtering once contract and loan-application volumes grow
   beyond what fits comfortably on one page.
+- A Buyer Portal and a platform-ops/admin portal (including farmer KYC
+  approval) — the natural next audiences per the backend README.

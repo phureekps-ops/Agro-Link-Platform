@@ -1,0 +1,44 @@
+-- ============================================================================
+-- AgroLink Platform — Backend API Gateway: fix underwriting decision functions
+-- ============================================================================
+-- Discovered while building the Lender Portal slice, same class of gap as
+-- fix_submit_application_security.sql:
+--
+--   underwriting.evaluate_application(), underwriting.approve_application(),
+--   underwriting.decline_application() were all created as ordinary
+--   (caller-rights) functions. Every one of them UPDATEs
+--   underwriting.loan_application, which has FORCE ROW LEVEL SECURITY with
+--   only SELECT policies defined — no UPDATE policy exists at all, so
+--   Postgres denies the UPDATE outright for any non-owner role, regardless
+--   of table grants. approve_application() additionally INSERTs into
+--   contract.contract, which is FORCE ROW LEVEL SECURITY with only a SELECT
+--   policy — same problem, one level deeper.
+--
+-- Bringing these three in line with the already-established SECURITY
+-- DEFINER pattern (submit_application, and the Layer 10 functions
+-- evaluate_metric / acknowledge_alert / purge_expired_rows) fixes this the
+-- same way: the function runs as its owner (postgres, a superuser), so RLS
+-- and grants are bypassed for this call only.
+--
+-- IMPORTANT — unlike submit_application, none of these three functions
+-- check WHO is calling them relative to the application's lender_org_id.
+-- submit_application() validates the farmer/production-unit/lender
+-- relationship itself before inserting; approve_application() and
+-- decline_application() only check the application's *status*
+-- ('approved'/'manual_review'), never that the caller's organization
+-- actually owns the application. Making them SECURITY DEFINER does NOT
+-- close that gap — it only fixes the RLS-vs-grants mechanics. The
+-- authorization gap is closed instead at the API layer (src/routes/
+-- lender.js): every approve/decline request first re-reads the application
+-- through the caller's own RLS-scoped session (subject_type='organization'),
+-- which the existing `lender_own_applications` SELECT policy already
+-- narrows to rows where lender_org_id = the caller's own org_id. If that
+-- read returns zero rows, the application either doesn't exist or isn't
+-- this lender's — either way the route responds 404 *before* ever calling
+-- approve_application()/decline_application(). See lender.js for the code;
+-- documenting the reasoning here since it's the DB-side half of the story.
+-- ============================================================================
+
+ALTER FUNCTION underwriting.evaluate_application(uuid) SECURITY DEFINER;
+ALTER FUNCTION underwriting.approve_application(uuid, numeric) SECURITY DEFINER;
+ALTER FUNCTION underwriting.decline_application(uuid, text) SECURITY DEFINER;

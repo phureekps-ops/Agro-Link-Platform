@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้ปล่อยกู้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🏦</span><span>AgroLink Platform — พอร์ทัลผู้ปล่อยกู้</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">⏳ รายการที่ต้องพิจารณา</div>
+    <div id="reviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการที่ต้องพิจารณา…</div>
+    </div>
+
+    <div class="section-title">📋 คำขอสินเชื่อทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="statusFilter">กรองตามสถานะ</label>
+        <select id="statusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="pending">รอประเมิน (ยังไม่มีคะแนนสินเชื่อ)</option>
+          <option value="manual_review">รอตรวจสอบเพิ่มเติม</option>
+          <option value="approved">อนุมัติแล้ว (รอแปลงเป็นสัญญา)</option>
+          <option value="declined">ปฏิเสธ</option>
+          <option value="converted">แปลงเป็นสัญญาแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="allApplicationsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอสินเชื่อ…</div>
+    </div>
+
+    <div class="section-title">📄 พอร์ตสัญญาสินเชื่อ</div>
+    <div id="contractsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดพอร์ตสัญญา…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

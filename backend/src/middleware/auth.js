@@ -44,4 +44,19 @@ function requireFarmer(req, res, next) {
   return next();
 }
 
-module.exports = { requireAuth, requireFarmer };
+/**
+ * Extra gate for the /lender/* slice — mirrors requireFarmer. A valid JWT
+ * for a farmer or platform subject is still a valid JWT, but it has no
+ * business calling these endpoints. This only checks subjectType — whether
+ * the organization is actually a *Lender* (as opposed to a Buyer/Mill/etc.)
+ * is checked separately in lender.js, since that requires a DB lookup this
+ * middleware doesn't have the connection pool for.
+ */
+function requireOrganization(req, res, next) {
+  if (!req.subject || req.subject.subjectType !== 'organization') {
+    return res.status(403).json({ error: 'organization_subject_required' });
+  }
+  return next();
+}
+
+module.exports = { requireAuth, requireFarmer, requireOrganization };
