@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — หน้าหลักเกษตรกร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🌾</span><span>AgroLink Platform — พอร์ทัลเกษตรกร</span></div>
+    <div class="who">
+      <span class="name" id="farmerName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="section-title">📊 ภาพรวมบัญชี</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">💳 คะแนนความน่าเชื่อถือทางสินเชื่อ</div>
+    <div class="two-col">
+      <div class="panel" id="scoreLatestPanel">
+        <div class="loading-line">กำลังโหลดคะแนน…</div>
+      </div>
+      <div class="panel" id="scoreHistoryPanel">
+        <div class="loading-line">กำลังโหลดประวัติ…</div>
+      </div>
+    </div>
+
+    <div class="section-title">🗺️ แปลง / หน่วยผลิต</div>
+    <div id="unitsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดข้อมูลแปลง…</div>
+    </div>
+
+    <div class="section-title">📄 สัญญา</div>
+    <div id="contractsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดสัญญา…</div>
+    </div>
+
+    <div class="section-title">🏦 คำขอสินเชื่อ</div>
+    <div class="two-col">
+      <div>
+        <div id="loansSection" class="card-list">
+          <div class="loading-line">กำลังโหลดคำขอสินเชื่อ…</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div style="font-weight:700; margin-bottom:12px;">ยื่นคำขอสินเชื่อใหม่</div>
+        <form id="loanForm">
+          <div class="field">
+            <label for="loanUnit">หน่วยผลิตที่เกี่ยวข้อง</label>
+            <select id="loanUnit" required></select>
+          </div>
+          <div class="field">
+            <label for="loanLender">ผู้ให้สินเชื่อ</label>
+            <select id="loanLender" required></select>
+          </div>
+          <div class="field">
+            <label for="loanAmount">วงเงินที่ขอ (บาท)</label>
+            <input type="number" id="loanAmount" min="1" step="0.01" required />
+          </div>
+          <div class="field">
+            <label for="loanPurpose">วัตถุประสงค์</label>
+            <textarea id="loanPurpose" rows="2" placeholder="เช่น ซื้อปุ๋ยและเมล็ดพันธุ์"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" id="loanSubmitBtn">ส่งคำขอ</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="section-title">🔔 การแจ้งเตือนที่ยังไม่อ่าน</div>
+    <div id="notificationsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดการแจ้งเตือน…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

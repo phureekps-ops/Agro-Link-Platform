@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — เข้าสู่ระบบเกษตรกร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="leaf">🌾</span>
+      <h1>AgroLink Platform</h1>
+    </div>
+    <p class="login-sub">พอร์ทัลเกษตรกร — เข้าสู่ระบบเพื่อดูข้อมูลแปลง คะแนนสินเชื่อ สัญญา และคำขอสินเชื่อของท่าน</p>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="claimInput">รหัสยืนยันตัวตน (จากระบบยืนยันตัวตนกลาง)</label>
+        <input type="text" id="claimInput" placeholder="เช่น oidc|farmer-001" autocomplete="off" required />
+        <div class="hint">
+          หมายเหตุ: ระบบยืนยันตัวตน (OIDC) จริงยังไม่ได้เชื่อมต่อในสภาพแวดล้อมนี้ —
+          ช่องนี้จำลองค่า <code>sub claim</code> ที่ปกติจะมาจากโทเค็นที่ยืนยันตัวตนแล้วจากผู้ให้บริการภายนอก
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ</button>
+    </form>
+
+    <div class="divider">หรือเข้าสู่ระบบด่วนด้วยบัญชีทดสอบ (Demo)</div>
+    <div class="demo-grid" id="demoGrid"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
