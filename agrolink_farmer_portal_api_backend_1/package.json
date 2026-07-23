@@ -1,0 +1,19 @@
+{
+  "name": "agrolink-farmer-portal-api",
+  "version": "1.0.0",
+  "description": "AgroLink Platform — Backend API Gateway (Farmer Portal slice), implementing the G-1..G-19 OpenAPI contracts on top of the existing PostgreSQL schema.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.22.0"
+  }
+}
