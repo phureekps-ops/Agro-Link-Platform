@@ -60,6 +60,33 @@ const AgroLinkAPI = (() => {
     return body;
   }
 
+  /**
+   * Register against POST /auth/register. On success the backend
+   * auto-issues a session token (same shape as login), so a new farmer
+   * lands straight in the dashboard without a separate login step.
+   */
+  async function register({ fullName, phone, nationalId, regionCode }) {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: fullName,
+        phone,
+        national_id: nationalId,
+        region_code: regionCode,
+      }),
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(body.error || `register_failed_${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    setSession(body);
+    return body;
+  }
+
   function logout() {
     clearSession();
     window.location.href = "index.html";
@@ -107,6 +134,7 @@ const AgroLinkAPI = (() => {
     getSession,
     requireSessionOrRedirect,
     login,
+    register,
     logout,
     get,
     post,

@@ -45,6 +45,7 @@ for the first time:
 psql -d agrolink_test -f db/setup_backend_role.sql
 psql -d agrolink_test -f db/grant_farmer_portal_reads.sql
 psql -d agrolink_test -f db/fix_submit_application_security.sql
+psql -d agrolink_test -f db/grant_farmer_registration.sql
 ```
 
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
@@ -71,6 +72,14 @@ psql -d agrolink_test -f db/fix_submit_application_security.sql
   `SECURITY DEFINER` brings it in line with that established pattern instead
   of bolting on a bespoke `INSERT` policy that would duplicate checks the
   function already performs.
+- `grant_farmer_registration.sql` — a third real gap, found while building
+  `POST /auth/register`: `agrolink_app` had `SELECT` on `identity.farmer` but
+  never `INSERT`; and separately, `security.set_session_context()` turned
+  out to raise `"ยังไม่ได้รับสิทธิ์ (Role) ใดๆ"` for any subject with no row in
+  `identity.subject_role` — every previously-seeded farmer already had one,
+  but a freshly-registered farmer does not until the registration code
+  inserts it. This script grants the missing `INSERT` on both
+  `identity.farmer` and `identity.subject_role`.
 
 ## Running
 
@@ -85,6 +94,7 @@ npm start          # or: node src/server.js
 
 **Auth** (`src/routes/auth.js`)
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
+- `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
 
 **Farmer Portal** (`src/routes/farmer.js`, all require a farmer-subject JWT)
@@ -128,6 +138,11 @@ same session-context-scoped client, after a successful operation.
 - **Single lender org used in testing.** Only one `Lender`-type organization
   exists in the seed data (`สหกรณ์สินเชื่อเกษตรยั่งยืน จำกัด`), so multi-lender
   scenarios weren't exercised.
+- **Registration has no KYC step.** `POST /auth/register` sets
+  `status='pending_kyc'` but nothing currently transitions a farmer out of
+  that status — there is no verification workflow yet (real deployments
+  would check the national ID against an actual ID-verification service
+  before activating the account).
 
 ## End-to-end verification performed
 
@@ -157,6 +172,14 @@ and the live `agrolink_test` database — not unit tests against mocks:
   (312,515.00 / 312,515.00 / variance 0.00), Go-Live readiness still
   6/6 passed, confirming this testing didn't disturb the invariants earlier
   layers established.
+- Registered a brand-new farmer through `POST /auth/register`, confirmed the
+  returned token works immediately (`GET /auth/session/current` resolves the
+  right name), confirmed `GET /farmer/dashboard` returns clean zero/empty
+  values rather than erroring for a farmer with no data yet, confirmed
+  duplicate phone and duplicate national ID both correctly return `409`,
+  and confirmed logging in again afterward with the persisted auto-generated
+  claim works — proving the new identity is durable, not just a one-request
+  fluke.
 
 ## Next steps (not yet built)
 

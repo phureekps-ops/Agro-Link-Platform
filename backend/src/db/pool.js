@@ -63,4 +63,28 @@ async function logAccess(client, action, resourceType, resourceId = null) {
   await client.query('SELECT audit.log_access($1, $2, $3)', [action, resourceType, resourceId]);
 }
 
-module.exports = { pool, withSessionContext, logAccess };
+/**
+ * Like withSessionContext(), but for the one case that genuinely has no
+ * subject yet: registration. There is no farmer/organization identity to
+ * set app.subject_type/app.subject_id to until AFTER the INSERT returns a
+ * new id — so this only does the SET ROLE agrolink_app half, and the caller
+ * is responsible for calling security.set_session_context() itself once it
+ * has a freshly-created id (see POST /auth/register), before calling
+ * logAccess() on the same client.
+ */
+async function withServiceRole(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('SET ROLE agrolink_app');
+    return await fn(client);
+  } finally {
+    try {
+      await client.query('RESET ROLE');
+    } catch (resetErr) {
+      console.error('[db] failed to RESET ROLE before releasing client', resetErr);
+    }
+    client.release();
+  }
+}
+
+module.exports = { pool, withSessionContext, withServiceRole, logAccess };

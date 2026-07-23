@@ -20,6 +20,13 @@ byte shipped here is what actually runs in the browser.
   loan applications (list + a real submission form), and unread
   notifications. Every section is loaded independently and fails
   independently — one broken panel doesn't take down the rest of the page.
+- `register.html` — farmer sign-up: full name, phone, national ID (13
+  digits — hashed server-side, see backend README), and a province dropdown
+  (`js/provinces.js`, all 77 Thai provinces with their real ISO 3166-2:TH
+  codes, matching the `region_code` format already used by the seeded
+  farmers). On success the backend auto-issues a session token and the page
+  goes straight to `dashboard.html`, same as logging in. Linked from
+  `index.html` ("ยังไม่มีบัญชี? สมัครสมาชิกเกษตรกร").
 
 ## Running
 
@@ -72,14 +79,23 @@ gateway — not a mock:
   enough underlying data yet (e.g. a farmer with zero settled deliveries) —
   the page used to print the literal string "null/100"; it now shows
   "ไม่มีข้อมูลเพียงพอ" (not enough data) instead.
+- Registration tested end-to-end through the actual form: submitted a new
+  farmer, landed on the dashboard auto-logged-in with every section
+  correctly showing empty states (0 units, "ยังไม่มีการประเมินคะแนนสินเชื่อ",
+  "ยังไม่มีสัญญา", etc.) rather than errors; re-submitting the same
+  phone/national ID from the form shows the duplicate error inline and
+  correctly stays on the registration page.
 
-## New backend endpoint added while building this
+## New backend endpoints added while building this
 
-`GET /farmer/lenders` (in `../backend/src/routes/farmer.js`) — returns
-active `Lender` organizations so the loan-application form's lender dropdown
-is populated from real data instead of being hardcoded in the frontend.
-Behind `requireAuth`, reading `identity.organization` (already granted to
-`agrolink_app` in the backend's `grant_farmer_portal_reads.sql`).
+- `GET /farmer/lenders` (in `../backend/src/routes/farmer.js`) — returns
+  active `Lender` organizations so the loan-application form's lender
+  dropdown is populated from real data instead of being hardcoded in the
+  frontend. Behind `requireAuth`, reading `identity.organization` (already
+  granted to `agrolink_app` in the backend's `grant_farmer_portal_reads.sql`).
+- `POST /auth/register` (in `../backend/src/routes/auth.js`) — backs
+  `register.html`. See the backend README for the two real database grant
+  gaps this surfaced.
 
 ## What's next
 

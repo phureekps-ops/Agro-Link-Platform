@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — สมัครสมาชิกเกษตรกร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card" style="max-width:460px;">
+    <div class="login-brand">
+      <span class="leaf">🌾</span>
+      <h1>AgroLink Platform</h1>
+    </div>
+    <p class="login-sub">สมัครสมาชิกเกษตรกร — เริ่มเข้าถึงบริการและสินเชื่อครบวงจรได้ทันที</p>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <form id="registerForm">
+      <div class="field">
+        <label for="fullNameInput">ชื่อ-นามสกุล</label>
+        <input type="text" id="fullNameInput" placeholder="เช่น สมชาย ใจดี" autocomplete="name" required />
+      </div>
+      <div class="field">
+        <label for="phoneInput">เบอร์โทรศัพท์</label>
+        <input type="tel" id="phoneInput" placeholder="เช่น 0812345678" autocomplete="tel" required />
+      </div>
+      <div class="field">
+        <label for="nationalIdInput">เลขบัตรประจำตัวประชาชน</label>
+        <input type="text" id="nationalIdInput" placeholder="13 หลัก" inputmode="numeric" maxlength="13" required />
+        <div class="hint">ระบบจะเก็บเฉพาะค่าแฮชของเลขบัตรเท่านั้น ไม่เก็บเลขจริงในฐานข้อมูล</div>
+      </div>
+      <div class="field">
+        <label for="regionSelect">จังหวัด</label>
+        <select id="regionSelect" required></select>
+      </div>
+      <button type="submit" class="btn btn-primary" id="registerBtn">สมัครสมาชิก</button>
+    </form>
+
+    <div class="divider">มีบัญชีอยู่แล้ว?</div>
+    <a href="index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">เข้าสู่ระบบ</a>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/provinces.js"></script>
+  <script src="js/register.js"></script>
+</body>
+</html>
