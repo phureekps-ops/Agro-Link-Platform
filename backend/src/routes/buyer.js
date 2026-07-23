@@ -15,6 +15,11 @@ router.use(requireAuth, requireOrganization);
  * as subjectType='organization'). Same pattern as requireLenderOrg in
  * lender.js. identity.organization has no RLS (it's a shared directory),
  * so this is a plain lookup under a valid session context.
+ *
+ * Also gates on kyb_status === 'Verified' — see the matching comment on
+ * requireLenderOrg in lender.js for why this is now necessary (self-service
+ * org registration via POST /auth/org-register means an unapproved org can
+ * hold a real, working JWT before Platform Ops ever reviews it).
  */
 async function requireBuyerOrg(req, res, next) {
   const { subjectId } = req.subject;
@@ -29,6 +34,9 @@ async function requireBuyerOrg(req, res, next) {
 
     if (!org || org.org_type !== 'Buyer') {
       return res.status(403).json({ error: 'buyer_subject_required' });
+    }
+    if (org.kyb_status !== 'Verified') {
+      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: org.kyb_status, org_name: org.org_name });
     }
     req.org = org;
     return next();

@@ -19,6 +19,17 @@ router.use(requireAuth, requireOrganization);
  *
  * Runs once per request rather than being folded into every handler below
  * so every /lender/* route gets the same guarantee without repeating itself.
+ *
+ * Also gates on kyb_status === 'Verified'. This wasn't necessary before
+ * POST /auth/org-register existed — every seeded Lender org was already
+ * Verified by the time it could ever log in. Now that an organization can
+ * self-register and land at kyb_status='Pending' with a real, working JWT
+ * before Platform Ops ever reviews it, skipping this check would let an
+ * unapproved (or rejected) org approve/decline real loan applications.
+ * Returns a distinct 'kyb_not_verified' error (rather than the generic
+ * 'lender_subject_required') so the frontend can show a "your application
+ * is under review" state instead of treating this like a wrong-subject-type
+ * token and bouncing to login.
  */
 async function requireLenderOrg(req, res, next) {
   const { subjectId } = req.subject;
@@ -33,6 +44,9 @@ async function requireLenderOrg(req, res, next) {
 
     if (!org || org.org_type !== 'Lender') {
       return res.status(403).json({ error: 'lender_subject_required' });
+    }
+    if (org.kyb_status !== 'Verified') {
+      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: org.kyb_status, org_name: org.org_name });
     }
     req.org = org;
     return next();

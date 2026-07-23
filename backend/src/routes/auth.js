@@ -14,6 +14,23 @@ const REGISTER_CONSTRAINT_ERRORS = {
   farmer_auth_subject_id_key: 'subject_claim_collision',
 };
 
+// Organization types a service provider can self-register as through
+// POST /auth/org-register. Deliberately excludes 'Bank' and 'VillageFund'
+// from identity.organization's full org_type list — those read as
+// institutional/government-linked entities that wouldn't plausibly sign up
+// through a public web form in a real deployment, unlike the genuine
+// private-business categories below (all of which a real company could
+// reasonably self-serve register as).
+const ORG_SELF_REGISTER_TYPES = [
+  'Cooperative', 'Mill', 'InputSupplier', 'Lender', 'Logistics', 'Buyer',
+  'TractorService', 'DroneService', 'HarvesterService', 'TruckService',
+];
+const ORG_REGISTER_CONSTRAINT_ERRORS = {
+  uq_organization_tax_id: 'tax_id_already_registered',
+  organization_auth_subject_id_key: 'subject_claim_collision',
+  uq_vendor_business_registration_no: 'tax_id_already_registered',
+};
+
 // national_id_hash exists specifically so the raw national ID is never
 // stored — only a one-way hash of it. This is a plain SHA-256, adequate for
 // this sandbox; a production system would add a per-deployment pepper.
@@ -27,6 +44,10 @@ function hashNationalId(nationalId) {
 // time — and so this request can auto-issue a session token immediately.
 function generateAuthSubjectId() {
   return `oidc|farmer-${crypto.randomUUID()}`;
+}
+
+function generateOrgAuthSubjectId() {
+  return `oidc|org-${crypto.randomUUID()}`;
 }
 
 /**
@@ -158,6 +179,114 @@ router.post('/register', async (req, res, next) => {
   } catch (err) {
     if (err.code === UNIQUE_VIOLATION) {
       const reason = REGISTER_CONSTRAINT_ERRORS[err.constraint] || 'duplicate_value';
+      return res.status(409).json({ error: reason });
+    }
+    return next(err);
+  }
+});
+
+/**
+ * POST /auth/org-register
+ * Body: { org_name, tax_id, org_type }
+ *
+ * Self-service sign-up for service-provider organizations (lenders, buyers,
+ * cooperatives, mills, input suppliers, and farm-machinery/mechanization
+ * services — see ORG_SELF_REGISTER_TYPES above). Before this endpoint,
+ * every organization in the system was inserted directly via a superuser
+ * connection during seeding; there was no way for a new business to apply
+ * to join AgroLink through the API at all — this was a documented gap in
+ * both READMEs. This closes the *submission* half of the KYB loop; the
+ * Platform Ops admin slice (`src/routes/admin.js`) already covers the
+ * *approval* half.
+ *
+ * The new organization always lands at kyb_status = 'Pending' — nothing
+ * here auto-approves. A brand-new `partner.vendor_profile` row is also
+ * created (using `tax_id` as `business_registration_no`, a real
+ * simplification: a real deployment would collect these as two distinct
+ * numbers, not assume they're the same value) so that once Platform Ops
+ * approves the KYB application, `partner.activate_vendor()` — which
+ * requires an existing `vendor_profile` row before it will do anything —
+ * finds one immediately, matching the flow already verified for seeded
+ * organizations.
+ *
+ * Like farmer registration, this mints a fresh mock OIDC claim
+ * (`oidc|org-<uuid>`) since no real IdP is connected, and auto-issues a
+ * session JWT. Unlike farmer registration, logging in immediately does NOT
+ * guarantee full portal access: `GET /lender/dashboard` and
+ * `GET /buyer/dashboard` both now require `kyb_status = 'Verified'` (see
+ * the `requireLenderOrg`/`requireBuyerOrg` update in their own route
+ * files) — a newly self-registered Lender or Buyer org sees a "your
+ * application is under review" state in that portal instead of live
+ * loan-application/delivery data until Platform Ops approves it. Organization
+ * types with no dedicated portal yet (Cooperative, Mill, InputSupplier,
+ * Logistics, and the four new machinery-service types) simply get a
+ * registration-received confirmation on the frontend — there's nowhere
+ * else for them to log into yet.
+ */
+router.post('/org-register', async (req, res, next) => {
+  const { org_name: orgName, tax_id: taxId, org_type: orgType } = req.body || {};
+
+  if (!orgName || !taxId || !orgType) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['org_name', 'tax_id', 'org_type'],
+    });
+  }
+  if (!ORG_SELF_REGISTER_TYPES.includes(orgType)) {
+    return res.status(400).json({ error: 'invalid_org_type', valid: ORG_SELF_REGISTER_TYPES });
+  }
+
+  const authSubjectId = generateOrgAuthSubjectId();
+
+  try {
+    const orgId = await withServiceRole(async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO identity.organization (org_type, org_name, tax_id, kyb_status, auth_subject_id)
+         VALUES ($1, $2, $3, 'Pending', $4)
+         RETURNING org_id`,
+        [orgType, orgName, taxId, authSubjectId],
+      );
+      const newOrgId = rows[0].org_id;
+
+      // Every subject needs a role grant before set_session_context() (and
+      // therefore RLS) will recognize them — 'org.admin' matches the role
+      // already used for every other seeded organization.
+      await client.query(
+        `INSERT INTO identity.subject_role (subject_type, subject_id, role_code)
+         VALUES ('organization', $1, 'org.admin')`,
+        [newOrgId],
+      );
+
+      await client.query(
+        `INSERT INTO partner.vendor_profile (org_id, business_registration_no)
+         VALUES ($1, $2)`,
+        [newOrgId, taxId],
+      );
+
+      await client.query('SELECT security.set_session_context($1, $2)', ['organization', newOrgId]);
+      await logAccess(client, 'write', 'identity.organization', newOrgId);
+
+      return newOrgId;
+    });
+
+    const token = jwt.sign(
+      { subjectType: 'organization', subjectId: orgId },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' },
+    );
+
+    return res.status(201).json({
+      access_token: token,
+      token_type: 'Bearer',
+      expires_in: process.env.JWT_EXPIRES_IN || '8h',
+      subject_type: 'organization',
+      subject_id: orgId,
+      org_type: orgType,
+      kyb_status: 'Pending',
+    });
+  } catch (err) {
+    if (err.code === UNIQUE_VIOLATION) {
+      const reason = ORG_REGISTER_CONSTRAINT_ERRORS[err.constraint] || 'duplicate_value';
       return res.status(409).json({ error: reason });
     }
     return next(err);

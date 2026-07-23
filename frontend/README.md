@@ -120,6 +120,55 @@ to the other three portals' own pages.
 
 All four portals now cross-link each other from their login pages.
 
+## Page — Service-Provider Registration (`register-provider.html`)
+
+A single standalone page (not inside any one portal's folder, same level
+as the Farmer Portal's own `register.html`) backing `POST
+/auth/org-register` — the org-facing counterpart to farmer
+self-registration. Three fields: organization/business name, tax ID (13
+digits), and a business-type dropdown covering ten self-registerable
+`org_type` values — the pre-existing `Lender`/`Buyer`/`InputSupplier`/
+`Cooperative`/`Mill`/`Logistics`, plus four new farm-machinery/
+mechanization service categories added directly at the user's request:
+บริการรถไถ (`TractorService`), บริการโดรน (`DroneService`), บริการรถเกี่ยว
+(`HarvesterService`), and บริการรถบรรทุก (`TruckService`).
+
+What happens after a successful submission depends on the chosen
+`org_type`, since not every organization type has a dedicated portal yet:
+- **Lender** or **Buyer** — the returned session is stored under that
+  portal's own `localStorage` key and the page redirects straight to
+  `lender/dashboard.html` or `buyer/dashboard.html`. Since the new
+  organization's `kyb_status` is always `Pending` at this point, that
+  dashboard shows a "your application is under review" notice instead of
+  live data (see the Lender/Buyer Portal updates below) — refreshing the
+  same page after Platform Ops approves it shows the real dashboard, no
+  re-login needed.
+- Every other type (Cooperative, Mill, InputSupplier, Logistics, and the
+  four new machinery-service types) — there's nowhere to redirect to yet,
+  so the page just replaces the form with a plain "ส่งใบสมัครเรียบร้อยแล้ว"
+  (application received) confirmation showing the org name and type.
+
+Linked from: the root marketing homepage's `#contact` call-to-action
+banner (previously a dead `href="#"` placeholder — now a real link,
+relabeled "สมัครเป็นผู้ให้บริการ"), and a "ยังไม่มีบัญชีองค์กร?" link on both
+`lender/index.html` and `buyer/index.html`'s login pages.
+
+## Lender/Buyer Portal update — pending-KYB state
+
+Both `lender/js/dashboard.js` and `buyer/js/dashboard.js` now open with a
+gate check against their own `GET .../dashboard` call. If the backend
+reports `kyb_not_verified` (a real org token, just not yet approved by
+Platform Ops — the case a fresh `register-provider.html` submission always
+starts in), the whole dashboard body is replaced with a centered "your KYB
+application is under review" notice instead of attempting to load a review
+queue, application/delivery list, and contracts that would all fail the
+same way. The session is deliberately NOT cleared in this case (unlike a
+genuine wrong-subject-type `403`) — the same login persists across KYB
+approval, so the user only ever needs to refresh once approved, not log in
+again. `lender/js/api.js` and `buyer/js/api.js` both special-case this one
+`403` reason to keep the session alive; every other `403` still bounces to
+login as before.
+
 ## Running
 
 The backend must already be running on `http://localhost:4000` (see
@@ -138,11 +187,13 @@ separate process needed:
 - Lender Portal: `http://localhost:5173/lender/index.html`
 - Buyer Portal: `http://localhost:5173/buyer/index.html`
 - Platform Ops / Admin Portal: `http://localhost:5173/admin/index.html`
+- Service-Provider Registration: `http://localhost:5173/register-provider.html`
 
 If the API runs somewhere other than `localhost:4000`, change `API_BASE` at
 the top of `js/api.js` (Farmer Portal), `lender/js/api.js` (Lender Portal),
-`buyer/js/api.js` (Buyer Portal), AND `admin/js/api.js` (Admin Portal) —
-they're four separate copies, not shared, on purpose (see above).
+`buyer/js/api.js` (Buyer Portal), `admin/js/api.js` (Admin Portal), AND
+`js/register-provider.js` (Service-Provider Registration) — they're five
+separate copies, not shared, on purpose (see above).
 
 ## How it talks to the backend
 
@@ -237,6 +288,22 @@ gateway — not a mock:
   farmer rejected earlier during backend testing. Logout returned to the
   login page. Screenshots were taken at every step to visually confirm
   correct rendering, not just successful API calls.
+- **Service-Provider Registration**, tested with Playwright covering all
+  three real code paths: registered a brand-new `TractorService` provider
+  (an org_type with no dedicated portal) and confirmed the plain
+  "ส่งใบสมัครเรียบร้อยแล้ว" confirmation rendered with the correct org name
+  and Thai type label; registered a brand-new `Lender` and confirmed it
+  redirected to `lender/dashboard.html`, which correctly showed the
+  "รอตรวจสอบ (KYB)" pending notice rather than a broken/empty dashboard;
+  re-submitted a duplicate tax ID and confirmed the inline
+  "เลขประจำตัวผู้เสียภาษีนี้ถูกใช้สมัครไปแล้ว" error. Separately confirmed, via
+  the API directly, that once Platform Ops approves a self-registered
+  Lender's KYB, the *same* browser session (no re-login) then sees the real
+  dashboard on the next load — and that an existing already-`Verified`
+  seeded Lender org (`oidc|org-001`) still loads its full real dashboard
+  exactly as before, confirming the new pending-KYB gate didn't regress
+  any previously-working login. All test organizations were deleted
+  afterward, not left in seed data.
 
 ## New backend endpoints added while building this
 
@@ -262,6 +329,14 @@ gateway — not a mock:
   README for what it does and a real, non-obvious grant gap building it
   surfaced (`RETURNING` needing `SELECT` privilege in addition to
   `INSERT`, not just a plain missing-grant problem).
+- `POST /auth/org-register` (in `../backend/src/routes/auth.js`) — backs
+  `register-provider.html`. See the backend README for the widened
+  `org_type` database constraint and new grants this surfaced.
+- A `kyb_status = 'Verified'` gate added to `requireLenderOrg`/
+  `requireBuyerOrg` (in `../backend/src/routes/lender.js` /
+  `buyer.js`) — backs the pending-KYB notice in `lender/dashboard.html` /
+  `buyer/dashboard.html`. See the backend README for why this became
+  necessary once organizations could self-register.
 
 ## What's next
 
@@ -278,10 +353,18 @@ gateway — not a mock:
   that already exist (or as a Spot Sale) — see the backend README.
 - Real per-admin accounts for Platform Ops, replacing the single shared
   passcode — see the backend README's "what's mocked" section.
-- A KYB *submission* UI (an org-facing "apply to join AgroLink" form) to
-  pair with the KYB *approval* UI now built here — the Admin Portal can
-  only approve/reject organizations that already exist in the database.
+- A self-service onboarding path for `Bank` and `VillageFund` organizations,
+  currently excluded from `register-provider.html`'s dropdown — see the
+  backend README.
+- Dedicated portals for the organization types `register-provider.html`
+  can already register but that have no dashboard of their own yet
+  (Cooperative, Mill, InputSupplier, Logistics, and the four new
+  machinery-service types) — right now those just get a confirmation
+  screen with nowhere to log into afterward.
 - Farmer, Lender, Buyer, and Platform Ops Portals are all now built
-  end-to-end (backend + frontend, tested). The natural next candidates are
-  the two gaps just above, or a fresh vertical slice (e.g. Logistics,
-  VillageFund) reusing the same patterns established here.
+  end-to-end (backend + frontend, tested), and organizations can now
+  self-register and get approved through the API and UI — closing the
+  submit-then-approve loop that was the previous headline gap here. The
+  natural next candidates are the gaps just above, or a fresh vertical
+  slice (e.g. Logistics, VillageFund) reusing the same patterns
+  established here.

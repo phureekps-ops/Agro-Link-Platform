@@ -68,10 +68,16 @@ const AgroLinkBuyerAPI = (() => {
   }
 
   /**
-   * Authenticated GET/POST helper. On 401 (expired/invalid token) OR 403
-   * (valid token, but not a Buyer-org subject — e.g. a farmer or a
-   * different kind of organization), clears the session and bounces back
-   * to login rather than rendering a confusing broken dashboard.
+   * Authenticated GET/POST helper. On 401 (expired/invalid token), clears
+   * the session and bounces back to login. On 403, there are two distinct
+   * cases the backend now tells apart:
+   *   - 'kyb_not_verified': a REAL Buyer-org token, just not yet approved
+   *     (e.g. freshly self-registered via register-provider.html). The
+   *     session is kept and a normal (non-redirecting) error is thrown so
+   *     dashboard.js can render a "your application is under review" state.
+   *   - anything else (a farmer or a different kind of organization):
+   *     clears the session and bounces back to login rather than rendering
+   *     a confusing broken dashboard.
    */
   async function request(path, options = {}) {
     const session = getSession();
@@ -91,6 +97,13 @@ const AgroLinkBuyerAPI = (() => {
       throw new Error("session_expired");
     }
     if (res.status === 403) {
+      const body = await res.json().catch(() => ({}));
+      if (body.error === "kyb_not_verified") {
+        const err = new Error("kyb_not_verified");
+        err.status = 403;
+        err.body = body;
+        throw err;
+      }
       clearSession();
       window.location.href = "index.html?reason=not_a_buyer";
       throw new Error("not_a_buyer");

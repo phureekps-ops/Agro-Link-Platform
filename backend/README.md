@@ -18,10 +18,15 @@ unevaluated forever; the Buyer Portal slice (`src/routes/buyer.js`) was
 added after that, closing the produce-delivery loop the same way — record
 delivery → confirm quality → settle payment → auto-close the contract once
 the agreed quantity is fully delivered. The Platform Ops / Admin slice
-(`src/routes/admin.js`) was added last, closing the KYC/KYB loop: it's the
-only thing in the whole system that ever moves a farmer out of
-`pending_kyc` or an organization out of `Pending` KYB — before this slice
-existed, both statuses could only ever be set directly in the seed data.
+(`src/routes/admin.js`) was added next, closing the KYC/KYB *approval*
+loop: it's the only thing in the whole system that ever moves a farmer out
+of `pending_kyc` or an organization out of `Pending` KYB — before this
+slice existed, both statuses could only ever be set directly in the seed
+data. `POST /auth/org-register` was added after that, closing the
+matching *submission* loop: before it existed, every organization
+(including the ones Platform Ops approves) could only ever be inserted
+directly into the database — there was no way for a new business to apply
+to join AgroLink at all.
 
 ## Architecture in one paragraph
 
@@ -62,6 +67,7 @@ psql -d agrolink_test -f db/fix_underwriting_decision_security.sql
 psql -d agrolink_test -f db/fix_produce_settlement_security.sql
 psql -d agrolink_test -f db/grant_buyer_portal.sql
 psql -d agrolink_test -f db/grant_platform_ops.sql
+psql -d agrolink_test -f db/grant_provider_registration.sql
 ```
 
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
@@ -161,6 +167,16 @@ psql -d agrolink_test -f db/grant_platform_ops.sql
   `SELECT` was also granted. Worth remembering alongside the deferred-
   trigger gotcha above as a second "the ACL check said yes, Postgres still
   said no" lesson — this time for a completely different reason.
+- `grant_provider_registration.sql` — for `POST /auth/org-register` (the
+  service-provider self-registration endpoint). Two parts: (1) widens
+  `identity.organization.org_type`'s `CHECK` constraint to add four new
+  business categories the user asked for directly — `TractorService`,
+  `DroneService`, `HarvesterService`, `TruckService` (farm-machinery/
+  mechanization rental services that don't fit any prior org_type) — a
+  purely additive change, nothing existing is affected; (2) grants
+  `agrolink_app` `INSERT` on `identity.organization` and
+  `partner.vendor_profile`, the first thing to ever create either as
+  `agrolink_app` rather than through direct seeding.
 
 ## Running
 
@@ -177,6 +193,7 @@ npm start          # or: node src/server.js
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
 - `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
+- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `Cooperative`/`Mill`/`InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank` and `VillageFund` are deliberately excluded, see "what's mocked" below). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Duplicate `tax_id` returns `409 tax_id_already_registered`.
 
 Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already
@@ -207,7 +224,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /farmer/production-units` → `registry.production_unit` (PostGIS boundary returned as GeoJSON via `ST_AsGeoJSON`)
 - `GET /farmer/lenders` → active `Lender` organizations from `identity.organization` — added while building the frontend, so the loan-application form's lender dropdown reads real data instead of a hardcoded value.
 
-**Lender Portal** (`src/routes/lender.js`, all require an organization-subject JWT whose `org_type = 'Lender'`)
+**Lender Portal** (`src/routes/lender.js`, all require an organization-subject JWT whose `org_type = 'Lender'` AND `kyb_status = 'Verified'` — see `requireLenderOrg`; a Pending/Rejected org gets `403 kyb_not_verified` instead of live loan-application data, closing a gap that opened up once `POST /auth/org-register` made it possible for an unapproved org to hold a real, working JWT)
 - `GET /lender/dashboard` — org info, application counts by status, active-contract count and outstanding principal.
 - `GET /lender/loan-applications?status=...` — applications submitted to this lender, joined with the farmer's name and latest credit score. `status` accepts any real status value, or the shorthand `action_needed` (`manual_review` + `approved` — both still require the lender to act; `approved` is only an automated pre-approval until a contract actually exists).
 - `GET /lender/loan-applications/:id` — single application detail, plus the related production unit.
@@ -215,7 +232,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `POST /lender/loan-applications/:id/decline` — body `{ reason? }` → `underwriting.decline_application()`.
 - `GET /lender/contracts` — this org's loan-agreement portfolio (contracts where it is the `lender` party).
 
-**Buyer Portal** (`src/routes/buyer.js`, all require an organization-subject JWT whose `org_type = 'Buyer'`)
+**Buyer Portal** (`src/routes/buyer.js`, all require an organization-subject JWT whose `org_type = 'Buyer'` AND `kyb_status = 'Verified'` — see `requireBuyerOrg`, same gate and same reasoning as the Lender Portal above)
 - `GET /buyer/dashboard` — org info, delivery counts by status, lifetime settled amount, active-contract count.
 - `GET /buyer/deliveries?status=...` — this buyer's own deliveries, joined with the farmer's name and production unit. `status` accepts any real status value, or the shorthand `action_needed` (`delivered` + `accepted` — `delivered` still needs quality confirmation, `accepted` still needs settlement).
 - `GET /buyer/deliveries/:id` — single delivery detail.
@@ -318,26 +335,29 @@ same session-context-scoped client, after a successful operation.
   owns. Zero rows → 404, before the function is ever called. This was
   verified against a real second Lender organization, not just reasoned
   about (see below).
-- **No org self-registration.** Unlike farmers, organizations (lenders,
-  buyers, etc.) have no `POST /auth/register`-equivalent — they're assumed
-  to be onboarded through a separate KYB (know-your-business) process,
-  which the Platform Ops slice now partially covers (the *approval* half —
-  see below for what's still missing on the *submission* half).
 - **Platform Ops has no per-admin identity, only a shared passcode.** See
   `POST /auth/admin-login` above — there is no individual ops-account
   table, no MFA, no real SSO. `audit.access_log` can show that *a* platform
   operator acted, never *which one*. This is the single biggest gap in the
   admin slice and is called out explicitly rather than glossed over: a
   real deployment must not ship this as-is.
-- **No KYB *submission* workflow, only *approval*.** `POST
-  /admin/organizations/:id/kyb-status` lets platform ops approve/reject an
-  organization already sitting in the database at `kyb_status = 'Pending'`
-  — but nothing in this build lets a brand-new organization actually
-  *create* itself and land in that `Pending` state via the API; every
-  organization in the seed data (and the temporary test orgs used for
-  isolation testing) was inserted directly via SQL. A real org-facing
-  "apply to join AgroLink" flow is not yet built, mirrored to how farmer
-  self-registration already works via `POST /auth/register`.
+- **`POST /auth/org-register` excludes `Bank` and `VillageFund` from
+  self-service sign-up.** `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js`
+  deliberately leaves these two out of the selectable list — they read as
+  institutional/government-linked entities that wouldn't plausibly sign up
+  through a public web form in a real deployment. There is currently no
+  other onboarding path for these two types at all (they can still only be
+  seeded directly), which is a real gap if AgroLink ever needs to onboard
+  one — just a deliberately out-of-scope one for now.
+- **`business_registration_no` is assumed equal to `tax_id`.**
+  `POST /auth/org-register` only collects one number (`tax_id`) but
+  `partner.vendor_profile.business_registration_no` is a real, distinct
+  field in the schema — a real deployment would collect both separately.
+  Using the same value for both here is a deliberate simplification to
+  keep the registration form to three fields, matching what the user asked
+  for; it means a real business with a genuinely different registration
+  number would need this corrected later (e.g. by platform ops, out of
+  band — there's no edit endpoint for `vendor_profile` fields yet).
 - **KYC/KYB decisions don't check for a stale/already-decided state before
   overwriting it.** `POST /admin/farmers/:id/status` and `POST
   /admin/organizations/:id/kyb-status` will happily flip an already-`active`
@@ -479,6 +499,35 @@ and the live `agrolink_test` database — not unit tests against mocks:
   and confirmed logging in again afterward with the persisted auto-generated
   claim works — proving the new identity is durable, not just a one-request
   fluke.
+- Registered three real organizations through `POST /auth/org-register`
+  covering three distinct code paths: a `TractorService` (a brand-new
+  org_type value, confirming the widened `CHECK` constraint really works
+  and that org_types with no dedicated portal get a plain confirmation, no
+  broken redirect), a `Lender` (confirming the returned JWT gets redirected
+  toward `lender/dashboard.html` but is correctly gated), and a duplicate
+  `tax_id` re-registration attempt (`409 tax_id_already_registered`).
+- Confirmed the newly-registered `Lender` org immediately appeared in
+  Platform Ops's `GET /admin/organizations?kyb_status=Pending` queue, and
+  that `GET /lender/dashboard` with its fresh JWT correctly returned
+  `403 kyb_not_verified` (not a generic 500 or a confusing
+  `lender_subject_required`) — proving the org-registration →
+  KYB-approval loop is fully wired together, not just each half tested in
+  isolation.
+- Approved that same org's KYB through `POST
+  /admin/organizations/:id/kyb-status`, then re-tried the identical
+  `GET /lender/dashboard` call with the **same, still-valid** JWT from
+  registration (no re-login) and confirmed it now returns real (empty,
+  since it's a brand-new org) dashboard data — confirming a self-registered
+  org's session survives across its own KYB approval.
+- Re-tested an existing, already-`Verified` seeded Lender org
+  (`oidc|org-001`) end-to-end after adding the `kyb_status` gate, to
+  confirm the new check doesn't regress any previously-working org —
+  its dashboard, review queue, and full application list all still
+  returned real data exactly as before.
+- Deleted all three test organizations (and their `ledger.account` /
+  `identity.subject_role` rows) afterward — not left in seed data — and
+  re-confirmed `ops.v_integrity_checksum` / `monitoring.v_go_live_readiness`
+  still pass.
 
 ## Next steps (not yet built)
 
@@ -490,8 +539,6 @@ and the live `agrolink_test` database — not unit tests against mocks:
   can't run at submission time (farmer has no credit score yet) — right now
   those applications just sit at `pending` until someone re-submits or a
   future job picks them up.
-- A real KYB (know-your-business) workflow so organizations can be onboarded
-  and verified rather than only ever seeded directly into the database.
 - A way to actually *create* a `forward_purchase` contract through the API
   — right now the Buyer Portal can only record deliveries against an
   already-existing contract (or as a Spot Sale); the negotiation/creation
@@ -499,17 +546,21 @@ and the live `agrolink_test` database — not unit tests against mocks:
 - Real per-admin accounts for Platform Ops (see "what's mocked" above) —
   the single shared passcode is the biggest known gap in the whole system
   at this point.
-- A KYB *submission* workflow so a new organization can apply to join
-  AgroLink through the API (landing at `kyb_status = 'Pending'`) rather
-  than only ever being inserted directly into the database — Platform Ops
-  currently only covers the *approval* half of that loop.
 - RLS on `identity.farmer`/`identity.organization`/`ledger.account` — same
   API-layer-is-the-only-boundary situation as `notification.notification_log`
   and `produce.delivery` above, just for the tables the admin slice writes
   to. Low risk today since only a `platform`-subject JWT can reach these
   routes at all, but worth hardening consistently with the rest of the
   schema eventually.
+- An onboarding path for `Bank` and `VillageFund` organizations — currently
+  excluded from `POST /auth/org-register`'s self-service list (see "what's
+  mocked" above) with no alternative path built yet.
+- A way to correct `partner.vendor_profile.business_registration_no` after
+  registration if it genuinely differs from `tax_id` — no edit endpoint
+  exists for `vendor_profile` fields today.
 - Farmer Portal, Lender Portal, Buyer Portal, and Platform Ops are all now
-  built end-to-end (backend + frontend, tested). The natural next
-  candidates are the two gaps just above, or a fresh vertical slice
-  (e.g. Logistics, VillageFund) reusing the same patterns established here.
+  built end-to-end (backend + frontend, tested), and organizations can now
+  both self-register and be approved through the API — closing the loop
+  that was the previous "Next steps" headline item. The natural next
+  candidates are the gaps just above, or a fresh vertical slice (e.g.
+  Logistics, VillageFund) reusing the same patterns established here.

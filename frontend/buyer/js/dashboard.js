@@ -63,6 +63,32 @@ async function loadSummary() {
   }
 }
 
+/**
+ * Replaces the whole dashboard body with a "your KYB application is under
+ * review" notice — used only when GET /buyer/dashboard itself reports
+ * kyb_not_verified (a real Buyer-org token, just not yet approved by
+ * Platform Ops, e.g. right after registering via register-provider.html).
+ * Deliberately does NOT log the user out — refreshing this same page after
+ * approval will show the real dashboard with no need to log in again.
+ */
+function showKybPendingNotice(orgName, kybStatus) {
+  document.getElementById("orgName").textContent = orgName || "-";
+  const statusLabel = kybStatus === "Rejected" ? "ถูกปฏิเสธ" : "รอตรวจสอบ (KYB)";
+  document.getElementById("mainContainer").innerHTML = `
+    <div class="empty-state" style="padding:60px 24px;">
+      <div style="font-size:40px; margin-bottom:14px;">⏳</div>
+      <div style="font-size:17px; font-weight:700; color:var(--green-900); margin-bottom:8px;">
+        ใบสมัครขององค์กรของท่านอยู่ในสถานะ: ${escapeHtml(statusLabel)}
+      </div>
+      <div style="font-size:14px;">
+        เจ้าหน้าที่ผู้ดูแลระบบ (Platform Ops) กำลังตรวจสอบข้อมูลธุรกิจ (KYB) ของท่าน
+        เมื่อได้รับการอนุมัติแล้ว ท่านจะสามารถเข้าใช้งานพอร์ทัลผู้รับซื้อผลผลิตได้เต็มรูปแบบ —
+        ลองเข้าสู่ระบบใหม่อีกครั้งในภายหลัง หรือรีเฟรชหน้านี้
+      </div>
+    </div>
+  `;
+}
+
 // ---------- รายการที่ต้องดำเนินการ ----------
 function reviewCard(d) {
   const header = `
@@ -315,11 +341,40 @@ document.getElementById("deliveryForm").addEventListener("submit", async (e) => 
 
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkBuyerAPI.logout());
 
-// Kick off all sections concurrently — independent panels, one broken
-// panel doesn't take down the rest of the page.
-loadSummary();
-loadReviewQueue();
-loadAllDeliveries();
-loadContracts();
-loadUnitsAndCommodities();
-loadContractOptions();
+/**
+ * GET /buyer/dashboard doubles as the KYB gate check here: if it reports
+ * kyb_not_verified, none of the other endpoints would succeed either (same
+ * requireBuyerOrg middleware guards all of them), so there's no point
+ * firing them — just show the pending notice and stop.
+ */
+async function init() {
+  try {
+    const d = await AgroLinkBuyerAPI.get("/buyer/dashboard");
+    document.getElementById("orgName").textContent = d.org_name || "-";
+    document.getElementById("summarySection").innerHTML = `
+      <div class="stat-card"><div class="label">รายการที่ต้องดำเนินการ</div><div class="value">${d.needs_action_count}</div></div>
+      <div class="stat-card"><div class="label">รอตรวจสอบคุณภาพ</div><div class="value">${d.deliveries_by_status.delivered}</div></div>
+      <div class="stat-card"><div class="label">ไม่ผ่านคุณภาพ</div><div class="value">${d.deliveries_by_status.rejected}</div></div>
+      <div class="stat-card"><div class="label">ชำระเงินแล้ว</div><div class="value">${d.deliveries_by_status.settled}</div></div>
+      <div class="stat-card"><div class="label">สัญญาที่ใช้งานอยู่</div><div class="value">${d.active_contracts}</div></div>
+      <div class="stat-card"><div class="label">ยอดชำระสะสม</div><div class="value" style="font-size:18px;">${thb(d.total_settled_amount)}</div></div>
+    `;
+  } catch (err) {
+    if (err.message === "kyb_not_verified") {
+      showKybPendingNotice(err.body.org_name, err.body.kyb_status);
+      return;
+    }
+    document.getElementById("summarySection").innerHTML = `<div class="empty-state">โหลดข้อมูลภาพรวมไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    return;
+  }
+
+  // Only reached once KYB is confirmed Verified — independent panels below,
+  // one broken panel doesn't take down the rest of the page.
+  loadReviewQueue();
+  loadAllDeliveries();
+  loadContracts();
+  loadUnitsAndCommodities();
+  loadContractOptions();
+}
+
+init();
