@@ -165,6 +165,57 @@ router.post('/register', async (req, res, next) => {
 });
 
 /**
+ * POST /auth/admin-login
+ * Body: { passcode: string }
+ *
+ * SIMPLIFICATION / MOCK, called out explicitly in the README and in .env:
+ * there is no per-admin identity table in this sandbox — no individual ops
+ * accounts, no MFA, no real SSO — so a single shared passcode (from
+ * ADMIN_PASSCODE in .env) stands in for "is this an authorized platform
+ * operator at all". Every successful admin login is issued the SAME
+ * subject_id-less 'platform' identity; audit.access_log therefore cannot
+ * distinguish WHICH ops staff member performed a given action, only that
+ * *a* platform operator did. A real deployment needs real per-admin
+ * accounts precisely so that audit trail exists.
+ *
+ * subject_id is intentionally omitted from the token: security.
+ * set_session_context() already treats subject_type='platform' as the one
+ * case that needs no subject_id and no identity.subject_role row at all
+ * (see that function's definition) — this was designed into Layer 8
+ * specifically for platform-level operations, just never had an API path
+ * exercising it until now.
+ */
+router.post('/admin-login', async (req, res, next) => {
+  const { passcode } = req.body || {};
+
+  if (!passcode || typeof passcode !== 'string') {
+    return res.status(400).json({ error: 'passcode_required' });
+  }
+
+  try {
+    if (passcode !== process.env.ADMIN_PASSCODE) {
+      return res.status(401).json({ error: 'invalid_passcode' });
+    }
+
+    const token = jwt.sign(
+      { subjectType: 'platform' },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' },
+    );
+
+    return res.json({
+      access_token: token,
+      token_type: 'Bearer',
+      expires_in: process.env.JWT_EXPIRES_IN || '8h',
+      subject_type: 'platform',
+      subject_id: null,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * GET /auth/session/current
  * Requires a valid Bearer token. Mirrors the intent of the
  * g14_rls_rbac_enforcement.yaml "who am I" endpoint from Layer 8 — echoes

@@ -1,10 +1,11 @@
-# AgroLink Platform — Backend API Gateway (Farmer + Lender + Buyer Portals)
+# AgroLink Platform — Backend API Gateway (Farmer + Lender + Buyer + Platform Ops Portals)
 
 A real, running Node.js/Express API that sits in front of the `agrolink_test`
-PostgreSQL database and implements the Farmer-Portal-, Lender-Portal-, and
-Buyer-Portal-facing slices of the G-1..G-19 contracts designed across
-Layers 1–10. This was the first piece of actual application code in the
-project — everything before it was schema, API contracts, and documentation.
+PostgreSQL database and implements the Farmer-Portal-, Lender-Portal-,
+Buyer-Portal-, and Platform-Ops-facing slices of the G-1..G-19 contracts
+designed across Layers 1–10. This was the first piece of actual application
+code in the project — everything before it was schema, API contracts, and
+documentation.
 
 Scope decision (confirmed with the user): homepage audience = **farmers**;
 first component built = **Backend API Gateway** (rather than the frontend
@@ -16,7 +17,11 @@ loop on loan applications that need a lender's decision rather than sitting
 unevaluated forever; the Buyer Portal slice (`src/routes/buyer.js`) was
 added after that, closing the produce-delivery loop the same way — record
 delivery → confirm quality → settle payment → auto-close the contract once
-the agreed quantity is fully delivered.
+the agreed quantity is fully delivered. The Platform Ops / Admin slice
+(`src/routes/admin.js`) was added last, closing the KYC/KYB loop: it's the
+only thing in the whole system that ever moves a farmer out of
+`pending_kyc` or an organization out of `Pending` KYB — before this slice
+existed, both statuses could only ever be set directly in the seed data.
 
 ## Architecture in one paragraph
 
@@ -56,6 +61,7 @@ psql -d agrolink_test -f db/grant_farmer_registration.sql
 psql -d agrolink_test -f db/fix_underwriting_decision_security.sql
 psql -d agrolink_test -f db/fix_produce_settlement_security.sql
 psql -d agrolink_test -f db/grant_buyer_portal.sql
+psql -d agrolink_test -f db/grant_platform_ops.sql
 ```
 
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
@@ -129,6 +135,32 @@ psql -d agrolink_test -f db/grant_buyer_portal.sql
   see the "what's mocked" section below), `SELECT` on
   `registry.commodity_ref`, and the `ledger.journal_line` grant described
   just above.
+- `grant_platform_ops.sql` — a sixth real gap, found while building the
+  Platform Ops / Admin slice. None of the tables this slice writes to have
+  row-level security at all (verified `relrowsecurity = false` on
+  `identity.farmer`, `identity.organization`, `partner.vendor_profile`,
+  `ledger.account`, `notification.notification_log`), so — unlike every
+  other portal — no `SECURITY DEFINER` fix was needed; only plain grants
+  (`UPDATE` on `identity.farmer`/`identity.organization` for KYC/KYB
+  decisions, `UPDATE` on `partner.vendor_profile` and `SELECT`/`INSERT` on
+  `ledger.account` for `partner.activate_vendor()`, and `SELECT`/`INSERT`
+  on `notification.notification_log` for `notification.notify()`).
+  **The genuinely subtle part**: `INSERT` alone on
+  `notification.notification_log` was *not* enough, even though every ACL
+  check (`information_schema.role_table_grants`,
+  `has_table_privilege()`, `\dp`, `aclexplode(relacl)`) showed the grant
+  present and correct — `notification.notify()`'s INSERT ends with
+  `RETURNING notification_id`, and PostgreSQL requires **`SELECT`
+  privilege in addition to `INSERT`** to use `RETURNING` at all. This is
+  documented Postgres behavior, not a bug, but the error
+  (`permission denied for table notification_log`) is indistinguishable
+  from a plain missing-`INSERT` error and gives no hint that `RETURNING`
+  is the actual culprit. Confirmed by testing the identical `INSERT` as
+  `agrolink_app` with and without a `RETURNING` clause: the bare `INSERT`
+  succeeded every time, the `INSERT ... RETURNING` failed every time, until
+  `SELECT` was also granted. Worth remembering alongside the deferred-
+  trigger gotcha above as a second "the ACL check said yes, Postgres still
+  said no" lesson — this time for a completely different reason.
 
 ## Running
 
@@ -150,6 +182,21 @@ Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already
 resolves a claim to either a `farmer` or an `organization` row (regardless
 of `org_type`), so no separate lender- or buyer-login endpoint was needed.
+
+- `POST /auth/admin-login` — body `{ "passcode": "..." }` → the Platform Ops
+  login, and the one login path that does **not** go through
+  `security.resolve_subject_from_external_claim()`. There is no per-admin
+  identity table in this sandbox — no individual ops accounts, no MFA, no
+  real SSO — so a single shared passcode (`ADMIN_PASSCODE` in `.env`) stands
+  in for "is this an authorized platform operator at all". Every successful
+  login is issued the same `subjectType: 'platform'` JWT with **no
+  `subjectId`** — `security.set_session_context()` already treats
+  `subject_type = 'platform'` as the one case needing neither a `subject_id`
+  nor an `identity.subject_role` row (designed into Layer 8 for exactly
+  this, but never exercised by any API path until now). Practical
+  consequence: `audit.access_log` can prove *a* platform operator did
+  something, but not *which one* — a real deployment needs real per-admin
+  accounts specifically so that attribution exists.
 
 **Farmer Portal** (`src/routes/farmer.js`, all require a farmer-subject JWT)
 - `GET /farmer/dashboard` → `reporting.v_farmer_360`
@@ -178,6 +225,14 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /buyer/contracts` — this org's forward-purchase portfolio (contracts where it is the `buyer` party).
 - `GET /buyer/production-units` — small read-only directory of active production units with their owning farmer's name, so the delivery form doesn't require knowing a `unit_id` by heart. Mirrors the intent of `GET /farmer/lenders`.
 - `GET /buyer/commodities` — `registry.commodity_ref`, for the delivery form's commodity dropdown.
+
+**Platform Ops / Admin Portal** (`src/routes/admin.js`, all require a `platform`-subject JWT from `POST /auth/admin-login`)
+- `GET /admin/dashboard` — farmer counts by status, organization counts by `kyb_status`, and a `system_health` block built from `ops.v_integrity_checksum` + `monitoring.v_go_live_readiness` + an active-alerts count. These three views/queries already existed from Layer 9/10 and `agrolink_app` already had `SELECT` on all of them — nothing had ever exposed them through the API before; every previous check of them in this whole project was a manual `psql` query.
+- `GET /admin/system-health` — the detailed version, including the actual list of currently-active alerts (not just a count) from `monitoring.v_active_alerts`.
+- `GET /admin/farmers?status=...` — every farmer in the system (platform sees everyone; `identity.farmer` has no RLS), optionally filtered by `status` (`pending_kyc`/`active`/`suspended`/`closed`).
+- `POST /admin/farmers/:id/status` — body `{ status, reason? }` → the KYC decision point. `pending_kyc → active` is a KYC approval; `pending_kyc → closed` is a rejection (`identity.farmer`'s own check constraint has no distinct "kyc_rejected" value, so `closed` is the correct terminal state). The same endpoint also covers ordinary later moderation (suspend/reactivate/close an already-active farmer), since the constraint allows any of the four values and there's no reason to special-case KYC vs later moderation at the API layer. Always sends the farmer a real notification via `notification.notify()` with the reason if given — the *only* way a farmer finds out about the decision in this sandbox, surfacing through their existing `GET /farmer/notifications`.
+- `GET /admin/organizations?kyb_status=...` — every organization, left-joined with `partner.vendor_profile` for its commercial-activation status, optionally filtered by `kyb_status` (`Pending`/`Verified`/`Rejected`).
+- `POST /admin/organizations/:id/kyb-status` — body `{ kyb_status, reason? }` → the KYB decision point. `Pending → Verified` is approval, `Pending → Rejected` is rejection. On approval, if the organization already has a `partner.vendor_profile` row, this also calls `partner.activate_vendor()` — that function itself requires `kyb_status = 'Verified'` to already be set, so the ordering here (update `kyb_status` first, then attempt activation) matches what it expects; its own idempotency (checks for an existing `ledger.account` before creating one) means this is safe to call again on an already-active org. Activation failure doesn't fail the whole KYB approval — the org is still legitimately `Verified` even if commercial activation needs manual follow-up. Same notification pattern as the farmer endpoint.
 
 `underwriting.evaluate_application()` itself is not exposed as its own
 route — it is only ever called internally, immediately after
@@ -265,9 +320,33 @@ same session-context-scoped client, after a successful operation.
   about (see below).
 - **No org self-registration.** Unlike farmers, organizations (lenders,
   buyers, etc.) have no `POST /auth/register`-equivalent — they're assumed
-  to be onboarded through a separate KYB (know-your-business) process not
-  built yet, consistent with `identity.organization.kyb_status` already
-  existing as a column with no workflow behind it.
+  to be onboarded through a separate KYB (know-your-business) process,
+  which the Platform Ops slice now partially covers (the *approval* half —
+  see below for what's still missing on the *submission* half).
+- **Platform Ops has no per-admin identity, only a shared passcode.** See
+  `POST /auth/admin-login` above — there is no individual ops-account
+  table, no MFA, no real SSO. `audit.access_log` can show that *a* platform
+  operator acted, never *which one*. This is the single biggest gap in the
+  admin slice and is called out explicitly rather than glossed over: a
+  real deployment must not ship this as-is.
+- **No KYB *submission* workflow, only *approval*.** `POST
+  /admin/organizations/:id/kyb-status` lets platform ops approve/reject an
+  organization already sitting in the database at `kyb_status = 'Pending'`
+  — but nothing in this build lets a brand-new organization actually
+  *create* itself and land in that `Pending` state via the API; every
+  organization in the seed data (and the temporary test orgs used for
+  isolation testing) was inserted directly via SQL. A real org-facing
+  "apply to join AgroLink" flow is not yet built, mirrored to how farmer
+  self-registration already works via `POST /auth/register`.
+- **KYC/KYB decisions don't check for a stale/already-decided state before
+  overwriting it.** `POST /admin/farmers/:id/status` and `POST
+  /admin/organizations/:id/kyb-status` will happily flip an already-`active`
+  farmer back to `pending_kyc`, or an already-`Verified` org back to
+  `Pending`, if asked — there's no guard against a confusing or
+  nonsensical transition (e.g. re-rejecting an already-rejected farmer).
+  This mirrors real moderation tools that trust the operator's judgment
+  over a rigid state machine, but is worth knowing before assuming the API
+  enforces a particular KYC/KYB lifecycle graph.
 
 ## End-to-end verification performed
 
@@ -346,6 +425,43 @@ and the live `agrolink_test` database — not unit tests against mocks:
   *because* testing went all the way through a real commit rather than
   stopping at a rolled-back transaction — worth remembering as a testing
   lesson as much as a database one.
+- Logged in via `POST /auth/admin-login` with the real passcode (success),
+  a wrong passcode (`401 invalid_passcode`), and no passcode at all
+  (`400 passcode_required`).
+- Confirmed a farmer JWT and an organization JWT (the seeded Lender org)
+  are both correctly rejected from every `/admin/*` route
+  (`403 platform_subject_required`), and conversely that a platform JWT is
+  rejected from `/farmer/*` and `/lender/*`
+  (`403 farmer_subject_required` / `403 organization_subject_required`) —
+  the platform identity has no special back-door into the other portals.
+- Approved a real pending KYC farmer (มานี มีนา) through
+  `POST /admin/farmers/:id/status` (`status: "active"`), then logged in as
+  her via `POST /auth/login` and confirmed her own `GET /farmer/notifications`
+  showed the real notification the admin action generated — proving the
+  loop closes all the way to the farmer's own portal, not just the database
+  row.
+- Rejected a second pending KYC farmer (วิชัย ทองดี) with a real reason
+  string, confirming `status` moved to `closed` and the reason appears in
+  the stored notification message.
+- Approved a real pending-KYB organization (ปุ๋ยไทยพัฒนา จำกัด) through
+  `POST /admin/organizations/:id/kyb-status` (`kyb_status: "Verified"`),
+  confirmed the response reported `vendor_activated: true`, and confirmed
+  directly against the database that `partner.activate_vendor()` really
+  ran: `partner.vendor_profile.commercial_status` became `active` with a
+  real `activated_at` timestamp, and a real `ledger.account`
+  (`vendor_settlement` type, owned by that org) was created.
+- Also drove the full KYC and KYB approve/reject flow through the actual
+  **frontend** (Playwright, headless) — passcode login (including a wrong
+  passcode showing the right Thai error), dashboard load (summary cards,
+  system-health panel, active-alerts list), approving a real pending-KYC
+  farmer's card in the KYC queue, approving a real pending-KYB
+  organization's card in the KYB queue (a temporary test org, inserted then
+  removed afterward — not left in seed data), filtering the all-farmers
+  list by status, and logout — not just the API in isolation.
+- `ops.v_integrity_checksum` and `monitoring.v_go_live_readiness` were
+  re-checked after all of the above (and again after removing the
+  temporary test organization) — ledger still balances, Go-Live readiness
+  still 6/6 passed.
 - A tampered JWT (last character flipped) → `401 invalid_token`; a request
   with no `Bearer` scheme → `401 missing_bearer_token`; an unknown route →
   `404`.
@@ -380,6 +496,20 @@ and the live `agrolink_test` database — not unit tests against mocks:
   — right now the Buyer Portal can only record deliveries against an
   already-existing contract (or as a Spot Sale); the negotiation/creation
   step for a brand-new forward-purchase agreement isn't built yet.
-- A platform-ops/admin slice (including farmer KYC approval and
-  organization KYB approval) — Farmer Portal, Lender Portal, and Buyer
-  Portal are all now built; platform ops is the natural next candidate.
+- Real per-admin accounts for Platform Ops (see "what's mocked" above) —
+  the single shared passcode is the biggest known gap in the whole system
+  at this point.
+- A KYB *submission* workflow so a new organization can apply to join
+  AgroLink through the API (landing at `kyb_status = 'Pending'`) rather
+  than only ever being inserted directly into the database — Platform Ops
+  currently only covers the *approval* half of that loop.
+- RLS on `identity.farmer`/`identity.organization`/`ledger.account` — same
+  API-layer-is-the-only-boundary situation as `notification.notification_log`
+  and `produce.delivery` above, just for the tables the admin slice writes
+  to. Low risk today since only a `platform`-subject JWT can reach these
+  routes at all, but worth hardening consistently with the rest of the
+  schema eventually.
+- Farmer Portal, Lender Portal, Buyer Portal, and Platform Ops are all now
+  built end-to-end (backend + frontend, tested). The natural next
+  candidates are the two gaps just above, or a fresh vertical slice
+  (e.g. Logistics, VillageFund) reusing the same patterns established here.

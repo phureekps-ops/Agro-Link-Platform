@@ -7,6 +7,7 @@ const authRouter = require('./routes/auth');
 const farmerRouter = require('./routes/farmer');
 const lenderRouter = require('./routes/lender');
 const buyerRouter = require('./routes/buyer');
+const adminRouter = require('./routes/admin');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/auth', authRouter);
 app.use('/farmer', farmerRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
+app.use('/admin', adminRouter);
 
 // Fallback 404
 app.use((req, res) => {

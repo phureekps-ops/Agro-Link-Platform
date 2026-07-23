@@ -1,10 +1,10 @@
-# AgroLink Platform — Farmer + Lender + Buyer Portal Frontend
+# AgroLink Platform — Farmer + Lender + Buyer + Platform Ops Portal Frontend
 
-The homepage/frontend for farmers, plus separate portals for lenders and
-produce buyers, all calling the same Backend API Gateway (`../backend`).
-Plain HTML/CSS/JavaScript — no build step, no framework — so it runs
-anywhere a static file can be served, and every byte shipped here is what
-actually runs in the browser.
+The homepage/frontend for farmers, plus separate portals for lenders,
+produce buyers, and platform-ops staff, all calling the same Backend API
+Gateway (`../backend`). Plain HTML/CSS/JavaScript — no build step, no
+framework — so it runs anywhere a static file can be served, and every byte
+shipped here is what actually runs in the browser.
 
 ## Pages — Farmer Portal (this directory)
 
@@ -89,6 +89,37 @@ Cross-linked with the other two: each portal's login page has a small link
 to the other two, so navigating between them during testing doesn't
 require re-typing URLs.
 
+## Pages — Platform Ops / Admin Portal (`admin/`)
+
+A fourth separate small app, same overall pattern as the Lender/Buyer
+Portals (own `localStorage` key `agrolink_admin_session`, same shared CSS)
+but with one real difference: login is **passcode-based**, not
+claim-based, because there is no per-admin identity table in this sandbox
+— see `../backend/README.md`'s note on `POST /auth/admin-login`.
+
+- `admin/index.html` — login: a single passcode field (no demo-account
+  buttons, since there's no per-admin identity to pick between — just the
+  one shared `ADMIN_PASSCODE`), with the mock explained inline the same
+  way the other portals explain their mock-claim login.
+- `admin/dashboard.html` — an overview panel (pending-KYC/KYB counts,
+  active/suspended/closed farmer counts, verified-org count); a **system
+  health** panel built from `GET /admin/dashboard`'s `system_health` block
+  (ledger-balanced badge, Go-Live readiness badge, active-alert count) plus
+  the full active-alerts list when there are any; a **KYC queue** — every
+  `pending_kyc` farmer, each card with an optional reason field and
+  approve/reject buttons; a **KYB queue** — every `Pending` organization,
+  same card shape; a filterable read-only list of every farmer in the
+  system; and a filterable read-only list of every organization (showing
+  its commercial-activation status alongside its KYB status).
+
+Same `403` → bounce-to-login treatment as the other two portals if a
+wrong-subject-type token is used against `/admin/*` — and, in the other
+direction, a platform token is equally rejected by `/farmer/*`,
+`/lender/*`, and `/buyer/*`; the platform identity has no special access
+to the other three portals' own pages.
+
+All four portals now cross-link each other from their login pages.
+
 ## Running
 
 The backend must already be running on `http://localhost:4000` (see
@@ -106,26 +137,27 @@ separate process needed:
 - Farmer Portal: `http://localhost:5173/index.html`
 - Lender Portal: `http://localhost:5173/lender/index.html`
 - Buyer Portal: `http://localhost:5173/buyer/index.html`
+- Platform Ops / Admin Portal: `http://localhost:5173/admin/index.html`
 
 If the API runs somewhere other than `localhost:4000`, change `API_BASE` at
 the top of `js/api.js` (Farmer Portal), `lender/js/api.js` (Lender Portal),
-AND `buyer/js/api.js` (Buyer Portal) — they're three separate copies, not
-shared, on purpose (see above).
+`buyer/js/api.js` (Buyer Portal), AND `admin/js/api.js` (Admin Portal) —
+they're four separate copies, not shared, on purpose (see above).
 
 ## How it talks to the backend
 
-`js/api.js` and its Lender/Buyer Portal counterparts
-(`lender/js/api.js`, `buyer/js/api.js`) are the only files in each app that
-know about HTTP — each wraps `fetch()`, attaches the
+`js/api.js` and its Lender/Buyer/Admin Portal counterparts
+(`lender/js/api.js`, `buyer/js/api.js`, `admin/js/api.js`) are the only
+files in each app that know about HTTP — each wraps `fetch()`, attaches the
 `Authorization: Bearer <token>` header once logged in, and centralizes both
 401 handling (expired/invalid token) and 403 handling (a
 structurally-valid token for the wrong kind of subject — e.g. a farmer
-token used against `/lender/*` or `/buyer/*`): either way, it clears the
-stored session and bounces back to that app's own login page rather than
-the page just silently failing. The JWT is kept in `localStorage` under
-`agrolink_farmer_session`, `agrolink_lender_session`, or
-`agrolink_buyer_session` respectively — normal practice for a real
-single-page app; logging out clears it.
+token used against `/lender/*`, `/buyer/*`, or `/admin/*`): either way, it
+clears the stored session and bounces back to that app's own login page
+rather than the page just silently failing. The JWT is kept in
+`localStorage` under `agrolink_farmer_session`, `agrolink_lender_session`,
+`agrolink_buyer_session`, or `agrolink_admin_session` respectively — normal
+practice for a real single-page app; logging out clears it.
 
 ## Verified end-to-end (real browser, real backend, real database)
 
@@ -188,6 +220,23 @@ gateway — not a mock:
   real forward-purchase contract. Logout returned to the login page.
   Separately confirmed a farmer JWT and a Lender-org JWT are both correctly
   bounced from the Buyer Portal with "บัญชีนี้ไม่ใช่บัญชีผู้รับซื้อผลผลิต" shown.
+- **Platform Ops / Admin Portal**, tested the same way: the login page
+  correctly showed a Thai error for a wrong passcode and logged straight in
+  with the real one; the dashboard rendered the overview cards, the system
+  health panel (ledger-balanced and Go-Live-ready badges, one real active
+  alert shown with its message and observed value), the KYC queue (one real
+  `pending_kyc` farmer), and the KYB queue (a temporary test organization
+  inserted specifically for this UI test, removed afterward — not left in
+  seed data). Clicking "อนุมัติ KYC" on the real farmer's card moved them to
+  `active` and they disappeared from the queue with a success toast, and
+  the same farmer then showed up correctly as "ใช้งานได้" in the filterable
+  all-farmers list. Clicking "อนุมัติ KYB" on the test organization's card
+  approved it and correctly reported no vendor-activation (it had no
+  `partner.vendor_profile` row), disappearing from the KYB queue.
+  Filtering the all-farmers list to `closed` correctly showed only the
+  farmer rejected earlier during backend testing. Logout returned to the
+  login page. Screenshots were taken at every step to visually confirm
+  correct rendering, not just successful API calls.
 
 ## New backend endpoints added while building this
 
@@ -207,6 +256,12 @@ gateway — not a mock:
   real gaps building it surfaced, including a subtle deferred-database-
   trigger bug that only a real committed settlement (not a rolled-back
   test transaction) could have caught.
+- `POST /auth/admin-login` and the entire `/admin/*` slice (in
+  `../backend/src/routes/auth.js` and `../backend/src/routes/admin.js`) —
+  backs `admin/index.html` and `admin/dashboard.html`. See the backend
+  README for what it does and a real, non-obvious grant gap building it
+  surfaced (`RETURNING` needing `SELECT` privilege in addition to
+  `INSERT`, not just a plain missing-grant problem).
 
 ## What's next
 
@@ -221,6 +276,12 @@ gateway — not a mock:
 - A way to create a brand-new forward-purchase contract through the Buyer
   Portal itself, rather than only recording deliveries against contracts
   that already exist (or as a Spot Sale) — see the backend README.
-- A platform-ops/admin portal (including farmer KYC approval and
-  organization KYB approval) — the natural next audience now that Farmer,
-  Lender, and Buyer Portals are all built.
+- Real per-admin accounts for Platform Ops, replacing the single shared
+  passcode — see the backend README's "what's mocked" section.
+- A KYB *submission* UI (an org-facing "apply to join AgroLink" form) to
+  pair with the KYB *approval* UI now built here — the Admin Portal can
+  only approve/reject organizations that already exist in the database.
+- Farmer, Lender, Buyer, and Platform Ops Portals are all now built
+  end-to-end (backend + frontend, tested). The natural next candidates are
+  the two gaps just above, or a fresh vertical slice (e.g. Logistics,
+  VillageFund) reusing the same patterns established here.

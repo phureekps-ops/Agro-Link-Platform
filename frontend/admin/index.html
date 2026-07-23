@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — เข้าสู่ระบบผู้ดูแลระบบ (Platform Ops)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="leaf">🛡️</span>
+      <h1>AgroLink Platform</h1>
+    </div>
+    <p class="login-sub">พอร์ทัลผู้ดูแลระบบ (Platform Ops) — อนุมัติ/ปฏิเสธ KYC เกษตรกร, อนุมัติ/ปฏิเสธ KYB องค์กร, ตรวจสุขภาพระบบ</p>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="passcodeInput">รหัสผ่านผู้ดูแลระบบ (Admin Passcode)</label>
+        <input type="password" id="passcodeInput" placeholder="กรอกรหัสผ่านผู้ดูแลระบบ" autocomplete="off" required />
+        <div class="hint">
+          หมายเหตุ: สภาพแวดล้อมนี้ยังไม่มีระบบบัญชีผู้ดูแลรายบุคคล (ไม่มี MFA / SSO จริง) —
+          จึงใช้รหัสผ่านกลางชุดเดียว (ตั้งค่าที่ <code>ADMIN_PASSCODE</code> ใน <code>.env</code> ฝั่ง backend)
+          แทนการยืนยันตัวตนของผู้ดูแลแต่ละคน ระบบจริงต้องมีบัญชีผู้ดูแลรายบุคคลเพื่อให้ตรวจสอบย้อนกลับ (audit) ได้ว่าใครเป็นผู้ทำรายการ
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ</button>
+    </form>
+
+    <div class="divider">เกษตรกร / ผู้ปล่อยกู้ / ผู้รับซื้อผลผลิต?</div>
+    <a href="../index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลเกษตรกร</a>
+    <a href="../lender/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ปล่อยกู้</a>
+    <a href="../buyer/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">ไปที่พอร์ทัลผู้รับซื้อผลผลิต</a>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

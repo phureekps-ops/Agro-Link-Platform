@@ -19,10 +19,15 @@ function requireAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    if (!payload.subjectType || !payload.subjectId) {
+    // Every OTHER subject type must carry a real subjectId (a farmer_id or
+    // org_id) — but 'platform' is deliberately the one exception: there is
+    // no per-admin identity table in this sandbox (see POST
+    // /auth/admin-login), and security.set_session_context() itself
+    // accepts a NULL subject_id specifically for subject_type='platform'.
+    if (!payload.subjectType || (payload.subjectType !== 'platform' && !payload.subjectId)) {
       return res.status(401).json({ error: 'malformed_token' });
     }
-    req.subject = { subjectType: payload.subjectType, subjectId: payload.subjectId };
+    req.subject = { subjectType: payload.subjectType, subjectId: payload.subjectId || null };
     return next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
@@ -59,4 +64,17 @@ function requireOrganization(req, res, next) {
   return next();
 }
 
-module.exports = { requireAuth, requireFarmer, requireOrganization };
+/**
+ * Extra gate for the /admin/* slice (platform ops). A valid farmer or
+ * organization JWT is still a valid JWT, but it has no business calling
+ * these endpoints — only a token issued by POST /auth/admin-login
+ * (subjectType='platform') does.
+ */
+function requirePlatform(req, res, next) {
+  if (!req.subject || req.subject.subjectType !== 'platform') {
+    return res.status(403).json({ error: 'platform_subject_required' });
+  }
+  return next();
+}
+
+module.exports = { requireAuth, requireFarmer, requireOrganization, requirePlatform };

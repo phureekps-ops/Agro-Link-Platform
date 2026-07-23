@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้ดูแลระบบ (Platform Ops)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🛡️</span><span>AgroLink Platform — พอร์ทัลผู้ดูแลระบบ (Platform Ops)</span></div>
+    <div class="who">
+      <span class="name">ผู้ดูแลระบบ</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">🩺 สุขภาพระบบ (System Health)</div>
+    <div id="healthSection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลสุขภาพระบบ…</div>
+    </div>
+    <div id="alertsSection" class="card-list" style="margin-top:14px;"></div>
+
+    <div class="section-title">🧑‍🌾 คำขอ KYC เกษตรกรที่รออนุมัติ</div>
+    <div id="kycQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอ KYC…</div>
+    </div>
+
+    <div class="section-title">🏢 คำขอ KYB องค์กรที่รออนุมัติ</div>
+    <div id="kybQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอ KYB…</div>
+    </div>
+
+    <div class="section-title">📋 เกษตรกรทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="farmerStatusFilter">กรองตามสถานะ</label>
+        <select id="farmerStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="pending_kyc">รอตรวจสอบ KYC</option>
+          <option value="active">ใช้งานได้</option>
+          <option value="suspended">ถูกระงับ</option>
+          <option value="closed">ปิดบัญชี/ถูกปฏิเสธ</option>
+        </select>
+      </div>
+    </div>
+    <div id="allFarmersSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อเกษตรกร…</div>
+    </div>
+
+    <div class="section-title">📋 องค์กรทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="orgKybFilter">กรองตามสถานะ KYB</label>
+        <select id="orgKybFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="Pending">รอตรวจสอบ</option>
+          <option value="Verified">ผ่านการตรวจสอบแล้ว</option>
+          <option value="Rejected">ถูกปฏิเสธ</option>
+        </select>
+      </div>
+    </div>
+    <div id="allOrgsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อองค์กร…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
