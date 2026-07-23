@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้รับซื้อผลผลิต</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🌾</span><span>AgroLink Platform — พอร์ทัลผู้รับซื้อผลผลิต</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">⏳ รายการที่ต้องดำเนินการ</div>
+    <div id="reviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการที่ต้องดำเนินการ…</div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="section-title">📦 การรับมอบทั้งหมด</div>
+        <div class="filter-bar">
+          <div class="field">
+            <label for="statusFilter">กรองตามสถานะ</label>
+            <select id="statusFilter">
+              <option value="">ทั้งหมด</option>
+              <option value="delivered">รอตรวจสอบคุณภาพ</option>
+              <option value="accepted">ผ่านคุณภาพแล้ว (รอชำระเงิน)</option>
+              <option value="rejected">ไม่ผ่านคุณภาพ</option>
+              <option value="settled">ชำระเงินแล้ว</option>
+            </select>
+          </div>
+        </div>
+        <div id="allDeliveriesSection" class="card-list">
+          <div class="loading-line">กำลังโหลดการรับมอบ…</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="font-weight:700; margin-bottom:12px;">บันทึกการรับมอบผลผลิตใหม่</div>
+        <form id="deliveryForm">
+          <div class="field">
+            <label for="saleType">ประเภทการซื้อขาย</label>
+            <select id="saleType">
+              <option value="spot">ขายทันที (Spot Sale)</option>
+              <option value="contract">ตามสัญญาซื้อขายล่วงหน้า</option>
+            </select>
+          </div>
+
+          <div id="contractFields">
+            <div class="field">
+              <label for="contractSelect">สัญญาซื้อขายล่วงหน้า (Active)</label>
+              <select id="contractSelect"></select>
+            </div>
+          </div>
+
+          <div id="spotFields">
+            <div class="field">
+              <label for="unitSelect">หน่วยผลิต / เกษตรกร</label>
+              <select id="unitSelect"></select>
+            </div>
+            <div class="field">
+              <label for="commoditySelect">สินค้า</label>
+              <select id="commoditySelect"></select>
+            </div>
+            <div class="field">
+              <label for="unitPriceInput">ราคาต่อหน่วย (บาท/ตัน)</label>
+              <input type="number" id="unitPriceInput" min="0.01" step="0.01" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="quantityInput">ปริมาณ (ตัน)</label>
+            <input type="number" id="quantityInput" min="0.001" step="0.001" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="deliverySubmitBtn">บันทึกการรับมอบ</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="section-title">📄 สัญญาซื้อขายล่วงหน้า</div>
+    <div id="contractsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดสัญญา…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

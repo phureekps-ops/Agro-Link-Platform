@@ -6,6 +6,7 @@ const cors = require('cors');
 const authRouter = require('./routes/auth');
 const farmerRouter = require('./routes/farmer');
 const lenderRouter = require('./routes/lender');
+const buyerRouter = require('./routes/buyer');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRouter);
 app.use('/farmer', farmerRouter);
 app.use('/lender', lenderRouter);
+app.use('/buyer', buyerRouter);
 
 // Fallback 404
 app.use((req, res) => {

@@ -1,0 +1,44 @@
+-- ============================================================================
+-- AgroLink Platform — Backend API Gateway: fix produce.settle_delivery()
+-- ============================================================================
+-- Discovered while building the Buyer Portal slice, the same class of gap
+-- as fix_submit_application_security.sql / fix_underwriting_decision_security.sql:
+--
+-- produce.settle_delivery() does most of its work against produce.delivery
+-- and ledger.account/ledger.journal_entry, none of which have row-level
+-- security enabled at all (verified: relrowsecurity = false on all three).
+-- But at the very end, when a delivery's full contracted quantity has been
+-- settled, it also runs:
+--
+--     UPDATE contract.contract SET status = 'completed'
+--     WHERE contract_id = v_contract_id AND status = 'active';
+--
+-- contract.contract has FORCE ROW LEVEL SECURITY with only a SELECT policy
+-- (party_own_contract) — no UPDATE policy exists, so this one statement is
+-- denied outright for any non-owner role, regardless of grants, the same
+-- way submit_application's INSERT and approve_application's INSERT were.
+--
+-- Marking settle_delivery() SECURITY DEFINER (owned by postgres, a
+-- superuser) fixes this the same established way. It also means the
+-- function's other statements (against produce.delivery, ledger.account,
+-- ledger.journal_entry) no longer need explicit agrolink_app grants EITHER
+-- when reached through settle_delivery() specifically — though
+-- grant_buyer_portal.sql still grants SELECT/INSERT/UPDATE on
+-- produce.delivery directly, because record_delivery() and
+-- confirm_quality() are NOT SECURITY DEFINER (they don't touch
+-- contract.contract at all, so they don't need to be) and still run with
+-- the caller's own privileges.
+--
+-- IMPORTANT — same caveat as the underwriting decision functions:
+-- settle_delivery() (and confirm_quality()) do NOT check that the caller's
+-- organization actually owns the delivery's buyer_org_id. Unlike
+-- underwriting.loan_application, produce.delivery has NO row-level
+-- security at all to fall back on as a backstop — so the ownership check
+-- for these two functions lives ENTIRELY at the API layer
+-- (src/routes/buyer.js): every confirm-quality/settle request first reads
+-- the delivery with an explicit `WHERE buyer_org_id = $1`, and 404s before
+-- ever calling the function if that read finds nothing. See buyer.js for
+-- the code.
+-- ============================================================================
+
+ALTER FUNCTION produce.settle_delivery(uuid) SECURITY DEFINER;

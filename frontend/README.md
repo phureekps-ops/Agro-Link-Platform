@@ -1,10 +1,10 @@
-# AgroLink Platform — Farmer Portal + Lender Portal Frontend
+# AgroLink Platform — Farmer + Lender + Buyer Portal Frontend
 
-The homepage/frontend for farmers, plus a separate portal for lenders,
-both calling the same Backend API Gateway (`../backend`). Plain
-HTML/CSS/JavaScript — no build step, no framework — so it runs anywhere a
-static file can be served, and every byte shipped here is what actually
-runs in the browser.
+The homepage/frontend for farmers, plus separate portals for lenders and
+produce buyers, all calling the same Backend API Gateway (`../backend`).
+Plain HTML/CSS/JavaScript — no build step, no framework — so it runs
+anywhere a static file can be served, and every byte shipped here is what
+actually runs in the browser.
 
 ## Pages — Farmer Portal (this directory)
 
@@ -59,6 +59,36 @@ treats that the same as an expired session — clears it and bounces back to
 `lender/index.html` with a reason shown inline, rather than a confusing
 blank/broken dashboard.
 
+## Pages — Buyer Portal (`buyer/`)
+
+Another separate small app, same pattern as the Lender Portal: its own
+`localStorage` key (`agrolink_buyer_session`), its own login page, same
+shared CSS.
+
+- `buyer/index.html` — login, same mock-claim pattern, with one demo
+  button for the seeded Buyer org (โรงสีข้าวไทยเจริญ จำกัด, `oidc|org-002`).
+  Same `POST /auth/login` endpoint as the other two portals.
+- `buyer/dashboard.html` — org overview (delivery counts by status,
+  lifetime settled amount, active-contract count); a **review queue** of
+  deliveries needing action (`delivered` — needs quality confirmation — and
+  `accepted` — needs settlement — both fetched via `?status=action_needed`),
+  each `delivered` card showing an inline quality-grade + inspector-name
+  form with accept/reject buttons, each `accepted` card showing a settle
+  button; a filterable read-only list of every delivery this buyer has ever
+  recorded; a form to record a brand-new delivery (toggles between "Spot
+  Sale" — pick any active production unit, a commodity, and set your own
+  price — and "against an active contract" — pick from this buyer's own
+  active forward-purchase contracts, which auto-fills the unit and lets the
+  contract's own agreed price apply); and a read-only forward-purchase
+  contracts-portfolio list.
+
+Same `403` → bounce-to-login treatment as the Lender Portal if a
+wrong-subject-type token is used against `/buyer/*`.
+
+Cross-linked with the other two: each portal's login page has a small link
+to the other two, so navigating between them during testing doesn't
+require re-typing URLs.
+
 ## Running
 
 The backend must already be running on `http://localhost:4000` (see
@@ -70,29 +100,32 @@ node serve.js          # serves this directory at http://localhost:5173
 
 No `npm install` needed — `serve.js` is a zero-dependency static file
 server (`http`/`fs` from Node's standard library only) and serves any
-subpath, so the Lender Portal is reachable at the same server, no separate
-process needed:
+subpath, so all three portals are reachable at the same server, no
+separate process needed:
 
 - Farmer Portal: `http://localhost:5173/index.html`
 - Lender Portal: `http://localhost:5173/lender/index.html`
+- Buyer Portal: `http://localhost:5173/buyer/index.html`
 
 If the API runs somewhere other than `localhost:4000`, change `API_BASE` at
-the top of both `js/api.js` (Farmer Portal) and `lender/js/api.js` (Lender
-Portal) — they're separate copies, not shared, on purpose (see above).
+the top of `js/api.js` (Farmer Portal), `lender/js/api.js` (Lender Portal),
+AND `buyer/js/api.js` (Buyer Portal) — they're three separate copies, not
+shared, on purpose (see above).
 
 ## How it talks to the backend
 
-`js/api.js` (and its Lender Portal counterpart, `lender/js/api.js`) is the
-only file in each app that knows about HTTP — it wraps `fetch()`, attaches
-the `Authorization: Bearer <token>` header once logged in, and centralizes
-both 401 handling (expired/invalid token) and 403 handling (a
+`js/api.js` and its Lender/Buyer Portal counterparts
+(`lender/js/api.js`, `buyer/js/api.js`) are the only files in each app that
+know about HTTP — each wraps `fetch()`, attaches the
+`Authorization: Bearer <token>` header once logged in, and centralizes both
+401 handling (expired/invalid token) and 403 handling (a
 structurally-valid token for the wrong kind of subject — e.g. a farmer
-token used against `/lender/*`): either way, it clears the stored session
-and bounces back to that app's own login page rather than the page just
-silently failing. The JWT is kept in `localStorage` under
-`agrolink_farmer_session` (Farmer Portal) or `agrolink_lender_session`
-(Lender Portal) — normal practice for a real single-page app; logging out
-clears it.
+token used against `/lender/*` or `/buyer/*`): either way, it clears the
+stored session and bounces back to that app's own login page rather than
+the page just silently failing. The JWT is kept in `localStorage` under
+`agrolink_farmer_session`, `agrolink_lender_session`, or
+`agrolink_buyer_session` respectively — normal practice for a real
+single-page app; logging out clears it.
 
 ## Verified end-to-end (real browser, real backend, real database)
 
@@ -139,6 +172,22 @@ gateway — not a mock:
   placed in `agrolink_lender_session`) that the app correctly detects a
   wrong-subject-type token and bounces to the login page with
   "บัญชีนี้ไม่ใช่บัญชีผู้ปล่อยกู้" shown, rather than rendering a broken dashboard.
+- **Buyer Portal**, tested the same way: logged in as the seeded Buyer org;
+  the dashboard showed correct delivery counts and the review queue showed
+  exactly the deliveries actually awaiting action. Confirmed a `delivered`
+  card's inline quality form ("ผ่านคุณภาพ" with a grade and inspector name
+  typed in) correctly moved a real delivery to `accepted`, after which
+  clicking "ชำระเงิน (Settle)" on it surfaced a real, specific error toast
+  when the buyer's settlement account genuinely didn't have enough balance
+  — not a generic failure — and correctly succeeded for a smaller delivery
+  within the actual available balance, updating the summary counts without
+  a page reload. Recorded a brand-new Spot Sale delivery through the
+  on-page form (unit and commodity from live dropdowns, auto-matching the
+  commodity to the selected unit). Switching the "ทั้งหมด" status filter to
+  `settled` showed the right deliveries; the contracts section showed the
+  real forward-purchase contract. Logout returned to the login page.
+  Separately confirmed a farmer JWT and a Lender-org JWT are both correctly
+  bounced from the Buyer Portal with "บัญชีนี้ไม่ใช่บัญชีผู้รับซื้อผลผลิต" shown.
 
 ## New backend endpoints added while building this
 
@@ -153,6 +202,11 @@ gateway — not a mock:
 - The entire `/lender/*` slice (in `../backend/src/routes/lender.js`) —
   backs `lender/dashboard.html`. See the backend README for what it does
   and the real database/authorization gaps building it surfaced.
+- The entire `/buyer/*` slice (in `../backend/src/routes/buyer.js`) — backs
+  `buyer/dashboard.html`. See the backend README for what it does and the
+  real gaps building it surfaced, including a subtle deferred-database-
+  trigger bug that only a real committed settlement (not a rolled-back
+  test transaction) could have caught.
 
 ## What's next
 
@@ -164,5 +218,9 @@ gateway — not a mock:
   attributes only).
 - Pagination/filtering once contract and loan-application volumes grow
   beyond what fits comfortably on one page.
-- A Buyer Portal and a platform-ops/admin portal (including farmer KYC
-  approval) — the natural next audiences per the backend README.
+- A way to create a brand-new forward-purchase contract through the Buyer
+  Portal itself, rather than only recording deliveries against contracts
+  that already exist (or as a Spot Sale) — see the backend README.
+- A platform-ops/admin portal (including farmer KYC approval and
+  organization KYB approval) — the natural next audience now that Farmer,
+  Lender, and Buyer Portals are all built.
