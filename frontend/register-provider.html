@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — สมัครเป็นผู้ให้บริการ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card" style="max-width:460px;">
+    <div class="login-brand">
+      <span class="leaf">🤝</span>
+      <h1>AgroLink Platform</h1>
+    </div>
+    <p class="login-sub">สมัครเป็นผู้ให้บริการ — สำหรับผู้ปล่อยกู้ ผู้รับซื้อผลผลิต ผู้จำหน่ายปัจจัยการผลิต และผู้ให้บริการเครื่องจักรกลการเกษตร</p>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <form id="registerForm">
+      <div class="field">
+        <label for="orgNameInput">ชื่อองค์กร/ธุรกิจ</label>
+        <input type="text" id="orgNameInput" placeholder="เช่น สหกรณ์การเกษตรตัวอย่าง จำกัด" autocomplete="organization" required />
+      </div>
+      <div class="field">
+        <label for="taxIdInput">เลขประจำตัวผู้เสียภาษี</label>
+        <input type="text" id="taxIdInput" placeholder="13 หลัก" inputmode="numeric" maxlength="13" required />
+      </div>
+      <div class="field">
+        <label for="orgTypeSelect">ประเภทธุรกิจ/บริการ</label>
+        <select id="orgTypeSelect" required>
+          <option value="">-- เลือกประเภท --</option>
+          <option value="Lender">ผู้ปล่อยกู้</option>
+          <option value="Buyer">ผู้รับซื้อผลผลิต</option>
+          <option value="InputSupplier">ผู้จำหน่ายปัจจัยการผลิต</option>
+          <option value="Cooperative">สหกรณ์</option>
+          <option value="Mill">โรงสี</option>
+          <option value="Logistics">โลจิสติกส์/ขนส่งทั่วไป</option>
+          <option value="TractorService">บริการรถไถ</option>
+          <option value="DroneService">บริการโดรน</option>
+          <option value="HarvesterService">บริการรถเกี่ยว</option>
+          <option value="TruckService">บริการรถบรรทุก</option>
+        </select>
+        <div class="hint">
+          หมายเหตุ: ใบสมัครของท่านจะเข้าสู่สถานะ "รอตรวจสอบ (KYB)" ทันที เจ้าหน้าที่ผู้ดูแลระบบจะตรวจสอบและอนุมัติก่อนจึงจะใช้งานได้เต็มรูปแบบ
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="registerBtn">ส่งใบสมัคร</button>
+    </form>
+
+    <div id="successBox" style="display:none; text-align:center;">
+      <div style="font-size:40px; margin-bottom:10px;">✅</div>
+      <h2 style="font-size:19px; color:var(--green-900); margin-bottom:8px;">ส่งใบสมัครเรียบร้อยแล้ว</h2>
+      <p style="font-size:14px; color:var(--gray-700); margin-bottom:20px;" id="successDetail"></p>
+      <a href="index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">กลับหน้าแรก</a>
+    </div>
+
+    <div class="divider" id="loginDivider">มีบัญชีอยู่แล้ว?</div>
+    <a href="lender/index.html" class="btn btn-ghost" id="loginLenderLink" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">เข้าสู่ระบบผู้ปล่อยกู้</a>
+    <a href="buyer/index.html" class="btn btn-ghost" id="loginBuyerLink" style="width:100%; text-align:center; display:block; box-sizing:border-box;">เข้าสู่ระบบผู้รับซื้อผลผลิต</a>
+  </div>
+
+  <script src="js/register-provider.js"></script>
+</body>
+</html>

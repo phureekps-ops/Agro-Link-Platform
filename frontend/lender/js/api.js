@@ -67,9 +67,17 @@ const AgroLinkLenderAPI = (() => {
   }
 
   /**
-   * Authenticated GET/POST helper. On 401 (expired/invalid token) OR 403
-   * (valid token, but not a lender-org subject — e.g. a farmer token pasted
-   * in here by mistake), clears the session and bounces back to login.
+   * Authenticated GET/POST helper. On 401 (expired/invalid token), clears
+   * the session and bounces back to login. On 403, there are two distinct
+   * cases the backend now tells apart:
+   *   - 'kyb_not_verified': a REAL Lender-org token, just not yet approved
+   *     (e.g. freshly self-registered via register-provider.html). The
+   *     session is kept — no need to log in again once approved — and a
+   *     normal (non-redirecting) error is thrown so dashboard.js can render
+   *     a "your application is under review" state instead.
+   *   - anything else (e.g. a farmer token, or a non-Lender organization):
+   *     same "get out of here" treatment as an expired token, bounced back
+   *     to login with a reason shown inline.
    */
   async function request(path, options = {}) {
     const session = getSession();
@@ -89,10 +97,13 @@ const AgroLinkLenderAPI = (() => {
       throw new Error("session_expired");
     }
     if (res.status === 403) {
-      // A structurally valid token that just isn't a Lender-org subject
-      // (e.g. a farmer or a non-Lender organization) — same "get out of
-      // here" treatment as an expired token, just a different reason shown
-      // on the login page.
+      const body = await res.json().catch(() => ({}));
+      if (body.error === "kyb_not_verified") {
+        const err = new Error("kyb_not_verified");
+        err.status = 403;
+        err.body = body;
+        throw err;
+      }
       clearSession();
       window.location.href = "index.html?reason=not_a_lender";
       throw new Error("not_a_lender");
