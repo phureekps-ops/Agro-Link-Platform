@@ -1,0 +1,39 @@
+-- ============================================================================
+-- AgroLink Platform — Backend API Gateway: fix underwriting.submit_application()
+-- ============================================================================
+-- Discovered while wiring the real Farmer Portal write path: unlike the
+-- Layer 10 pattern (evaluate_metric / acknowledge_alert / purge_expired_rows
+-- — all SECURITY DEFINER, all with authorization logic built into the
+-- function body), underwriting.submit_application() was created as an
+-- ordinary (caller-rights) function. Two consequences surfaced end-to-end:
+--
+--   1. It touches identity.organization / partner.vendor_profile directly,
+--      which agrolink_app had no SELECT grant on (fixed separately in
+--      grant_farmer_portal_reads.sql).
+--   2. underwriting.loan_application has FORCE ROW LEVEL SECURITY with only
+--      SELECT (FOR SELECT) policies defined — no INSERT policy exists at
+--      all. With RLS forced and no matching-command policy, Postgres denies
+--      the INSERT outright for any non-owner role, regardless of table
+--      grants: "new row violates row-level security policy for table
+--      loan_application".
+--
+-- The function ALREADY does its own authorization work in the function body
+-- (production_unit ownership check: unit belongs to p_farmer_id; lender
+-- org_type/commercial_status checks) before it ever inserts. That is exactly
+-- the shape Layer 10's SECURITY DEFINER functions use — validate in the
+-- function, then bypass RLS deliberately because the function itself is the
+-- trusted boundary. Making this SECURITY DEFINER (owned by postgres, a
+-- superuser, so RLS + grants are bypassed for this call only) brings
+-- submit_application in line with that established pattern, rather than
+-- opening up a bespoke INSERT policy that would duplicate checks the
+-- function already performs.
+--
+-- agrolink_app still only needs EXECUTE on the function itself for this path
+-- (already granted) — it does NOT need direct INSERT on loan_application to
+-- submit an application through this function. The separate SELECT grant on
+-- loan_application remains necessary for the read endpoints
+-- (GET /farmer/loan-applications), which query the table directly and rely
+-- on the existing SELECT RLS policies to scope results per farmer.
+-- ============================================================================
+
+ALTER FUNCTION underwriting.submit_application(uuid, uuid, uuid, numeric, text) SECURITY DEFINER;

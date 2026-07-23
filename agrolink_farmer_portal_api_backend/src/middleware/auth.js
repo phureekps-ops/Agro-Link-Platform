@@ -1,0 +1,47 @@
+const jwt = require('jsonwebtoken');
+
+/**
+ * Verifies the `Authorization: Bearer <jwt>` header issued by POST /auth/login
+ * and exposes the validated identity as req.subject = { subjectType, subjectId }.
+ *
+ * This is the ONLY thing that stands between an HTTP request and being able to
+ * claim an identity — everything downstream (withSessionContext, RLS) trusts
+ * req.subject completely. So this must run, and must succeed, before any
+ * farmer.* route handler executes.
+ */
+function requireAuth(req, res, next) {
+  const header = req.get('authorization') || '';
+  const [scheme, token] = header.split(' ');
+
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ error: 'missing_bearer_token' });
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (!payload.subjectType || !payload.subjectId) {
+      return res.status(401).json({ error: 'malformed_token' });
+    }
+    req.subject = { subjectType: payload.subjectType, subjectId: payload.subjectId };
+    return next();
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'token_expired' });
+    }
+    return res.status(401).json({ error: 'invalid_token' });
+  }
+}
+
+/**
+ * Extra gate for routes that are specifically farmer-facing (the whole
+ * /farmer/* slice). A valid JWT for an organization or platform subject is
+ * still a valid JWT, but it has no business calling these endpoints.
+ */
+function requireFarmer(req, res, next) {
+  if (!req.subject || req.subject.subjectType !== 'farmer') {
+    return res.status(403).json({ error: 'farmer_subject_required' });
+  }
+  return next();
+}
+
+module.exports = { requireAuth, requireFarmer };
