@@ -79,27 +79,45 @@
     position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
     backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
   }
-  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 74px; }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
   .logo .mark {
     width: 38px; height: 38px; border-radius: 10px;
     background: linear-gradient(135deg, var(--green), var(--gold));
     display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px;
   }
-  .nav-links { display: flex; gap: 20px; font-size: 14px; font-weight: 600; color: var(--text); }
+  /* Menu is deliberately split into two fixed rows (not a single wrapping
+     line) so it always reads as two neat rows on desktop, regardless of
+     exact viewport width. */
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
   @media (max-width: 1180px) {
     .nav-links {
-      display: none; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0;
-      background: #fff; padding: 10px 24px 18px; gap: 2px; border-bottom: 1px solid var(--border);
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
       box-shadow: 0 12px 24px rgba(0,0,0,.08);
     }
     .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
     .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .nav-links a:last-child { border-bottom: none; }
+    .nav-row:last-child a:last-child { border-bottom: none; }
     .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    /* Pre-existing gap, not caused by the two-row menu change above: logo
+       + both header buttons + the hamburger icon don't all fit on one line
+       on narrow phones. Let the top row wrap onto two lines here instead
+       of overflowing the viewport horizontally. */
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
   }
 
   /* HERO */
@@ -124,10 +142,8 @@
     background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
     padding: 26px; box-shadow: 0 20px 50px rgba(18,61,43,.10);
   }
-  .field-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 18px; }
-  .field-cell { aspect-ratio: 1; border-radius: 5px; background: var(--green-light); }
-  .field-cell.on { background: var(--green); }
-  .field-cell.gold { background: var(--gold); }
+  .field-map { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; margin-bottom: 18px; background: var(--green-light); }
+  .field-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .field-card .cap { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
   .field-card .cap b { color: var(--navy); font-size: 14px; }
   .float-badge {
@@ -294,24 +310,32 @@
 <body>
 
 <header class="nav">
-  <div class="container nav-inner">
-    <div class="logo"><span class="mark"><i class="fa-solid fa-leaf"></i></span>AgroLink</div>
-    <nav class="nav-links">
-      <a href="#concept">แนวคิดหลัก</a>
-      <a href="#how">วิธีการทำงาน</a>
-      <a href="#knowledge">คลังความรู้</a>
-      <a href="#prices">ราคาสินค้า</a>
-      <a href="#weather">พยากรณ์อากาศ</a>
-      <a href="#roadmap">แผนสินค้า</a>
-      <a href="#audience">สำหรับใคร</a>
-      <a href="#partners">พันธมิตร</a>
-      <a href="#contact">ติดต่อ</a>
-    </nav>
-    <div class="nav-cta">
-      <a href="frontend/index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบเกษตรกร</a>
-      <a href="#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">สมัครใช้งาน</a>
+  <div class="container">
+    <div class="nav-top">
+      <div class="logo"><span class="mark"><i class="fa-solid fa-leaf"></i></span>AgroLink</div>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="frontend/index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบเกษตรกร</a>
+          <a href="#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">สมัครใช้งาน</a>
+        </div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
     </div>
-    <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="#concept">แนวคิดหลัก</a>
+        <a href="#how">วิธีการทำงาน</a>
+        <a href="#knowledge">คลังความรู้</a>
+        <a href="#prices">ราคาสินค้า</a>
+        <a href="#weather">พยากรณ์อากาศ</a>
+      </div>
+      <div class="nav-row">
+        <a href="#roadmap">แผนสินค้า</a>
+        <a href="#audience">สำหรับใคร</a>
+        <a href="#partners">พันธมิตร</a>
+        <a href="#contact">ติดต่อ</a>
+      </div>
+    </nav>
   </div>
 </header>
 
@@ -334,7 +358,10 @@
     <div class="hero-art">
       <div class="float-badge fb1"><i class="fa-solid fa-satellite-dish"></i> ยืนยันด้วยภาพถ่ายดาวเทียม</div>
       <div class="field-card">
-        <div class="field-grid" id="fieldGrid"></div>
+        <div class="field-map">
+          <iframe src="https://maps.google.com/maps?q=Thailand&t=&z=6&ie=UTF8&iwloc=&output=embed"
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="แผนที่ประเทศไทย"></iframe>
+        </div>
         <div class="cap">
           <span>แปลงนำร่อง อ.สรรพยา จ.ชัยนาท</span>
           <b>สถานะ: กำลังเจริญเติบโต</b>
@@ -709,15 +736,6 @@
 </footer>
 
 <script>
-  // decorative field grid pattern
-  const grid = document.getElementById('fieldGrid');
-  const pattern = [1,1,0,2,1,0, 0,1,1,1,0,2, 1,0,1,1,1,0, 0,2,0,1,1,1, 1,1,1,0,1,0];
-  pattern.forEach(v => {
-    const d = document.createElement('div');
-    d.className = 'field-cell' + (v===1?' on':'') + (v===2?' gold':'');
-    grid.appendChild(d);
-  });
-
   // scroll reveal
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
