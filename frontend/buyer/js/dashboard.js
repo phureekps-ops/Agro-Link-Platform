@@ -257,6 +257,61 @@ async function loadContracts() {
   }
 }
 
+// ---------- ประกาศราคารับซื้อข้าวเปลือกประจำวัน ----------
+function priceQuoteFieldRow(item) {
+  return `
+    <div class="field">
+      <label for="quote_${item.grade_code}">${escapeHtml(item.name_th)} (${escapeHtml(item.price_unit)})</label>
+      <input type="number" id="quote_${item.grade_code}" data-grade-code="${item.grade_code}"
+             min="0" step="0.01" placeholder="ยังไม่ได้ตั้งราคา"
+             value="${item.quoted_price !== null ? item.quoted_price : ""}" />
+    </div>
+  `;
+}
+
+async function loadPriceQuotes() {
+  const el = document.getElementById("priceQuoteFields");
+  try {
+    const { items } = await AgroLinkBuyerAPI.get("/buyer/price-quotes");
+    el.innerHTML = items.map(priceQuoteFieldRow).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดราคารับซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("priceQuoteForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("priceQuoteSubmitBtn");
+  const inputs = document.querySelectorAll("#priceQuoteFields input[data-grade-code]");
+  const quotes = {};
+  let hasInvalid = false;
+  inputs.forEach((input) => {
+    const code = input.dataset.gradeCode;
+    if (input.value === "") {
+      quotes[code] = null;
+    } else {
+      const num = Number(input.value);
+      if (!Number.isFinite(num) || num < 0) hasInvalid = true;
+      quotes[code] = num;
+    }
+  });
+  if (hasInvalid) {
+    toast("กรุณากรอกราคาเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0", true);
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    await AgroLinkBuyerAPI.put("/buyer/price-quotes", { quotes });
+    toast("บันทึกราคารับซื้อเรียบร้อยแล้ว");
+    await loadPriceQuotes();
+  } catch (err) {
+    toast("บันทึกราคารับซื้อไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---------- ฟอร์มบันทึกการรับมอบใหม่ ----------
 let unitsCache = [];
 let contractsCache = [];
@@ -407,6 +462,7 @@ async function init() {
   loadContracts();
   loadUnitsAndCommodities();
   loadContractOptions();
+  loadPriceQuotes();
 }
 
 init();

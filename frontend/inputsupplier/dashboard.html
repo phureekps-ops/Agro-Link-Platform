@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้จำหน่ายปัจจัยการผลิต</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🌱</span><span>AgroLink Platform — พอร์ทัลผู้จำหน่ายปัจจัยการผลิต</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">➕ เพิ่ม/แก้ไขสินค้าในแค็ตตาล็อก</div>
+    <form id="productForm" class="panel">
+      <input type="hidden" id="editingListingId" value="" />
+      <div class="form-grid">
+        <div class="field">
+          <label for="categorySelect">หมวดหมู่</label>
+          <select id="categorySelect" required>
+            <option value="fertilizer_hormone">ปุ๋ย/ฮอร์โมน</option>
+            <option value="chemical_pesticide">สารเคมีและยาปราบศัตรูพืช</option>
+            <option value="equipment">อุปกรณ์การเกษตร</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="productNameInput">ชื่อสินค้า</label>
+          <input type="text" id="productNameInput" placeholder="เช่น ปุ๋ยยูเรีย 46-0-0" required />
+        </div>
+        <div class="field">
+          <label for="brandInput">ยี่ห้อ (ถ้ามี)</label>
+          <input type="text" id="brandInput" placeholder="เช่น ตราเรือใบ" />
+        </div>
+        <div class="field">
+          <label for="priceInput">ราคา</label>
+          <input type="number" id="priceInput" min="0.01" step="0.01" placeholder="เช่น 950" required />
+        </div>
+        <div class="field">
+          <label for="priceUnitInput">หน่วยราคา</label>
+          <input type="text" id="priceUnitInput" placeholder="เช่น บาท/กระสอบ, บาท/ขวด, บาท/ชิ้น" value="บาท/หน่วย" />
+        </div>
+        <div class="field full">
+          <label for="descriptionInput">รายละเอียดสินค้า (ถ้ามี)</label>
+          <input type="text" id="descriptionInput" placeholder="เช่น กระสอบ 50 กก., ขวดละ 1 ลิตร" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="productSubmitBtn" style="max-width:220px;">เพิ่มสินค้า</button>
+      <button type="button" class="btn btn-ghost" id="productCancelEditBtn" style="max-width:160px; display:none;">ยกเลิกการแก้ไข</button>
+    </form>
+
+    <div class="section-title">📦 แค็ตตาล็อกสินค้าของท่าน</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="categoryFilter">กรองตามหมวดหมู่</label>
+        <select id="categoryFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="fertilizer_hormone">ปุ๋ย/ฮอร์โมน</option>
+          <option value="chemical_pesticide">สารเคมีและยาปราบศัตรูพืช</option>
+          <option value="equipment">อุปกรณ์การเกษตร</option>
+          <option value="other">อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+    <div id="productListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดแค็ตตาล็อกสินค้า…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -98,6 +98,18 @@
       <div class="loading-line">กำลังโหลดสัญญา…</div>
     </div>
 
+    <div class="section-title">📢 ประกาศราคารับซื้อข้าวเปลือกประจำวัน</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      กรอกเฉพาะชนิดข้าวที่ท่านรับซื้อจริง — ราคาที่ตั้งไว้จะแสดงให้เกษตรกรเห็นและเปรียบเทียบกับผู้รับซื้อรายอื่นได้ที่หน้า "เปรียบเทียบราคารับซื้อข้าว" ของพอร์ทัลเกษตรกร
+      ช่องที่ไม่กรอก (หรือกรอก 0) จะไม่แสดงราคาชนิดข้าวนั้น
+    </p>
+    <form id="priceQuoteForm" class="panel">
+      <div id="priceQuoteFields" class="form-grid">
+        <div class="loading-line">กำลังโหลดราคารับซื้อ…</div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="priceQuoteSubmitBtn" style="max-width:260px;">บันทึกราคารับซื้อ</button>
+    </form>
+
   </div>
 
   <div class="toast" id="toast"></div>

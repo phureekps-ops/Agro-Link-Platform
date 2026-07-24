@@ -79,8 +79,17 @@ shared CSS.
   Sale" — pick any active production unit, a commodity, and set your own
   price — and "against an active contract" — pick from this buyer's own
   active forward-purchase contracts, which auto-fills the unit and lets the
-  contract's own agreed price apply); and a read-only forward-purchase
-  contracts-portfolio list.
+  contract's own agreed price apply); a read-only forward-purchase
+  contracts-portfolio list; and a **"📢 ประกาศราคารับซื้อข้าวเปลือกประจำวัน"**
+  (daily rice-buying-price announcement) section — one price field per rice
+  grade in `registry.rice_grade_ref` (ข้าวเปลือกเจ้าหอมมะลิ 105, ปทุมธานี 1,
+  ข้าวเปลือกเจ้า 5%/25%, ข้าวเปลือกเหนียว กข6/กข10/เมล็ดสั้น), pre-filled with
+  whatever this buyer has already quoted, saved in one request via `PUT
+  /buyer/price-quotes`. Clearing a field back to empty and saving
+  deactivates that grade's quote rather than deleting it. These prices are
+  visible to every farmer on the platform via `rice-prices.html` (see
+  below) — this was a deliberate product decision, not an internal-only
+  tool.
 
 Same `403` → bounce-to-login treatment as the Lender Portal if a
 wrong-subject-type token is used against `/buyer/*`.
@@ -118,7 +127,8 @@ direction, a platform token is equally rejected by `/farmer/*`,
 `/lender/*`, and `/buyer/*`; the platform identity has no special access
 to the other three portals' own pages.
 
-All five portals now cross-link each other from their login pages.
+All portals now cross-link each other from their login pages (Farmer,
+Lender, Buyer, Admin, Machinery, and now InputSupplier).
 
 ## Pages — Machinery/Drying-Yard Portal (`machinery/`)
 
@@ -159,6 +169,55 @@ Same `kyb_not_verified` pending-notice pattern as the Lender/Buyer Portals
 below, and the same wrong-subject-type `403` → bounce-to-login treatment as
 every other portal.
 
+## Pages — InputSupplier Portal (`inputsupplier/`)
+
+A sixth separate small app, same overall pattern as the other portals (own
+`localStorage` key `agrolink_inputsupplier_session`, own
+`inputsupplier/js/api.js` copy, same shared CSS, same claim-based mock
+login). Backs the product-catalog half of the feature request: input
+suppliers (ผู้จำหน่ายปัจจัยการผลิต) need somewhere to list what they actually
+sell.
+
+- `inputsupplier/index.html` — login: same claim-based mock login as the
+  other portals. No demo-account button — every InputSupplier org used in
+  testing was created through `register-provider.html`, same as the
+  machinery org_types.
+- `inputsupplier/dashboard.html` — an overview panel (active-product count,
+  a per-category breakdown, KYB/role status, photo count); a **product
+  form** (category dropdown — ปุ๋ย/ฮอร์โมน, สารเคมีและยาปราบศัตรูพืช,
+  อุปกรณ์การเกษตร, อื่นๆ — product name, brand, price, price unit,
+  description) that adds a new catalog entry on submit, and switches into
+  an edit mode (submit button relabeled "บันทึกการแก้ไข", with a "ยกเลิกการแก้ไข"
+  cancel button) when "แก้ไข" is clicked on an existing product card — unlike
+  the Machinery Portal's rate card, this is a genuinely open-ended list, not
+  a fixed set of fields, so add/edit/delete are three distinct actions
+  rather than one upsert form (see the backend README's "Product catalog vs.
+  rate card" note for why); a **category filter** over the product list; and
+  a **per-product photo mini-gallery** (same `data:` URL upload pattern as
+  the Machinery Portal, 2MB client-side cap before upload, scoped to that
+  one product rather than the whole org).
+
+Same `kyb_not_verified`/`role_not_verified` pending-notice pattern and the
+same wrong-subject-type `403` → bounce-to-login treatment as every other
+portal.
+
+## Page — เปรียบเทียบราคารับซื้อข้าว / Rice-Price Comparison (`rice-prices.html`)
+
+A single page living at the Farmer Portal's own top level (`frontend/`,
+alongside `dashboard.html`) rather than a separate mini-app — it reuses the
+Farmer Portal's own session (`AgroLinkAPI`, `agrolink_farmer_session`)
+since its whole purpose is showing a logged-in farmer something, not
+managing a separate identity. Linked from a new button in
+`dashboard.html`'s header ("เปรียบเทียบราคารับซื้อข้าว").
+
+Calls `GET /farmer/rice-prices` and renders one card per rice grade (`js/rice-prices.js`,
+`gradeCard()`), each card listing every Buyer currently quoting that grade,
+sorted highest price first with a 🏆 marker on the top offer — so a farmer
+can see at a glance which buyer is currently paying the most for, say,
+ข้าวเปลือกเจ้าหอมมะลิ 105, without having to check each buyer individually.
+A grade with no active quotes yet shows "ยังไม่มีผู้รับซื้อประกาศราคาสำหรับข้าวชนิดนี้"
+rather than an empty or broken-looking card.
+
 ## Page — Service-Provider Registration (`register-provider.html`)
 
 A single standalone page (not inside any one portal's folder, same level
@@ -175,19 +234,20 @@ above: บริการรถไถ (`TractorService`), บริการโ�
 
 What happens after a successful submission depends on the chosen
 `org_type`, since not every organization type has a dedicated portal yet:
-- **Lender**, **Buyer**, or any of the **five machinery/drying-yard types**
-  — the returned session is stored under that portal's own `localStorage`
-  key and the page redirects straight to `lender/dashboard.html`,
-  `buyer/dashboard.html`, or `machinery/dashboard.html`. Since the new
-  organization's `kyb_status` is always `Pending` at this point, that
+- **Lender**, **Buyer**, **InputSupplier**, or any of the **five
+  machinery/drying-yard types** — the returned session is stored under that
+  portal's own `localStorage` key and the page redirects straight to
+  `lender/dashboard.html`, `buyer/dashboard.html`,
+  `inputsupplier/dashboard.html`, or `machinery/dashboard.html`. Since the
+  new organization's `kyb_status` is always `Pending` at this point, that
   dashboard shows a "your application is under review" notice instead of
   live data (see the pending-KYB-state section below) — refreshing the
   same page after Platform Ops approves it shows the real dashboard, no
   re-login needed.
-- Every other type (Cooperative, Mill, InputSupplier, Logistics) — there's
-  nowhere to redirect to yet, so the page just replaces the form with a
-  plain "ส่งใบสมัครเรียบร้อยแล้ว" (application received) confirmation showing
-  the org name and type.
+- Every other type (Cooperative, Mill, Logistics) — there's nowhere to
+  redirect to yet, so the page just replaces the form with a plain
+  "ส่งใบสมัครเรียบร้อยแล้ว" (application received) confirmation showing the org
+  name and type.
 
 Linked from: the root marketing homepage's `#contact` call-to-action
 banner (previously a dead `href="#"` placeholder — now a real link,
@@ -296,19 +356,24 @@ separate copies, not shared, on purpose (see above).
 
 ## How it talks to the backend
 
-`js/api.js` and its Lender/Buyer/Admin/Machinery Portal counterparts
-(`lender/js/api.js`, `buyer/js/api.js`, `admin/js/api.js`,
-`machinery/js/api.js`) are the only files in each app that know about HTTP
-— each wraps `fetch()`, attaches the `Authorization: Bearer <token>` header
-once logged in, and centralizes both 401 handling (expired/invalid token)
-and 403 handling (a structurally-valid token for the wrong kind of subject
-— e.g. a farmer token used against `/lender/*`, `/buyer/*`, `/admin/*`, or
-`/machinery/*`): either way, it clears the stored session and bounces back
-to that app's own login page rather than the page just silently failing.
-The JWT is kept in `localStorage` under `agrolink_farmer_session`,
+`js/api.js` and its Lender/Buyer/Admin/Machinery/InputSupplier Portal
+counterparts (`lender/js/api.js`, `buyer/js/api.js`, `admin/js/api.js`,
+`machinery/js/api.js`, `inputsupplier/js/api.js`) are the only files in
+each app that know about HTTP — each wraps `fetch()`, attaches the
+`Authorization: Bearer <token>` header once logged in, and centralizes
+both 401 handling (expired/invalid token) and 403 handling (a
+structurally-valid token for the wrong kind of subject — e.g. a farmer
+token used against `/lender/*`, `/buyer/*`, `/admin/*`, `/machinery/*`, or
+`/inputsupplier/*`): either way, it clears the stored session and bounces
+back to that app's own login page rather than the page just silently
+failing. The JWT is kept in `localStorage` under `agrolink_farmer_session`,
 `agrolink_lender_session`, `agrolink_buyer_session`,
-`agrolink_admin_session`, or `agrolink_machinery_session` respectively —
-normal practice for a real single-page app; logging out clears it.
+`agrolink_admin_session`, `agrolink_machinery_session`, or
+`agrolink_inputsupplier_session` respectively — normal practice for a real
+single-page app; logging out clears it. `buyer/js/api.js` also has a `put()`
+helper (added while building this feature — see below) for `PUT
+/buyer/price-quotes`, the first Buyer Portal request that ever needed a
+verb other than GET/POST.
 
 ## Verified end-to-end (real browser, real backend, real database)
 
@@ -453,6 +518,42 @@ gateway — not a mock:
   Verified machinery role(s) held) and frontend (renders Thai labels for
   those, joined with " · " for an org holding more than one). The temporary
   test organizations were deleted afterward, not left in seed data.
+- **InputSupplier product catalog + Buyer daily rice-price announcements**,
+  tested with Playwright end-to-end through the real UI: registered a
+  brand-new org as `InputSupplier` via `register-provider.html`, confirmed
+  it landed on `inputsupplier/dashboard.html` showing the "รอตรวจสอบ (KYB)"
+  pending notice; approved its KYB directly via the admin API and reloaded
+  with no re-login, confirming the real dashboard rendered; added two
+  products through the on-page form in two different categories (ปุ๋ย/ฮอร์โมน
+  and อุปกรณ์การเกษตร), confirming both appeared in the catalog list
+  immediately with no page reload; uploaded a real image file to the first
+  product's mini-gallery and confirmed it appeared; filtered the catalog to
+  just อุปกรณ์การเกษตร and confirmed only the matching product showed;
+  clicked "แก้ไข" on the first product, changed its price, saved, and
+  confirmed the update applied in place (not a duplicate row); deleted the
+  second product and confirmed the summary count dropped accordingly;
+  reloaded the whole page from scratch afterward and confirmed the surviving
+  product, its edited price, and its uploaded photo all persisted
+  server-side. Separately logged into the seeded Buyer org, filled in the
+  new "📢 ประกาศราคารับซื้อข้าวเปลือกประจำวัน" form with real prices for two
+  grades, saved, reloaded, and confirmed the values persisted; then logged
+  in as a seeded farmer, clicked through to the new `rice-prices.html` page
+  from the dashboard header, and confirmed the buyer's real saved prices
+  appeared there under the correct grade names. **One real bug was found
+  and fixed via this testing**: the price-quote form's save button did
+  nothing at all — no error, no network request — traced to
+  `buyer/js/api.js` never having had a `put()` helper (every prior Buyer
+  Portal feature only ever needed `get`/`post`), so the form's own
+  `try/catch` was silently swallowing a `TypeError` thrown when calling a
+  method that didn't exist. Fixed by adding the missing `put()` helper to
+  `buyer/js/api.js`; re-ran the whole suite afterward to confirm the fix
+  actually worked, not just that the error went away. Screenshots were
+  taken at every step. The five temporary test organizations were deleted
+  afterward via a single FK-safe cleanup transaction, not left in seed
+  data; the seeded Buyer org's real price quotes from this testing were
+  deliberately left in place, matching how other seeded-org feature-testing
+  data (e.g. the seeded Lender's loan applications) has been left in place
+  elsewhere in this project.
 
 ## New backend endpoints added while building this
 
@@ -503,6 +604,21 @@ gateway — not a mock:
   backend README's "Multi-role organizations" section for the full design
   and the new `identity.organization_role` schema
   (`backend/db/grant_organization_roles.sql`).
+- The entire `/inputsupplier/*` slice (new file,
+  `../backend/src/routes/inputsupplier.js`) — backs
+  `inputsupplier/dashboard.html`. See the backend README's "Product catalog
+  vs. rate card" section for why this is an open-ended CRUD list rather
+  than a fixed-key rate card, and the new `marketplace.product_listing`/
+  `marketplace.product_photo` schema
+  (`backend/db/grant_input_supplier_and_buy_prices.sql`).
+- `GET`/`PUT /buyer/price-quotes` (in `../backend/src/routes/buyer.js`) —
+  backs the new price-quote section in `buyer/dashboard.html`.
+- `GET /farmer/rice-prices` (in `../backend/src/routes/farmer.js`) — backs
+  the new `rice-prices.html` page. See the backend README's "Daily
+  rice-buying-price announcements" section for the new
+  `registry.rice_grade_ref`/`marketplace.buy_price_quote` schema and why the
+  composite primary key was chosen deliberately to avoid a class of bug
+  fixed once already elsewhere in this project.
 
 ## What's next
 
@@ -524,12 +640,19 @@ gateway — not a mock:
   backend README.
 - Dedicated portals for the organization types `register-provider.html`
   can already register but that have no dashboard of their own yet
-  (Cooperative, Mill, InputSupplier, Logistics) — right now those just get
-  a confirmation screen with nowhere to log into afterward.
+  (Cooperative, Mill, Logistics) — right now those just get a confirmation
+  screen with nowhere to log into afterward.
 - A farmer-facing way to actually browse Machinery/Drying-Yard Portal rate
   cards and photos and book a service — `marketplace.service_request`
   exists in the schema but nothing on either the farmer or machinery side
   reads/writes it yet. See the backend README.
+- A farmer-facing way to actually browse and order from the InputSupplier
+  product catalog — today the catalog is fully manageable by the supplier
+  but nothing lets a farmer see it or place an order. See the backend
+  README's "what's mocked" section.
+- A historical price archive/chart for the daily rice-buying-price
+  announcements — today only the current live quote per grade is stored.
+  See the backend README.
 - Object storage/CDN for the Machinery/Drying-Yard Portal's photo gallery,
   replacing the base64 `data:` URLs it stores directly in Postgres today.
 - Farmer, Lender, Buyer, Platform Ops, and Machinery/Drying-Yard Portals

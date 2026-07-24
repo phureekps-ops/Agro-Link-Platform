@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — เปรียบเทียบราคารับซื้อข้าว</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>📢</span><span>AgroLink Platform — เปรียบเทียบราคารับซื้อข้าวเปลือกประจำวัน</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      ราคาที่แสดงคือราคาที่ผู้รับซื้อแต่ละรายประกาศไว้ล่าสุด (ปรับได้เองทุกวัน) — เรียงจากราคาสูงสุดไปต่ำสุดในแต่ละชนิดข้าว
+      เพื่อช่วยให้ท่านเปรียบเทียบก่อนตัดสินใจขายผลผลิต
+    </p>
+
+    <div id="ricePricesSection">
+      <div class="loading-line">กำลังโหลดราคารับซื้อ…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/rice-prices.js"></script>
+</body>
+</html>

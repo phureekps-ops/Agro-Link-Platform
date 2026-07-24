@@ -1,17 +1,16 @@
 /**
- * AgroLink Buyer Portal — shared API client.
+ * AgroLink InputSupplier (ผู้จำหน่ายปัจจัยการผลิต) Portal — shared API client.
  *
- * Same shape as ../../js/api.js (Farmer Portal) and ../../lender/js/api.js
- * (Lender Portal), kept as its own copy for the same reason: a distinct
- * localStorage key so a farmer/lender/buyer session in the same browser
- * never collide, and redirect targets that point at this folder's own
- * pages.
+ * Same shape as ../../machinery/js/api.js and the other organization
+ * portals' own copies — its own localStorage key so a lender/buyer/
+ * machinery/inputsupplier session in the same browser never collide, and
+ * redirect targets point at this folder's own pages.
  */
 const API_BASE = "http://localhost:4000";
 
-const AUTH_STORAGE_KEY = "agrolink_buyer_session";
+const AUTH_STORAGE_KEY = "agrolink_inputsupplier_session";
 
-const AgroLinkBuyerAPI = (() => {
+const AgroLinkInputSupplierAPI = (() => {
   function getSession() {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return null;
@@ -40,10 +39,9 @@ const AgroLinkBuyerAPI = (() => {
   }
 
   /**
-   * Login against POST /auth/login — the SAME endpoint the Farmer and
-   * Lender Portals both use. security.resolve_subject_from_external_claim()
-   * already resolves a claim to either a farmer or an organization
-   * (regardless of org_type), so no separate buyer-login endpoint exists.
+   * Login against POST /auth/login — the SAME endpoint every other portal
+   * uses (security.resolve_subject_from_external_claim() already resolves
+   * claims to either a farmer or an organization).
    */
   async function login(externalSubjectClaim) {
     const res = await fetch(`${API_BASE}/auth/login`, {
@@ -68,16 +66,11 @@ const AgroLinkBuyerAPI = (() => {
   }
 
   /**
-   * Authenticated GET/POST helper. On 401 (expired/invalid token), clears
-   * the session and bounces back to login. On 403, there are two distinct
-   * cases the backend now tells apart:
-   *   - 'kyb_not_verified': a REAL Buyer-org token, just not yet approved
-   *     (e.g. freshly self-registered via register-provider.html). The
-   *     session is kept and a normal (non-redirecting) error is thrown so
-   *     dashboard.js can render a "your application is under review" state.
-   *   - anything else (a farmer or a different kind of organization):
-   *     clears the session and bounces back to login rather than rendering
-   *     a confusing broken dashboard.
+   * Authenticated GET/PUT/POST/DELETE helper. On 401, clears the session
+   * and bounces back to login. On 403, kyb_not_verified / role_not_verified
+   * are a REAL inputsupplier-org token just not (yet) approved — keeps the
+   * session alive so dashboard.js can render a pending notice instead of
+   * bouncing out; any other 403 is treated as a wrong-subject-type token.
    */
   async function request(path, options = {}) {
     const session = getSession();
@@ -99,19 +92,17 @@ const AgroLinkBuyerAPI = (() => {
     if (res.status === 403) {
       const body = await res.json().catch(() => ({}));
       if (body.error === "kyb_not_verified" || body.error === "role_not_verified") {
-        // Both are a REAL org token, just not (yet, or not for this role)
-        // approved by Platform Ops — keep the session alive either way so
-        // the user never needs to log in again once approved. See the
-        // matching comment in src/routes/buyer.js's requireBuyerOrg.
         const err = new Error(body.error);
         err.status = 403;
         err.body = body;
         throw err;
       }
       clearSession();
-      window.location.href = "index.html?reason=not_a_buyer";
-      throw new Error("not_a_buyer");
+      window.location.href = "index.html?reason=not_an_input_supplier_org";
+      throw new Error("not_an_input_supplier_org");
     }
+
+    if (res.status === 204) return null;
 
     const isJson = (res.headers.get("content-type") || "").includes("application/json");
     const body = isJson ? await res.json().catch(() => null) : null;
@@ -127,10 +118,8 @@ const AgroLinkBuyerAPI = (() => {
 
   const get = (path) => request(path, { method: "GET" });
   const post = (path, data) => request(path, { method: "POST", body: JSON.stringify(data) });
-  // Added for PUT /buyer/price-quotes (daily rice-buying-price
-  // announcement) — every prior Buyer Portal route only ever needed
-  // GET/POST, so this client never had a put() helper until now.
   const put = (path, data) => request(path, { method: "PUT", body: JSON.stringify(data) });
+  const del = (path) => request(path, { method: "DELETE" });
 
   return {
     getSession,
@@ -140,5 +129,6 @@ const AgroLinkBuyerAPI = (() => {
     get,
     post,
     put,
+    del,
   };
 })();

@@ -295,4 +295,53 @@ router.get('/lenders', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /farmer/rice-prices — every rice grade in registry.rice_grade_ref,
+ * each with every Buyer's current ACTIVE price quote for it (see
+ * PUT /buyer/price-quotes), so a farmer can compare buyers before deciding
+ * where to sell — the whole point of a price "announcement" rather than a
+ * buyer-only internal tool. Grouped by grade (not by buyer) since that's
+ * the natural comparison shape: "who's paying the most for HOMMALI105
+ * today", not "what does this one buyer pay for everything". A grade with
+ * zero buyers currently quoting it still appears, with an empty `quotes`
+ * array, so the frontend can show "ยังไม่มีผู้รับซื้อประกาศราคา" rather than
+ * silently omitting it.
+ */
+router.get('/rice-prices', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const grades = await withSessionContext('farmer', subjectId, async (client) => {
+      const gradeRows = await client.query(
+        'SELECT grade_code, name_th FROM registry.rice_grade_ref ORDER BY sort_order',
+      );
+      const quoteRows = await client.query(
+        `SELECT q.grade_code, q.org_id, o.org_name, q.quoted_price, q.price_unit, q.updated_at
+           FROM marketplace.buy_price_quote q
+           JOIN identity.organization o ON o.org_id = q.org_id
+          WHERE q.is_active = true
+          ORDER BY q.quoted_price DESC`,
+      );
+
+      const quotesByGrade = {};
+      quoteRows.rows.forEach((r) => {
+        if (!quotesByGrade[r.grade_code]) quotesByGrade[r.grade_code] = [];
+        quotesByGrade[r.grade_code].push({
+          org_id: r.org_id, org_name: r.org_name, quoted_price: r.quoted_price,
+          price_unit: r.price_unit, updated_at: r.updated_at,
+        });
+      });
+
+      return gradeRows.rows.map((g) => ({
+        grade_code: g.grade_code,
+        name_th: g.name_th,
+        quotes: quotesByGrade[g.grade_code] || [],
+      }));
+    });
+
+    return res.json(grades);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

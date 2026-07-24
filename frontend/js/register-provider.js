@@ -6,17 +6,19 @@
  * own dashboard since a farmer's dashboard works regardless of KYC
  * status), a freshly-registered organization is NOT guaranteed anywhere
  * useful to go:
- *   - Lender / Buyer / the five machinery org_types: DO have a dedicated
- *     portal, but that portal's own GET /.../dashboard now requires
- *     kyb_status = 'Verified' (see lender.js / buyer.js / machinery.js) —
- *     a brand-new Pending org would just hit a "kyb_not_verified" state
- *     there. We still store the session under that portal's own
- *     localStorage key and redirect to its dashboard, which renders a
- *     "your application is under review" screen rather than erroring —
- *     see lender/js/dashboard.js / buyer/js/dashboard.js / machinery/js/dashboard.js.
- *   - Every other org_type (Cooperative, Mill, InputSupplier, Logistics)
- *     has NO dedicated portal at all yet, so there's nowhere to redirect
- *     to — this page just shows a plain success confirmation instead.
+ *   - Lender / Buyer / InputSupplier / the five machinery org_types: DO
+ *     have a dedicated portal, but that portal's own GET /.../dashboard
+ *     now requires kyb_status = 'Verified' (see lender.js / buyer.js /
+ *     machinery.js / inputsupplier.js) — a brand-new Pending org would
+ *     just hit a "kyb_not_verified" state there. We still store the
+ *     session under that portal's own localStorage key and redirect to
+ *     its dashboard, which renders a "your application is under review"
+ *     screen rather than erroring — see lender/js/dashboard.js /
+ *     buyer/js/dashboard.js / machinery/js/dashboard.js /
+ *     inputsupplier/js/dashboard.js.
+ *   - Every other org_type (Cooperative, Mill, Logistics) has NO
+ *     dedicated portal at all yet, so there's nowhere to redirect to —
+ *     this page just shows a plain success confirmation instead.
  */
 const API_BASE = "http://localhost:4000";
 
@@ -96,6 +98,11 @@ registerForm.addEventListener("submit", async (e) => {
     if (orgType === "Buyer") {
       localStorage.setItem("agrolink_buyer_session", JSON.stringify(body));
       window.location.href = "buyer/dashboard.html";
+      return;
+    }
+    if (orgType === "InputSupplier") {
+      localStorage.setItem("agrolink_inputsupplier_session", JSON.stringify(body));
+      window.location.href = "inputsupplier/dashboard.html";
       return;
     }
     if (MACHINERY_ORG_TYPES.includes(orgType)) {

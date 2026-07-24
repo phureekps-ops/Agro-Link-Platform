@@ -223,6 +223,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /farmer/notifications` → `notification.v_unread_notifications`
 - `GET /farmer/production-units` → `registry.production_unit` (PostGIS boundary returned as GeoJSON via `ST_AsGeoJSON`)
 - `GET /farmer/lenders` → active `Lender` organizations from `identity.organization` — added while building the frontend, so the loan-application form's lender dropdown reads real data instead of a hardcoded value.
+- `GET /farmer/rice-prices` → for every row in `registry.rice_grade_ref`, every Buyer org's current ACTIVE `marketplace.buy_price_quote` (org name, price, price unit, last-updated), sorted `quoted_price DESC` within each grade so the highest payer for a given rice type is always first. Grades nobody has quoted yet still appear, with an empty `quotes: []` array, so the page can render a "no buyer has posted a price for this yet" state rather than silently omitting the grade. This is the farmer-facing half of the daily rice-buying-price announcement feature — see "Daily rice-buying-price announcements" below.
 
 **Lender Portal** (`src/routes/lender.js`, all require an organization-subject JWT that passes the two-layer check in `requireLenderOrg`: (1) `identity.organization.kyb_status = 'Verified'` — the entity-level check that existed before multi-role support, `403 kyb_not_verified` otherwise — AND (2) an `identity.organization_role` row for this org with `role_type = 'Lender'` AND `status = 'Verified'` — the newer per-role check, `403 role_not_verified` (with `role_type`/`role_status`/`org_name`) otherwise. See "Multi-role organizations" below for why these are two separate checks.)
 - `GET /lender/dashboard` — org info, application counts by status, active-contract count and outstanding principal.
@@ -242,12 +243,22 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /buyer/contracts` — this org's forward-purchase portfolio (contracts where it is the `buyer` party).
 - `GET /buyer/production-units` — small read-only directory of active production units with their owning farmer's name, so the delivery form doesn't require knowing a `unit_id` by heart. Mirrors the intent of `GET /farmer/lenders`.
 - `GET /buyer/commodities` — `registry.commodity_ref`, for the delivery form's commodity dropdown.
+- `GET /buyer/price-quotes` — this buyer's daily rice-buying-price announcement: LEFT JOINs `registry.rice_grade_ref` (all 7 fixed grades) against this org's own `marketplace.buy_price_quote` rows, so every grade always appears even if never priced (`quoted_price: null`).
+- `PUT /buyer/price-quotes` — body `{ quotes: { grade_code: price|null, ... } }` → upserts a `marketplace.buy_price_quote` row per grade present (`ON CONFLICT (org_id, grade_code) DO UPDATE` — a genuine non-partial composite-PK upsert target, deliberately chosen over a partial unique index so no `WHERE` predicate is ever needed on the conflict clause; see "Daily rice-buying-price announcements" below for why that matters). Each `grade_code` is validated against `registry.rice_grade_ref` (`400 invalid_grade_code` otherwise). A price of `null`/`0`/empty deactivates that grade's quote (`is_active = false`) rather than deleting the row, mirroring the machinery rate card's deactivate-not-delete convention. Farmers see the result immediately via `GET /farmer/rice-prices`.
 
 **Machinery/Drying-Yard Portal** (`src/routes/machinery.js`, all require an organization-subject JWT that passes `requireMachineryOrg`: entity `kyb_status = 'Verified'` (`403 kyb_not_verified`) first, then — unlike the single-role-type check in `requireLenderOrg`/`requireBuyerOrg` — an `organization_role` row with `status = 'Verified'` for **any one of** `TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (`403 role_not_verified`, `role_type: 'machinery'` generically, otherwise). One unified portal covers all five role types rather than five separate ones, since a single real-world provider commonly offers more than one of these services (e.g. a tractor operator who also runs a truck) — see `MACHINERY_ORG_TYPES` in `src/routes/machinery.js`. An org that holds e.g. `TractorService` Verified but a separately-requested `DroneService` still Pending gets in — the rate card itself has no per-role field gating.
 - `GET /machinery/dashboard` — org info (`service_types`: every machinery role this org actually holds at `Verified` — e.g. `["TractorService", "TruckService"]` — deliberately NOT `identity.organization.org_type`, the entity's primary role from registration, which can be a completely different, non-machinery type for a multi-role org; see "Multi-role organizations" below for the bug this would otherwise cause), how many of the seven fixed rate-card items are currently priced (out of 7), and a photo count.
 - `GET /machinery/rate-card` — this org's current prices for all seven fixed line items (`plow_rough`/`plow_secondary_seed`/`rotary_till`/`spraying`/`harvesting`/`trucking`/`drying` — see `RATE_CARD_ITEMS`), keyed by `service_key`, pre-filled with `unit_price: null` for anything never priced.
 - `PUT /machinery/rate-card` — body `{ "prices": { "plow_rough"?: number|null, ... } }` → upserts a `marketplace.service_listing` row per key present with a positive value (`ON CONFLICT (org_id, service_key)`); a key set to `null`/`0` deactivates (`is_active = false`) rather than deletes the row, since deleting could violate `marketplace.service_request`'s FK to `listing_id` if a farmer has already booked against it. A provider is never required to price all seven — most will only fill in what matches their actual equipment (a `DroneService` org typically only sets `spraying`).
 - `GET /machinery/photos` / `POST /machinery/photos` / `DELETE /machinery/photos/:id` — the provider's photo gallery (`photo_type: 'service'|'machinery'`). `POST` expects `photo_data_url` as a `data:image/...` URL read client-side via `FileReader` — see "what's mocked" below, there is no object storage/CDN in this sandbox. Capped at ~3MB per photo (`MAX_PHOTO_DATA_URL_LENGTH`) and `express.json()`'s body limit was raised from the default 100kb to 5mb (`src/server.js`) specifically to let this route through.
+
+**InputSupplier Portal** (`src/routes/inputsupplier.js`, all require an organization-subject JWT that passes `requireInputSupplierOrg`: entity `kyb_status = 'Verified'` (`403 kyb_not_verified`) AND an `organization_role` row with `role_type = 'InputSupplier'`, `status = 'Verified'` (`403 role_not_verified`) — same two-layer shape as `requireLenderOrg`/`requireBuyerOrg`.) See "Product catalog vs. rate card" below for why this portal's data shape deliberately differs from the Machinery Portal's fixed-key rate card.
+- `GET /inputsupplier/dashboard` — org info, `total_active_products`, a `products_by_category` breakdown across the four fixed categories, and a photo count.
+- `GET /inputsupplier/products?category=` — this org's full catalog (every status, not just active), optionally filtered to one of the four `PRODUCT_CATEGORIES` (`fertilizer_hormone`/`chemical_pesticide`/`equipment`/`other`).
+- `POST /inputsupplier/products` — body `{ category, product_name, brand?, description?, unit_price, price_unit? }` → inserts a brand-new `marketplace.product_listing` row. Unlike the machinery rate card's fixed seven keys, this is a genuinely open-ended list — a supplier can list as many or as few products as they actually sell, in any category, and list the same category more than once (e.g. two different fertilizer brands).
+- `PUT /inputsupplier/products/:id` — body is a partial update (any subset of the `POST` fields) applied via `COALESCE`; ownership-gated by an explicit `SELECT ... WHERE org_id = $1 AND listing_id = $2` before the update, `404` if the listing doesn't belong to this org (or doesn't exist).
+- `DELETE /inputsupplier/products/:id` — a **real hard delete**, deliberately unlike the machinery rate card's deactivate-only `PUT`. Nothing else in the schema references `product_listing` yet (no order/booking flow sits on top of it — see "what's mocked" below), so there's no dangling-FK risk in actually removing the row; `marketplace.product_photo` for that listing cascades away with it (`ON DELETE CASCADE`).
+- `GET /inputsupplier/products/:id/photos` / `POST /inputsupplier/products/:id/photos` / `DELETE /inputsupplier/products/:id/photos/:photoId` — same `data:image/...` upload pattern as the Machinery Portal's photo gallery, scoped per-product instead of per-org. Capped at 4MB per photo (`MAX_PHOTO_DATA_URL_LENGTH`).
 
 **Organization Roles / multi-role self-service** (`src/routes/organization.js`, requires any valid organization-subject JWT — deliberately NOT gated to any one `org_type`/role, since managing your own set of business roles is something every organization can do regardless of which roles it currently holds)
 - `GET /organization/roles` — this org's full role picture: `org_name`, `primary_org_type` (the role chosen at registration), `entity_kyb_status`, every role it currently holds (`roles[]`, each with `status`/`requested_at`/`decided_at`/`decided_reason`/`label_th`), and every role type it could still request (`requestable_roles[]` — anything in the fixed 11-type domain it doesn't already have a row for, regardless of that row's status).
@@ -370,6 +381,70 @@ machinery type at all (e.g. a Buyer org that added a Verified
 having `requireMachineryOrg` compute the actual Verified machinery role(s)
 held and returning those as `service_types` instead.
 
+## Product catalog vs. rate card (why InputSupplier isn't just Machinery again)
+
+The Machinery Portal's `marketplace.service_listing` is a **fixed-key rate
+card**: exactly seven possible line items (`plow_rough`, `spraying`,
+`drying`, ...), one row per `(org_id, service_key)`, priced or not. That
+shape fits machinery/drying-yard services because the *menu* of possible
+services is small, fixed, and shared across the whole industry — a provider
+either offers `spraying` or doesn't, there's no such thing as two different
+`spraying` offerings from the same org.
+
+An input supplier's actual product list doesn't fit that shape at all — a
+fertilizer/chemical/equipment shop can carry an arbitrary, ever-changing
+number of distinct products, several in the same category (two different
+15-15-15 fertilizer brands, three different herbicides), each with its own
+name/brand/price. Modeling that as a fixed-key rate card would mean
+inventing an unbounded set of keys up front, which doesn't work. Instead
+`marketplace.product_listing` is a genuinely open-ended list — `listing_id`
+is its own primary key (not `(org_id, service_key)`), `POST` always inserts
+a new row, and `category` (`fertilizer_hormone`/`chemical_pesticide`/
+`equipment`/`other`) is just a filterable field on each row rather than part
+of the identity of the row.
+
+This also changes the deletion story: the rate card's `PUT` never deletes a
+row, only deactivates it (`is_active = false`), specifically because a
+farmer could already have booked a `marketplace.service_request` against
+that exact `(org_id, service_key)` and deleting it would orphan that
+booking's FK. `marketplace.product_listing` has no such booking/order flow
+sitting on top of it yet (see "what's mocked" below), so `DELETE
+/inputsupplier/products/:id` is a real hard delete — there's nothing yet
+that a delete could orphan. If/when a purchase-order flow is added against
+the catalog, this will need to switch to the same deactivate-only pattern
+the rate card already uses.
+
+## Daily rice-buying-price announcements (two audiences, one table)
+
+Buyers (rice mills etc.) traditionally post a daily buying price per rice
+grade — this is a real, everyday practice the feature needed to mirror, not
+an invented one. Two distinct audiences read/write here: the Buyer sets
+their own prices (`PUT /buyer/price-quotes`), and farmers compare prices
+*across every Buyer* for a given grade (`GET /farmer/rice-prices`) — this
+was an explicit product decision (confirmed with IT Development Manager
+before building) rather than an internal-only buyer tool, since an
+announcement nobody outside the org can see isn't really an announcement.
+
+`registry.rice_grade_ref` (7 rows: `HOMMALI105`, `PATHUMTHANI1`,
+`WHITE_RICE_5`, `WHITE_RICE_25`, `GLUTINOUS_RD6`, `GLUTINOUS_RD10`,
+`GLUTINOUS_SHORT`) is a **new, separate table** from the pre-existing
+`registry.commodity_ref` (3 generic rows: `RICE_JASMINE`, `RICE_PADDY`,
+`CASSAVA`, used by the Buyer Portal's delivery-recording flow). They serve
+different purposes — `commodity_ref` is a generic commodity list for
+`produce.record_delivery()`, while `rice_grade_ref` specifically mirrors the
+grade categories a general rice mill (โรงสีทั่วไป) actually quotes prices
+against day to day — so the existing table was deliberately left alone
+rather than widened to try to serve both purposes at once.
+
+`marketplace.buy_price_quote` uses a genuine composite **primary key**
+`(org_id, grade_code)` — not a partial unique index gated on
+`is_active`, unlike a bug that had to be fixed once elsewhere in this
+project (`service_listing`'s original partial-unique-index `ON CONFLICT`
+target). A non-partial PK means `ON CONFLICT (org_id, grade_code) DO
+UPDATE` never needs a matching `WHERE` predicate — this was a deliberate
+design choice made specifically to avoid re-triggering that class of bug,
+not an accident.
+
 ## What's mocked / simplified (be aware of this before relying on it)
 
 - **OIDC verification is stubbed.** `POST /auth/login` trusts whatever
@@ -491,6 +566,26 @@ held and returning those as `service_types` instead.
   This mirrors real moderation tools that trust the operator's judgment
   over a rigid state machine, but is worth knowing before assuming the API
   enforces a particular KYC/KYB lifecycle graph.
+- **`marketplace.product_listing` and `marketplace.product_photo` have no
+  row-level security at all** (`pg_class.relrowsecurity = false`), same
+  situation as `service_listing`/`vendor_photo` above but for the
+  InputSupplier Portal. Every query in `src/routes/inputsupplier.js`
+  therefore has an explicit `WHERE org_id = $1` — not defense-in-depth, the
+  actual security boundary. `marketplace.buy_price_quote` is the same way.
+- **No purchase-order/booking flow sits on top of the product catalog
+  yet.** A supplier can fully manage their catalog (add/edit/delete
+  products, upload photos) and it's visible via `GET
+  /inputsupplier/products`, but there is currently no farmer-facing
+  `GET .../products` browse endpoint or an order/request flow analogous to
+  `marketplace.service_request` on the machinery side. This is why `DELETE
+  /inputsupplier/products/:id` is safe to implement as a real hard delete
+  today — see "Product catalog vs. rate card" above — but it will need
+  revisiting if/when an order flow is added.
+- **No historical price archive for rice-buying-price quotes.**
+  `marketplace.buy_price_quote` only stores each buyer's *current* price
+  per grade (upserted in place) — there is no day-by-day history table, so
+  neither buyers nor farmers can see how a price has moved over time, only
+  today's live number and its `updated_at` timestamp.
 
 ## End-to-end verification performed
 
@@ -687,6 +782,52 @@ and the live `agrolink_test` database — not unit tests against mocks:
   `marketplace.service_listing`/`marketplace.vendor_photo`/
   `ledger.account`/`identity.subject_role` rows) afterward — not left in
   seed data.
+- **InputSupplier product catalog + Buyer daily rice-price announcements
+  (2026-07-24)**: 27 real curl checks against the running server covering
+  the full InputSupplier flow (register → confirmed blocked pending KYB →
+  admin-approved → added two products in different categories → edited a
+  price → deleted a product → uploaded and listed a photo → confirmed
+  cross-org isolation: a second InputSupplier org's JWT gets `404` trying to
+  read/edit/delete the first org's products or photos by real id) and the
+  Buyer price-quote flow (get all 7 grades pre-filled `null` → set several
+  real prices → invalid `grade_code` correctly `400`s → invalid
+  (zero/negative) price correctly `400`s → farmer-facing `GET
+  /farmer/rice-prices` immediately reflects the buyer's saved prices →
+  registered a second Buyer org, quoted a higher price for the same grade,
+  confirmed it sorts first (`quoted_price DESC`) ahead of the original
+  buyer → deactivated a quote with `null` and confirmed it disappears from
+  the farmer-facing list without deleting the row). All 27 checks passed.
+  Also drove the complete flow through the actual **frontend** (Playwright,
+  headless): registered an InputSupplier org via `register-provider.html`,
+  landed on the KYB-pending notice, admin-approved, added two products
+  (different categories) through the real on-page form, uploaded a real
+  photo file to one of them, filtered the catalog by category, edited a
+  price, deleted the other product, and reloaded to confirm everything
+  persisted server-side. Separately logged into the seeded Buyer org
+  (`oidc|org-002`), filled in and saved the new daily-price-quote form,
+  reloaded to confirm persistence, then logged in as a seeded farmer and
+  clicked through to the new `rice-prices.html` page and confirmed the
+  buyer's real saved prices appeared there, correctly sorted. **Caught and
+  fixed a real bug this way**: the price-quote form's submit handler was
+  silently failing with zero console output and zero network requests —
+  traced to `frontend/buyer/js/api.js` never having had a `put()` helper
+  (every prior Buyer Portal feature only ever needed `get`/`post`), so
+  calling `AgroLinkBuyerAPI.put(...)` threw a `TypeError` that the handler's
+  own `try/catch` swallowed silently. Fixed by adding the missing `put()`
+  helper; re-ran the full suite afterward to confirm the fix. Also
+  regression-checked the seeded Lender and Buyer dashboards still return
+  real data, and confirmed the seeded InputSupplier org's
+  `organization_role` row (backfilled during the earlier multi-role
+  migration) was already correctly `Verified`. Deleted all five temporary
+  test organizations created during this testing (and their
+  `marketplace.product_photo`/`product_listing`/`identity.subject_role`
+  rows, plus any orphaned `ledger.account` rows) afterward via a single
+  FK-safe transaction — not left in seed data. The seeded Buyer org's real
+  price quotes set during this testing (`HOMMALI105`/`PATHUMTHANI1`/
+  `WHITE_RICE_5`) were deliberately left in place rather than reset,
+  matching this project's existing convention of leaving legitimate
+  feature-testing data on seeded orgs (e.g. the seeded Lender's loan
+  applications) rather than wiping it after the fact.
 
 ## Next steps (not yet built)
 

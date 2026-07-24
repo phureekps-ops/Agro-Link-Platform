@@ -433,4 +433,110 @@ router.get('/commodities', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /buyer/price-quotes — this buyer's daily rice-buying-price
+ * announcement: every rice grade in registry.rice_grade_ref (see
+ * grant_input_supplier_and_buy_prices.sql), each with this buyer's current
+ * quoted price (null for a grade never quoted). Same "pre-filled form"
+ * shape as GET /machinery/rate-card, for the same reason — the frontend
+ * renders one input per grade in one round trip rather than needing to
+ * diff a partial list against the reference list itself.
+ */
+router.get('/price-quotes', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const items = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT g.grade_code, g.name_th, g.sort_order,
+                q.quoted_price, q.price_unit, q.is_active, q.updated_at
+           FROM registry.rice_grade_ref g
+           LEFT JOIN marketplace.buy_price_quote q
+             ON q.grade_code = g.grade_code AND q.org_id = $1
+          ORDER BY g.sort_order`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'marketplace.buy_price_quote', subjectId);
+      return result.rows.map((r) => ({
+        grade_code: r.grade_code,
+        name_th: r.name_th,
+        quoted_price: r.is_active === false ? null : (r.quoted_price === null ? null : r.quoted_price),
+        price_unit: r.price_unit || 'บาท/ตัน',
+        updated_at: r.updated_at,
+      }));
+    });
+
+    return res.json({ org_name: req.org.org_name, items });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PUT /buyer/price-quotes
+ * Body: { "quotes": { "HOMMALI105": 12500, "PATHUMTHANI1": null, ... } }
+ *
+ * Upserts one row per grade_code present with a positive value — a grade
+ * set to null/0 deactivates (is_active = false) rather than deletes,
+ * mirroring PUT /machinery/rate-card's own reasoning (keeps history-free
+ * but idempotent; also means a grade a buyer stops quoting simply
+ * disappears from GET /farmer/rice-prices without losing the row). The
+ * composite PRIMARY KEY (org_id, grade_code) on marketplace.buy_price_quote
+ * is a genuine (non-partial) unique target, so ON CONFLICT (org_id,
+ * grade_code) needs no WHERE-predicate — see the migration file's note on
+ * why this sidesteps the ON CONFLICT/partial-index bug fixed earlier in
+ * src/routes/machinery.js.
+ */
+router.put('/price-quotes', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { quotes } = req.body || {};
+
+  if (!quotes || typeof quotes !== 'object' || Array.isArray(quotes)) {
+    return res.status(400).json({ error: 'quotes_object_required' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const validCodes = await client.query('SELECT grade_code FROM registry.rice_grade_ref');
+      const validSet = new Set(validCodes.rows.map((r) => r.grade_code));
+
+      for (const [gradeCode, rawValue] of Object.entries(quotes)) {
+        if (!validSet.has(gradeCode)) {
+          return { invalidGradeCode: gradeCode };
+        }
+        if (rawValue === null || rawValue === 0 || rawValue === '') {
+          await client.query(
+            `UPDATE marketplace.buy_price_quote SET is_active = false, updated_at = now()
+              WHERE org_id = $1 AND grade_code = $2`,
+            [subjectId, gradeCode],
+          );
+          continue;
+        }
+        const price = Number(rawValue);
+        if (!Number.isFinite(price) || price <= 0) {
+          return { invalidPrice: gradeCode };
+        }
+        await client.query(
+          `INSERT INTO marketplace.buy_price_quote (org_id, grade_code, quoted_price, is_active, updated_at)
+           VALUES ($1, $2, $3, true, now())
+           ON CONFLICT (org_id, grade_code)
+           DO UPDATE SET quoted_price = EXCLUDED.quoted_price, is_active = true, updated_at = now()`,
+          [subjectId, gradeCode, price],
+        );
+      }
+      await logAccess(client, 'write', 'marketplace.buy_price_quote', subjectId);
+      return { ok: true };
+    });
+
+    if (result.invalidGradeCode) {
+      return res.status(400).json({ error: 'invalid_grade_code', grade_code: result.invalidGradeCode });
+    }
+    if (result.invalidPrice) {
+      return res.status(400).json({ error: 'invalid_price', grade_code: result.invalidPrice });
+    }
+    return res.json({ status: 'updated' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

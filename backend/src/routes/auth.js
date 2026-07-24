@@ -213,16 +213,19 @@ router.post('/register', async (req, res, next) => {
  * (`oidc|org-<uuid>`) since no real IdP is connected, and auto-issues a
  * session JWT. Unlike farmer registration, logging in immediately does NOT
  * guarantee full portal access: `GET /lender/dashboard`, `GET /buyer/dashboard`,
- * and `GET /machinery/dashboard` all now require `kyb_status = 'Verified'`
- * (see the `requireLenderOrg`/`requireBuyerOrg`/`requireMachineryOrg` update
+ * `GET /machinery/dashboard`, and `GET /inputsupplier/dashboard` all now
+ * require `kyb_status = 'Verified'` (see the `requireLenderOrg`/
+ * `requireBuyerOrg`/`requireMachineryOrg`/`requireInputSupplierOrg` update
  * in their own route files) — a newly self-registered org sees a "your
  * application is under review" state in that portal instead of live data
  * until Platform Ops approves it. Organization types with no dedicated
- * portal at all yet (Cooperative, Mill, InputSupplier, Logistics) simply get
- * a registration-received confirmation on the frontend — there's nowhere
+ * portal at all yet (Cooperative, Mill, Logistics) simply get a
+ * registration-received confirmation on the frontend — there's nowhere
  * else for them to log into yet. TractorService, DroneService,
  * HarvesterService, TruckService, and DryingYardService all share ONE
- * portal (`frontend/machinery/`) — see `src/routes/machinery.js`.
+ * portal (`frontend/machinery/`) — see `src/routes/machinery.js`. InputSupplier
+ * has its own dedicated portal (`frontend/inputsupplier/`) — a product
+ * catalog, not a rate card — see `src/routes/inputsupplier.js`.
  */
 router.post('/org-register', async (req, res, next) => {
   const { org_name: orgName, tax_id: taxId, org_type: orgType } = req.body || {};
