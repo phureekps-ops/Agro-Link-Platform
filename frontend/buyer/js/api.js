@@ -98,8 +98,12 @@ const AgroLinkBuyerAPI = (() => {
     }
     if (res.status === 403) {
       const body = await res.json().catch(() => ({}));
-      if (body.error === "kyb_not_verified") {
-        const err = new Error("kyb_not_verified");
+      if (body.error === "kyb_not_verified" || body.error === "role_not_verified") {
+        // Both are a REAL org token, just not (yet, or not for this role)
+        // approved by Platform Ops — keep the session alive either way so
+        // the user never needs to log in again once approved. See the
+        // matching comment in src/routes/buyer.js's requireBuyerOrg.
+        const err = new Error(body.error);
         err.status = 403;
         err.body = body;
         throw err;

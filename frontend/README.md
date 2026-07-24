@@ -135,7 +135,11 @@ real-world provider commonly offers more than one of these services).
   portals. No demo-account buttons — unlike the seeded Lender/Buyer orgs,
   no machinery/drying-yard org exists in seed data; every one is created
   through `register-provider.html`.
-- `machinery/dashboard.html` — an overview panel (org type, KYB status, how
+- `machinery/dashboard.html` — an overview panel (the org's Verified
+  machinery/drying-yard role(s) — e.g. "บริการรถไถ" or "บริการรถไถ ·
+  บริการรถบรรทุก" for an org holding more than one — NOT the entity's
+  primary `org_type`; see "Multi-role organizations" below for why that
+  distinction matters, KYB status, how
   many of the 7 rate-card items are priced, photo count); a **rate card**
   form with one input per fixed line item — ไถดะ, ไถแปรและหว่าน, ปั่นดิน,
   ฉีดพ่นสารเคมี (โดรน/รถฉีดพ่น), เกี่ยวข้าว, ขนส่งด้วยรถบรรทุก (บาท/ตัน-กม.),
@@ -191,7 +195,7 @@ relabeled "สมัครเป็นผู้ให้บริการ"), an
 link on `lender/index.html`, `buyer/index.html`, and `machinery/index.html`'s
 login pages.
 
-## Lender/Buyer/Machinery Portal update — pending-KYB state
+## Lender/Buyer/Machinery Portal update — pending-KYB and pending-role states
 
 `lender/js/dashboard.js`, `buyer/js/dashboard.js`, and
 `machinery/js/dashboard.js` all open with a gate check against their own
@@ -199,14 +203,68 @@ login pages.
 org token, just not yet approved by Platform Ops — the case a fresh
 `register-provider.html` submission always starts in), the whole dashboard
 body is replaced with a centered "your KYB application is under review"
-notice instead of attempting to load a review queue, application/delivery
-list and contracts (or, for the Machinery Portal, a rate card and photo
-gallery) that would all fail the same way. The session is deliberately NOT
-cleared in this case (unlike a genuine wrong-subject-type `403`) — the same
-login persists across KYB approval, so the user only ever needs to refresh
-once approved, not log in again. `lender/js/api.js`, `buyer/js/api.js`, and
-`machinery/js/api.js` all special-case this one `403` reason to keep the
-session alive; every other `403` still bounces to login as before.
+notice (`showKybPendingNotice`) instead of attempting to load a review
+queue, application/delivery list and contracts (or, for the Machinery
+Portal, a rate card and photo gallery) that would all fail the same way.
+
+A second, distinct notice (`showRolePendingNotice`, added for multi-role
+support) handles `role_not_verified`: the org has cleared entity KYB but
+doesn't (yet) hold a Verified role for *this specific portal* — e.g. a
+Lender org that hasn't requested a Buyer role, or has requested one but
+it's still `Pending`/`Rejected`. This case is reachable two ways now: a
+brand-new org whose entity KYB happens to already be Verified but whose
+primary role sync raced oddly (defensive, shouldn't normally happen), and —
+the real, common case — an existing org visiting a portal for a role it
+requested via `manage-roles.html` but Platform Ops hasn't decided yet. Both
+notices link out (KYB notice: nowhere, just "refresh later"; role notice: a
+CTA link to `../manage-roles.html`, so the user can see exactly which role
+is pending and request others).
+
+In both cases the session is deliberately NOT cleared (unlike a genuine
+wrong-subject-type `403`) — the same login persists across the approval, so
+the user only ever needs to refresh once approved, not log in again.
+`lender/js/api.js`, `buyer/js/api.js`, and `machinery/js/api.js` all
+special-case both `403` reasons (`kyb_not_verified` AND `role_not_verified`)
+to keep the session alive; every other `403` still bounces to login as
+before.
+
+## Multi-role organizations — managing more than one business role
+
+New page: `manage-roles.html` + `js/manage-roles.js`, backing `GET`/`POST
+/organization/roles`. See `../backend/README.md`'s "Multi-role
+organizations" section for the full backend design (two-layer KYB/role
+verification, why every new role needs its own approval, the schema).
+
+Unlike every other page in this project, this one is deliberately **not**
+tied to one portal's own `localStorage` session key — an organization's JWT
+is the same underlying token regardless of which portal it was issued from
+(`POST /auth/login` is shared across all organization portals), so
+`findSession()` tries `agrolink_lender_session`,
+`agrolink_buyer_session`, and `agrolink_machinery_session` in that fixed
+order and uses whichever is present. This lets a Lender who has never
+opened the Buyer or Machinery portal still reach this page (via the "จัดการ
+บทบาทธุรกิจ" link now on every organization dashboard's header) and request
+a Buyer role without logging in again anywhere. If no session is found in
+any of the three keys, the page shows a "not logged in" state with links
+into all three portal logins instead of erroring.
+
+The page shows three things: the org's own info (name, primary role from
+registration, entity KYB status), every role it currently holds as a card
+with a status badge (reusing the existing `.badge.status-active/pending/
+declined` CSS classes — green/gold/red already meant "approved/pending/
+declined" elsewhere in this project, so no new color vocabulary was
+introduced), and a form to request one new role from a dropdown of
+whatever it doesn't already hold. The dropdown and submit button are
+disabled with an explanatory placeholder if entity KYB isn't Verified yet,
+or if the org already holds every requestable role type.
+
+The admin side: `admin/dashboard.html` gained a new "🧩 คำขอเพิ่มบทบาทธุรกิจ
+ที่รออนุมัติ" section, separate from the existing KYB queue above it, backed
+by `GET /admin/role-requests?status=Pending` filtered client-side to
+`role_type !== primary_org_type` (so an org's very first/primary role,
+already handled by the KYB queue, doesn't show up twice). Each card has its
+own approve/reject buttons and an optional reason field, posting to `POST
+/admin/organizations/:id/roles/:role_type/status`.
 
 ## Running
 
@@ -366,6 +424,35 @@ gateway — not a mock:
   ran (see the backend README's verification section — the `ON CONFLICT`
   partial-index arbiter mismatch). The temporary test organizations were
   deleted afterward, not left in seed data.
+- **Multi-role organizations**, tested with Playwright end-to-end through
+  the real UI: registered a brand-new org as `Buyer` via
+  `register-provider.html`, approved its primary KYB via the admin API,
+  reloaded and confirmed the real Buyer dashboard rendered (regression
+  check: an org's original single-role flow is completely unchanged);
+  clicked the new "จัดการบทบาทธุรกิจ" link on the Buyer dashboard's header
+  and landed on `manage-roles.html`, which correctly auto-detected the
+  Buyer session (no separate login) and showed the one held role
+  (`ผู้รับซื้อผลผลิต · อนุมัติแล้ว`); requested an additional `TractorService`
+  role through the on-page dropdown+button and confirmed it appeared
+  immediately as `บริการรถไถ · รอตรวจสอบ` with no page reload; opened the
+  Machinery Portal in a second tab with the same underlying session token
+  and confirmed it correctly showed the new role-pending notice (not the
+  KYB-pending notice, and not a broken dashboard) rather than blocking
+  access entirely; on the Admin dashboard's new "🧩 คำขอเพิ่มบทบาทธุรกิจที่รอ
+  อนุมัติ" section, confirmed the pending `TractorService` request appeared
+  as its own card (correctly distinct from the KYB queue above it) with the
+  requesting org's name and its primary role shown for context; clicked
+  "อนุมัติบทบาท" on that card and confirmed the machinery tab, on reload,
+  now showed the real machinery dashboard with the same session token — no
+  re-login anywhere in the whole flow. Screenshots were taken at every
+  step. One real bug was found and fixed via this same testing: the
+  machinery dashboard's "ประเภทบริการ" (service type) card was echoing the
+  org's entity-level primary `org_type` (in this test, literally "Buyer",
+  untranslated) instead of the machinery role it actually holds — fixed on
+  both backend (`GET /machinery/dashboard` now returns `service_types`, the
+  Verified machinery role(s) held) and frontend (renders Thai labels for
+  those, joined with " · " for an org holding more than one). The temporary
+  test organizations were deleted afterward, not left in seed data.
 
 ## New backend endpoints added while building this
 
@@ -406,6 +493,16 @@ gateway — not a mock:
   this), and a real `ON CONFLICT`-vs-partial-index bug building it
   surfaced. Also added `DryingYardService` to `ORG_SELF_REGISTER_TYPES`
   and widened `identity.organization.org_type` to allow it.
+- The entire `/organization/*` slice (new file,
+  `../backend/src/routes/organization.js`) — backs the new
+  `manage-roles.html`. `GET/POST /admin/role-requests` and `POST
+  /admin/organizations/:id/roles/:role_type/status` (in
+  `../backend/src/routes/admin.js`) — back the admin dashboard's new role-
+  request queue. `requireLenderOrg`/`requireBuyerOrg`/`requireMachineryOrg`
+  all rewritten to the two-layer entity-KYB + per-role check. See the
+  backend README's "Multi-role organizations" section for the full design
+  and the new `identity.organization_role` schema
+  (`backend/db/grant_organization_roles.sql`).
 
 ## What's next
 

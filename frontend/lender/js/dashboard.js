@@ -92,6 +92,40 @@ function showKybPendingNotice(orgName, kybStatus) {
   `;
 }
 
+/**
+ * Replaces the whole dashboard body with a "your Lender ROLE is not
+ * approved" notice — distinct from showKybPendingNotice above. Used when
+ * GET /lender/dashboard reports role_not_verified: the organization's
+ * entity-level KYB is fine (otherwise kyb_not_verified would have fired
+ * first — see requireLenderOrg in src/routes/lender.js), but this specific
+ * org never requested the Lender role at all, or requested it and it's
+ * still Pending/Rejected. Introduced by multi-role support — this is the
+ * case for an org whose PRIMARY role is something else (e.g. Buyer) that
+ * either hasn't asked for the Lender role yet (roleStatus is null — points
+ * them at manage-roles.html to request it) or has and is waiting/was
+ * turned down.
+ */
+function showRolePendingNotice(orgName, roleStatus) {
+  document.getElementById("orgName").textContent = orgName || "-";
+  const body = !roleStatus
+    ? {
+        title: "องค์กรของท่านยังไม่มีบทบาท \"ผู้ปล่อยกู้\"",
+        detail: "หากต้องการเปิดใช้งานพอร์ทัลผู้ปล่อยกู้ ท่านสามารถส่งคำขอเพิ่มบทบาทนี้ได้จากหน้า \"จัดการบทบาทธุรกิจ\"",
+      }
+    : roleStatus === "Rejected"
+    ? { title: "คำขอบทบาท \"ผู้ปล่อยกู้\" ของท่านถูกปฏิเสธ", detail: "กรุณาติดต่อเจ้าหน้าที่ผู้ดูแลระบบสำหรับข้อมูลเพิ่มเติม" }
+    : { title: "คำขอบทบาท \"ผู้ปล่อยกู้\" ของท่านอยู่ระหว่างการตรวจสอบ", detail: "เจ้าหน้าที่ผู้ดูแลระบบ (Platform Ops) กำลังตรวจสอบคำขอนี้ — ลองรีเฟรชหน้านี้อีกครั้งภายหลัง" };
+
+  document.getElementById("mainContainer").innerHTML = `
+    <div class="empty-state" style="padding:60px 24px;">
+      <div style="font-size:40px; margin-bottom:14px;">🧩</div>
+      <div style="font-size:17px; font-weight:700; color:var(--green-900); margin-bottom:8px;">${escapeHtml(body.title)}</div>
+      <div style="font-size:14px; margin-bottom:20px;">${escapeHtml(body.detail)}</div>
+      <a href="../manage-roles.html" class="btn btn-primary" style="max-width:260px; margin:0 auto; display:block;">ไปที่หน้าจัดการบทบาทธุรกิจ</a>
+    </div>
+  `;
+}
+
 // ---------- รายการที่ต้องพิจารณา ----------
 function reviewCard(a) {
   const defaultAmount = a.approved_amount || a.requested_amount;
@@ -244,12 +278,17 @@ async function init() {
       showKybPendingNotice(err.body.org_name, err.body.kyb_status);
       return;
     }
+    if (err.message === "role_not_verified") {
+      showRolePendingNotice(err.body.org_name, err.body.role_status);
+      return;
+    }
     document.getElementById("summarySection").innerHTML = `<div class="empty-state">โหลดข้อมูลภาพรวมไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
     return;
   }
 
-  // Only reached once KYB is confirmed Verified — independent panels below,
-  // one broken panel doesn't take down the rest of the page.
+  // Only reached once KYB AND the Lender role are both confirmed Verified —
+  // independent panels below, one broken panel doesn't take down the rest
+  // of the page.
   loadReviewQueue();
   loadAllApplications();
   loadContracts();

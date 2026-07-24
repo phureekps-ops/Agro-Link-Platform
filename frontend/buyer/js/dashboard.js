@@ -89,6 +89,34 @@ function showKybPendingNotice(orgName, kybStatus) {
   `;
 }
 
+/**
+ * Replaces the whole dashboard body with a "your Buyer ROLE is not
+ * approved" notice — distinct from showKybPendingNotice above, and the
+ * same shape as lender/js/dashboard.js's showRolePendingNotice (see that
+ * file's doc comment for the full explanation of why this is a separate
+ * case from entity-level KYB).
+ */
+function showRolePendingNotice(orgName, roleStatus) {
+  document.getElementById("orgName").textContent = orgName || "-";
+  const body = !roleStatus
+    ? {
+        title: "องค์กรของท่านยังไม่มีบทบาท \"ผู้รับซื้อผลผลิต\"",
+        detail: "หากต้องการเปิดใช้งานพอร์ทัลผู้รับซื้อผลผลิต ท่านสามารถส่งคำขอเพิ่มบทบาทนี้ได้จากหน้า \"จัดการบทบาทธุรกิจ\"",
+      }
+    : roleStatus === "Rejected"
+    ? { title: "คำขอบทบาท \"ผู้รับซื้อผลผลิต\" ของท่านถูกปฏิเสธ", detail: "กรุณาติดต่อเจ้าหน้าที่ผู้ดูแลระบบสำหรับข้อมูลเพิ่มเติม" }
+    : { title: "คำขอบทบาท \"ผู้รับซื้อผลผลิต\" ของท่านอยู่ระหว่างการตรวจสอบ", detail: "เจ้าหน้าที่ผู้ดูแลระบบ (Platform Ops) กำลังตรวจสอบคำขอนี้ — ลองรีเฟรชหน้านี้อีกครั้งภายหลัง" };
+
+  document.getElementById("mainContainer").innerHTML = `
+    <div class="empty-state" style="padding:60px 24px;">
+      <div style="font-size:40px; margin-bottom:14px;">🧩</div>
+      <div style="font-size:17px; font-weight:700; color:var(--green-900); margin-bottom:8px;">${escapeHtml(body.title)}</div>
+      <div style="font-size:14px; margin-bottom:20px;">${escapeHtml(body.detail)}</div>
+      <a href="../manage-roles.html" class="btn btn-primary" style="max-width:260px; margin:0 auto; display:block;">ไปที่หน้าจัดการบทบาทธุรกิจ</a>
+    </div>
+  `;
+}
+
 // ---------- รายการที่ต้องดำเนินการ ----------
 function reviewCard(d) {
   const header = `
@@ -362,6 +390,10 @@ async function init() {
   } catch (err) {
     if (err.message === "kyb_not_verified") {
       showKybPendingNotice(err.body.org_name, err.body.kyb_status);
+      return;
+    }
+    if (err.message === "role_not_verified") {
+      showRolePendingNotice(err.body.org_name, err.body.role_status);
       return;
     }
     document.getElementById("summarySection").innerHTML = `<div class="empty-state">โหลดข้อมูลภาพรวมไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;

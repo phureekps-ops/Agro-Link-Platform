@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — จัดการบทบาทธุรกิจของฉัน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🧩</span><span>AgroLink Platform — จัดการบทบาทธุรกิจของฉัน</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div id="notLoggedInBox" class="empty-state" style="display:none; padding:60px 24px;">
+      <div style="font-size:40px; margin-bottom:14px;">🔒</div>
+      <div style="font-size:17px; font-weight:700; color:var(--green-900); margin-bottom:8px;">ยังไม่ได้เข้าสู่ระบบ</div>
+      <div style="font-size:14px; margin-bottom:20px;">
+        กรุณาเข้าสู่ระบบผ่านพอร์ทัลใดพอร์ทัลหนึ่งของท่านก่อน (ผู้ปล่อยกู้ / ผู้รับซื้อผลผลิต / ผู้ให้บริการเครื่องจักรกล) จึงจะจัดการบทบาทธุรกิจได้
+      </div>
+      <a href="lender/index.html" class="btn btn-ghost" style="max-width:260px; margin:0 auto 8px; display:block;">ไปที่พอร์ทัลผู้ปล่อยกู้</a>
+      <a href="buyer/index.html" class="btn btn-ghost" style="max-width:260px; margin:0 auto 8px; display:block;">ไปที่พอร์ทัลผู้รับซื้อผลผลิต</a>
+      <a href="machinery/index.html" class="btn btn-ghost" style="max-width:260px; margin:0 auto; display:block;">ไปที่พอร์ทัลผู้ให้บริการเครื่องจักรกล/ลานตาก</a>
+    </div>
+
+    <div id="rolesContent" style="display:none;">
+      <div class="section-title">🏢 ข้อมูลองค์กร</div>
+      <div id="orgInfoSection" class="summary-grid">
+        <div class="loading-line">กำลังโหลด…</div>
+      </div>
+
+      <div class="section-title">✅ บทบาทธุรกิจที่มี</div>
+      <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+        แต่ละบทบาทต้องผ่านการอนุมัติจากเจ้าหน้าที่ผู้ดูแลระบบ (Platform Ops) แยกกัน แม้จะเป็นองค์กรเดียวกันก็ตาม
+      </p>
+      <div id="heldRolesSection" class="card-list">
+        <div class="loading-line">กำลังโหลดบทบาทธุรกิจ…</div>
+      </div>
+
+      <div class="section-title">➕ ขอเพิ่มบทบาทธุรกิจใหม่</div>
+      <div class="panel">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="roleTypeSelect">เลือกบทบาทที่ต้องการขอเพิ่ม</label>
+            <select id="roleTypeSelect"></select>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="requestRoleBtn" style="max-width:260px;">ส่งคำขอเพิ่มบทบาท</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/manage-roles.js"></script>
+</body>
+</html>
