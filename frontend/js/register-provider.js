@@ -6,17 +6,17 @@
  * own dashboard since a farmer's dashboard works regardless of KYC
  * status), a freshly-registered organization is NOT guaranteed anywhere
  * useful to go:
- *   - Lender / Buyer: DO have a dedicated portal, but that portal's own
- *     GET /.../dashboard now requires kyb_status = 'Verified' (see
- *     lender.js / buyer.js) — a brand-new Pending org would just hit a
- *     "kyb_not_verified" state there. We still store the session under
- *     that portal's own localStorage key and redirect to its dashboard,
- *     which renders a "your application is under review" screen rather
- *     than erroring — see lender/js/dashboard.js / buyer/js/dashboard.js.
- *   - Every other org_type (Cooperative, Mill, InputSupplier, Logistics,
- *     and the four machinery-service types) has NO dedicated portal at
- *     all yet, so there's nowhere to redirect to — this page just shows
- *     a plain success confirmation instead.
+ *   - Lender / Buyer / the five machinery org_types: DO have a dedicated
+ *     portal, but that portal's own GET /.../dashboard now requires
+ *     kyb_status = 'Verified' (see lender.js / buyer.js / machinery.js) —
+ *     a brand-new Pending org would just hit a "kyb_not_verified" state
+ *     there. We still store the session under that portal's own
+ *     localStorage key and redirect to its dashboard, which renders a
+ *     "your application is under review" screen rather than erroring —
+ *     see lender/js/dashboard.js / buyer/js/dashboard.js / machinery/js/dashboard.js.
+ *   - Every other org_type (Cooperative, Mill, InputSupplier, Logistics)
+ *     has NO dedicated portal at all yet, so there's nowhere to redirect
+ *     to — this page just shows a plain success confirmation instead.
  */
 const API_BASE = "http://localhost:4000";
 
@@ -27,14 +27,21 @@ const successDetail = document.getElementById("successDetail");
 const loginDivider = document.getElementById("loginDivider");
 const loginLenderLink = document.getElementById("loginLenderLink");
 const loginBuyerLink = document.getElementById("loginBuyerLink");
+const loginMachineryLink = document.getElementById("loginMachineryLink");
 const registerBtn = document.getElementById("registerBtn");
 
 const ORG_TYPE_LABEL = {
   Lender: "ผู้ปล่อยกู้", Buyer: "ผู้รับซื้อผลผลิต", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
   Cooperative: "สหกรณ์", Mill: "โรงสี", Logistics: "โลจิสติกส์/ขนส่งทั่วไป",
-  TractorService: "บริการรถไถ", DroneService: "บริการโดรน",
-  HarvesterService: "บริการรถเกี่ยว", TruckService: "บริการรถบรรทุก",
+  TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี",
+  HarvesterService: "บริการรถเกี่ยวข้าว", TruckService: "บริการรถบรรทุก",
+  DryingYardService: "บริการลานตากข้าว",
 };
+
+// The five org_types that share the unified "เครื่องจักรกล/ลานตาก" portal
+// — see src/routes/machinery.js's MACHINERY_ORG_TYPES for the backend side
+// of this same list.
+const MACHINERY_ORG_TYPES = ["TractorService", "DroneService", "HarvesterService", "TruckService", "DryingYardService"];
 
 function showError(message) {
   errorBox.textContent = message;
@@ -91,12 +98,18 @@ registerForm.addEventListener("submit", async (e) => {
       window.location.href = "buyer/dashboard.html";
       return;
     }
+    if (MACHINERY_ORG_TYPES.includes(orgType)) {
+      localStorage.setItem("agrolink_machinery_session", JSON.stringify(body));
+      window.location.href = "machinery/dashboard.html";
+      return;
+    }
 
     // No dedicated portal yet for this org_type — show a plain confirmation.
     registerForm.style.display = "none";
     loginDivider.style.display = "none";
     loginLenderLink.style.display = "none";
     loginBuyerLink.style.display = "none";
+    loginMachineryLink.style.display = "none";
     successDetail.textContent =
       `"${orgName}" (${ORG_TYPE_LABEL[orgType] || orgType}) อยู่ระหว่างการตรวจสอบ (KYB) ` +
       "เจ้าหน้าที่ผู้ดูแลระบบจะตรวจสอบและติดต่อกลับเมื่ออนุมัติแล้ว";

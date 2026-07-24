@@ -8,11 +8,17 @@ const farmerRouter = require('./routes/farmer');
 const lenderRouter = require('./routes/lender');
 const buyerRouter = require('./routes/buyer');
 const adminRouter = require('./routes/admin');
+const machineryRouter = require('./routes/machinery');
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+// Default express.json() body limit is 100kb — too small for
+// POST /machinery/photos, which posts a base64 data: URL (no object
+// storage/CDN exists in this sandbox, see grant_machinery_marketplace.sql).
+// 5mb comfortably covers that route's own ~3MB payload cap without opening
+// the door to arbitrarily large request bodies elsewhere.
+app.use(express.json({ limit: '5mb' }));
 
 // Simple request log — helps when eyeballing the RLS-isolation tests later.
 app.use((req, _res, next) => {
@@ -29,6 +35,7 @@ app.use('/farmer', farmerRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
 app.use('/admin', adminRouter);
+app.use('/machinery', machineryRouter);
 
 // Fallback 404
 app.use((req, res) => {

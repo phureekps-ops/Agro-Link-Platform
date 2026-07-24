@@ -23,7 +23,7 @@ const REGISTER_CONSTRAINT_ERRORS = {
 // reasonably self-serve register as).
 const ORG_SELF_REGISTER_TYPES = [
   'Cooperative', 'Mill', 'InputSupplier', 'Lender', 'Logistics', 'Buyer',
-  'TractorService', 'DroneService', 'HarvesterService', 'TruckService',
+  'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
 ];
 const ORG_REGISTER_CONSTRAINT_ERRORS = {
   uq_organization_tax_id: 'tax_id_already_registered',
@@ -212,16 +212,17 @@ router.post('/register', async (req, res, next) => {
  * Like farmer registration, this mints a fresh mock OIDC claim
  * (`oidc|org-<uuid>`) since no real IdP is connected, and auto-issues a
  * session JWT. Unlike farmer registration, logging in immediately does NOT
- * guarantee full portal access: `GET /lender/dashboard` and
- * `GET /buyer/dashboard` both now require `kyb_status = 'Verified'` (see
- * the `requireLenderOrg`/`requireBuyerOrg` update in their own route
- * files) — a newly self-registered Lender or Buyer org sees a "your
- * application is under review" state in that portal instead of live
- * loan-application/delivery data until Platform Ops approves it. Organization
- * types with no dedicated portal yet (Cooperative, Mill, InputSupplier,
- * Logistics, and the four new machinery-service types) simply get a
- * registration-received confirmation on the frontend — there's nowhere
- * else for them to log into yet.
+ * guarantee full portal access: `GET /lender/dashboard`, `GET /buyer/dashboard`,
+ * and `GET /machinery/dashboard` all now require `kyb_status = 'Verified'`
+ * (see the `requireLenderOrg`/`requireBuyerOrg`/`requireMachineryOrg` update
+ * in their own route files) — a newly self-registered org sees a "your
+ * application is under review" state in that portal instead of live data
+ * until Platform Ops approves it. Organization types with no dedicated
+ * portal at all yet (Cooperative, Mill, InputSupplier, Logistics) simply get
+ * a registration-received confirmation on the frontend — there's nowhere
+ * else for them to log into yet. TractorService, DroneService,
+ * HarvesterService, TruckService, and DryingYardService all share ONE
+ * portal (`frontend/machinery/`) — see `src/routes/machinery.js`.
  */
 router.post('/org-register', async (req, res, next) => {
   const { org_name: orgName, tax_id: taxId, org_type: orgType } = req.body || {};

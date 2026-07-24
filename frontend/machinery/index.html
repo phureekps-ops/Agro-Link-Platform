@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AgroLink — เข้าสู่ระบบผู้ปล่อยกู้</title>
+<title>AgroLink — เข้าสู่ระบบผู้ให้บริการเครื่องจักรกล/ลานตาก</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../css/style.css" />
@@ -11,32 +11,30 @@
 <body class="login-page">
   <div class="login-card">
     <div class="login-brand">
-      <span class="leaf">🏦</span>
+      <span class="leaf">🚜</span>
       <h1>AgroLink Platform</h1>
     </div>
-    <p class="login-sub">พอร์ทัลผู้ปล่อยกู้ — พิจารณาและอนุมัติคำขอสินเชื่อของเกษตรกร ดูพอร์ตสัญญาสินเชื่อขององค์กรท่าน</p>
+    <p class="login-sub">พอร์ทัลผู้ให้บริการเครื่องจักรกลการเกษตร — บริการรถไถ โดรน/ฉีดพ่นสารเคมี รถเกี่ยวข้าว รถบรรทุก และลานตากข้าว จัดการราคาบริการและรูปภาพของท่าน</p>
 
     <div id="errorBox" class="error-box"></div>
 
     <form id="loginForm">
       <div class="field">
         <label for="claimInput">รหัสยืนยันตัวตนองค์กร (จากระบบยืนยันตัวตนกลาง)</label>
-        <input type="text" id="claimInput" placeholder="เช่น oidc|org-001" autocomplete="off" required />
+        <input type="text" id="claimInput" placeholder="เช่น oidc|org-..." autocomplete="off" required />
         <div class="hint">
           หมายเหตุ: ระบบยืนยันตัวตน (OIDC) จริงยังไม่ได้เชื่อมต่อในสภาพแวดล้อมนี้ —
           ช่องนี้จำลองค่า <code>sub claim</code> ขององค์กร ที่ปกติจะมาจากโทเค็นที่ยืนยันตัวตนแล้ว
+          (ค่านี้จะได้รับหลังจากสมัครสมาชิกที่หน้า "สมัครเป็นผู้ให้บริการ")
         </div>
       </div>
       <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ</button>
     </form>
 
-    <div class="divider">หรือเข้าสู่ระบบด่วนด้วยบัญชีทดสอบ (Demo)</div>
-    <div class="demo-grid" id="demoGrid"></div>
-
-    <div class="divider">เกษตรกร / ผู้รับซื้อผลผลิต / ผู้ให้บริการเครื่องจักรกล / ผู้ดูแลระบบ?</div>
+    <div class="divider">เกษตรกร / ผู้ปล่อยกู้ / ผู้รับซื้อผลผลิต / ผู้ดูแลระบบ?</div>
     <a href="../index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลเกษตรกร</a>
+    <a href="../lender/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ปล่อยกู้</a>
     <a href="../buyer/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้รับซื้อผลผลิต</a>
-    <a href="../machinery/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ให้บริการเครื่องจักรกล/ลานตาก</a>
     <a href="../admin/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">ไปที่พอร์ทัลผู้ดูแลระบบ</a>
 
     <div class="divider">ยังไม่มีบัญชีองค์กร?</div>

@@ -193,7 +193,7 @@ npm start          # or: node src/server.js
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
 - `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
-- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `Cooperative`/`Mill`/`InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank` and `VillageFund` are deliberately excluded, see "what's mocked" below). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Duplicate `tax_id` returns `409 tax_id_already_registered`.
+- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `Cooperative`/`Mill`/`InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank` and `VillageFund` are deliberately excluded, see "what's mocked" below). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Duplicate `tax_id` returns `409 tax_id_already_registered`.
 
 Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already
@@ -242,6 +242,12 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /buyer/contracts` — this org's forward-purchase portfolio (contracts where it is the `buyer` party).
 - `GET /buyer/production-units` — small read-only directory of active production units with their owning farmer's name, so the delivery form doesn't require knowing a `unit_id` by heart. Mirrors the intent of `GET /farmer/lenders`.
 - `GET /buyer/commodities` — `registry.commodity_ref`, for the delivery form's commodity dropdown.
+
+**Machinery/Drying-Yard Portal** (`src/routes/machinery.js`, all require an organization-subject JWT whose `org_type` is one of `TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` AND `kyb_status = 'Verified'` — see `requireMachineryOrg`, same gate and same reasoning as the Lender/Buyer Portals above). One unified portal covers all five org_types rather than five separate ones, since a single real-world provider commonly offers more than one of these services (e.g. a tractor operator who also runs a truck) — see `MACHINERY_ORG_TYPES` in `src/routes/machinery.js`.
+- `GET /machinery/dashboard` — org info, how many of the seven fixed rate-card items are currently priced (out of 7), and a photo count.
+- `GET /machinery/rate-card` — this org's current prices for all seven fixed line items (`plow_rough`/`plow_secondary_seed`/`rotary_till`/`spraying`/`harvesting`/`trucking`/`drying` — see `RATE_CARD_ITEMS`), keyed by `service_key`, pre-filled with `unit_price: null` for anything never priced.
+- `PUT /machinery/rate-card` — body `{ "prices": { "plow_rough"?: number|null, ... } }` → upserts a `marketplace.service_listing` row per key present with a positive value (`ON CONFLICT (org_id, service_key)`); a key set to `null`/`0` deactivates (`is_active = false`) rather than deletes the row, since deleting could violate `marketplace.service_request`'s FK to `listing_id` if a farmer has already booked against it. A provider is never required to price all seven — most will only fill in what matches their actual equipment (a `DroneService` org typically only sets `spraying`).
+- `GET /machinery/photos` / `POST /machinery/photos` / `DELETE /machinery/photos/:id` — the provider's photo gallery (`photo_type: 'service'|'machinery'`). `POST` expects `photo_data_url` as a `data:image/...` URL read client-side via `FileReader` — see "what's mocked" below, there is no object storage/CDN in this sandbox. Capped at ~3MB per photo (`MAX_PHOTO_DATA_URL_LENGTH`) and `express.json()`'s body limit was raised from the default 100kb to 5mb (`src/server.js`) specifically to let this route through.
 
 **Platform Ops / Admin Portal** (`src/routes/admin.js`, all require a `platform`-subject JWT from `POST /auth/admin-login`)
 - `GET /admin/dashboard` — farmer counts by status, organization counts by `kyb_status`, and a `system_health` block built from `ops.v_integrity_checksum` + `monitoring.v_go_live_readiness` + an active-alerts count. These three views/queries already existed from Layer 9/10 and `agrolink_app` already had `SELECT` on all of them — nothing had ever exposed them through the API before; every previous check of them in this whole project was a manual `psql` query.
@@ -318,6 +324,30 @@ same session-context-scoped client, after a successful operation.
   same way as the Lender Portal: every confirm-quality/settle request first
   re-reads the delivery with an explicit `WHERE buyer_org_id = $1`, and
   404s before ever calling the function if that read finds nothing.
+- **`marketplace.service_listing` and `marketplace.vendor_photo` have no
+  row-level security at all** (`pg_class.relrowsecurity = false`), same
+  situation as `notification.notification_log`/`produce.delivery` above but
+  for the Machinery/Drying-Yard Portal. Every query in
+  `src/routes/machinery.js` therefore has an explicit `WHERE org_id = $1` —
+  not defense-in-depth, the actual security boundary.
+- **No object storage/CDN for photos.** `POST /machinery/photos` stores
+  each photo as a base64 `data:` URL directly in
+  `marketplace.vendor_photo.photo_data_url` — workable for a demo at a
+  handful of photos per provider, but a real deployment needs S3/GCS behind
+  a CDN, with only the resulting URL kept in Postgres. The ~3MB
+  per-photo/5MB request-body caps in `src/routes/machinery.js` and
+  `src/server.js` exist specifically to keep this workable in the meantime,
+  not as a real upload limit design.
+- **`marketplace.service_request` (the farmer-facing booking half of the
+  marketplace) is not wired up to any route yet.** The table already exists
+  in the schema and this session opened up `marketplace.service_listing`
+  and added `service_key`/`vendor_photo` for the *provider* side (setting
+  prices, uploading photos — this is what a farmer would browse), but there
+  is currently no `GET /farmer/machinery-services` or
+  `POST /farmer/machinery-services/:listing_id/request` endpoint for a
+  farmer to actually discover and book one. A provider can fully manage
+  their rate card and gallery today; nothing yet reads that data back out
+  on the farmer side.
 - **Registration has no KYC step.** `POST /auth/register` sets
   `status='pending_kyc'` but nothing currently transitions a farmer out of
   that status — there is no verification workflow yet (real deployments
@@ -528,6 +558,41 @@ and the live `agrolink_test` database — not unit tests against mocks:
   `identity.subject_role` rows) afterward — not left in seed data — and
   re-confirmed `ops.v_integrity_checksum` / `monitoring.v_go_live_readiness`
   still pass.
+- **Machinery/Drying-Yard Portal**: registered a `TractorService` org and a
+  `DryingYardService` org through `POST /auth/org-register`, confirmed
+  `GET /machinery/dashboard` correctly returned `403 kyb_not_verified` for
+  both before approval, approved the `TractorService` org through
+  `POST /admin/organizations/:id/kyb-status`, then re-tried the identical
+  `GET /machinery/dashboard` call with the same still-valid JWT (no
+  re-login) and confirmed it now returns real dashboard data. `PUT
+  /machinery/rate-card` was exercised end-to-end: setting three of the
+  seven items, clearing one back to `null` (confirmed it deactivates rather
+  than deletes — `priced_items_count` dropped from 3 to 2, the row survived
+  in `marketplace.service_listing` with `is_active = false`), then
+  re-setting it (confirmed the same row reactivates via the upsert rather
+  than a duplicate being created). Also caught and fixed a real bug this
+  way: the first `ON CONFLICT (org_id, service_key)` attempt failed with
+  `42P10 no unique or exclusion constraint matching the ON CONFLICT
+  specification`, because the arbiter index is partial
+  (`WHERE service_key IS NOT NULL`) and Postgres only infers a partial
+  unique index as the ON CONFLICT target when the insert's own `ON
+  CONFLICT` clause repeats that same `WHERE` predicate — fixed in
+  `src/routes/machinery.js`. `POST`/`GET`/`DELETE /machinery/photos` were
+  each exercised directly (upload, list, delete-and-confirm-gone).
+  `invalid_org_type`, `unknown_service_key`, `invalid_price` (negative), and
+  `invalid_photo_data_url` (non-`data:image/...` string) were all confirmed
+  to return real `400`s, not 500s. Also drove the full flow through the
+  actual **frontend** (Playwright, headless): registered via
+  `register-provider.html`, landed on the machinery dashboard's KYB-pending
+  notice, approved via a direct admin-API call (simulating Platform Ops),
+  reloaded to confirm the real dashboard now renders, filled in and saved
+  three rate-card fields, uploaded a real photo file through the file
+  input, and reloaded once more to confirm everything (prices, photo count,
+  the photo itself) persisted server-side rather than only existing in
+  browser state. Deleted the three temporary test organizations (and their
+  `marketplace.service_listing`/`marketplace.vendor_photo`/
+  `ledger.account`/`identity.subject_role` rows) afterward — not left in
+  seed data.
 
 ## Next steps (not yet built)
 
@@ -558,9 +623,25 @@ and the live `agrolink_test` database — not unit tests against mocks:
 - A way to correct `partner.vendor_profile.business_registration_no` after
   registration if it genuinely differs from `tax_id` — no edit endpoint
   exists for `vendor_profile` fields today.
-- Farmer Portal, Lender Portal, Buyer Portal, and Platform Ops are all now
-  built end-to-end (backend + frontend, tested), and organizations can now
-  both self-register and be approved through the API — closing the loop
-  that was the previous "Next steps" headline item. The natural next
-  candidates are the gaps just above, or a fresh vertical slice (e.g.
-  Logistics, VillageFund) reusing the same patterns established here.
+- The farmer-facing half of the marketplace: `marketplace.service_request`
+  exists in the schema but has no route yet — a farmer today cannot browse
+  machinery/drying-yard providers' rate cards or photos, nor book a
+  service. See "what's mocked" above.
+- Object storage/CDN for `marketplace.vendor_photo` — photos are currently
+  base64 `data:` URLs directly in Postgres, fine for a demo, not for
+  production.
+- RLS on `marketplace.service_listing`/`marketplace.vendor_photo` — same
+  API-layer-is-the-only-boundary situation as the other tables listed
+  above, just for the Machinery/Drying-Yard Portal.
+- Dedicated portals for `Cooperative`, `Mill`, `InputSupplier`, and
+  `Logistics` — these four org_types can still only self-register and get a
+  registration-received confirmation; there's nowhere for them to log into
+  yet, unlike the five machinery/drying-yard org_types (which now share the
+  unified portal built this session).
+- Farmer Portal, Lender Portal, Buyer Portal, Platform Ops, and the
+  Machinery/Drying-Yard Portal are all now built end-to-end (backend +
+  frontend, tested), and organizations can now both self-register and be
+  approved through the API — closing the loop that was the previous "Next
+  steps" headline item. The natural next candidates are the gaps just
+  above, or a fresh vertical slice (e.g. Logistics, VillageFund) reusing
+  the same patterns established here.

@@ -118,7 +118,42 @@ direction, a platform token is equally rejected by `/farmer/*`,
 `/lender/*`, and `/buyer/*`; the platform identity has no special access
 to the other three portals' own pages.
 
-All four portals now cross-link each other from their login pages.
+All five portals now cross-link each other from their login pages.
+
+## Pages — Machinery/Drying-Yard Portal (`machinery/`)
+
+A fifth separate small app, same overall pattern as the Lender/Buyer
+Portals (own `localStorage` key `agrolink_machinery_session`, own
+`machinery/js/api.js` copy, same shared CSS, same claim-based mock login as
+the Farmer/Lender/Buyer Portals). One unified portal serves all five
+machinery/drying-yard `org_type` values (`TractorService`, `DroneService`,
+`HarvesterService`, `TruckService`, `DryingYardService`) rather than five
+separate ones — see `../backend/README.md`'s note on why (a single
+real-world provider commonly offers more than one of these services).
+
+- `machinery/index.html` — login: same claim-based mock login as the other
+  portals. No demo-account buttons — unlike the seeded Lender/Buyer orgs,
+  no machinery/drying-yard org exists in seed data; every one is created
+  through `register-provider.html`.
+- `machinery/dashboard.html` — an overview panel (org type, KYB status, how
+  many of the 7 rate-card items are priced, photo count); a **rate card**
+  form with one input per fixed line item — ไถดะ, ไถแปรและหว่าน, ปั่นดิน,
+  ฉีดพ่นสารเคมี (โดรน/รถฉีดพ่น), เกี่ยวข้าว, ขนส่งด้วยรถบรรทุก (บาท/ตัน-กม.),
+  and ลานตากข้าว/ตากผลผลิต (บาท/ตัน) — rendered dynamically from `GET
+  /machinery/rate-card` rather than hardcoded, so a provider only fills in
+  what they actually offer and leaves the rest blank; and a **photo
+  gallery** (upload with a type selector — เครื่องจักรกล/บริการ — and an
+  optional caption, a responsive thumbnail grid, and a delete button per
+  photo). File selection happens through a plain `<input type="file">` read
+  client-side via `FileReader.readAsDataURL()` and posted straight to the
+  backend as a `data:` URL — see the backend README's note on there being
+  no object storage in this sandbox. Client-side caps a selected file at
+  2MB before even attempting the upload, matching the backend's ~3MB
+  data-URL ceiling with margin for base64 inflation.
+
+Same `kyb_not_verified` pending-notice pattern as the Lender/Buyer Portals
+below, and the same wrong-subject-type `403` → bounce-to-login treatment as
+every other portal.
 
 ## Page — Service-Provider Registration (`register-provider.html`)
 
@@ -126,48 +161,52 @@ A single standalone page (not inside any one portal's folder, same level
 as the Farmer Portal's own `register.html`) backing `POST
 /auth/org-register` — the org-facing counterpart to farmer
 self-registration. Three fields: organization/business name, tax ID (13
-digits), and a business-type dropdown covering ten self-registerable
+digits), and a business-type dropdown covering eleven self-registerable
 `org_type` values — the pre-existing `Lender`/`Buyer`/`InputSupplier`/
-`Cooperative`/`Mill`/`Logistics`, plus four new farm-machinery/
-mechanization service categories added directly at the user's request:
-บริการรถไถ (`TractorService`), บริการโดรน (`DroneService`), บริการรถเกี่ยว
-(`HarvesterService`), and บริการรถบรรทุก (`TruckService`).
+`Cooperative`/`Mill`/`Logistics`, plus the five farm-machinery/drying-yard
+service categories that share the unified Machinery/Drying-Yard Portal
+above: บริการรถไถ (`TractorService`), บริการโดรน/ฉีดพ่นสารเคมี
+(`DroneService`), บริการรถเกี่ยวข้าว (`HarvesterService`), บริการรถบรรทุก
+(`TruckService`), and บริการลานตากข้าว (`DryingYardService`).
 
 What happens after a successful submission depends on the chosen
 `org_type`, since not every organization type has a dedicated portal yet:
-- **Lender** or **Buyer** — the returned session is stored under that
-  portal's own `localStorage` key and the page redirects straight to
-  `lender/dashboard.html` or `buyer/dashboard.html`. Since the new
+- **Lender**, **Buyer**, or any of the **five machinery/drying-yard types**
+  — the returned session is stored under that portal's own `localStorage`
+  key and the page redirects straight to `lender/dashboard.html`,
+  `buyer/dashboard.html`, or `machinery/dashboard.html`. Since the new
   organization's `kyb_status` is always `Pending` at this point, that
   dashboard shows a "your application is under review" notice instead of
-  live data (see the Lender/Buyer Portal updates below) — refreshing the
+  live data (see the pending-KYB-state section below) — refreshing the
   same page after Platform Ops approves it shows the real dashboard, no
   re-login needed.
-- Every other type (Cooperative, Mill, InputSupplier, Logistics, and the
-  four new machinery-service types) — there's nowhere to redirect to yet,
-  so the page just replaces the form with a plain "ส่งใบสมัครเรียบร้อยแล้ว"
-  (application received) confirmation showing the org name and type.
+- Every other type (Cooperative, Mill, InputSupplier, Logistics) — there's
+  nowhere to redirect to yet, so the page just replaces the form with a
+  plain "ส่งใบสมัครเรียบร้อยแล้ว" (application received) confirmation showing
+  the org name and type.
 
 Linked from: the root marketing homepage's `#contact` call-to-action
 banner (previously a dead `href="#"` placeholder — now a real link,
-relabeled "สมัครเป็นผู้ให้บริการ"), and a "ยังไม่มีบัญชีองค์กร?" link on both
-`lender/index.html` and `buyer/index.html`'s login pages.
+relabeled "สมัครเป็นผู้ให้บริการ"), and a "ยังไม่มีบัญชีองค์กร?"/"มีบัญชีอยู่แล้ว?"
+link on `lender/index.html`, `buyer/index.html`, and `machinery/index.html`'s
+login pages.
 
-## Lender/Buyer Portal update — pending-KYB state
+## Lender/Buyer/Machinery Portal update — pending-KYB state
 
-Both `lender/js/dashboard.js` and `buyer/js/dashboard.js` now open with a
-gate check against their own `GET .../dashboard` call. If the backend
-reports `kyb_not_verified` (a real org token, just not yet approved by
-Platform Ops — the case a fresh `register-provider.html` submission always
-starts in), the whole dashboard body is replaced with a centered "your KYB
-application is under review" notice instead of attempting to load a review
-queue, application/delivery list, and contracts that would all fail the
-same way. The session is deliberately NOT cleared in this case (unlike a
-genuine wrong-subject-type `403`) — the same login persists across KYB
-approval, so the user only ever needs to refresh once approved, not log in
-again. `lender/js/api.js` and `buyer/js/api.js` both special-case this one
-`403` reason to keep the session alive; every other `403` still bounces to
-login as before.
+`lender/js/dashboard.js`, `buyer/js/dashboard.js`, and
+`machinery/js/dashboard.js` all open with a gate check against their own
+`GET .../dashboard` call. If the backend reports `kyb_not_verified` (a real
+org token, just not yet approved by Platform Ops — the case a fresh
+`register-provider.html` submission always starts in), the whole dashboard
+body is replaced with a centered "your KYB application is under review"
+notice instead of attempting to load a review queue, application/delivery
+list and contracts (or, for the Machinery Portal, a rate card and photo
+gallery) that would all fail the same way. The session is deliberately NOT
+cleared in this case (unlike a genuine wrong-subject-type `403`) — the same
+login persists across KYB approval, so the user only ever needs to refresh
+once approved, not log in again. `lender/js/api.js`, `buyer/js/api.js`, and
+`machinery/js/api.js` all special-case this one `403` reason to keep the
+session alive; every other `403` still bounces to login as before.
 
 ## Running
 
@@ -180,35 +219,38 @@ node serve.js          # serves this directory at http://localhost:5173
 
 No `npm install` needed — `serve.js` is a zero-dependency static file
 server (`http`/`fs` from Node's standard library only) and serves any
-subpath, so all three portals are reachable at the same server, no
-separate process needed:
+subpath, so all portals are reachable at the same server, no separate
+process needed:
 
 - Farmer Portal: `http://localhost:5173/index.html`
 - Lender Portal: `http://localhost:5173/lender/index.html`
 - Buyer Portal: `http://localhost:5173/buyer/index.html`
 - Platform Ops / Admin Portal: `http://localhost:5173/admin/index.html`
+- Machinery/Drying-Yard Portal: `http://localhost:5173/machinery/index.html`
 - Service-Provider Registration: `http://localhost:5173/register-provider.html`
 
 If the API runs somewhere other than `localhost:4000`, change `API_BASE` at
 the top of `js/api.js` (Farmer Portal), `lender/js/api.js` (Lender Portal),
-`buyer/js/api.js` (Buyer Portal), `admin/js/api.js` (Admin Portal), AND
-`js/register-provider.js` (Service-Provider Registration) — they're five
+`buyer/js/api.js` (Buyer Portal), `admin/js/api.js` (Admin Portal),
+`machinery/js/api.js` (Machinery/Drying-Yard Portal), AND
+`js/register-provider.js` (Service-Provider Registration) — they're six
 separate copies, not shared, on purpose (see above).
 
 ## How it talks to the backend
 
-`js/api.js` and its Lender/Buyer/Admin Portal counterparts
-(`lender/js/api.js`, `buyer/js/api.js`, `admin/js/api.js`) are the only
-files in each app that know about HTTP — each wraps `fetch()`, attaches the
-`Authorization: Bearer <token>` header once logged in, and centralizes both
-401 handling (expired/invalid token) and 403 handling (a
-structurally-valid token for the wrong kind of subject — e.g. a farmer
-token used against `/lender/*`, `/buyer/*`, or `/admin/*`): either way, it
-clears the stored session and bounces back to that app's own login page
-rather than the page just silently failing. The JWT is kept in
-`localStorage` under `agrolink_farmer_session`, `agrolink_lender_session`,
-`agrolink_buyer_session`, or `agrolink_admin_session` respectively — normal
-practice for a real single-page app; logging out clears it.
+`js/api.js` and its Lender/Buyer/Admin/Machinery Portal counterparts
+(`lender/js/api.js`, `buyer/js/api.js`, `admin/js/api.js`,
+`machinery/js/api.js`) are the only files in each app that know about HTTP
+— each wraps `fetch()`, attaches the `Authorization: Bearer <token>` header
+once logged in, and centralizes both 401 handling (expired/invalid token)
+and 403 handling (a structurally-valid token for the wrong kind of subject
+— e.g. a farmer token used against `/lender/*`, `/buyer/*`, `/admin/*`, or
+`/machinery/*`): either way, it clears the stored session and bounces back
+to that app's own login page rather than the page just silently failing.
+The JWT is kept in `localStorage` under `agrolink_farmer_session`,
+`agrolink_lender_session`, `agrolink_buyer_session`,
+`agrolink_admin_session`, or `agrolink_machinery_session` respectively —
+normal practice for a real single-page app; logging out clears it.
 
 ## Verified end-to-end (real browser, real backend, real database)
 
@@ -304,6 +346,26 @@ gateway — not a mock:
   exactly as before, confirming the new pending-KYB gate didn't regress
   any previously-working login. All test organizations were deleted
   afterward, not left in seed data.
+- **Machinery/Drying-Yard Portal**, tested with Playwright: registered a
+  brand-new `TractorService` provider through `register-provider.html`,
+  confirmed it landed on `machinery/dashboard.html` showing the
+  "รอตรวจสอบ (KYB)" pending notice; approved that org's KYB directly via the
+  admin API (simulating a Platform Ops action in a separate session) and
+  reloaded the page with no re-login, confirming the real dashboard
+  (org type, KYB status, `0 / 7` priced items, `0` photos) now rendered
+  instead of the pending notice; filled in three of the seven rate-card
+  fields (ไถดะ 480, ไถแปรและหว่าน 380, ขนส่งด้วยรถบรรทุก 9.5) and saved,
+  confirming the summary card updated to `3 / 7` with a success toast, no
+  page reload; uploaded a real image file through the file input with a
+  photo-type selection and caption, confirming it appeared in the gallery
+  grid immediately and the summary card's photo count updated to `1`; and
+  reloaded the whole page from scratch afterward, confirming both the
+  rate-card values and the uploaded photo persisted server-side (not just
+  held in browser state). Screenshots were taken at each step. One real
+  bug was found and fixed via this same testing before the UI pass even
+  ran (see the backend README's verification section — the `ON CONFLICT`
+  partial-index arbiter mismatch). The temporary test organizations were
+  deleted afterward, not left in seed data.
 
 ## New backend endpoints added while building this
 
@@ -337,6 +399,13 @@ gateway — not a mock:
   `buyer.js`) — backs the pending-KYB notice in `lender/dashboard.html` /
   `buyer/dashboard.html`. See the backend README for why this became
   necessary once organizations could self-register.
+- The entire `/machinery/*` slice (in `../backend/src/routes/machinery.js`)
+  — backs `machinery/dashboard.html`. See the backend README for what it
+  does, the `service_key`/`vendor_photo` schema changes and grants this
+  needed (`marketplace.service_listing` had zero grants at all before
+  this), and a real `ON CONFLICT`-vs-partial-index bug building it
+  surfaced. Also added `DryingYardService` to `ORG_SELF_REGISTER_TYPES`
+  and widened `identity.organization.org_type` to allow it.
 
 ## What's next
 
@@ -358,13 +427,18 @@ gateway — not a mock:
   backend README.
 - Dedicated portals for the organization types `register-provider.html`
   can already register but that have no dashboard of their own yet
-  (Cooperative, Mill, InputSupplier, Logistics, and the four new
-  machinery-service types) — right now those just get a confirmation
-  screen with nowhere to log into afterward.
-- Farmer, Lender, Buyer, and Platform Ops Portals are all now built
-  end-to-end (backend + frontend, tested), and organizations can now
-  self-register and get approved through the API and UI — closing the
-  submit-then-approve loop that was the previous headline gap here. The
-  natural next candidates are the gaps just above, or a fresh vertical
-  slice (e.g. Logistics, VillageFund) reusing the same patterns
-  established here.
+  (Cooperative, Mill, InputSupplier, Logistics) — right now those just get
+  a confirmation screen with nowhere to log into afterward.
+- A farmer-facing way to actually browse Machinery/Drying-Yard Portal rate
+  cards and photos and book a service — `marketplace.service_request`
+  exists in the schema but nothing on either the farmer or machinery side
+  reads/writes it yet. See the backend README.
+- Object storage/CDN for the Machinery/Drying-Yard Portal's photo gallery,
+  replacing the base64 `data:` URLs it stores directly in Postgres today.
+- Farmer, Lender, Buyer, Platform Ops, and Machinery/Drying-Yard Portals
+  are all now built end-to-end (backend + frontend, tested), and
+  organizations can now self-register and get approved through the API and
+  UI — closing the submit-then-approve loop that was the previous headline
+  gap here. The natural next candidates are the gaps just above, or a
+  fresh vertical slice (e.g. Logistics, VillageFund) reusing the same
+  patterns established here.

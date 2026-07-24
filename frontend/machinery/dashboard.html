@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้ให้บริการเครื่องจักรกล/ลานตาก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🚜</span><span>AgroLink Platform — พอร์ทัลผู้ให้บริการเครื่องจักรกล/ลานตาก</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">💰 ราคาบริการ (Rate Card)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      กรอกเฉพาะบริการที่ท่านให้บริการจริง — ช่องที่ไม่กรอก (หรือกรอก 0) จะไม่แสดงราคาบริการนั้นแก่เกษตรกร
+    </p>
+    <form id="rateCardForm" class="panel">
+      <div id="rateCardFields" class="form-grid">
+        <div class="loading-line">กำลังโหลดราคาบริการ…</div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="rateCardSubmitBtn" style="max-width:260px;">บันทึกราคาบริการ</button>
+    </form>
+
+    <div class="section-title">📷 รูปภาพบริการ/เครื่องจักรกล</div>
+    <div class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="photoTypeSelect">ประเภทรูปภาพ</label>
+          <select id="photoTypeSelect">
+            <option value="machinery">รูปเครื่องจักรกล</option>
+            <option value="service">รูปการให้บริการ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="photoCaptionInput">คำอธิบายรูปภาพ (ถ้ามี)</label>
+          <input type="text" id="photoCaptionInput" placeholder="เช่น รถไถคูโบต้า M7" />
+        </div>
+        <div class="field full">
+          <label for="photoFileInput">เลือกรูปภาพ</label>
+          <input type="file" id="photoFileInput" accept="image/*" />
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" id="photoUploadBtn" style="max-width:200px;">อัปโหลดรูปภาพ</button>
+    </div>
+    <div id="photoGallery" class="photo-grid">
+      <div class="loading-line">กำลังโหลดรูปภาพ…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
