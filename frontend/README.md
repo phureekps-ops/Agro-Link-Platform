@@ -391,12 +391,16 @@ process needed:
 - Machinery/Drying-Yard Portal: `http://localhost:5173/machinery/index.html`
 - Service-Provider Registration: `http://localhost:5173/register-provider.html`
 
-If the API runs somewhere other than `localhost:4000`, change `API_BASE` at
-the top of `js/api.js` (Farmer Portal), `lender/js/api.js` (Lender Portal),
-`buyer/js/api.js` (Buyer Portal), `admin/js/api.js` (Admin Portal),
-`machinery/js/api.js` (Machinery/Drying-Yard Portal), AND
-`js/register-provider.js` (Service-Provider Registration) — they're six
-separate copies, not shared, on purpose (see above).
+`API_BASE` at the top of each of the 8 `api.js`/`register-provider.js`/
+`manage-roles.js` copies now picks itself automatically: when the page is
+opened from `localhost`/`127.0.0.1` (local dev, any port) it talks to
+`http://localhost:4000`; from anywhere else (e.g. once this is deployed as
+a Render Static Site) it talks to `https://agrolink-backend.onrender.com`
+instead. If the deployed backend ends up with a different Render service
+name, or you're pointing this at some other host entirely, edit the
+fallback URL in each of the 8 files (still separate copies, not shared, on
+purpose — see above) rather than the `localhost` branch. See `DEPLOY.md` at
+the repo root for the full Render deployment walkthrough.
 
 ## How it talks to the backend
 

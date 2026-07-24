@@ -11,7 +11,13 @@
  * (e.g. via the link on their Lender dashboard) and request a Buyer role
  * without needing to log in again anywhere.
  */
-const API_BASE = "http://localhost:4000";
+const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
+  ? "http://localhost:4000"
+  : "https://agrolink-backend.onrender.com";
+// Local dev talks to the backend on localhost:4000. Any other hostname
+// (i.e. once this file is served from a Render Static Site) talks to the
+// deployed backend instead -- update the URL above if the Render backend
+// Web Service ends up named something other than "agrolink-backend".
 const SESSION_KEYS = ["agrolink_lender_session", "agrolink_buyer_session", "agrolink_machinery_session"];
 
 function findSession() {

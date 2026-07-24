@@ -1,14 +1,35 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-  host: process.env.PGHOST,
-  port: Number(process.env.PGPORT || 5432),
-  database: process.env.PGDATABASE,
-  user: process.env.PGUSER,
-  password: process.env.PGPASSWORD,
-  max: 10,
-  idleTimeoutMillis: 30000,
-});
+// Render (and most managed Postgres hosts) hand out one connection string
+// via DATABASE_URL instead of discrete PGHOST/PGPORT/etc. vars, and require
+// TLS on that connection. Local dev keeps using the discrete vars (no TLS,
+// since a local Postgres on localhost has no certificate to offer).
+//
+// PGSSLMODE=disable is an explicit escape hatch for the rare case a
+// DATABASE_URL-style host genuinely doesn't want/support TLS — otherwise,
+// any DATABASE_URL is assumed to need it. `rejectUnauthorized: false` is
+// used (rather than validating the CA chain) because Render's managed
+// Postgres presents a certificate that Node's default trust store does not
+// recognize; the connection itself is still encrypted, which is what
+// matters for credentials/data in transit over the public internet.
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.PGSSLMODE === 'disable' ? false : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+    }
+  : {
+      host: process.env.PGHOST,
+      port: Number(process.env.PGPORT || 5432),
+      database: process.env.PGDATABASE,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      max: 10,
+      idleTimeoutMillis: 30000,
+    };
+
+const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
   // A client sitting idle in the pool hit a background error (e.g. server

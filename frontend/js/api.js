@@ -5,7 +5,13 @@
  * see ../backend). Change API_BASE if the gateway runs somewhere other than
  * localhost:4000 (e.g. once deployed).
  */
-const API_BASE = "http://localhost:4000";
+const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
+  ? "http://localhost:4000"
+  : "https://agrolink-backend.onrender.com";
+// Local dev talks to the backend on localhost:4000. Any other hostname
+// (i.e. once this file is served from a Render Static Site) talks to the
+// deployed backend instead -- update the URL above if the Render backend
+// Web Service ends up named something other than "agrolink-backend".
 
 const AUTH_STORAGE_KEY = "agrolink_farmer_session";
 

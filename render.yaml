@@ -1,0 +1,59 @@
+# AgroLink Platform — Render Blueprint
+#
+# Deploys three pieces from this one repo, wired together automatically:
+#   1. agrolink-db        — managed Postgres database
+#   2. agrolink-backend   — the Node/Express API (backend/)
+#   3. agrolink-frontend  — the static farmer/lender/buyer/admin/etc. portals (frontend/)
+#
+# How to use this file: see DEPLOY.md at the repo root for the full
+# step-by-step walkthrough (account creation, connecting GitHub, running the
+# one-time database setup scripts, verifying the deploy). This file only
+# describes *what* gets created — Render's "New Blueprint" flow reads it
+# from your repo and provisions all three services in one go.
+#
+# Plans are set to "free" so a first deploy costs nothing. Read DEPLOY.md's
+# "แผนราคา" (pricing) section before relying on this for more than a quick
+# pilot test — Render's free Postgres plan is deleted 30 days after
+# creation unless upgraded, and the free web service plan spins down after
+# 15 minutes of no traffic (the first request after that takes ~1 minute to
+# wake back up). Change `plan: free` to `plan: starter` (backend) and
+# `plan: basic-256mb` (database) below once ready to keep the pilot running
+# continuously — see DEPLOY.md for current pricing.
+
+databases:
+  - name: agrolink-db
+    plan: free
+    region: singapore
+    databaseName: agrolink
+    user: agrolink
+
+services:
+  - type: web
+    runtime: node
+    name: agrolink-backend
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agrolink-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: ADMIN_PASSCODE
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    runtime: static
+    name: agrolink-frontend
+    region: singapore
+    rootDir: frontend
+    buildCommand: echo "no build step needed"
+    staticPublishPath: .

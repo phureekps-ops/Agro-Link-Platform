@@ -48,17 +48,31 @@ Copy `.env` (already present, dev-only values) and adjust as needed:
 
 | Variable | Meaning |
 |---|---|
-| `PORT` | HTTP port the API listens on (default 4000) |
-| `PGHOST`/`PGPORT`/`PGDATABASE`/`PGUSER`/`PGPASSWORD` | Connection to Postgres, using the `agrolink_backend` service account |
+| `PORT` | HTTP port the API listens on (default 4000; Render sets this automatically) |
+| `DATABASE_URL` | Single-string Postgres connection (`postgresql://user:pass@host:port/db`), as handed out by Render and most managed Postgres hosts. When set, this takes priority over the `PG*` vars below and the pool connects over TLS. See `src/db/pool.js`. |
+| `PGHOST`/`PGPORT`/`PGDATABASE`/`PGUSER`/`PGPASSWORD` | Discrete connection to Postgres, using the `agrolink_backend` service account. Used only when `DATABASE_URL` is not set — this is the local dev path. |
+| `PGSSLMODE` | Set to `disable` to force a non-TLS connection even when `DATABASE_URL` is set (rarely needed). |
 | `JWT_SECRET` | HS256 signing key for session tokens — **rotate and load from a real secret manager in production, not `.env`** |
 | `JWT_EXPIRES_IN` | Session token lifetime (default `8h`) |
+| `ADMIN_PASSCODE` | Shared passcode for `POST /auth/admin-login` — generate a fresh one in production, never reuse the dev value |
+
+To deploy this to Render.com instead of running it locally, see `DEPLOY.md`
+at the repo root — it covers the same setup below plus the Render-specific
+steps (creating the database, setting these env vars, etc.).
 
 ## One-time database setup
 
-Run these against the target database, in order, before starting the API
-for the first time:
+Run these against the target database, **in this exact order**, before
+starting the API for the first time. This full set (including the first
+four bootstrap files) was reconstructed from the live sandbox database
+while preparing the Render migration — see `db/00_roles.sql` and
+`db/03_grant_schema_usage.sql` for why they exist and why they're new.
 
 ```
+psql -d agrolink_test -f db/00_roles.sql
+psql -d agrolink_test -f db/01_extensions.sql
+psql -d agrolink_test -f db/02_full_schema.sql
+psql -d agrolink_test -f db/03_grant_schema_usage.sql
 psql -d agrolink_test -f db/setup_backend_role.sql
 psql -d agrolink_test -f db/grant_farmer_portal_reads.sql
 psql -d agrolink_test -f db/fix_submit_application_security.sql
@@ -68,7 +82,40 @@ psql -d agrolink_test -f db/fix_produce_settlement_security.sql
 psql -d agrolink_test -f db/grant_buyer_portal.sql
 psql -d agrolink_test -f db/grant_platform_ops.sql
 psql -d agrolink_test -f db/grant_provider_registration.sql
+psql -d agrolink_test -f db/grant_machinery_marketplace.sql
+psql -d agrolink_test -f db/grant_organization_roles.sql
+psql -d agrolink_test -f db/grant_input_supplier_and_buy_prices.sql
+psql -d agrolink_test -f db/grant_farmer_product_orders.sql
+psql -d agrolink_test -f db/04_reference_data.sql
 ```
+
+- `00_roles.sql` / `01_extensions.sql` / `02_full_schema.sql` /
+  `03_grant_schema_usage.sql` / `04_reference_data.sql` — added while
+  preparing the Render migration, after discovering the repo had no
+  reproducible base schema at all: everything below this point (the
+  `grant_*.sql`/`fix_*.sql` scripts) is an *incremental* migration written
+  against schema/role state that, until now, had only ever existed live in
+  this sandbox. These four files are a `pg_dump`-based export of that
+  state (roles, extensions, every table/function/policy, and the static
+  reference/config data the app needs) so a brand-new database — like a
+  fresh Render Postgres instance — can be brought up from nothing. Verified
+  by restoring into a completely empty local database and re-running the
+  full curl/API smoke test against it. **`03_grant_schema_usage.sql`
+  specifically fixes a real, previously-invisible gap**: every
+  `grant_*.sql`/`fix_*.sql` script below grants table-level privileges, but
+  none of them (nor anything else in the repo) ever granted `agrolink_app`
+  schema-level `USAGE` — that had only ever been set by hand, once, outside
+  of any file. A fresh restore without this script fails on the very first
+  real request with `permission denied for schema identity`.
+- `db/dev_sample_data.sql` (optional, **local dev only** — do not run this
+  against Render/production) — the sandbox's fake farmers, organizations,
+  contracts, loans, and orders generated while building and testing this
+  project, split out from the reference data above so a local dev database
+  can optionally be seeded with realistic-looking sample data. Wraps the
+  three `FORCE ROW LEVEL SECURITY` tables (`contract.contract`,
+  `risk.credit_score`, `underwriting.loan_application`) in a temporary
+  `NO FORCE`/`FORCE` toggle so it also restores cleanly under a
+  non-superuser role.
 
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
   it membership in `agrolink_app`, and grants it direct `EXECUTE` on
