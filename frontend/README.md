@@ -224,13 +224,17 @@ A single standalone page (not inside any one portal's folder, same level
 as the Farmer Portal's own `register.html`) backing `POST
 /auth/org-register` — the org-facing counterpart to farmer
 self-registration. Three fields: organization/business name, tax ID (13
-digits), and a business-type dropdown covering eleven self-registerable
-`org_type` values — the pre-existing `Lender`/`Buyer`/`InputSupplier`/
-`Cooperative`/`Mill`/`Logistics`, plus the five farm-machinery/drying-yard
-service categories that share the unified Machinery/Drying-Yard Portal
-above: บริการรถไถ (`TractorService`), บริการโดรน/ฉีดพ่นสารเคมี
-(`DroneService`), บริการรถเกี่ยวข้าว (`HarvesterService`), บริการรถบรรทุก
-(`TruckService`), and บริการลานตากข้าว (`DryingYardService`).
+digits), and a business-type dropdown covering nine self-registerable
+`org_type` values — `Lender`/`Buyer`/`InputSupplier`/`Logistics`, plus the
+five farm-machinery/drying-yard service categories that share the unified
+Machinery/Drying-Yard Portal above: บริการรถไถ (`TractorService`),
+บริการโดรน/ฉีดพ่นสารเคมี (`DroneService`), บริการรถเกี่ยวข้าว
+(`HarvesterService`), บริการรถบรรทุก (`TruckService`), and บริการลานตากข้าว
+(`DryingYardService`). **`Cooperative` (สหกรณ์) and `Mill` (โรงสี) were
+removed from this dropdown on 2026-07-24** per an explicit product decision
+— see the backend README's "what's mocked" section; both values still exist
+in the underlying `org_type` domain, they just aren't offered on this form
+anymore.
 
 What happens after a successful submission depends on the chosen
 `org_type`, since not every organization type has a dedicated portal yet:
@@ -244,10 +248,10 @@ What happens after a successful submission depends on the chosen
   live data (see the pending-KYB-state section below) — refreshing the
   same page after Platform Ops approves it shows the real dashboard, no
   re-login needed.
-- Every other type (Cooperative, Mill, Logistics) — there's nowhere to
-  redirect to yet, so the page just replaces the form with a plain
-  "ส่งใบสมัครเรียบร้อยแล้ว" (application received) confirmation showing the org
-  name and type.
+- **Logistics** — the only remaining self-registerable type with no
+  dedicated portal — there's nowhere to redirect to yet, so the page just
+  replaces the form with a plain "ส่งใบสมัครเรียบร้อยแล้ว" (application
+  received) confirmation showing the org name and type.
 
 Linked from: the root marketing homepage's `#contact` call-to-action
 banner (previously a dead `href="#"` placeholder — now a real link,
@@ -638,10 +642,13 @@ gateway — not a mock:
 - A self-service onboarding path for `Bank` and `VillageFund` organizations,
   currently excluded from `register-provider.html`'s dropdown — see the
   backend README.
-- Dedicated portals for the organization types `register-provider.html`
-  can already register but that have no dashboard of their own yet
-  (Cooperative, Mill, Logistics) — right now those just get a confirmation
-  screen with nowhere to log into afterward.
+- A dedicated portal for `Logistics` — the one remaining organization type
+  `register-provider.html` can already register but that has no dashboard
+  of its own yet; right now it just gets a confirmation screen with nowhere
+  to log into afterward.
+- An onboarding path for `Bank`, `VillageFund`, `Cooperative`, and `Mill` —
+  all four excluded from `register-provider.html`'s dropdown entirely, with
+  no alternative sign-up path built yet. See the backend README.
 - A farmer-facing way to actually browse Machinery/Drying-Yard Portal rate
   cards and photos and book a service — `marketplace.service_request`
   exists in the schema but nothing on either the farmer or machinery side

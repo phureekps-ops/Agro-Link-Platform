@@ -15,14 +15,18 @@ router.use(requireAuth, requireOrganization);
 // — kept as its own list here (rather than importing ORG_SELF_REGISTER_TYPES
 // from auth.js) because the two lists could plausibly diverge in the future
 // (e.g. a role only grantable by Platform Ops directly, never self-service
-// requestable) — today they happen to be identical.
+// requestable) — today they happen to be identical. 'Cooperative' and 'Mill'
+// were removed from both lists together on 2026-07-24, per the same product
+// decision as ORG_SELF_REGISTER_TYPES in auth.js — an org can no longer
+// self-request either of these as an additional role, same as it can no
+// longer self-register as one from scratch.
 const ORG_REQUESTABLE_ROLE_TYPES = [
-  'Cooperative', 'Mill', 'InputSupplier', 'Lender', 'Logistics', 'Buyer',
+  'InputSupplier', 'Lender', 'Logistics', 'Buyer',
   'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
 ];
 
 const ROLE_LABEL_TH = {
-  Cooperative: 'สหกรณ์', Mill: 'โรงสี', InputSupplier: 'ผู้จำหน่ายปัจจัยการผลิต',
+  InputSupplier: 'ผู้จำหน่ายปัจจัยการผลิต',
   Lender: 'ผู้ปล่อยกู้', Logistics: 'โลจิสติกส์/ขนส่งทั่วไป', Buyer: 'ผู้รับซื้อผลผลิต',
   TractorService: 'บริการรถไถ', DroneService: 'บริการโดรน/ฉีดพ่นสารเคมี',
   HarvesterService: 'บริการรถเกี่ยวข้าว', TruckService: 'บริการรถบรรทุก',

@@ -16,9 +16,12 @@
  *     screen rather than erroring — see lender/js/dashboard.js /
  *     buyer/js/dashboard.js / machinery/js/dashboard.js /
  *     inputsupplier/js/dashboard.js.
- *   - Every other org_type (Cooperative, Mill, Logistics) has NO
- *     dedicated portal at all yet, so there's nowhere to redirect to —
- *     this page just shows a plain success confirmation instead.
+ *   - Every other org_type (Logistics) has NO dedicated portal at all yet,
+ *     so there's nowhere to redirect to — this page just shows a plain
+ *     success confirmation instead. ('Cooperative' and 'Mill' were removed
+ *     from the self-registration dropdown entirely on 2026-07-24, so this
+ *     path is effectively just 'Logistics' now — see
+ *     ORG_SELF_REGISTER_TYPES in backend/src/routes/auth.js.)
  */
 const API_BASE = "http://localhost:4000";
 
@@ -34,7 +37,7 @@ const registerBtn = document.getElementById("registerBtn");
 
 const ORG_TYPE_LABEL = {
   Lender: "ผู้ปล่อยกู้", Buyer: "ผู้รับซื้อผลผลิต", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
-  Cooperative: "สหกรณ์", Mill: "โรงสี", Logistics: "โลจิสติกส์/ขนส่งทั่วไป",
+  Logistics: "โลจิสติกส์/ขนส่งทั่วไป",
   TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี",
   HarvesterService: "บริการรถเกี่ยวข้าว", TruckService: "บริการรถบรรทุก",
   DryingYardService: "บริการลานตากข้าว",

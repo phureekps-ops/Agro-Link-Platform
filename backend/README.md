@@ -193,7 +193,7 @@ npm start          # or: node src/server.js
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
 - `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
-- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `Cooperative`/`Mill`/`InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank` and `VillageFund` are deliberately excluded, see "what's mocked" below). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
+- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank`/`VillageFund` are deliberately excluded, see "what's mocked" below, and `Cooperative`/`Mill` were removed from this list on 2026-07-24 per an explicit product decision — both values still exist in `identity.organization`'s underlying `org_type` domain, they just aren't self-registerable through this endpoint anymore). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
 
 Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already
@@ -261,7 +261,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /inputsupplier/products/:id/photos` / `POST /inputsupplier/products/:id/photos` / `DELETE /inputsupplier/products/:id/photos/:photoId` — same `data:image/...` upload pattern as the Machinery Portal's photo gallery, scoped per-product instead of per-org. Capped at 4MB per photo (`MAX_PHOTO_DATA_URL_LENGTH`).
 
 **Organization Roles / multi-role self-service** (`src/routes/organization.js`, requires any valid organization-subject JWT — deliberately NOT gated to any one `org_type`/role, since managing your own set of business roles is something every organization can do regardless of which roles it currently holds)
-- `GET /organization/roles` — this org's full role picture: `org_name`, `primary_org_type` (the role chosen at registration), `entity_kyb_status`, every role it currently holds (`roles[]`, each with `status`/`requested_at`/`decided_at`/`decided_reason`/`label_th`), and every role type it could still request (`requestable_roles[]` — anything in the fixed 11-type domain it doesn't already have a row for, regardless of that row's status).
+- `GET /organization/roles` — this org's full role picture: `org_name`, `primary_org_type` (the role chosen at registration), `entity_kyb_status`, every role it currently holds (`roles[]`, each with `status`/`requested_at`/`decided_at`/`decided_reason`/`label_th`), and every role type it could still request (`requestable_roles[]` — anything in the fixed 9-type `ORG_REQUESTABLE_ROLE_TYPES` domain it doesn't already have a row for, regardless of that row's status; `Bank`/`VillageFund`/`Cooperative`/`Mill` are excluded from this domain — see "what's mocked" above).
 - `POST /organization/roles` — body `{ role_type }` → self-service request for an ADDITIONAL business role. Requires the org's entity `kyb_status` to already be `Verified` (`409 entity_kyb_not_verified` — you need to clear base KYB before adding business capabilities on top of it) and no existing `(org_id, role_type)` row at all (`409 role_already_requested`, with the existing row's `status` — deliberately does NOT let a `Rejected` role be re-requested through self-service; that needs a human to intervene directly, not an unlimited retry loop against the same rejection). On success, inserts a new row at `status = 'Pending'` — same starting state as the org's primary role, same approval flow via `POST /admin/organizations/:id/roles/:role_type/status` above.
 
 **Platform Ops / Admin Portal** (`src/routes/admin.js`, all require a `platform`-subject JWT from `POST /auth/admin-login`)
@@ -540,14 +540,24 @@ not an accident.
   operator acted, never *which one*. This is the single biggest gap in the
   admin slice and is called out explicitly rather than glossed over: a
   real deployment must not ship this as-is.
-- **`POST /auth/org-register` excludes `Bank` and `VillageFund` from
-  self-service sign-up.** `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js`
-  deliberately leaves these two out of the selectable list — they read as
-  institutional/government-linked entities that wouldn't plausibly sign up
-  through a public web form in a real deployment. There is currently no
-  other onboarding path for these two types at all (they can still only be
-  seeded directly), which is a real gap if AgroLink ever needs to onboard
-  one — just a deliberately out-of-scope one for now.
+- **`POST /auth/org-register` excludes `Bank`, `VillageFund`, `Cooperative`,
+  and `Mill` from self-service sign-up.** `ORG_SELF_REGISTER_TYPES` in
+  `src/routes/auth.js` deliberately leaves these four out of the selectable
+  list. `Bank`/`VillageFund` read as institutional/government-linked
+  entities that wouldn't plausibly sign up through a public web form in a
+  real deployment. `Cooperative`/`Mill` were removed later, on 2026-07-24,
+  per an explicit product decision (not an architectural one — both are
+  otherwise completely ordinary private-business categories, same shape as
+  `Logistics`, which is still self-registerable). `POST /organization/roles`
+  (self-service *additional*-role requests, see "Multi-role organizations"
+  below) excludes the same four types from `ORG_REQUESTABLE_ROLE_TYPES` in
+  `src/routes/organization.js`, kept in lockstep with the registration list
+  by convention (the two lists are separate on purpose, but have always been
+  kept identical in practice — see that file's own comment). There is
+  currently no other onboarding path for any of these four types at all
+  (they can still only be created directly, e.g. seeded), which is a real
+  gap if AgroLink ever needs to onboard one — just a deliberately
+  out-of-scope one for now.
 - **`business_registration_no` is assumed equal to `tax_id`.**
   `POST /auth/org-register` only collects one number (`tax_id`) but
   `partner.vendor_profile.business_registration_no` is a real, distinct
@@ -852,9 +862,10 @@ and the live `agrolink_test` database — not unit tests against mocks:
   to. Low risk today since only a `platform`-subject JWT can reach these
   routes at all, but worth hardening consistently with the rest of the
   schema eventually.
-- An onboarding path for `Bank` and `VillageFund` organizations — currently
-  excluded from `POST /auth/org-register`'s self-service list (see "what's
-  mocked" above) with no alternative path built yet.
+- An onboarding path for `Bank`, `VillageFund`, `Cooperative`, and `Mill`
+  organizations — all four currently excluded from `POST
+  /auth/org-register`'s self-service list (see "what's mocked" above) with
+  no alternative path built yet.
 - A way to correct `partner.vendor_profile.business_registration_no` after
   registration if it genuinely differs from `tax_id` — no edit endpoint
   exists for `vendor_profile` fields today.
@@ -868,11 +879,12 @@ and the live `agrolink_test` database — not unit tests against mocks:
 - RLS on `marketplace.service_listing`/`marketplace.vendor_photo` — same
   API-layer-is-the-only-boundary situation as the other tables listed
   above, just for the Machinery/Drying-Yard Portal.
-- Dedicated portals for `Cooperative`, `Mill`, `InputSupplier`, and
-  `Logistics` — these four org_types can still only self-register and get a
-  registration-received confirmation; there's nowhere for them to log into
-  yet, unlike the five machinery/drying-yard org_types (which now share the
-  unified portal built this session).
+- A dedicated portal for `Logistics` — the one remaining self-registerable
+  org_type with no portal of its own; it still only gets a
+  registration-received confirmation, with nowhere to log into afterward.
+  (`Cooperative` and `Mill` were removed from self-registration entirely on
+  2026-07-24, so they're no longer part of this gap; `InputSupplier` got
+  its own dedicated portal earlier the same day.)
 - Farmer Portal, Lender Portal, Buyer Portal, Platform Ops, and the
   Machinery/Drying-Yard Portal are all now built end-to-end (backend +
   frontend, tested), and organizations can now both self-register and be

@@ -20,9 +20,13 @@ const REGISTER_CONSTRAINT_ERRORS = {
 // institutional/government-linked entities that wouldn't plausibly sign up
 // through a public web form in a real deployment, unlike the genuine
 // private-business categories below (all of which a real company could
-// reasonably self-serve register as).
+// reasonably self-serve register as). 'Cooperative' and 'Mill' were also
+// removed from this list per an explicit product decision (2026-07-24) —
+// both values still exist in identity.organization's org_type domain (an
+// org of either type could still be created directly, e.g. seeded), they
+// just aren't offered on the public self-registration form anymore.
 const ORG_SELF_REGISTER_TYPES = [
-  'Cooperative', 'Mill', 'InputSupplier', 'Lender', 'Logistics', 'Buyer',
+  'InputSupplier', 'Lender', 'Logistics', 'Buyer',
   'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
 ];
 const ORG_REGISTER_CONSTRAINT_ERRORS = {
@@ -219,9 +223,11 @@ router.post('/register', async (req, res, next) => {
  * in their own route files) — a newly self-registered org sees a "your
  * application is under review" state in that portal instead of live data
  * until Platform Ops approves it. Organization types with no dedicated
- * portal at all yet (Cooperative, Mill, Logistics) simply get a
- * registration-received confirmation on the frontend — there's nowhere
- * else for them to log into yet. TractorService, DroneService,
+ * portal at all yet (Logistics — the only remaining self-registerable type
+ * without one, now that Cooperative and Mill were removed from
+ * self-registration entirely) simply get a registration-received
+ * confirmation on the frontend — there's nowhere else to log into yet.
+ * TractorService, DroneService,
  * HarvesterService, TruckService, and DryingYardService all share ONE
  * portal (`frontend/machinery/`) — see `src/routes/machinery.js`. InputSupplier
  * has its own dedicated portal (`frontend/inputsupplier/`) — a product
