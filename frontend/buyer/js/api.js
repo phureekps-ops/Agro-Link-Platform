@@ -9,11 +9,14 @@
  */
 const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
   ? "http://localhost:4000"
-  : "https://agrolink-backend.onrender.com";
+  : "https://agrolink-backend-vhv6.onrender.com";
 // Local dev talks to the backend on localhost:4000. Any other hostname
 // (i.e. once this file is served from a Render Static Site) talks to the
-// deployed backend instead -- update the URL above if the Render backend
-// Web Service ends up named something other than "agrolink-backend".
+// deployed backend instead. Render appends a random suffix to every
+// *.onrender.com URL regardless of service name (e.g. "-vhv6" here) --
+// if the backend gets redeployed under a new URL, update it above to
+// match exactly what's shown on the service's page in the Render
+// Dashboard, not just the service name.
 
 const AUTH_STORAGE_KEY = "agrolink_buyer_session";
 

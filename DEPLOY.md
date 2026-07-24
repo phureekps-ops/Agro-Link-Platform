@@ -80,71 +80,84 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 ต้องใช้โปรแกรม `psql` รันคำสั่ง SQL จากเครื่องคุณไปที่ฐานข้อมูลบน Render:
 
 1. ไปที่ https://www.postgresql.org/download/windows/ → กด **Download the installer** (จะพาไปหน้า EDB)
-2. ดาวน์โหลดตัวติดตั้งเวอร์ชันล่าสุด แล้วรัน
-3. ระหว่างติดตั้ง ในหน้า **Select Components** ให้เลือกแค่ **Command Line Tools** ก็พอ (ไม่ต้องติดตั้งตัวเซิร์ฟเวอร์ฐานข้อมูล ไม่ต้องติดตั้ง pgAdmin ก็ได้ถ้าไม่อยากได้)
-4. ติดตั้งจนจบ (ตั้ง password ตอนติดตั้งไม่มีผลอะไรกับ Render เพราะเราจะเชื่อมไปฐานข้อมูลบน Render ไม่ใช่ฐานในเครื่อง)
-5. เปิด **Command Prompt** หรือ **PowerShell** ใหม่ แล้วพิมพ์ `psql --version` — ถ้าขึ้นเลขเวอร์ชันแปลว่าติดตั้งสำเร็จ (ถ้าขึ้น "ไม่รู้จักคำสั่ง" ให้ลองปิดแล้วเปิดหน้าต่าง Command Prompt ใหม่อีกครั้ง)
+2. เลือกเวอร์ชัน **18** (ให้ตรงกับเวอร์ชันฐานข้อมูลบน Render) และ **Windows x86-64** แล้วดาวน์โหลด
+3. รันตัวติดตั้ง — ระหว่างติดตั้ง หน้า **Select Components** จะติ๊กทุกอย่างไว้ให้แล้วก็ปล่อยไว้แบบนั้นได้เลย (ไม่ต้องเลือกเฉพาะ Command Line Tools ก็ได้ ติดตั้งทั้งชุดไม่มีปัญหา)
+4. ติดตั้งจนจบ — ถ้ามีหน้าต่าง **Stack Builder** เด้งขึ้นมาหลังติดตั้งเสร็จ กด **Cancel** ปิดไปได้เลย (เป็นแค่ตัวเสริม ไม่จำเป็น)
+5. โปรแกรมจะถูกติดตั้งไว้ที่ `C:\Program Files\PostgreSQL\18\bin\psql.exe` — **ใช้ path เต็มนี้แทนคำว่า `psql` เฉยๆ ในทุกคำสั่งด้านล่าง** (เครื่องหลายเครื่องไม่ได้ตั้งค่าให้พิมพ์แค่ `psql` เฉยๆ แล้วใช้งานได้ทันที ต้องใส่ path เต็มถึงจะชัวร์)
 
 ---
 
 ## 6. คัดลอก Connection String ของฐานข้อมูล
 
 1. ใน Render Dashboard กดเข้า **agrolink-db**
-2. ไปที่แท็บ **Info** (หรือหน้าแรกของฐานข้อมูล)
-3. หาปุ่ม **Connect** (มุมขวาบน) → เลือก **External Connection**
-4. จะเห็นค่า **PSQL Command** เป็นคำสั่งพร้อมใช้ ลักษณะประมาณนี้:
-   ```
-   PGPASSWORD=xxxxxxxx psql -h xxxxx.singapore-postgres.render.com -U agrolink_xxxx agrolink
-   ```
-   กดปุ่มก็อปคำสั่งนี้ทั้งบรรทัดเก็บไว้ — จะใช้ซ้ำในหัวข้อถัดไป
+2. หาปุ่ม **Connect** (มุมขวาบน) → เลือกแท็บ **External**
+3. จะเห็นสองบรรทัด: **External Database URL** (ขึ้นต้นด้วย `postgresql://agrolink:...`) และ **PSQL Command** (ขึ้นต้นด้วย `render psql ...` — **อันนี้ไม่ต้องใช้** เพราะต้องติดตั้ง Render CLI แยกต่างหาก)
+4. กดไอคอนคัดลอก (สี่เหลี่ยมซ้อนกัน) ข้างๆ **External Database URL** — คัดลอกทั้งเส้นเก็บไว้ จะใช้ซ้ำในหัวข้อถัดไป (URL จะมีลักษณะ `postgresql://agrolink:รหัสผ่านยาวๆ@dpg-xxxxx.singapore-postgres.render.com/ชื่อฐานข้อมูล_xxxx` — สังเกตว่าชื่อฐานข้อมูลท้ายสุดมักมีคำต่อท้ายสุ่มด้วย ไม่ใช่ `agrolink` เปล่าๆ)
 
 ---
 
 ## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (17 ไฟล์ ตามลำดับ)
 
-เปิด Command Prompt แล้ว `cd` ไปที่โฟลเดอร์ `backend\db` ในโปรเจกต์ของคุณ เช่น:
+**แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
+
+1. เปิด Command Prompt → `cd` ไปที่โฟลเดอร์ `backend\db`:
+   ```
+   cd "C:\Users\User\Documents\Agro-Link-Platform\Agro-Link-Platform\backend\db"
+   ```
+2. ตั้งค่าการเข้ารหัสตัวอักษรให้ถูกต้องก่อน (ป้องกัน error เรื่องภาษาไทยตอนรันไฟล์ที่มีข้อความไทย) — พิมพ์คำสั่งนี้แล้ว Enter (ไม่มีผลลัพธ์ขึ้นมา ปกติ):
+   ```
+   set PGCLIENTENCODING=UTF8
+   ```
+   **ค่านี้จะหายไปถ้าปิดหน้าต่าง Command Prompt แล้วเปิดใหม่ — ถ้าเปิดหน้าต่างใหม่ระหว่างทาง ต้องพิมพ์คำสั่งนี้ซ้ำอีกครั้งก่อนรันไฟล์ต่อ**
+3. เปิด Notepad/Notepad++ พิมพ์:
+   ```
+   "C:\Program Files\PostgreSQL\18\bin\psql.exe" "" -f 00_roles.sql
+   ```
+4. วางเคอร์เซอร์ตรงกลางระหว่างเครื่องหมาย `""` คู่ที่สอง แล้ววาง **External Database URL** ที่คัดลอกจากขั้นตอนที่ 6 ลงไปตรงนั้น
+5. เลือกทั้งบรรทัด (Ctrl+A) → คัดลอก (Ctrl+C) → กลับไป Command Prompt → คลิกขวา (วางอัตโนมัติ) → Enter
+6. รอผลลัพธ์ — ไม่มีข้อความสีแดงขึ้นต้นด้วย `ERROR:` แปลว่าผ่าน (ข้อความสี "NOTICE" ที่บอกว่า "already exists, skipping" เป็นเรื่องปกติ ไม่ใช่ error)
+7. รันไฟล์ถัดไป: กลับไปที่ Notepad/Notepad++ ใช้ **Find & Replace** (Ctrl+H ใน Notepad++) เปลี่ยนแค่ชื่อไฟล์ท้ายบรรทัดจากไฟล์ปัจจุบันเป็นไฟล์ถัดไปในรายการด้านล่าง แล้วคัดลอก-วาง-Enter ซ้ำแบบเดิม
+
+รันไปตามลำดับนี้ (เปลี่ยนแค่ชื่อไฟล์ท้ายบรรทัด ส่วน URL ตรงกลางเหมือนเดิมทุกครั้ง):
 
 ```
-cd "C:\Users\User\Documents\Agro-Link-Platform\Agro-Link-Platform\backend\db"
+00_roles.sql
+01_extensions.sql
+02_full_schema.sql
+03_grant_schema_usage.sql
+grant_farmer_portal_reads.sql
+fix_submit_application_security.sql
+grant_farmer_registration.sql
+fix_underwriting_decision_security.sql
+fix_produce_settlement_security.sql
+grant_buyer_portal.sql
+grant_platform_ops.sql
+grant_provider_registration.sql
+grant_machinery_marketplace.sql
+grant_organization_roles.sql
+grant_input_supplier_and_buy_prices.sql
+grant_farmer_product_orders.sql
+04_reference_data.sql
 ```
 
-จากนั้นรันคำสั่งทีละบรรทัด **ตามลำดับนี้เท่านั้น** — แทนที่ `<PSQL_COMMAND>` ด้วยคำสั่งที่ก็อปมาจากขั้นตอนที่ 6 ทุกครั้ง (เติม ` -f ชื่อไฟล์` ต่อท้าย):
+**สังเกตว่าไม่มี `setup_backend_role.sql` ในรายการนี้** — อันนี้ตั้งใจ ต่างจากตอนตั้งค่าฐานข้อมูลในเครื่อง local (ที่ backend/README.md อธิบายไว้): บน Render เราให้ backend เชื่อมต่อด้วยบัญชีฐานข้อมูลที่ Render สร้างให้อัตโนมัติเลย (ผ่าน `DATABASE_URL`) แทนที่จะสร้างบัญชีแยกต่างหาก ซึ่งง่ายกว่าและทดสอบแล้วว่าใช้งานได้จริงบน Render ปลอดภัยเหมือนกัน (ไฟล์ `00_roles.sql` มีคำสั่งที่ทำให้บัญชีของ Render ใช้สิทธิ์ที่ระบบ RLS ต้องการได้)
 
-```
-<PSQL_COMMAND> -f 00_roles.sql
-<PSQL_COMMAND> -f 01_extensions.sql
-<PSQL_COMMAND> -f 02_full_schema.sql
-<PSQL_COMMAND> -f 03_grant_schema_usage.sql
-<PSQL_COMMAND> -f grant_farmer_portal_reads.sql
-<PSQL_COMMAND> -f fix_submit_application_security.sql
-<PSQL_COMMAND> -f grant_farmer_registration.sql
-<PSQL_COMMAND> -f fix_underwriting_decision_security.sql
-<PSQL_COMMAND> -f fix_produce_settlement_security.sql
-<PSQL_COMMAND> -f grant_buyer_portal.sql
-<PSQL_COMMAND> -f grant_platform_ops.sql
-<PSQL_COMMAND> -f grant_provider_registration.sql
-<PSQL_COMMAND> -f grant_machinery_marketplace.sql
-<PSQL_COMMAND> -f grant_organization_roles.sql
-<PSQL_COMMAND> -f grant_input_supplier_and_buy_prices.sql
-<PSQL_COMMAND> -f grant_farmer_product_orders.sql
-<PSQL_COMMAND> -f 04_reference_data.sql
-```
-
-**สังเกตว่าไม่มี `setup_backend_role.sql` ในรายการนี้** — อันนี้ตั้งใจ ต่างจากตอนตั้งค่าฐานข้อมูลในเครื่อง local (ที่ backend/README.md อธิบายไว้): บน Render เราให้ backend เชื่อมต่อด้วยบัญชีฐานข้อมูลที่ Render สร้างให้อัตโนมัติเลย (ผ่าน `DATABASE_URL`) แทนที่จะสร้างบัญชีแยกต่างหาก ซึ่งง่ายกว่าและผมทดสอบแล้วว่าใช้งานได้ปลอดภัยเหมือนกัน (ไฟล์ `00_roles.sql` มีคำสั่งที่ทำให้บัญชีของ Render ใช้สิทธิ์ที่ระบบ RLS ต้องการได้)
-
-**แต่ละคำสั่งควรรันไม่เกิน 2-3 วินาที** ถ้าคำสั่งไหนขึ้น error สีแดง (โดยเฉพาะคำว่า `permission denied`) — **ให้หยุดตรงนั้นทันที อย่ารันไฟล์ถัดไปต่อ** แล้วก็อปข้อความ error ทั้งหมดมาส่งให้ผมดู (จุดที่มีความเสี่ยงมากที่สุดคือไฟล์ `01_extensions.sql` เพราะการสร้าง extension บางตัวต้องการสิทธิ์พิเศษ — เอกสารของ Render บอกว่าใช้ได้ปกติ แต่ผมทดสอบเองจริงกับ Render ไม่ได้ ถ้าติดตรงนี้แจ้งผมได้เลย)
+**ถ้าเจอ error สีแดงที่ไม่ใช่เรื่องภาษาไทย (ไม่ใช่ "character with byte sequence...")** — หยุดตรงนั้นทันที อย่ารันไฟล์ถัดไปต่อ แล้วส่งภาพ error ทั้งหมดมาให้ผมดู (จุดที่เคยมีความเสี่ยงคือไฟล์ `01_extensions.sql` เรื่องสิทธิ์การสร้าง extension แต่ทดสอบจริงบน Render ผ่านเรียบร้อยแล้วไม่มีปัญหา)
 
 ---
 
 ## 8. ตรวจสอบว่า deploy สำเร็จ
 
-1. ใน Render Dashboard กดเข้า **agrolink-backend** → คัดลอก URL ที่แสดงด้านบน (ลักษณะ `https://agrolink-backend.onrender.com`)
-2. เปิด browser ไปที่ `<URL นั้น>` ตรงๆ (ไม่ต้องมี path ต่อท้าย) — ถ้าเห็นข้อความ error ของ Express (เช่น "Cannot GET /") แปลว่า backend **ทำงานอยู่** (ปกติ เพราะหน้านั้นไม่มี route ให้)
-3. หาค่า `ADMIN_PASSCODE` ที่ Render สุ่มให้: ไปที่ agrolink-backend → แท็บ **Environment** → หาแถว `ADMIN_PASSCODE` → กดไอคอนตา (👁) เพื่อดูค่า
-4. ไปที่ **agrolink-frontend** → คัดลอก URL (ลักษณะ `https://agrolink-frontend.onrender.com`) → เปิดใน browser
-5. ควรเห็นหน้าแรกของ AgroLink ตามปกติ ลองกดลิงก์ไปหน้าสมัครผู้ให้บริการ (`register-provider.html`) แล้วลองสมัครทดสอบดูสัก 1 องค์กร — ถ้าสมัครผ่านและพาไปหน้า dashboard ได้ แปลว่าทุกส่วนเชื่อมกันถูกต้องแล้ว
+**สำคัญ**: Render เติมรหัสสุ่มต่อท้าย URL ของทุก service เสมอ (เช่น `agrolink-backend-vhv6.onrender.com` ไม่ใช่ `agrolink-backend.onrender.com` เฉยๆ) — URL จริงจะอยู่ในหน้า service นั้นๆ เท่านั้น ต้องเข้าไปดูของจริงทุกครั้ง อย่าเดา
 
-ถ้าอยากทดสอบฝั่งแอดมิน: ไปที่ `<URL frontend>/admin/index.html` แล้ว login ด้วยค่า `ADMIN_PASSCODE` ที่คัดลอกมาจากข้อ 3
+1. ใน Render Dashboard กดเข้า **agrolink-backend** → คัดลอก URL ที่แสดงอยู่ใต้ชื่อ service
+2. เปิด browser ไปที่ URL นั้นตรงๆ (ไม่ต้องมี path ต่อท้าย) — ถ้าเห็นข้อความ error ของ Express (เช่น "Cannot GET /") แปลว่า backend **ทำงานอยู่** (ปกติ เพราะหน้านั้นไม่มี route ให้)
+3. **ถ้า URL ของ agrolink-backend ไม่ตรงกับที่ตั้งไว้ในไฟล์ frontend** (ตอนเตรียมโค้ดผมตั้งไว้ตามค่าที่เจอตอนทดสอบ) ให้แจ้งผม URL จริงมา ผมจะแก้ไฟล์ frontend ทั้ง 8 ไฟล์ให้ตรงแล้วส่งกลับไปให้ push ใหม่
+4. หาค่า `ADMIN_PASSCODE` ที่ Render สุ่มให้: ไปที่ agrolink-backend → แท็บ **Environment** → หาแถว `ADMIN_PASSCODE` → กดไอคอนตา (👁) เพื่อดูค่า
+5. ไปที่ **agrolink-frontend** → คัดลอก URL ที่แสดงอยู่ (จะมีรหัสสุ่มต่อท้ายเช่นกัน) → เปิดใน browser
+6. ควรเห็นหน้าแรกของ AgroLink ตามปกติ ลองกดลิงก์ไปหน้าสมัครผู้ให้บริการ (`register-provider.html`) แล้วลองสมัครทดสอบดูสัก 1 องค์กร — ถ้าสมัครผ่านและพาไปหน้า dashboard ได้ แปลว่าทุกส่วนเชื่อมกันถูกต้องแล้ว
+
+ถ้าอยากทดสอบฝั่งแอดมิน: ไปที่ `<URL frontend>/admin/index.html` แล้ว login ด้วยค่า `ADMIN_PASSCODE` ที่คัดลอกมาจากข้อ 4
 
 ---
 
