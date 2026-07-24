@@ -10,45 +10,66 @@ const router = express.Router();
 router.use(requireAuth, requireOrganization);
 
 /**
- * Confirms the authenticated organization is actually a Lender (as opposed
- * to a Buyer, Mill, InputSupplier, etc. — all of which also authenticate as
- * subjectType='organization'). identity.organization has no RLS at all (it
- * is effectively a shared directory — GET /farmer/lenders already reads it
- * the same way), so this is a plain lookup, not an RLS-scoped read; it just
- * needs *a* valid session context, which withSessionContext provides.
+ * Confirms the authenticated organization actually HOLDS a Verified
+ * 'Lender' role. identity.organization has no RLS at all (it is
+ * effectively a shared directory — GET /farmer/lenders already reads it
+ * the same way), so this is a plain lookup, not an RLS-scoped read; it
+ * just needs *a* valid session context, which withSessionContext provides.
  *
  * Runs once per request rather than being folded into every handler below
  * so every /lender/* route gets the same guarantee without repeating itself.
  *
- * Also gates on kyb_status === 'Verified'. This wasn't necessary before
- * POST /auth/org-register existed — every seeded Lender org was already
- * Verified by the time it could ever log in. Now that an organization can
- * self-register and land at kyb_status='Pending' with a real, working JWT
- * before Platform Ops ever reviews it, skipping this check would let an
- * unapproved (or rejected) org approve/decline real loan applications.
- * Returns a distinct 'kyb_not_verified' error (rather than the generic
- * 'lender_subject_required') so the frontend can show a "your application
- * is under review" state instead of treating this like a wrong-subject-type
- * token and bouncing to login.
+ * Since multi-role support (grant_organization_roles.sql), this is a
+ * TWO-layer check, not one:
+ *   1. org.kyb_status === 'Verified' — the ENTITY itself must be a real,
+ *      approved business at all. Unchanged from before multi-role support;
+ *      still returns 'kyb_not_verified' so the frontend shows the
+ *      existing "your application is under review" state.
+ *   2. identity.organization_role has a row for (org_id, 'Lender') with
+ *      status = 'Verified' — the ORG specifically has this role approved.
+ *      An org whose primary org_type IS 'Lender' gets this in lockstep
+ *      with step 1 (see admin.js's kyb-status endpoint), so nothing
+ *      changes for the common case. What's NEW is that an org whose
+ *      primary role is something else (e.g. Buyer) can also reach here
+ *      successfully if it separately requested and got approved for the
+ *      Lender role via POST /organization/roles — same login, same JWT,
+ *      now able to open both portals. Returns 'role_not_verified' (never
+ *      requested / still Pending / Rejected — role_status distinguishes
+ *      which) rather than the old blanket 'lender_subject_required', so
+ *      the frontend can offer "request this role" instead of just
+ *      bouncing to login.
  */
 async function requireLenderOrg(req, res, next) {
   const { subjectId } = req.subject;
   try {
-    const org = await withSessionContext('organization', subjectId, async (client) => {
-      const { rows } = await client.query(
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const org = await client.query(
         'SELECT org_id, org_name, org_type, kyb_status FROM identity.organization WHERE org_id = $1',
         [subjectId],
       );
-      return rows[0] || null;
+      if (org.rows.length === 0) return { orgMissing: true };
+      const orgRow = org.rows[0];
+      if (orgRow.kyb_status !== 'Verified') return { kybNotVerified: true, org: orgRow };
+
+      const role = await client.query(
+        `SELECT status FROM identity.organization_role WHERE org_id = $1 AND role_type = 'Lender'`,
+        [subjectId],
+      );
+      return { org: orgRow, roleStatus: role.rows[0] ? role.rows[0].status : null };
     });
 
-    if (!org || org.org_type !== 'Lender') {
+    if (result.orgMissing) {
       return res.status(403).json({ error: 'lender_subject_required' });
     }
-    if (org.kyb_status !== 'Verified') {
-      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: org.kyb_status, org_name: org.org_name });
+    if (result.kybNotVerified) {
+      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: result.org.kyb_status, org_name: result.org.org_name });
     }
-    req.org = org;
+    if (result.roleStatus !== 'Verified') {
+      return res.status(403).json({
+        error: 'role_not_verified', role_type: 'Lender', role_status: result.roleStatus, org_name: result.org.org_name,
+      });
+    }
+    req.org = result.org;
     return next();
   } catch (err) {
     return next(err);

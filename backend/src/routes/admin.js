@@ -246,6 +246,18 @@ router.get('/organizations', async (req, res, next) => {
  * ledger.account before creating one) means calling it again on an
  * already-active org is harmless, so this always attempts it rather than
  * tracking whether it "already ran" separately.
+ *
+ * Since multi-role support (grant_organization_roles.sql), this endpoint
+ * ALSO keeps the organization's PRIMARY role row in
+ * identity.organization_role (role_type = org_type) in sync with
+ * kyb_status — same status, same decision. This is deliberately the ONLY
+ * place that happens automatically: a brand-new org's first (and only, so
+ * far) role is approved together with its entity-level KYB in this one
+ * action, so nothing about the existing KYB approval flow/UI needed to
+ * change. Any role requested LATER via POST /organization/roles is a
+ * genuinely separate decision, made through the new
+ * POST /organizations/:id/roles/:role_type/status endpoint below — not
+ * this one.
  */
 router.post('/organizations/:id/kyb-status', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -266,6 +278,19 @@ router.post('/organizations/:id/kyb-status', async (req, res, next) => {
         return { notFound: true };
       }
       await logAccess(client, 'write', 'identity.organization', id);
+
+      // Keep the primary-role row in lockstep — see the doc comment above.
+      // ON CONFLICT DO UPDATE rather than a plain UPDATE because a handful
+      // of pre-multi-role seeded orgs might not have had a row inserted for
+      // them yet in some future re-seed scenario; this makes the sync
+      // self-healing either way.
+      await client.query(
+        `INSERT INTO identity.organization_role (org_id, role_type, status, decided_at, decided_reason)
+         VALUES ($1, $2, $3, now(), $4)
+         ON CONFLICT (org_id, role_type) DO UPDATE
+           SET status = EXCLUDED.status, decided_at = now(), decided_reason = EXCLUDED.decided_reason`,
+        [id, rows[0].org_type, kybStatus, reason || null],
+      );
 
       let activated = false;
       if (kybStatus === 'Verified') {
@@ -295,6 +320,142 @@ router.post('/organizations/:id/kyb-status', async (req, res, next) => {
 
     if (result.notFound) {
       return res.status(404).json({ error: 'organization_not_found' });
+    }
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/role-requests?status=Pending
+ *
+ * Every row in identity.organization_role, joined with the organization's
+ * name/primary org_type/entity kyb_status for display, optionally filtered
+ * by the ROLE's own status (defaults to no filter — same "platform sees
+ * everyone" shape as every other admin list route). This is the queue for
+ * secondary-role requests submitted through POST /organization/roles — but
+ * also shows every org's primary role, since both live in the same table
+ * (see grant_organization_roles.sql). The frontend distinguishes "this is
+ * the org's original/primary role, already handled by the KYB queue" from
+ * "this is a genuinely separate request" by comparing role_type to
+ * org_type client-side, rather than needing a second column here.
+ */
+router.get('/role-requests', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+
+  if (status && !ORG_KYB_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ORG_KYB_STATUSES });
+  }
+
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      let filter = '';
+      if (status) {
+        params.push(status);
+        filter = 'WHERE r.status = $1';
+      }
+      const result = await client.query(
+        `SELECT r.org_id, r.role_type, r.status, r.requested_at, r.decided_at, r.decided_reason,
+                o.org_name, o.org_type AS primary_org_type, o.kyb_status AS entity_kyb_status
+           FROM identity.organization_role r
+           JOIN identity.organization o ON o.org_id = r.org_id
+           ${filter}
+          ORDER BY r.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'identity.organization_role', null);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/organizations/:id/roles/:role_type/status
+ * Body: { status, reason? }
+ *
+ * The decision point for a SECONDARY role request (see
+ * POST /organization/roles) — a separate approval from the org's primary
+ * KYB, per the explicit product decision that every new role, not just the
+ * organization's first, needs its own Platform Ops sign-off. Requires the
+ * organization's entity-level kyb_status to already be 'Verified' (an org
+ * that hasn't cleared base KYB can't have a secondary role request to
+ * begin with — POST /organization/roles itself gates on that), and
+ * requires an existing row for (org_id, role_type) — 404s if the org never
+ * requested this role, rather than silently creating one via this
+ * endpoint (that would let Platform Ops grant a role nobody asked for).
+ */
+router.post('/organizations/:id/roles/:role_type/status', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id, role_type: roleType } = req.params;
+  const { status, reason } = req.body || {};
+
+  if (!status || !ORG_KYB_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ORG_KYB_STATUSES });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const org = await client.query(
+        'SELECT org_id, org_name, kyb_status FROM identity.organization WHERE org_id = $1',
+        [id],
+      );
+      if (org.rows.length === 0) {
+        return { notFound: true };
+      }
+      if (org.rows[0].kyb_status !== 'Verified') {
+        return { entityNotVerified: true };
+      }
+
+      const { rows } = await client.query(
+        `UPDATE identity.organization_role
+            SET status = $1, decided_at = now(), decided_reason = $2
+          WHERE org_id = $3 AND role_type = $4
+          RETURNING org_id, role_type, status`,
+        [status, reason || null, id, roleType],
+      );
+      if (rows.length === 0) {
+        return { roleNotFound: true };
+      }
+      await logAccess(client, 'write', 'identity.organization_role', id);
+
+      let activated = false;
+      if (status === 'Verified') {
+        const hasVendorProfile = await client.query('SELECT 1 FROM partner.vendor_profile WHERE org_id = $1', [id]);
+        if (hasVendorProfile.rows.length > 0) {
+          try {
+            await client.query('SELECT partner.activate_vendor_role($1, $2)', [id, roleType]);
+            activated = true;
+          } catch (activateErr) {
+            console.error('[admin] partner.activate_vendor_role failed after role approval:', activateErr.message);
+          }
+        }
+      }
+
+      const statusLabel = { Verified: 'ผ่านการตรวจสอบแล้ว', Rejected: 'ถูกปฏิเสธ', Pending: 'อยู่ระหว่างการตรวจสอบ' }[status];
+      const message = `คำขอเพิ่มบทบาทธุรกิจ "${roleType}" ของท่านเปลี่ยนสถานะเป็น: ${statusLabel}` + (reason ? ` — เหตุผล: ${reason}` : '');
+      await client.query(
+        `SELECT notification.notify($1, $2, 'organization', $3, $4)`,
+        ['organization_role_decision', status === 'Verified' ? 'info' : 'warning', id, message],
+      );
+
+      return { role: rows[0], vendor_activated: activated };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'organization_not_found' });
+    }
+    if (result.entityNotVerified) {
+      return res.status(409).json({ error: 'entity_kyb_not_verified' });
+    }
+    if (result.roleNotFound) {
+      return res.status(404).json({ error: 'role_request_not_found' });
     }
     return res.json(result);
   } catch (err) {

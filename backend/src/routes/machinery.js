@@ -41,34 +41,73 @@ const RATE_CARD_ITEMS = {
 const RATE_CARD_KEYS = Object.keys(RATE_CARD_ITEMS);
 
 /**
- * Confirms the authenticated organization is one of the five machinery/
- * drying-yard org_types (as opposed to a Lender, Buyer, Mill, etc. — all of
- * which also authenticate as subjectType='organization'). Same pattern as
- * requireLenderOrg/requireBuyerOrg in lender.js/buyer.js.
+ * Confirms the authenticated organization HOLDS at least one Verified role
+ * from the five machinery/drying-yard types. Same two-layer pattern as
+ * requireLenderOrg/requireBuyerOrg in lender.js/buyer.js — see that doc
+ * comment for the full explanation — with one difference: since this
+ * portal already unifies five role types into one, access requires ANY ONE
+ * of them to be Verified (not a specific single role_type check like the
+ * Lender/Buyer gates), so an org that's Verified for e.g. TractorService
+ * but still Pending on a separately-requested DroneService role gets in
+ * (the rate card itself has no per-role field gating — see PUT
+ * /machinery/rate-card's own doc comment).
  *
- * Also gates on kyb_status === 'Verified', for the same reason as those two:
- * POST /auth/org-register issues a real, working JWT the moment someone
- * registers, before Platform Ops ever reviews the application. Without this
- * gate an unapproved provider could publish live pricing/photos immediately.
+ * Also still gates on the entity-level kyb_status === 'Verified' first,
+ * for the same reason as Lender/Buyer: POST /auth/org-register issues a
+ * real, working JWT the moment someone registers, before Platform Ops ever
+ * reviews the application.
  */
 async function requireMachineryOrg(req, res, next) {
   const { subjectId } = req.subject;
   try {
-    const org = await withSessionContext('organization', subjectId, async (client) => {
-      const { rows } = await client.query(
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const org = await client.query(
         'SELECT org_id, org_name, org_type, kyb_status FROM identity.organization WHERE org_id = $1',
         [subjectId],
       );
-      return rows[0] || null;
+      if (org.rows.length === 0) return { orgMissing: true };
+      const orgRow = org.rows[0];
+      if (orgRow.kyb_status !== 'Verified') return { kybNotVerified: true, org: orgRow };
+
+      const roles = await client.query(
+        `SELECT role_type, status FROM identity.organization_role
+          WHERE org_id = $1 AND role_type = ANY($2)`,
+        [subjectId, MACHINERY_ORG_TYPES],
+      );
+      const verifiedRole = roles.rows.find((r) => r.status === 'Verified');
+      // Best-effort status to report when nothing is Verified yet: prefer
+      // Pending over Rejected over "never requested at all" (null), so the
+      // pending notice reads as encouragingly as the real state allows.
+      const bestPendingStatus = roles.rows.some((r) => r.status === 'Pending')
+        ? 'Pending'
+        : (roles.rows.some((r) => r.status === 'Rejected') ? 'Rejected' : null);
+
+      // Every VERIFIED machinery role this org actually holds — deliberately
+      // NOT identity.organization.org_type (the entity's PRIMARY role from
+      // registration). For a genuinely multi-role org those can differ: e.g.
+      // an org registered as Buyer that later got a TractorService role
+      // Verified here has org_type = 'Buyer', which would be actively
+      // misleading if shown as "this org's service type" inside the
+      // machinery portal. Found via manual multi-role testing (see
+      // README) — GET /dashboard below uses this instead of org_type.
+      const verifiedRoleTypes = roles.rows.filter((r) => r.status === 'Verified').map((r) => r.role_type);
+
+      return { org: orgRow, roleStatus: verifiedRole ? 'Verified' : bestPendingStatus, verifiedRoleTypes };
     });
 
-    if (!org || !MACHINERY_ORG_TYPES.includes(org.org_type)) {
+    if (result.orgMissing) {
       return res.status(403).json({ error: 'machinery_subject_required' });
     }
-    if (org.kyb_status !== 'Verified') {
-      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: org.kyb_status, org_name: org.org_name });
+    if (result.kybNotVerified) {
+      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: result.org.kyb_status, org_name: result.org.org_name });
     }
-    req.org = org;
+    if (result.roleStatus !== 'Verified') {
+      return res.status(403).json({
+        error: 'role_not_verified', role_type: 'machinery', role_status: result.roleStatus, org_name: result.org.org_name,
+      });
+    }
+    req.org = result.org;
+    req.org.verified_role_types = result.verifiedRoleTypes;
     return next();
   } catch (err) {
     return next(err);
@@ -112,7 +151,12 @@ router.get('/dashboard', async (req, res, next) => {
       const pricedCount = listings.rows.filter((r) => r.is_active).length;
       return {
         org_name: req.org.org_name,
-        org_type: req.org.org_type,
+        // Verified machinery role(s) actually held (e.g. ["TractorService",
+        // "TruckService"]) — NOT the entity's primary org_type, which can be
+        // a different, non-machinery type for a multi-role org (e.g. a
+        // Buyer that also added a Verified TractorService role). See the
+        // doc comment on requireMachineryOrg above.
+        service_types: req.org.verified_role_types,
         kyb_status: req.org.kyb_status,
         priced_items_count: pricedCount,
         total_rate_card_items: RATE_CARD_KEYS.length,

@@ -264,6 +264,21 @@ router.post('/org-register', async (req, res, next) => {
         [newOrgId, taxId],
       );
 
+      // This org's PRIMARY role — see grant_organization_roles.sql. Kept in
+      // lockstep with identity.organization.kyb_status by the admin
+      // kyb-status endpoint (src/routes/admin.js), so this row starts
+      // 'Pending' exactly like kyb_status does and both flip to
+      // 'Verified'/'Rejected' together in that one existing admin action —
+      // a brand-new org's first role needs no extra approval step beyond
+      // what already existed before multi-role support. Any ADDITIONAL
+      // role requested later (POST /organization/roles) gets its own,
+      // separate row and separate approval.
+      await client.query(
+        `INSERT INTO identity.organization_role (org_id, role_type, status)
+         VALUES ($1, $2, 'Pending')`,
+        [newOrgId, orgType],
+      );
+
       await client.query('SELECT security.set_session_context($1, $2)', ['organization', newOrgId]);
       await logAccess(client, 'write', 'identity.organization', newOrgId);
 

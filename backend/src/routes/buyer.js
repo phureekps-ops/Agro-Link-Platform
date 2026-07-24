@@ -10,35 +10,46 @@ const router = express.Router();
 router.use(requireAuth, requireOrganization);
 
 /**
- * Confirms the authenticated organization is actually a Buyer (as opposed
- * to a Lender, Mill, InputSupplier, etc. — all of which also authenticate
- * as subjectType='organization'). Same pattern as requireLenderOrg in
- * lender.js. identity.organization has no RLS (it's a shared directory),
- * so this is a plain lookup under a valid session context.
- *
- * Also gates on kyb_status === 'Verified' — see the matching comment on
- * requireLenderOrg in lender.js for why this is now necessary (self-service
- * org registration via POST /auth/org-register means an unapproved org can
- * hold a real, working JWT before Platform Ops ever reviews it).
+ * Confirms the authenticated organization actually HOLDS a Verified
+ * 'Buyer' role. Same pattern as requireLenderOrg in lender.js — see its
+ * doc comment for the full two-layer explanation (entity-level kyb_status
+ * first, then role-level identity.organization_role status). Introduced
+ * by multi-role support (grant_organization_roles.sql): an org whose
+ * primary role is something else (e.g. Lender) can now also reach the
+ * Buyer Portal if it separately requested and got approved for the Buyer
+ * role via POST /organization/roles.
  */
 async function requireBuyerOrg(req, res, next) {
   const { subjectId } = req.subject;
   try {
-    const org = await withSessionContext('organization', subjectId, async (client) => {
-      const { rows } = await client.query(
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const org = await client.query(
         'SELECT org_id, org_name, org_type, kyb_status FROM identity.organization WHERE org_id = $1',
         [subjectId],
       );
-      return rows[0] || null;
+      if (org.rows.length === 0) return { orgMissing: true };
+      const orgRow = org.rows[0];
+      if (orgRow.kyb_status !== 'Verified') return { kybNotVerified: true, org: orgRow };
+
+      const role = await client.query(
+        `SELECT status FROM identity.organization_role WHERE org_id = $1 AND role_type = 'Buyer'`,
+        [subjectId],
+      );
+      return { org: orgRow, roleStatus: role.rows[0] ? role.rows[0].status : null };
     });
 
-    if (!org || org.org_type !== 'Buyer') {
+    if (result.orgMissing) {
       return res.status(403).json({ error: 'buyer_subject_required' });
     }
-    if (org.kyb_status !== 'Verified') {
-      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: org.kyb_status, org_name: org.org_name });
+    if (result.kybNotVerified) {
+      return res.status(403).json({ error: 'kyb_not_verified', kyb_status: result.org.kyb_status, org_name: result.org.org_name });
     }
-    req.org = org;
+    if (result.roleStatus !== 'Verified') {
+      return res.status(403).json({
+        error: 'role_not_verified', role_type: 'Buyer', role_status: result.roleStatus, org_name: result.org.org_name,
+      });
+    }
+    req.org = result.org;
     return next();
   } catch (err) {
     return next(err);

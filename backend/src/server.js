@@ -9,6 +9,7 @@ const lenderRouter = require('./routes/lender');
 const buyerRouter = require('./routes/buyer');
 const adminRouter = require('./routes/admin');
 const machineryRouter = require('./routes/machinery');
+const organizationRouter = require('./routes/organization');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
+app.use('/organization', organizationRouter);
 
 // Fallback 404
 app.use((req, res) => {

@@ -193,7 +193,7 @@ npm start          # or: node src/server.js
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
 - `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
-- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `Cooperative`/`Mill`/`InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank` and `VillageFund` are deliberately excluded, see "what's mocked" below). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Duplicate `tax_id` returns `409 tax_id_already_registered`.
+- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `Cooperative`/`Mill`/`InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank` and `VillageFund` are deliberately excluded, see "what's mocked" below). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
 
 Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already
@@ -224,7 +224,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /farmer/production-units` → `registry.production_unit` (PostGIS boundary returned as GeoJSON via `ST_AsGeoJSON`)
 - `GET /farmer/lenders` → active `Lender` organizations from `identity.organization` — added while building the frontend, so the loan-application form's lender dropdown reads real data instead of a hardcoded value.
 
-**Lender Portal** (`src/routes/lender.js`, all require an organization-subject JWT whose `org_type = 'Lender'` AND `kyb_status = 'Verified'` — see `requireLenderOrg`; a Pending/Rejected org gets `403 kyb_not_verified` instead of live loan-application data, closing a gap that opened up once `POST /auth/org-register` made it possible for an unapproved org to hold a real, working JWT)
+**Lender Portal** (`src/routes/lender.js`, all require an organization-subject JWT that passes the two-layer check in `requireLenderOrg`: (1) `identity.organization.kyb_status = 'Verified'` — the entity-level check that existed before multi-role support, `403 kyb_not_verified` otherwise — AND (2) an `identity.organization_role` row for this org with `role_type = 'Lender'` AND `status = 'Verified'` — the newer per-role check, `403 role_not_verified` (with `role_type`/`role_status`/`org_name`) otherwise. See "Multi-role organizations" below for why these are two separate checks.)
 - `GET /lender/dashboard` — org info, application counts by status, active-contract count and outstanding principal.
 - `GET /lender/loan-applications?status=...` — applications submitted to this lender, joined with the farmer's name and latest credit score. `status` accepts any real status value, or the shorthand `action_needed` (`manual_review` + `approved` — both still require the lender to act; `approved` is only an automated pre-approval until a contract actually exists).
 - `GET /lender/loan-applications/:id` — single application detail, plus the related production unit.
@@ -232,7 +232,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `POST /lender/loan-applications/:id/decline` — body `{ reason? }` → `underwriting.decline_application()`.
 - `GET /lender/contracts` — this org's loan-agreement portfolio (contracts where it is the `lender` party).
 
-**Buyer Portal** (`src/routes/buyer.js`, all require an organization-subject JWT whose `org_type = 'Buyer'` AND `kyb_status = 'Verified'` — see `requireBuyerOrg`, same gate and same reasoning as the Lender Portal above)
+**Buyer Portal** (`src/routes/buyer.js`, all require an organization-subject JWT that passes the same two-layer `requireBuyerOrg` check — entity `kyb_status = 'Verified'` (`403 kyb_not_verified`) AND an `organization_role` row with `role_type = 'Buyer'`, `status = 'Verified'` (`403 role_not_verified`) — same shape and reasoning as `requireLenderOrg` above)
 - `GET /buyer/dashboard` — org info, delivery counts by status, lifetime settled amount, active-contract count.
 - `GET /buyer/deliveries?status=...` — this buyer's own deliveries, joined with the farmer's name and production unit. `status` accepts any real status value, or the shorthand `action_needed` (`delivered` + `accepted` — `delivered` still needs quality confirmation, `accepted` still needs settlement).
 - `GET /buyer/deliveries/:id` — single delivery detail.
@@ -243,11 +243,15 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /buyer/production-units` — small read-only directory of active production units with their owning farmer's name, so the delivery form doesn't require knowing a `unit_id` by heart. Mirrors the intent of `GET /farmer/lenders`.
 - `GET /buyer/commodities` — `registry.commodity_ref`, for the delivery form's commodity dropdown.
 
-**Machinery/Drying-Yard Portal** (`src/routes/machinery.js`, all require an organization-subject JWT whose `org_type` is one of `TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` AND `kyb_status = 'Verified'` — see `requireMachineryOrg`, same gate and same reasoning as the Lender/Buyer Portals above). One unified portal covers all five org_types rather than five separate ones, since a single real-world provider commonly offers more than one of these services (e.g. a tractor operator who also runs a truck) — see `MACHINERY_ORG_TYPES` in `src/routes/machinery.js`.
-- `GET /machinery/dashboard` — org info, how many of the seven fixed rate-card items are currently priced (out of 7), and a photo count.
+**Machinery/Drying-Yard Portal** (`src/routes/machinery.js`, all require an organization-subject JWT that passes `requireMachineryOrg`: entity `kyb_status = 'Verified'` (`403 kyb_not_verified`) first, then — unlike the single-role-type check in `requireLenderOrg`/`requireBuyerOrg` — an `organization_role` row with `status = 'Verified'` for **any one of** `TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (`403 role_not_verified`, `role_type: 'machinery'` generically, otherwise). One unified portal covers all five role types rather than five separate ones, since a single real-world provider commonly offers more than one of these services (e.g. a tractor operator who also runs a truck) — see `MACHINERY_ORG_TYPES` in `src/routes/machinery.js`. An org that holds e.g. `TractorService` Verified but a separately-requested `DroneService` still Pending gets in — the rate card itself has no per-role field gating.
+- `GET /machinery/dashboard` — org info (`service_types`: every machinery role this org actually holds at `Verified` — e.g. `["TractorService", "TruckService"]` — deliberately NOT `identity.organization.org_type`, the entity's primary role from registration, which can be a completely different, non-machinery type for a multi-role org; see "Multi-role organizations" below for the bug this would otherwise cause), how many of the seven fixed rate-card items are currently priced (out of 7), and a photo count.
 - `GET /machinery/rate-card` — this org's current prices for all seven fixed line items (`plow_rough`/`plow_secondary_seed`/`rotary_till`/`spraying`/`harvesting`/`trucking`/`drying` — see `RATE_CARD_ITEMS`), keyed by `service_key`, pre-filled with `unit_price: null` for anything never priced.
 - `PUT /machinery/rate-card` — body `{ "prices": { "plow_rough"?: number|null, ... } }` → upserts a `marketplace.service_listing` row per key present with a positive value (`ON CONFLICT (org_id, service_key)`); a key set to `null`/`0` deactivates (`is_active = false`) rather than deletes the row, since deleting could violate `marketplace.service_request`'s FK to `listing_id` if a farmer has already booked against it. A provider is never required to price all seven — most will only fill in what matches their actual equipment (a `DroneService` org typically only sets `spraying`).
 - `GET /machinery/photos` / `POST /machinery/photos` / `DELETE /machinery/photos/:id` — the provider's photo gallery (`photo_type: 'service'|'machinery'`). `POST` expects `photo_data_url` as a `data:image/...` URL read client-side via `FileReader` — see "what's mocked" below, there is no object storage/CDN in this sandbox. Capped at ~3MB per photo (`MAX_PHOTO_DATA_URL_LENGTH`) and `express.json()`'s body limit was raised from the default 100kb to 5mb (`src/server.js`) specifically to let this route through.
+
+**Organization Roles / multi-role self-service** (`src/routes/organization.js`, requires any valid organization-subject JWT — deliberately NOT gated to any one `org_type`/role, since managing your own set of business roles is something every organization can do regardless of which roles it currently holds)
+- `GET /organization/roles` — this org's full role picture: `org_name`, `primary_org_type` (the role chosen at registration), `entity_kyb_status`, every role it currently holds (`roles[]`, each with `status`/`requested_at`/`decided_at`/`decided_reason`/`label_th`), and every role type it could still request (`requestable_roles[]` — anything in the fixed 11-type domain it doesn't already have a row for, regardless of that row's status).
+- `POST /organization/roles` — body `{ role_type }` → self-service request for an ADDITIONAL business role. Requires the org's entity `kyb_status` to already be `Verified` (`409 entity_kyb_not_verified` — you need to clear base KYB before adding business capabilities on top of it) and no existing `(org_id, role_type)` row at all (`409 role_already_requested`, with the existing row's `status` — deliberately does NOT let a `Rejected` role be re-requested through self-service; that needs a human to intervene directly, not an unlimited retry loop against the same rejection). On success, inserts a new row at `status = 'Pending'` — same starting state as the org's primary role, same approval flow via `POST /admin/organizations/:id/roles/:role_type/status` above.
 
 **Platform Ops / Admin Portal** (`src/routes/admin.js`, all require a `platform`-subject JWT from `POST /auth/admin-login`)
 - `GET /admin/dashboard` — farmer counts by status, organization counts by `kyb_status`, and a `system_health` block built from `ops.v_integrity_checksum` + `monitoring.v_go_live_readiness` + an active-alerts count. These three views/queries already existed from Layer 9/10 and `agrolink_app` already had `SELECT` on all of them — nothing had ever exposed them through the API before; every previous check of them in this whole project was a manual `psql` query.
@@ -255,7 +259,9 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /admin/farmers?status=...` — every farmer in the system (platform sees everyone; `identity.farmer` has no RLS), optionally filtered by `status` (`pending_kyc`/`active`/`suspended`/`closed`).
 - `POST /admin/farmers/:id/status` — body `{ status, reason? }` → the KYC decision point. `pending_kyc → active` is a KYC approval; `pending_kyc → closed` is a rejection (`identity.farmer`'s own check constraint has no distinct "kyc_rejected" value, so `closed` is the correct terminal state). The same endpoint also covers ordinary later moderation (suspend/reactivate/close an already-active farmer), since the constraint allows any of the four values and there's no reason to special-case KYC vs later moderation at the API layer. Always sends the farmer a real notification via `notification.notify()` with the reason if given — the *only* way a farmer finds out about the decision in this sandbox, surfacing through their existing `GET /farmer/notifications`.
 - `GET /admin/organizations?kyb_status=...` — every organization, left-joined with `partner.vendor_profile` for its commercial-activation status, optionally filtered by `kyb_status` (`Pending`/`Verified`/`Rejected`).
-- `POST /admin/organizations/:id/kyb-status` — body `{ kyb_status, reason? }` → the KYB decision point. `Pending → Verified` is approval, `Pending → Rejected` is rejection. On approval, if the organization already has a `partner.vendor_profile` row, this also calls `partner.activate_vendor()` — that function itself requires `kyb_status = 'Verified'` to already be set, so the ordering here (update `kyb_status` first, then attempt activation) matches what it expects; its own idempotency (checks for an existing `ledger.account` before creating one) means this is safe to call again on an already-active org. Activation failure doesn't fail the whole KYB approval — the org is still legitimately `Verified` even if commercial activation needs manual follow-up. Same notification pattern as the farmer endpoint.
+- `POST /admin/organizations/:id/kyb-status` — body `{ kyb_status, reason? }` → the KYB decision point. `Pending → Verified` is approval, `Pending → Rejected` is rejection. On approval, if the organization already has a `partner.vendor_profile` row, this also calls `partner.activate_vendor()` — that function itself requires `kyb_status = 'Verified'` to already be set, so the ordering here (update `kyb_status` first, then attempt activation) matches what it expects; its own idempotency (checks for an existing `ledger.account` before creating one) means this is safe to call again on an already-active org. Activation failure doesn't fail the whole KYB approval — the org is still legitimately `Verified` even if commercial activation needs manual follow-up. Same notification pattern as the farmer endpoint. **Also** syncs the org's PRIMARY role in `identity.organization_role` to the same `kyb_status`/`reason` in the same request (`ON CONFLICT (org_id, role_type) DO UPDATE`) — see "Multi-role organizations" below; this one endpoint still covers both the entity KYB decision and the primary-role decision together, exactly as it did before multi-role support existed.
+- `GET /admin/role-requests?status=...` — every row in `identity.organization_role` (every org's primary role AND every secondary role request), joined with the organization's name/primary `org_type`/entity `kyb_status`, optionally filtered by the role's own `status`. Includes primary-role rows too, since both live in the same table — the frontend admin dashboard distinguishes "this is the org's original role, already handled by the KYB queue above" from "this is a genuinely separate secondary-role request" by comparing `role_type` to `primary_org_type` client-side.
+- `POST /admin/organizations/:id/roles/:role_type/status` — body `{ status, reason? }` → the decision point for a **secondary** role request (see `POST /organization/roles` below) — deliberately separate from the primary-role decision folded into the KYB endpoint above, per the explicit product decision that every additional role needs its own Platform Ops sign-off, not a one-time blanket approval. Requires the organization's entity `kyb_status` to already be `Verified` (`409 entity_kyb_not_verified` otherwise — an org that hasn't cleared base KYB can't have a secondary request to begin with) and an existing `(org_id, role_type)` row (`404 role_request_not_found` — this endpoint will never create a role request nobody asked for). On `status: 'Verified'`, also calls `partner.activate_vendor_role(org_id, role_type)` (best-effort — a failure here doesn't fail the role approval itself, same pattern as the KYB endpoint) and sends a real notification via `notification.notify()`.
 
 `underwriting.evaluate_application()` itself is not exposed as its own
 route — it is only ever called internally, immediately after
@@ -275,6 +281,94 @@ there's enough history.
 Every handler calls `audit.log_access()` (action `'read'` or `'write'` — the
 only two values `audit.access_log`'s check constraint allows) inside the
 same session-context-scoped client, after a successful operation.
+
+## Multi-role organizations (an org can hold more than one business role)
+
+Real institutions like BAAC or a cooperative do more than one thing at
+once — they lend money, buy produce, sell fertilizer/inputs, and sometimes
+run a rice-drying yard, all under one legal entity. Before this feature, an
+organization was permanently locked to the single `org_type` it registered
+with (`identity.organization.org_type` is set once at insert and never
+changed by any route). This closes that gap, per an explicit product
+decision: **register with one role first, request more later — and every
+new role, including the first, needs its own Platform Ops approval** (not a
+one-time blanket approval that lets an org silently pick up new business
+capabilities once it clears KYB once).
+
+**Two-layer verification model:**
+1. **Entity-level KYB** (`identity.organization.kyb_status`) — is this a
+   real, legally legitimate business at all? Decided once, via the
+   pre-existing `POST /admin/organizations/:id/kyb-status` endpoint.
+   Unchanged by this feature.
+2. **Per-role commercial authorization** (`identity.organization_role.status`)
+   — is this *specific* business activity (Lender, Buyer, TractorService,
+   ...) something Platform Ops has actually cleared this org to do? New in
+   this feature. The org's PRIMARY role (chosen at registration) gets a row
+   here too, kept in lockstep with `kyb_status` by the *same* KYB-approval
+   endpoint (so the pre-existing single-role signup/approval flow needs zero
+   changes from an operator's point of view). Any ADDITIONAL role goes
+   through a wholly separate request (`POST /organization/roles`) and
+   approval (`POST /admin/organizations/:id/roles/:role_type/status`) path.
+
+Every portal gate (`requireLenderOrg`/`requireBuyerOrg`/`requireMachineryOrg`)
+now checks BOTH layers, in order: entity `kyb_status` first (`403
+kyb_not_verified` — same error as before this feature, so a plain
+single-role org that's still Pending its very first review sees exactly the
+same behavior as always), then the specific role's status (`403
+role_not_verified` — new). This means a Lender org that later gets a
+Verified Buyer role reaches `GET /buyer/dashboard` with the **same JWT** it
+already has — no re-login, no new token, since the JWT only ever encoded
+`(subjectType, subjectId)`, never a role list.
+
+**Schema** (`backend/db/grant_organization_roles.sql`):
+- `identity.organization_role (org_id, role_type, status, requested_at, decided_at, decided_reason)`,
+  primary key `(org_id, role_type)` — one row per role an org holds or has
+  requested, `status` following the same `Pending`/`Verified`/`Rejected`
+  domain as `kyb_status`. `role_type` accepts the same 13-value domain as
+  `identity.organization.org_type` (including `Bank`/`VillageFund`, which
+  can never be *requested* via `POST /organization/roles` since they're
+  excluded from `ORG_REQUESTABLE_ROLE_TYPES`, but a seeded org could in
+  principle already hold one).
+- `partner.activate_vendor_role(p_org_id, p_role_type)` — role-aware
+  replacement for the old `partner.activate_vendor(p_org_id)`: creates a
+  `lender_clearing` ledger account for a `Lender` role, or a shared
+  `vendor_settlement` account for every other role type (checks for an
+  existing one first — an org with both a Buyer role and, say, a
+  TractorService role gets ONE `vendor_settlement` account shared across
+  both, not one per role; verified in testing, see below). `partner.activate_vendor(p_org_id)`
+  itself is kept as a backward-compatible wrapper that delegates to the new
+  function using the org's `org_type` as the role — every pre-existing call
+  site (the KYB-approval endpoint) still works unchanged.
+- Backfill: the three pre-existing seeded organizations each got one
+  `Verified` row matching their existing `org_type`/`kyb_status`, so no
+  seeded org lost portal access when this migration ran.
+
+**End-to-end verification performed** (see also the dated entry further
+down): a fresh org registered as `Lender` → confirmed blocked from
+`/lender/dashboard` (`kyb_not_verified`) → confirmed `POST
+/organization/roles` itself blocked pre-KYB (`409 entity_kyb_not_verified`)
+→ admin approved the primary KYB → confirmed the primary role row synced to
+`Verified` automatically and `/lender/dashboard` now works → confirmed
+`/buyer/dashboard` still blocked (`role_not_verified`, `role_status: null`
+— no row exists yet) → requested a `Buyer` role → confirmed a second
+identical request 409s (`role_already_requested`) → confirmed
+`/buyer/dashboard` still blocked while `Pending` (`role_status: "Pending"`)
+→ admin approved the `Buyer` role via the new endpoint → confirmed
+`/buyer/dashboard` now works **with the same JWT**, no re-login → confirmed
+via direct SQL that the org ended up with exactly two ledger accounts
+(`lender_clearing` + `vendor_settlement`, no duplicates) → requested and
+then admin-REJECTED a `TractorService` role → confirmed `/machinery/dashboard`
+reports `role_status: "Rejected"` → confirmed re-requesting a Rejected role
+409s rather than silently resetting it to Pending → re-verified an existing
+seeded single-role org (the seeded Lender) still logs in and reaches
+`/lender/dashboard` exactly as before (regression check). Separately caught
+and fixed a real bug this testing surfaced: `GET /machinery/dashboard` was
+returning `identity.organization.org_type` (the entity's PRIMARY role) as
+"this org's service type" — for a multi-role org whose primary role isn't a
+machinery type at all (e.g. a Buyer org that added a Verified
+`TractorService` role), this showed the wrong, unrelated type. Fixed by
+having `requireMachineryOrg` compute the actual Verified machinery role(s)
+held and returning those as `service_types` instead.
 
 ## What's mocked / simplified (be aware of this before relying on it)
 
