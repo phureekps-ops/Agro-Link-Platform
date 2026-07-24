@@ -53,7 +53,6 @@ services:
   - type: web
     runtime: static
     name: agrolink-frontend
-    region: singapore
     rootDir: frontend
     buildCommand: echo "no build step needed"
     staticPublishPath: .
