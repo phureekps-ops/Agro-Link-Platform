@@ -11,18 +11,18 @@
 # describes *what* gets created — Render's "New Blueprint" flow reads it
 # from your repo and provisions all three services in one go.
 #
-# Plans are set to "free" so a first deploy costs nothing. Read DEPLOY.md's
-# "แผนราคา" (pricing) section before relying on this for more than a quick
-# pilot test — Render's free Postgres plan is deleted 30 days after
-# creation unless upgraded, and the free web service plan spins down after
-# 15 minutes of no traffic (the first request after that takes ~1 minute to
-# wake back up). Change `plan: free` to `plan: starter` (backend) and
-# `plan: basic-256mb` (database) below once ready to keep the pilot running
-# continuously — see DEPLOY.md for current pricing.
+# The database plan is "basic-256mb" (~$6/month) rather than "free" because
+# Render only allows one active free-tier Postgres database per account, and
+# this account already has one in use by another project. The backend and
+# frontend stay on the free plan. Read DEPLOY.md's "แผนราคา" (pricing)
+# section for the tradeoffs — the free web service plan spins down after 15
+# minutes of no traffic (the first request after that takes ~1 minute to
+# wake back up); change `plan: free` to `plan: starter` below once ready to
+# keep the pilot running continuously.
 
 databases:
   - name: agrolink-db
-    plan: free
+    plan: basic-256mb
     region: singapore
     databaseName: agrolink
     user: agrolink
