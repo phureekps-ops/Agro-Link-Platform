@@ -73,8 +73,11 @@ router.use(requireInputSupplierOrg);
 
 /**
  * GET /inputsupplier/dashboard — org info plus catalog counts (total
- * active products, and a breakdown by category) and a photo count, so the
- * frontend has enough for a summary without a second round trip.
+ * active products, and a breakdown by category), a photo count, and an
+ * order summary (counts by status, plus `pending_orders_count` — orders at
+ * `requested` — as the number the review queue below needs the supplier to
+ * act on), so the frontend has enough for a summary without extra round
+ * trips.
  */
 router.get('/dashboard', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -91,6 +94,11 @@ router.get('/dashboard', async (req, res, next) => {
         'SELECT COUNT(*)::int AS count FROM marketplace.product_photo WHERE org_id = $1',
         [subjectId],
       );
+      const orders = await client.query(
+        `SELECT status, COUNT(*)::int AS count FROM marketplace.product_order
+          WHERE org_id = $1 GROUP BY status`,
+        [subjectId],
+      );
       await logAccess(client, 'read', 'marketplace.product_listing', subjectId);
 
       const byCategory = { fertilizer_hormone: 0, chemical_pesticide: 0, equipment: 0, other: 0 };
@@ -100,12 +108,17 @@ router.get('/dashboard', async (req, res, next) => {
         totalActive += Number(r.active_count);
       });
 
+      const ordersByStatus = { requested: 0, confirmed: 0, rejected: 0, fulfilled: 0, cancelled: 0 };
+      orders.rows.forEach((r) => { ordersByStatus[r.status] = r.count; });
+
       return {
         org_name: req.org.org_name,
         kyb_status: req.org.kyb_status,
         total_active_products: totalActive,
         products_by_category: byCategory,
         photo_count: photos.rows[0].count,
+        orders_by_status: ordersByStatus,
+        pending_orders_count: ordersByStatus.requested,
       };
     });
 
@@ -270,23 +283,30 @@ router.put('/products/:id', async (req, res, next) => {
 });
 
 /**
- * DELETE /inputsupplier/products/:id — a real delete, not a deactivate.
- * Unlike marketplace.service_listing (deactivate-only in PUT /machinery/
- * rate-card, since a farmer might already have booked against a fixed
- * rate-card key via marketplace.service_request's FK), nothing else in
- * the schema references marketplace.product_listing — there is no booking/
- * order flow against it yet (see "what's mocked" in the README) — so a
- * hard delete is safe and matches what a supplier managing their own
- * catalog would expect ("remove this listing" should actually remove it).
- * ON DELETE CASCADE on product_photo takes the product's photos with it.
+ * DELETE /inputsupplier/products/:id — DEACTIVATE, not a real delete.
+ *
+ * This used to be a genuine hard delete (there was nothing else in the
+ * schema referencing marketplace.product_listing yet). Now that
+ * marketplace.product_order can reference a listing_id (see
+ * grant_farmer_product_orders.sql — a farmer may have already ordered
+ * against this exact product), a hard delete would either orphan that
+ * order's FK or silently break its traceability back to the catalog entry.
+ * Switched to the same deactivate-only pattern PUT /machinery/rate-card
+ * already uses for exactly this reason: `is_active = false` removes it from
+ * the farmer-facing browse list (GET /farmer/products only returns
+ * is_active = true) without disturbing any order history that already
+ * points at it. The endpoint's shape (DELETE, 204 on success) is
+ * unchanged — only what happens underneath changed — so no frontend
+ * caller needed to change either.
  */
 router.delete('/products/:id', async (req, res, next) => {
   const { subjectId } = req.subject;
   const { id } = req.params;
   try {
-    const deleted = await withSessionContext('organization', subjectId, async (client) => {
+    const deactivated = await withSessionContext('organization', subjectId, async (client) => {
       const { rowCount } = await client.query(
-        'DELETE FROM marketplace.product_listing WHERE org_id = $1 AND listing_id = $2',
+        `UPDATE marketplace.product_listing SET is_active = false, updated_at = now()
+          WHERE org_id = $1 AND listing_id = $2`,
         [subjectId, id],
       );
       if (rowCount > 0) {
@@ -295,7 +315,7 @@ router.delete('/products/:id', async (req, res, next) => {
       return rowCount > 0;
     });
 
-    if (!deleted) {
+    if (!deactivated) {
       return res.status(404).json({ error: 'product_not_found' });
     }
     return res.status(204).end();
@@ -407,6 +427,204 @@ router.delete('/products/:id/photos/:photoId', async (req, res, next) => {
       return res.status(404).json({ error: 'photo_not_found' });
     }
     return res.status(204).end();
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /inputsupplier/orders?status=... — orders placed against THIS org's
+ * products (never another supplier's — see the explicit WHERE below),
+ * joined with the ordering farmer's name. `status` accepts any real status
+ * value, or the shorthand `action_needed` (`requested` + `confirmed` — the
+ * same two-value shorthand pattern as `GET /lender/loan-applications` and
+ * `GET /buyer/deliveries`: `requested` still needs a confirm/reject
+ * decision, `confirmed` still needs to be marked `fulfilled`).
+ */
+router.get('/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status === 'action_needed') {
+        filter = "AND o.status IN ('requested', 'confirmed')";
+      } else if (status) {
+        params.push(status);
+        filter = 'AND o.status = $2';
+      }
+      const result = await client.query(
+        `SELECT o.order_id, o.listing_id, o.product_name, o.category, o.unit_price,
+                o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.requested_at, o.decided_at, o.fulfilled_at, o.farmer_id, f.full_name AS farmer_name
+           FROM marketplace.product_order o
+           JOIN identity.farmer f ON f.farmer_id = o.farmer_id
+          WHERE o.org_id = $1 ${filter}
+          ORDER BY o.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.product_order', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /inputsupplier/orders/:id — single order detail, same ownership
+ * gating (WHERE org_id = $1 AND order_id = $2) as every other org-scoped
+ * read in this file.
+ */
+router.get('/orders/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT o.order_id, o.listing_id, o.product_name, o.category, o.unit_price,
+                o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.requested_at, o.decided_at, o.fulfilled_at, o.farmer_id, f.full_name AS farmer_name,
+                f.phone AS farmer_phone
+           FROM marketplace.product_order o
+           JOIN identity.farmer f ON f.farmer_id = o.farmer_id
+          WHERE o.org_id = $1 AND o.order_id = $2`,
+        [subjectId, id],
+      );
+      return rows[0] || null;
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /inputsupplier/orders/:id/confirm — requested -> confirmed.
+ * Re-reads the order through the explicit `WHERE org_id = $1` ownership
+ * gate first (same "404 before ever touching another org's row" shape as
+ * POST /buyer/deliveries/:id/confirm-quality), and 409s with the order's
+ * actual current status if it isn't `requested` — a supplier can't
+ * re-confirm an already-fulfilled or already-rejected order.
+ */
+router.post('/orders/:id/confirm', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE org_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'confirmed', decided_at = now(), updated_at = now()
+          WHERE org_id = $1 AND order_id = $2
+          RETURNING order_id, status, decided_at`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /inputsupplier/orders/:id/reject
+ * Body: { reason? } — requested -> rejected. Same ownership-gate + status
+ * guard as confirm above.
+ */
+router.post('/orders/:id/reject', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { reason } = req.body || {};
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE org_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'rejected', decided_reason = $3, decided_at = now(), updated_at = now()
+          WHERE org_id = $1 AND order_id = $2
+          RETURNING order_id, status, decided_reason, decided_at`,
+        [subjectId, id, reason || null],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /inputsupplier/orders/:id/fulfill — confirmed -> fulfilled. This is
+ * the terminal "handed the goods over" step; there is no further status
+ * after this one. Same ownership-gate + status guard shape as confirm/reject.
+ */
+router.post('/orders/:id/fulfill', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE org_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'confirmed') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'fulfilled', fulfilled_at = now(), updated_at = now()
+          WHERE org_id = $1 AND order_id = $2
+          RETURNING order_id, status, fulfilled_at`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_confirmed', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
   } catch (err) {
     return next(err);
   }

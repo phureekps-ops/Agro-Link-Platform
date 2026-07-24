@@ -344,4 +344,211 @@ router.get('/rice-prices', async (req, res, next) => {
   }
 });
 
+const PRODUCT_CATEGORIES = ['fertilizer_hormone', 'chemical_pesticide', 'equipment', 'other'];
+
+/**
+ * GET /farmer/input-suppliers — every Verified InputSupplier organization,
+ * with how many active products it currently has listed, so a farmer can
+ * browse "by supplier" before drilling into GET /farmer/products?org_id=.
+ * Mirrors GET /farmer/lenders' shape (a small supporting directory endpoint
+ * so the frontend never has to hardcode an org_id).
+ */
+router.get('/input-suppliers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT o.org_id, o.org_name, COUNT(p.listing_id) FILTER (WHERE p.is_active) AS active_product_count
+           FROM identity.organization o
+           JOIN identity.organization_role r ON r.org_id = o.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
+           LEFT JOIN marketplace.product_listing p ON p.org_id = o.org_id
+          WHERE o.kyb_status = 'Verified'
+          GROUP BY o.org_id, o.org_name
+          ORDER BY o.org_name`,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/products?category=&org_id= — browse the ACTIVE catalog
+ * across every Verified InputSupplier (or one, via org_id), joined with the
+ * supplier's org_name so a farmer knows who they'd be buying from. Only
+ * `is_active = true` rows — a deactivated listing (see the deactivate-only
+ * note on DELETE /inputsupplier/products/:id) simply stops appearing here,
+ * same as a deactivated machinery rate-card item stops appearing priced.
+ */
+router.get('/products', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { category, org_id: orgId } = req.query;
+
+  if (category && !PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: PRODUCT_CATEGORIES });
+  }
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [];
+      const filters = ['p.is_active = true'];
+      if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
+      if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
+
+      const result = await client.query(
+        `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
+                p.description, p.unit_price, p.price_unit, p.updated_at
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE ${filters.join(' AND ')}
+          ORDER BY o.org_name, p.category, p.product_name`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/orders
+ * Body: { listing_id, quantity }
+ *
+ * Places a new order at status='requested'. Price/name/category are
+ * SNAPSHOTTED from the listing at this moment onto the new
+ * marketplace.product_order row (see grant_farmer_product_orders.sql's
+ * comment on why) — later edits to the listing's price never retroactively
+ * change an already-placed order. farmer_id is always req.subject, never
+ * the request body, same as POST /farmer/loan-applications.
+ */
+router.post('/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { listing_id: listingId, quantity } = req.body || {};
+
+  if (!listingId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['listing_id', 'quantity'] });
+  }
+  const qty = Number(quantity);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    return res.status(400).json({ error: 'invalid_quantity' });
+  }
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const listing = await client.query(
+        `SELECT listing_id, org_id, category, product_name, unit_price, price_unit
+           FROM marketplace.product_listing
+          WHERE listing_id = $1 AND is_active = true`,
+        [listingId],
+      );
+      if (listing.rows.length === 0) return { listingNotFound: true };
+      const l = listing.rows[0];
+      const totalPrice = Math.round(qty * Number(l.unit_price) * 100) / 100;
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.product_order
+           (listing_id, org_id, farmer_id, product_name, category, unit_price, price_unit, quantity, total_price)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING order_id, listing_id, org_id, product_name, category, unit_price, price_unit,
+                   quantity, total_price, status, requested_at`,
+        [listingId, l.org_id, subjectId, l.product_name, l.category, l.unit_price, l.price_unit, qty, totalPrice],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', rows[0].order_id);
+      return { order: rows[0] };
+    });
+
+    if (result.listingNotFound) {
+      return res.status(404).json({ error: 'product_not_found' });
+    }
+    return res.status(201).json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/orders?status=... — this farmer's own order history across
+ * every supplier, joined with the supplier's org_name.
+ */
+router.get('/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status) { params.push(status); filter = 'AND o.status = $2'; }
+
+      const result = await client.query(
+        `SELECT o.order_id, o.org_id, org.org_name, o.product_name, o.category, o.unit_price,
+                o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.requested_at, o.decided_at, o.fulfilled_at
+           FROM marketplace.product_order o
+           JOIN identity.organization org ON org.org_id = o.org_id
+          WHERE o.farmer_id = $1 ${filter}
+          ORDER BY o.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.product_order', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/orders/:id/cancel — a farmer can cancel their OWN order,
+ * only while it's still `requested` (before the supplier has acted on it —
+ * once `confirmed`, the supplier is already committed, so cancellation past
+ * that point would need to go through the supplier, not this endpoint).
+ * Ownership-gated the same way as every other subject-scoped write in this
+ * project: re-read WHERE farmer_id = $1 AND order_id = $2 first, 404 if
+ * that finds nothing (an order that exists but belongs to someone else
+ * looks identical to one that doesn't exist at all, from this farmer's
+ * point of view).
+ */
+router.post('/orders/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE farmer_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'cancelled', updated_at = now()
+          WHERE farmer_id = $1 AND order_id = $2
+          RETURNING order_id, status`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_cancellable', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

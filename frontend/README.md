@@ -183,19 +183,34 @@ sell.
   testing was created through `register-provider.html`, same as the
   machinery org_types.
 - `inputsupplier/dashboard.html` — an overview panel (active-product count,
-  a per-category breakdown, KYB/role status, photo count); a **product
-  form** (category dropdown — ปุ๋ย/ฮอร์โมน, สารเคมีและยาปราบศัตรูพืช,
-  อุปกรณ์การเกษตร, อื่นๆ — product name, brand, price, price unit,
-  description) that adds a new catalog entry on submit, and switches into
-  an edit mode (submit button relabeled "บันทึกการแก้ไข", with a "ยกเลิกการแก้ไข"
-  cancel button) when "แก้ไข" is clicked on an existing product card — unlike
-  the Machinery Portal's rate card, this is a genuinely open-ended list, not
-  a fixed set of fields, so add/edit/delete are three distinct actions
-  rather than one upsert form (see the backend README's "Product catalog vs.
-  rate card" note for why); a **category filter** over the product list; and
-  a **per-product photo mini-gallery** (same `data:` URL upload pattern as
+  a per-category breakdown, KYB/role status, photo count, and now an order
+  summary by status); an **order review queue**
+  (`GET /inputsupplier/orders?status=action_needed`) — one card per order
+  still needing this supplier's action, with "ยืนยันคำสั่งซื้อ" +
+  "ปฏิเสธ" (with an optional reason field) buttons on a `requested` order, or
+  a single "บันทึกว่าส่งมอบสินค้าแล้ว" button on a `confirmed` one — mirrors
+  the Lender/Buyer Portals' own review-queue pattern
+  (`GET .../loan-applications?status=action_needed` /
+  `GET .../deliveries?status=action_needed`); a **full order history**
+  section (`GET /inputsupplier/orders`, filterable by status) below that,
+  using the same card renderer so a settled order simply shows its final
+  status badge with no action buttons; a **product form** (category
+  dropdown — ปุ๋ย/ฮอร์โมน, สารเคมีและยาปราบศัตรูพืช, อุปกรณ์การเกษตร, อื่นๆ —
+  product name, brand, price, price unit, description) that adds a new
+  catalog entry on submit, and switches into an edit mode (submit button
+  relabeled "บันทึกการแก้ไข", with a "ยกเลิกการแก้ไข" cancel button) when
+  "แก้ไข" is clicked on an existing product card — unlike the Machinery
+  Portal's rate card, this is a genuinely open-ended list, not a fixed set
+  of fields, so add/edit/delete are three distinct actions rather than one
+  upsert form (see the backend README's "Product catalog vs. rate card"
+  note for why); a **category filter** over the product list; and a
+  **per-product photo mini-gallery** (same `data:` URL upload pattern as
   the Machinery Portal, 2MB client-side cap before upload, scoped to that
-  one product rather than the whole org).
+  one product rather than the whole org). "ลบสินค้า" now deactivates rather
+  than truly deleting the row (see the backend README's note on
+  `DELETE /inputsupplier/products/:id`) — the button and its label are
+  unchanged, only what happens underneath changed, since an order could now
+  point at that exact product.
 
 Same `kyb_not_verified`/`role_not_verified` pending-notice pattern and the
 same wrong-subject-type `403` → bounce-to-login treatment as every other
@@ -217,6 +232,31 @@ can see at a glance which buyer is currently paying the most for, say,
 ข้าวเปลือกเจ้าหอมมะลิ 105, without having to check each buyer individually.
 A grade with no active quotes yet shows "ยังไม่มีผู้รับซื้อประกาศราคาสำหรับข้าวชนิดนี้"
 rather than an empty or broken-looking card.
+
+## Page — ตลาดปัจจัยการผลิต / Input Marketplace (`marketplace.html`)
+
+Same shape as `rice-prices.html` — lives at the Farmer Portal's own top
+level, reuses `AgroLinkAPI`/`agrolink_farmer_session`, no login of its own.
+Linked from a new "ตลาดปัจจัยการผลิต" button in `dashboard.html`'s header,
+next to the rice-price comparison link. This is the farmer-facing half of
+the InputSupplier product catalog (see the backend README's "Farmer
+ordering flow" section) — the catalog existed and was fully manageable by
+suppliers before this, but nothing let a farmer see or buy from it.
+
+- A category + supplier filter bar (`GET /farmer/input-suppliers` populates
+  the supplier dropdown with each org's name and current active-product
+  count, so a farmer can browse "by supplier" as well as "by category").
+- A product list (`GET /farmer/products?category=&org_id=`) — each card
+  shows the product, its supplier's name, price, and a quantity input +
+  "สั่งซื้อ" button that calls `POST /farmer/orders`.
+- An order-history section (`GET /farmer/orders`) below the product list —
+  every order this farmer has ever placed, across every supplier, with its
+  current status (รอการยืนยันจากผู้จำหน่าย / ยืนยันแล้ว (รอส่งมอบ) /
+  ส่งมอบแล้ว / ผู้จำหน่ายปฏิเสธ, with the supplier's reason if given /
+  ยกเลิกแล้ว) and, only while an order is still `requested`, a "ยกเลิกคำสั่งซื้อ"
+  button (`POST /farmer/orders/:id/cancel`) — once a supplier confirms an
+  order the farmer can no longer cancel it themselves, matching the
+  backend's own state-machine rules (see the backend README).
 
 ## Page — Service-Provider Registration (`register-provider.html`)
 
@@ -558,6 +598,36 @@ gateway — not a mock:
   deliberately left in place, matching how other seeded-org feature-testing
   data (e.g. the seeded Lender's loan applications) has been left in place
   elsewhere in this project.
+- **Farmer ordering flow against the InputSupplier catalog**, tested with
+  Playwright end-to-end through the real UI: registered a fresh
+  InputSupplier org via `register-provider.html`, admin-approved it via a
+  direct API call, and added three real products through the on-page form
+  (three different categories, for the confirm/reject/cancel paths below).
+  As a seeded farmer, clicked the new "ตลาดปัจจัยการผลิต" link from the
+  dashboard header, landed on `marketplace.html`, filtered the supplier
+  dropdown down to the one test supplier, and placed three real orders
+  through the on-page quantity input + "สั่งซื้อ" button — confirmed all
+  three appeared in the "คำสั่งซื้อของท่าน" section as "รอการยืนยันจากผู้จำหน่าย"
+  immediately, no page reload needed. On the supplier side, reloaded
+  `inputsupplier/dashboard.html` and confirmed all three orders appeared in
+  the new order-review-queue with the correct farmer name, quantities, and
+  computed totals; clicked "ยืนยันคำสั่งซื้อ" on one, typed a reason and
+  clicked "ปฏิเสธ" on a second, then clicked "บันทึกว่าส่งมอบสินค้าแล้ว" on
+  the now-confirmed first order — each action updated the review queue and
+  order-history sections immediately. Back on the farmer's side, reloaded
+  `marketplace.html` from scratch and confirmed the order history showed
+  all three final states correctly: "ส่งมอบแล้ว" for the fulfilled one,
+  "ผู้จำหน่ายปฏิเสธ" with the supplier's typed reason visible for the
+  rejected one, and — after clicking the third order's own
+  "ยกเลิกคำสั่งซื้อ" button and reloading again — "ยกเลิกแล้ว" for the one the
+  farmer cancelled themselves. Screenshots were taken at every step.
+  Separately verified via curl that a second farmer account cannot see or
+  cancel the first farmer's orders, and a second InputSupplier org cannot
+  read the first org's order by its real `order_id` — both `404`, not a
+  confusing `403`. Regression-checked the seeded Lender/Buyer dashboards
+  and the rice-price comparison page still work unaffected. All test
+  organizations and their orders/listings/photos were deleted afterward via
+  a single FK-safe cleanup transaction, not left in seed data.
 
 ## New backend endpoints added while building this
 
@@ -623,6 +693,16 @@ gateway — not a mock:
   `registry.rice_grade_ref`/`marketplace.buy_price_quote` schema and why the
   composite primary key was chosen deliberately to avoid a class of bug
   fixed once already elsewhere in this project.
+- `GET /farmer/input-suppliers`, `GET /farmer/products`, `GET`/`POST
+  /farmer/orders`, `POST /farmer/orders/:id/cancel` (in
+  `../backend/src/routes/farmer.js`) and `GET /inputsupplier/orders`,
+  `GET /inputsupplier/orders/:id`, `POST /inputsupplier/orders/:id/confirm`
+  /`reject`/`fulfill` (in `../backend/src/routes/inputsupplier.js`) — back
+  the new `marketplace.html` page and the InputSupplier dashboard's new
+  order-review-queue/order-history sections. See the backend README's
+  "Farmer ordering flow" section for the new `marketplace.product_order`
+  schema (`backend/db/grant_farmer_product_orders.sql`) and why `DELETE
+  /inputsupplier/products/:id` switched from a real delete to a deactivate.
 
 ## What's next
 
@@ -653,13 +733,21 @@ gateway — not a mock:
   cards and photos and book a service — `marketplace.service_request`
   exists in the schema but nothing on either the farmer or machinery side
   reads/writes it yet. See the backend README.
-- A farmer-facing way to actually browse and order from the InputSupplier
-  product catalog — today the catalog is fully manageable by the supplier
-  but nothing lets a farmer see it or place an order. See the backend
-  README's "what's mocked" section.
 - A historical price archive/chart for the daily rice-buying-price
   announcements — today only the current live quote per grade is stored.
   See the backend README.
+- Payment/settlement for `marketplace.product_order` — `POST
+  /inputsupplier/orders/:id/fulfill` today is just a status label, no money
+  actually moves through the `ledger` schema the way
+  `POST /buyer/deliveries/:id/settle` does. See the backend README's
+  "Farmer ordering flow" section.
+- Stock/quantity awareness on `marketplace.html` and
+  `inputsupplier/dashboard.html` — a supplier can be ordered past what they
+  can actually supply; there's no inventory count anywhere yet. See the
+  backend README.
+- An order-quantity edit for a farmer before a supplier confirms — today
+  the only actions on a `requested` order are placing it (fixed quantity)
+  or cancelling it outright; there's no "change the quantity" step.
 - Object storage/CDN for the Machinery/Drying-Yard Portal's photo gallery,
   replacing the base64 `data:` URLs it stores directly in Postgres today.
 - Farmer, Lender, Buyer, Platform Ops, and Machinery/Drying-Yard Portals

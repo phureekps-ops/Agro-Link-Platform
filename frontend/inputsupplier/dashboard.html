@@ -25,6 +25,29 @@
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
+    <div class="section-title">🧾 คำสั่งซื้อที่ต้องดำเนินการ</div>
+    <div id="orderReviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำสั่งซื้อ…</div>
+    </div>
+
+    <div class="section-title">📋 ประวัติคำสั่งซื้อทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="orderStatusFilter">กรองตามสถานะ</label>
+        <select id="orderStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="requested">รอการยืนยัน</option>
+          <option value="confirmed">ยืนยันแล้ว (รอส่งมอบ)</option>
+          <option value="fulfilled">ส่งมอบแล้ว</option>
+          <option value="rejected">ปฏิเสธแล้ว</option>
+          <option value="cancelled">ยกเลิกโดยเกษตรกร</option>
+        </select>
+      </div>
+    </div>
+    <div id="orderHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติคำสั่งซื้อ…</div>
+    </div>
+
     <div class="section-title">➕ เพิ่ม/แก้ไขสินค้าในแค็ตตาล็อก</div>
     <form id="productForm" class="panel">
       <input type="hidden" id="editingListingId" value="" />

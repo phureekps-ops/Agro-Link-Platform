@@ -224,6 +224,11 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /farmer/production-units` → `registry.production_unit` (PostGIS boundary returned as GeoJSON via `ST_AsGeoJSON`)
 - `GET /farmer/lenders` → active `Lender` organizations from `identity.organization` — added while building the frontend, so the loan-application form's lender dropdown reads real data instead of a hardcoded value.
 - `GET /farmer/rice-prices` → for every row in `registry.rice_grade_ref`, every Buyer org's current ACTIVE `marketplace.buy_price_quote` (org name, price, price unit, last-updated), sorted `quoted_price DESC` within each grade so the highest payer for a given rice type is always first. Grades nobody has quoted yet still appear, with an empty `quotes: []` array, so the page can render a "no buyer has posted a price for this yet" state rather than silently omitting the grade. This is the farmer-facing half of the daily rice-buying-price announcement feature — see "Daily rice-buying-price announcements" below.
+- `GET /farmer/input-suppliers` → every Verified `InputSupplier` organization, with how many active products it currently has listed — a small supporting directory endpoint, same shape as `GET /farmer/lenders`, so the frontend never has to hardcode an `org_id`.
+- `GET /farmer/products?category=&org_id=` → browse the ACTIVE catalog (`is_active = true` only) across every Verified InputSupplier, or one via `org_id`, joined with the supplier's `org_name`. See "Farmer ordering flow" below.
+- `POST /farmer/orders` — body `{ listing_id, quantity }` → places a new `marketplace.product_order` at `status = 'requested'`, snapshotting the listing's current `product_name`/`category`/`unit_price`/`price_unit` onto the order and computing `total_price = quantity * unit_price` server-side. `farmer_id` always comes from the JWT, never the request body. `404 product_not_found` if the listing doesn't exist or isn't currently active.
+- `GET /farmer/orders?status=` — this farmer's own order history across every supplier, joined with the supplier's `org_name`.
+- `POST /farmer/orders/:id/cancel` — a farmer can cancel their OWN order, only while it's still `requested` (`409 order_not_cancellable` with the current status otherwise — once a supplier has `confirmed` it, they're already committed, so cancellation past that point needs to go through the supplier's own `reject`, not this endpoint). Ownership-gated the same way as every other subject-scoped write in this project.
 
 **Lender Portal** (`src/routes/lender.js`, all require an organization-subject JWT that passes the two-layer check in `requireLenderOrg`: (1) `identity.organization.kyb_status = 'Verified'` — the entity-level check that existed before multi-role support, `403 kyb_not_verified` otherwise — AND (2) an `identity.organization_role` row for this org with `role_type = 'Lender'` AND `status = 'Verified'` — the newer per-role check, `403 role_not_verified` (with `role_type`/`role_status`/`org_name`) otherwise. See "Multi-role organizations" below for why these are two separate checks.)
 - `GET /lender/dashboard` — org info, application counts by status, active-contract count and outstanding principal.
@@ -257,8 +262,13 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /inputsupplier/products?category=` — this org's full catalog (every status, not just active), optionally filtered to one of the four `PRODUCT_CATEGORIES` (`fertilizer_hormone`/`chemical_pesticide`/`equipment`/`other`).
 - `POST /inputsupplier/products` — body `{ category, product_name, brand?, description?, unit_price, price_unit? }` → inserts a brand-new `marketplace.product_listing` row. Unlike the machinery rate card's fixed seven keys, this is a genuinely open-ended list — a supplier can list as many or as few products as they actually sell, in any category, and list the same category more than once (e.g. two different fertilizer brands).
 - `PUT /inputsupplier/products/:id` — body is a partial update (any subset of the `POST` fields) applied via `COALESCE`; ownership-gated by an explicit `SELECT ... WHERE org_id = $1 AND listing_id = $2` before the update, `404` if the listing doesn't belong to this org (or doesn't exist).
-- `DELETE /inputsupplier/products/:id` — a **real hard delete**, deliberately unlike the machinery rate card's deactivate-only `PUT`. Nothing else in the schema references `product_listing` yet (no order/booking flow sits on top of it — see "what's mocked" below), so there's no dangling-FK risk in actually removing the row; `marketplace.product_photo` for that listing cascades away with it (`ON DELETE CASCADE`).
+- `DELETE /inputsupplier/products/:id` — **deactivates, not a real delete** (`is_active = false`). This used to be a genuine hard delete when nothing else referenced `product_listing`; now that `marketplace.product_order` can reference a `listing_id` (see "Farmer ordering flow" below), it switched to the same deactivate-only pattern `PUT /machinery/rate-card` already uses, for the same reason — an order placed against a listing must not be orphaned by the listing disappearing out from under it. The endpoint's shape (`DELETE`, `204` on success) is unchanged; only what happens underneath changed.
 - `GET /inputsupplier/products/:id/photos` / `POST /inputsupplier/products/:id/photos` / `DELETE /inputsupplier/products/:id/photos/:photoId` — same `data:image/...` upload pattern as the Machinery Portal's photo gallery, scoped per-product instead of per-org. Capped at 4MB per photo (`MAX_PHOTO_DATA_URL_LENGTH`).
+- `GET /inputsupplier/orders?status=` — orders placed against THIS org's products, joined with the ordering farmer's name. `status` accepts any real status value, or the shorthand `action_needed` (`requested` + `confirmed` — same two-value shorthand pattern as `GET /lender/loan-applications`/`GET /buyer/deliveries`).
+- `GET /inputsupplier/orders/:id` — single order detail, including the farmer's phone number.
+- `POST /inputsupplier/orders/:id/confirm` — `requested` → `confirmed`. `409 order_not_requested` (with the order's actual current status) if it isn't `requested`.
+- `POST /inputsupplier/orders/:id/reject` — body `{ reason? }` → `requested` → `rejected`. Same `409` guard as confirm.
+- `POST /inputsupplier/orders/:id/fulfill` — `confirmed` → `fulfilled`, the terminal "handed the goods over" step. `409 order_not_confirmed` if it isn't `confirmed`.
 
 **Organization Roles / multi-role self-service** (`src/routes/organization.js`, requires any valid organization-subject JWT — deliberately NOT gated to any one `org_type`/role, since managing your own set of business roles is something every organization can do regardless of which roles it currently holds)
 - `GET /organization/roles` — this org's full role picture: `org_name`, `primary_org_type` (the role chosen at registration), `entity_kyb_status`, every role it currently holds (`roles[]`, each with `status`/`requested_at`/`decided_at`/`decided_reason`/`label_th`), and every role type it could still request (`requestable_roles[]` — anything in the fixed 9-type `ORG_REQUESTABLE_ROLE_TYPES` domain it doesn't already have a row for, regardless of that row's status; `Bank`/`VillageFund`/`Cooperative`/`Mill` are excluded from this domain — see "what's mocked" above).
@@ -407,12 +417,60 @@ This also changes the deletion story: the rate card's `PUT` never deletes a
 row, only deactivates it (`is_active = false`), specifically because a
 farmer could already have booked a `marketplace.service_request` against
 that exact `(org_id, service_key)` and deleting it would orphan that
-booking's FK. `marketplace.product_listing` has no such booking/order flow
-sitting on top of it yet (see "what's mocked" below), so `DELETE
-/inputsupplier/products/:id` is a real hard delete — there's nothing yet
-that a delete could orphan. If/when a purchase-order flow is added against
-the catalog, this will need to switch to the same deactivate-only pattern
-the rate card already uses.
+booking's FK. `marketplace.product_listing` used to have no such
+booking/order flow sitting on top of it, so `DELETE
+/inputsupplier/products/:id` started as a real hard delete. That changed
+the moment `marketplace.product_order` was added (see "Farmer ordering
+flow" immediately below) — `DELETE` now deactivates instead, for exactly
+the reason predicted here originally.
+
+## Farmer ordering flow (browse + order against the catalog)
+
+Building the catalog (above) only gave a supplier somewhere to list
+products — nothing let a farmer see it or buy anything, which was called
+out explicitly as a gap at the time. This closes that gap with a real
+request → confirm/reject → fulfill lifecycle, modeled after
+`underwriting.loan_application`'s shape (farmer-initiated, org decides)
+rather than `produce.delivery`'s (org-initiated) — an order request, like a
+loan application, starts with the farmer wanting something and the
+counterparty saying yes or no.
+
+**Schema** (`backend/db/grant_farmer_product_orders.sql`):
+`marketplace.product_order` has one row per order, with `status` following
+`requested → confirmed → fulfilled` (the happy path) or `requested →
+rejected` / `requested → cancelled` (the two ways an order stops early —
+the supplier says no, or the farmer changes their mind before the supplier
+has acted). Once `confirmed`, only `fulfilled` is reachable — a supplier
+can't reject an order they already agreed to, and a farmer can't cancel one
+the supplier is already committed to; the farmer's only path from a
+`confirmed` order is to wait, same as a lender's `approved`
+loan-application-turned-contract can't be un-approved by the farmer either.
+
+Price/name/category are **snapshotted onto the order at creation time**
+rather than read live via a join back to `product_listing` — the same
+reasoning a real invoice line item follows: if the supplier edits their
+price tomorrow, an order placed today must not silently change value.
+`listing_id` is still a real FK (kept for traceability back to the catalog
+entry), it just isn't relied on for display.
+
+No push notification fires on a status change (no `notification.notify()`
+call anywhere in this flow) — this deliberately matches the existing
+`POST /lender/loan-applications/:id/approve`/`decline` and
+`POST /buyer/deliveries/:id/confirm-quality` convention: only
+Platform-Ops-initiated actions (KYC/KYB decisions) push a notification in
+this sandbox; peer-to-peer decisions are discovered by the affected party
+re-checking their own portal (`GET /farmer/orders` here), not pushed to
+them. Kept consistent rather than introducing a one-off exception for this
+one flow.
+
+**What this flow deliberately does NOT do**: there is no payment or
+`ledger.transfer_funds()` call anywhere in this lifecycle — `fulfilled`
+just marks that the supplier says they handed the goods over, nothing more.
+This is unlike `POST /buyer/deliveries/:id/settle`, which moves real money
+through the ledger. A real deployment would need to decide how payment for
+these orders actually happens (on delivery, in advance, through the
+existing `ledger` schema, or entirely outside AgroLink) — deliberately out
+of scope for this pass; see "what's mocked" below.
 
 ## Daily rice-buying-price announcements (two audiences, one table)
 
@@ -582,15 +640,23 @@ not an accident.
   InputSupplier Portal. Every query in `src/routes/inputsupplier.js`
   therefore has an explicit `WHERE org_id = $1` — not defense-in-depth, the
   actual security boundary. `marketplace.buy_price_quote` is the same way.
-- **No purchase-order/booking flow sits on top of the product catalog
-  yet.** A supplier can fully manage their catalog (add/edit/delete
-  products, upload photos) and it's visible via `GET
-  /inputsupplier/products`, but there is currently no farmer-facing
-  `GET .../products` browse endpoint or an order/request flow analogous to
-  `marketplace.service_request` on the machinery side. This is why `DELETE
-  /inputsupplier/products/:id` is safe to implement as a real hard delete
-  today — see "Product catalog vs. rate card" above — but it will need
-  revisiting if/when an order flow is added.
+- **`marketplace.product_order` has no row-level security either.** Same
+  situation, just for the farmer ordering flow — `src/routes/farmer.js`
+  scopes every order query with an explicit `WHERE farmer_id = $1`, and
+  `src/routes/inputsupplier.js` with `WHERE org_id = $1`; neither is
+  defense-in-depth.
+- **No payment/settlement is wired into the order flow.** `POST
+  /inputsupplier/orders/:id/fulfill` just marks that the supplier says they
+  handed the goods over — unlike `POST /buyer/deliveries/:id/settle`, no
+  `ledger.transfer_funds()` call happens anywhere in this lifecycle. See
+  "Farmer ordering flow" above for the full reasoning; a real deployment
+  needs to decide how payment for these orders actually happens.
+- **No quantity/stock tracking on the catalog.** A supplier can receive
+  more orders for a product than they can actually fulfill — `unit_price`
+  and availability are not decremented by an order, there's no inventory
+  count anywhere in `marketplace.product_listing`. A real deployment would
+  need real stock management, or at minimum a manual "mark as unavailable"
+  step a supplier remembers to do themselves.
 - **No historical price archive for rice-buying-price quotes.**
   `marketplace.buy_price_quote` only stores each buyer's *current* price
   per grade (upserted in place) — there is no day-by-day history table, so
@@ -838,6 +904,52 @@ and the live `agrolink_test` database — not unit tests against mocks:
   matching this project's existing convention of leaving legitimate
   feature-testing data on seeded orgs (e.g. the seeded Lender's loan
   applications) rather than wiping it after the fact.
+- **Farmer ordering flow against the InputSupplier catalog (2026-07-24)**:
+  34 real curl checks covering the full lifecycle — registered a fresh
+  InputSupplier org, admin-approved it, added two products; as the seeded
+  farmer (`oidc|farmer-001`), confirmed `GET /farmer/input-suppliers`
+  reported the correct `active_product_count`, confirmed `GET
+  /farmer/products` returned both products and the `category`/`org_id`
+  filters worked, confirmed an invalid category `400`s; placed an order and
+  confirmed `total_price` was computed correctly (`quantity × unit_price`);
+  confirmed a zero/negative quantity and a nonexistent `listing_id` both
+  `400`/`404` correctly; confirmed the order appeared in both `GET
+  /farmer/orders` and the supplier's `GET /inputsupplier/orders?
+  status=action_needed`; confirmed → fulfilled it through the real
+  `requested → confirmed → fulfilled` lifecycle, and confirmed
+  re-confirming an already-confirmed order correctly `409`s; ran the
+  reject path (with a reason) and the farmer-initiated cancel path on two
+  more orders, and confirmed cancelling an already-cancelled order `409`s.
+  **Cross-subject isolation, verified against real second accounts**: a
+  second farmer could not see or cancel the first farmer's order (`404`,
+  own-history-only on `GET /farmer/orders`); a second InputSupplier org
+  could not read the first org's order by real `order_id` (`404`).
+  **Deactivate-not-delete, verified directly**: `DELETE
+  /inputsupplier/products/:id` was confirmed to leave the row in place with
+  `is_active = false` (still visible to the supplier's own `GET
+  /inputsupplier/products`, gone from the farmer-facing `GET
+  /farmer/products`), and ordering a deactivated product correctly `404`s.
+  Confirmed `GET /inputsupplier/dashboard`'s new `orders_by_status`/
+  `pending_orders_count` fields matched reality after all of the above. All
+  34 checks passed. Also drove the complete flow through the actual
+  **frontend** (Playwright, headless): registered a fresh InputSupplier org
+  via `register-provider.html`, admin-approved it via a direct API call,
+  added three real products through the on-page form; as a seeded farmer,
+  navigated to the new `marketplace.html` via the dashboard header link,
+  filtered to that one supplier, and placed three real orders through the
+  on-page quantity input + "สั่งซื้อ" button; on the supplier side, reloaded
+  `inputsupplier/dashboard.html` and confirmed all three orders appeared in
+  the new order-review-queue section, confirmed one, rejected a second
+  (with a typed reason), then fulfilled the confirmed one — all through the
+  real buttons, no direct API calls; confirmed the farmer's own order
+  history (reloaded from scratch) showed all three final statuses
+  correctly (`ส่งมอบแล้ว`/`ผู้จำหน่ายปฏิเสธ` with the reason text/`ยกเลิกแล้ว`
+  after the farmer cancelled the third order themselves through the page's
+  own cancel button). Screenshots taken at every step. Regression-checked
+  the seeded Lender/Buyer dashboards and `GET /farmer/rice-prices` still
+  return real data unaffected by this change. All test organizations and
+  their orders/listings/photos were deleted afterward via a single FK-safe
+  transaction, not left in seed data.
 
 ## Next steps (not yet built)
 
@@ -879,6 +991,12 @@ and the live `agrolink_test` database — not unit tests against mocks:
 - RLS on `marketplace.service_listing`/`marketplace.vendor_photo` — same
   API-layer-is-the-only-boundary situation as the other tables listed
   above, just for the Machinery/Drying-Yard Portal.
+- Payment/settlement for the InputSupplier order flow — see "Farmer
+  ordering flow" and "what's mocked" above; `fulfilled` today is just a
+  status label, no money actually moves.
+- Stock/quantity tracking for `marketplace.product_listing` — nothing today
+  stops a supplier's product from being ordered more times than they can
+  actually supply.
 - A dedicated portal for `Logistics` — the one remaining self-registerable
   org_type with no portal of its own; it still only gets a
   registration-received confirmation, with nowhere to log into afterward.

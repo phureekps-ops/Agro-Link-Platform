@@ -93,6 +93,153 @@ async function refreshSummary() {
   }
 }
 
+// ---------- คำสั่งซื้อจากเกษตรกร ----------
+const ORDER_STATUS_LABEL_TH = {
+  requested: "รอการยืนยัน",
+  confirmed: "ยืนยันแล้ว (รอส่งมอบ)",
+  fulfilled: "ส่งมอบแล้ว",
+  rejected: "ปฏิเสธแล้ว",
+  cancelled: "ยกเลิกโดยเกษตรกร",
+};
+const ORDER_STATUS_BADGE_CLASS = {
+  requested: "status-pending",
+  confirmed: "status-approved",
+  fulfilled: "status-completed",
+  rejected: "status-declined",
+  cancelled: "status-declined",
+};
+
+function thaiDate(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function orderCard(o) {
+  const badgeClass = ORDER_STATUS_BADGE_CLASS[o.status] || "status-pending";
+  const badge = `<span class="badge ${badgeClass}">${escapeHtml(ORDER_STATUS_LABEL_TH[o.status] || o.status)}</span>`;
+
+  let actions = "";
+  if (o.status === "requested") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-confirm-order="${o.order_id}">ยืนยันคำสั่งซื้อ</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-reject-reason-for="${o.order_id}" placeholder="เหตุผลการปฏิเสธ (ไม่บังคับ)" />
+        <button type="button" class="btn btn-decline btn-sm" data-reject-order="${o.order_id}">ปฏิเสธ</button>
+      </div>
+    `;
+  } else if (o.status === "confirmed") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-fulfill-order="${o.order_id}">บันทึกว่าส่งมอบสินค้าแล้ว</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card" data-order-id="${o.order_id}">
+      <div class="row"><span class="title">${escapeHtml(o.farmer_name)} — ${escapeHtml(o.product_name)}</span>${badge}</div>
+      <div class="detail-line">${escapeHtml(CATEGORY_LABEL_TH[o.category] || o.category)} · จำนวน ${Number(o.quantity).toLocaleString("th-TH")} x ${Number(o.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(o.price_unit)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">รวม ${Number(o.total_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+      ${o.decided_reason ? `<div class="detail-line muted">เหตุผล: ${escapeHtml(o.decided_reason)}</div>` : ""}
+      <div class="detail-line muted">สั่งซื้อเมื่อ ${thaiDate(o.requested_at)}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadOrderReviewQueue() {
+  const el = document.getElementById("orderReviewQueueSection");
+  try {
+    const orders = await AgroLinkInputSupplierAPI.get("/inputsupplier/orders?status=action_needed");
+    if (orders.length === 0) {
+      el.innerHTML = `<div class="empty-state">ไม่มีคำสั่งซื้อที่ต้องดำเนินการในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = orders.map(orderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadOrderHistory() {
+  const el = document.getElementById("orderHistorySection");
+  const status = document.getElementById("orderStatusFilter").value;
+  try {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const orders = await AgroLinkInputSupplierAPI.get(`/inputsupplier/orders${query}`);
+    if (orders.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคำสั่งซื้อ</div>`;
+      return;
+    }
+    el.innerHTML = orders.map(orderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดประวัติคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshOrdersAndSummary() {
+  await Promise.all([loadOrderReviewQueue(), loadOrderHistory(), refreshSummary()]);
+}
+
+document.getElementById("orderStatusFilter").addEventListener("change", () => loadOrderHistory());
+
+function handleOrderActionClick(container) {
+  container.addEventListener("click", async (e) => {
+    const confirmBtn = e.target.closest("[data-confirm-order]");
+    const rejectBtn = e.target.closest("[data-reject-order]");
+    const fulfillBtn = e.target.closest("[data-fulfill-order]");
+
+    if (confirmBtn) {
+      const orderId = confirmBtn.dataset.confirmOrder;
+      confirmBtn.disabled = true;
+      try {
+        await AgroLinkInputSupplierAPI.post(`/inputsupplier/orders/${orderId}/confirm`, {});
+        toast("ยืนยันคำสั่งซื้อเรียบร้อยแล้ว");
+        await refreshOrdersAndSummary();
+      } catch (err) {
+        toast("ยืนยันคำสั่งซื้อไม่สำเร็จ: " + err.message, true);
+        confirmBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (rejectBtn) {
+      const orderId = rejectBtn.dataset.rejectOrder;
+      const reasonInput = container.querySelector(`[data-reject-reason-for="${orderId}"]`);
+      rejectBtn.disabled = true;
+      try {
+        await AgroLinkInputSupplierAPI.post(`/inputsupplier/orders/${orderId}/reject`, {
+          reason: (reasonInput && reasonInput.value.trim()) || null,
+        });
+        toast("ปฏิเสธคำสั่งซื้อเรียบร้อยแล้ว");
+        await refreshOrdersAndSummary();
+      } catch (err) {
+        toast("ปฏิเสธคำสั่งซื้อไม่สำเร็จ: " + err.message, true);
+        rejectBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (fulfillBtn) {
+      const orderId = fulfillBtn.dataset.fulfillOrder;
+      fulfillBtn.disabled = true;
+      try {
+        await AgroLinkInputSupplierAPI.post(`/inputsupplier/orders/${orderId}/fulfill`, {});
+        toast("บันทึกการส่งมอบสินค้าเรียบร้อยแล้ว");
+        await refreshOrdersAndSummary();
+      } catch (err) {
+        toast("บันทึกการส่งมอบไม่สำเร็จ: " + err.message, true);
+        fulfillBtn.disabled = false;
+      }
+    }
+  });
+}
+
+handleOrderActionClick(document.getElementById("orderReviewQueueSection"));
+handleOrderActionClick(document.getElementById("orderHistorySection"));
+
 // ---------- แบบฟอร์มเพิ่ม/แก้ไขสินค้า ----------
 const productForm = document.getElementById("productForm");
 const editingListingIdInput = document.getElementById("editingListingId");
@@ -350,6 +497,8 @@ async function init() {
   }
 
   loadProducts();
+  loadOrderReviewQueue();
+  loadOrderHistory();
 }
 
 init();

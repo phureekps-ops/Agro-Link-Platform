@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ตลาดปัจจัยการผลิต</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🛒</span><span>AgroLink Platform — ตลาดปัจจัยการผลิต</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      เลือกซื้อปุ๋ย/ฮอร์โมน สารเคมีและยาปราบศัตรูพืช อุปกรณ์การเกษตร และสินค้าอื่นๆ
+      จากผู้จำหน่ายปัจจัยการผลิตที่ผ่านการตรวจสอบแล้วในระบบ — เมื่อสั่งซื้อแล้ว ผู้จำหน่ายจะเป็นผู้ยืนยัน/ปฏิเสธคำสั่งซื้อ
+      ท่านสามารถยกเลิกได้เองในระหว่างที่คำสั่งซื้อยังรอการยืนยัน
+    </p>
+
+    <div class="section-title">🔍 ค้นหาสินค้า</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="categoryFilter">หมวดหมู่</label>
+        <select id="categoryFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="fertilizer_hormone">ปุ๋ย/ฮอร์โมน</option>
+          <option value="chemical_pesticide">สารเคมีและยาปราบศัตรูพืช</option>
+          <option value="equipment">อุปกรณ์การเกษตร</option>
+          <option value="other">อื่นๆ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="supplierFilter">ผู้จำหน่าย</label>
+        <select id="supplierFilter">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">📦 สินค้าที่มีจำหน่าย</div>
+    <div id="productListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดสินค้า…</div>
+    </div>
+
+    <div class="section-title">🧾 คำสั่งซื้อของท่าน</div>
+    <div id="orderHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำสั่งซื้อ…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/marketplace.js"></script>
+</body>
+</html>
