@@ -87,6 +87,8 @@ psql -d agrolink_test -f db/grant_organization_roles.sql
 psql -d agrolink_test -f db/grant_input_supplier_and_buy_prices.sql
 psql -d agrolink_test -f db/grant_farmer_product_orders.sql
 psql -d agrolink_test -f db/grant_market_venue_marketplace.sql
+psql -d agrolink_test -f db/grant_about_content.sql
+psql -d agrolink_test -f db/grant_admin_dashboard_views.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -127,6 +129,25 @@ psql -d agrolink_test -f db/04_reference_data.sql
   only records the booking request itself, per an explicit product scope
   decision. See `src/routes/marketvenue.js` (venue owner side) and the
   `venue-*` endpoints added to `src/routes/farmer.js` (farmer side).
+- `grant_about_content.sql` — adds `content.about_section`, a small
+  platform-wide table (no RLS, no org_id/farmer_id ownership column — the
+  first table in the project with neither) backing the public
+  "เกี่ยวกับเรา" page (`frontend/about.html`, public `GET /about`) and its
+  admin content-management form (`GET/POST/PUT/DELETE
+  /admin/about-sections`, see `src/routes/admin.js` and
+  `src/routes/content.js`). Seeded with starter copy for the platform intro
+  and every existing service category, guarded so re-running the script
+  after an admin has edited/added/deleted content never duplicates rows.
+- `grant_admin_dashboard_views.sql` — **a real gap this build surfaced**:
+  `GET /admin/dashboard` (the Platform Ops "ภาพรวม" panel) reads
+  `ops.v_integrity_checksum`, `monitoring.v_go_live_readiness`, and
+  `monitoring.v_active_alerts` through `agrolink_app` like every other
+  route, but nobody had ever granted `agrolink_app` `SELECT` on those three
+  views specifically — they'd only ever been checked manually via psql as
+  the table/view owner during Layer 9/10 development, which masked the
+  missing grant. The panel threw `permission denied` through the API from
+  the day the route was added until this script was found and run. Plain
+  additive `GRANT`, safe to run any number of times.
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
   it membership in `agrolink_app`, and grants it direct `EXECUTE` on
   `security.resolve_subject_from_external_claim()` (needed pre-login, before
