@@ -11,6 +11,7 @@ const adminRouter = require('./routes/admin');
 const machineryRouter = require('./routes/machinery');
 const organizationRouter = require('./routes/organization');
 const inputSupplierRouter = require('./routes/inputsupplier');
+const marketVenueRouter = require('./routes/marketvenue');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/organization', organizationRouter);
 app.use('/inputsupplier', inputSupplierRouter);
+app.use('/marketvenue', marketVenueRouter);
 
 // Fallback 404
 app.use((req, res) => {

@@ -551,4 +551,187 @@ router.post('/orders/:id/cancel', async (req, res, next) => {
   }
 });
 
+const VENUE_TYPES = ['wholesale_market', 'fresh_market', 'popup_market', 'other'];
+
+/**
+ * GET /farmer/venue-listings?province_code=&venue_type= — browse ACTIVE
+ * selling-space listings across every Verified MarketVenue organization
+ * (see grant_market_venue_marketplace.sql), joined with the venue owner's
+ * org_name. Same shape as GET /farmer/products — is_active filter only,
+ * optional narrowing filters, no pagination (matches every other browse
+ * endpoint in this project).
+ */
+router.get('/venue-listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { province_code: provinceCode, venue_type: venueType } = req.query;
+
+  if (venueType && !VENUE_TYPES.includes(venueType)) {
+    return res.status(400).json({ error: 'invalid_venue_type', valid: VENUE_TYPES });
+  }
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [];
+      const filters = ['v.is_active = true', "r.status = 'Verified'", "o.kyb_status = 'Verified'"];
+      if (provinceCode) { params.push(provinceCode); filters.push(`v.province_code = $${params.length}`); }
+      if (venueType) { params.push(venueType); filters.push(`v.venue_type = $${params.length}`); }
+
+      const result = await client.query(
+        `SELECT v.listing_id, v.org_id, o.org_name, v.venue_name, v.venue_type, v.province_code,
+                v.address_detail, v.accepted_products, v.space_description, v.fee_amount,
+                v.fee_unit, v.schedule_note, v.updated_at
+           FROM marketplace.venue_listing v
+           JOIN identity.organization o ON o.org_id = v.org_id
+           JOIN identity.organization_role r ON r.org_id = v.org_id AND r.role_type = 'MarketVenue'
+          WHERE ${filters.join(' AND ')}
+          ORDER BY v.updated_at DESC`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/venue-bookings
+ * Body: { listing_id, product_type, preferred_date, quantity_note?, farmer_note? }
+ *
+ * Requests to use one listing's space on a given date. venue_name/
+ * venue_type/fee_amount/fee_unit are SNAPSHOTTED from the listing at this
+ * moment (same reasoning as POST /farmer/orders — see grant_market_venue_
+ * marketplace.sql's comment). Payment happens OFFLINE directly between the
+ * farmer and the venue owner on-site — this only records the booking
+ * request itself, per the explicit scope decision made with the user.
+ */
+router.post('/venue-bookings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    listing_id: listingId, product_type: productType, preferred_date: preferredDate,
+    quantity_note: quantityNote, farmer_note: farmerNote,
+  } = req.body || {};
+
+  if (!listingId || !productType || !preferredDate) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['listing_id', 'product_type', 'preferred_date'],
+    });
+  }
+  if (Number.isNaN(Date.parse(preferredDate))) {
+    return res.status(400).json({ error: 'invalid_preferred_date' });
+  }
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const listing = await client.query(
+        `SELECT listing_id, org_id, venue_name, venue_type, fee_amount, fee_unit
+           FROM marketplace.venue_listing
+          WHERE listing_id = $1 AND is_active = true`,
+        [listingId],
+      );
+      if (listing.rows.length === 0) return { listingNotFound: true };
+      const l = listing.rows[0];
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.venue_booking
+           (listing_id, org_id, farmer_id, venue_name, venue_type, fee_amount, fee_unit,
+            product_type, quantity_note, preferred_date, farmer_note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING booking_id, listing_id, org_id, venue_name, venue_type, fee_amount, fee_unit,
+                   product_type, quantity_note, preferred_date, farmer_note, status, requested_at`,
+        [
+          listingId, l.org_id, subjectId, l.venue_name, l.venue_type, l.fee_amount, l.fee_unit,
+          productType.trim(), quantityNote || null, preferredDate, farmerNote || null,
+        ],
+      );
+      await logAccess(client, 'write', 'marketplace.venue_booking', rows[0].booking_id);
+      return { booking: rows[0] };
+    });
+
+    if (result.listingNotFound) {
+      return res.status(404).json({ error: 'venue_listing_not_found' });
+    }
+    return res.status(201).json(result.booking);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/venue-bookings?status=... — this farmer's own booking
+ * requests across every venue, joined with the venue owner's org_name.
+ */
+router.get('/venue-bookings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status) { params.push(status); filter = 'AND b.status = $2'; }
+
+      const result = await client.query(
+        `SELECT b.booking_id, b.org_id, org.org_name, b.venue_name, b.venue_type, b.fee_amount,
+                b.fee_unit, b.product_type, b.quantity_note, b.preferred_date, b.farmer_note,
+                b.status, b.decided_reason, b.requested_at, b.decided_at
+           FROM marketplace.venue_booking b
+           JOIN identity.organization org ON org.org_id = b.org_id
+          WHERE b.farmer_id = $1 ${filter}
+          ORDER BY b.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.venue_booking', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/venue-bookings/:id/cancel — a farmer can cancel their OWN
+ * booking request, only while it's still `Requested` (before the venue
+ * owner has acted on it). Same ownership-gate + status-guard shape as
+ * POST /farmer/orders/:id/cancel.
+ */
+router.post('/venue-bookings/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.venue_booking WHERE farmer_id = $1 AND booking_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'Requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.venue_booking
+            SET status = 'Cancelled', updated_at = now()
+          WHERE farmer_id = $1 AND booking_id = $2
+          RETURNING booking_id, status`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.venue_booking', id);
+      return { booking: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'booking_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'booking_not_cancellable', current_status: result.wrongStatus });
+    }
+    return res.json(result.booking);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

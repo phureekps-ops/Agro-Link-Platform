@@ -25,9 +25,14 @@ const REGISTER_CONSTRAINT_ERRORS = {
 // both values still exist in identity.organization's org_type domain (an
 // org of either type could still be created directly, e.g. seeded), they
 // just aren't offered on the public self-registration form anymore.
+// 'MarketVenue' (เจ้าของสถานที่จำหน่ายสินค้า — wholesale/fresh/pop-up market
+// owners and market-day organizers) added 2026-07-26 alongside the new
+// Selling-Space Matching Portal — see grant_market_venue_marketplace.sql
+// and src/routes/marketvenue.js.
 const ORG_SELF_REGISTER_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer',
   'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
+  'MarketVenue',
 ];
 const ORG_REGISTER_CONSTRAINT_ERRORS = {
   uq_organization_tax_id: 'tax_id_already_registered',
@@ -194,14 +199,14 @@ router.post('/register', async (req, res, next) => {
  * Body: { org_name, tax_id, org_type }
  *
  * Self-service sign-up for service-provider organizations (lenders, buyers,
- * cooperatives, mills, input suppliers, and farm-machinery/mechanization
- * services — see ORG_SELF_REGISTER_TYPES above). Before this endpoint,
- * every organization in the system was inserted directly via a superuser
- * connection during seeding; there was no way for a new business to apply
- * to join AgroLink through the API at all — this was a documented gap in
- * both READMEs. This closes the *submission* half of the KYB loop; the
- * Platform Ops admin slice (`src/routes/admin.js`) already covers the
- * *approval* half.
+ * cooperatives, mills, input suppliers, farm-machinery/mechanization
+ * services, and selling-space/market venue owners — see
+ * ORG_SELF_REGISTER_TYPES above). Before this endpoint, every organization
+ * in the system was inserted directly via a superuser connection during
+ * seeding; there was no way for a new business to apply to join AgroLink
+ * through the API at all — this was a documented gap in both READMEs. This
+ * closes the *submission* half of the KYB loop; the Platform Ops admin
+ * slice (`src/routes/admin.js`) already covers the *approval* half.
  *
  * The new organization always lands at kyb_status = 'Pending' — nothing
  * here auto-approves. A brand-new `partner.vendor_profile` row is also
@@ -217,21 +222,25 @@ router.post('/register', async (req, res, next) => {
  * (`oidc|org-<uuid>`) since no real IdP is connected, and auto-issues a
  * session JWT. Unlike farmer registration, logging in immediately does NOT
  * guarantee full portal access: `GET /lender/dashboard`, `GET /buyer/dashboard`,
- * `GET /machinery/dashboard`, and `GET /inputsupplier/dashboard` all now
- * require `kyb_status = 'Verified'` (see the `requireLenderOrg`/
- * `requireBuyerOrg`/`requireMachineryOrg`/`requireInputSupplierOrg` update
- * in their own route files) — a newly self-registered org sees a "your
- * application is under review" state in that portal instead of live data
- * until Platform Ops approves it. Organization types with no dedicated
- * portal at all yet (Logistics — the only remaining self-registerable type
- * without one, now that Cooperative and Mill were removed from
- * self-registration entirely) simply get a registration-received
- * confirmation on the frontend — there's nowhere else to log into yet.
+ * `GET /machinery/dashboard`, `GET /inputsupplier/dashboard`, and
+ * `GET /marketvenue/dashboard` all now require `kyb_status = 'Verified'`
+ * (see the `requireLenderOrg`/`requireBuyerOrg`/`requireMachineryOrg`/
+ * `requireInputSupplierOrg`/`requireMarketVenueOrg` update in their own
+ * route files) — a newly self-registered org sees a "your application is
+ * under review" state in that portal instead of live data until Platform
+ * Ops approves it. Organization types with no dedicated portal at all yet
+ * (Logistics — the only remaining self-registerable type without one, now
+ * that Cooperative and Mill were removed from self-registration entirely)
+ * simply get a registration-received confirmation on the frontend — there's
+ * nowhere else to log into yet.
  * TractorService, DroneService,
  * HarvesterService, TruckService, and DryingYardService all share ONE
  * portal (`frontend/machinery/`) — see `src/routes/machinery.js`. InputSupplier
  * has its own dedicated portal (`frontend/inputsupplier/`) — a product
- * catalog, not a rate card — see `src/routes/inputsupplier.js`.
+ * catalog, not a rate card — see `src/routes/inputsupplier.js`. MarketVenue
+ * has its own dedicated portal (`frontend/marketvenue/`) — a selling-space
+ * listing catalog plus a farmer booking-request queue, not a rate card or
+ * product catalog — see `src/routes/marketvenue.js`.
  */
 router.post('/org-register', async (req, res, next) => {
   const { org_name: orgName, tax_id: taxId, org_type: orgType } = req.body || {};

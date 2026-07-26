@@ -86,6 +86,7 @@ psql -d agrolink_test -f db/grant_machinery_marketplace.sql
 psql -d agrolink_test -f db/grant_organization_roles.sql
 psql -d agrolink_test -f db/grant_input_supplier_and_buy_prices.sql
 psql -d agrolink_test -f db/grant_farmer_product_orders.sql
+psql -d agrolink_test -f db/grant_market_venue_marketplace.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -117,6 +118,15 @@ psql -d agrolink_test -f db/04_reference_data.sql
   `NO FORCE`/`FORCE` toggle so it also restores cleanly under a
   non-superuser role.
 
+- `grant_market_venue_marketplace.sql` — adds the Selling-Space Matching
+  Portal (ระบบจับคู่พื้นที่จำหน่ายสินค้า): a new self-registerable
+  `MarketVenue` org_type/role (wholesale markets, fresh markets, market-day
+  organizers), `marketplace.venue_listing` (a venue owner's posted selling
+  space), and `marketplace.venue_booking` (a farmer's request to use one).
+  Payment is offline/on-site between the farmer and the venue owner — this
+  only records the booking request itself, per an explicit product scope
+  decision. See `src/routes/marketvenue.js` (venue owner side) and the
+  `venue-*` endpoints added to `src/routes/farmer.js` (farmer side).
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
   it membership in `agrolink_app`, and grants it direct `EXECUTE` on
   `security.resolve_subject_from_external_claim()` (needed pre-login, before

@@ -10,6 +10,13 @@
  * has never opened the Buyer or Machinery portal still reach this page
  * (e.g. via the link on their Lender dashboard) and request a Buyer role
  * without needing to log in again anywhere.
+ *
+ * 'agrolink_inputsupplier_session' and 'agrolink_marketvenue_session' added
+ * 2026-07-26 — both portals already link here from their own dashboards
+ * (see inputsupplier/dashboard.html / marketvenue/dashboard.html) but were
+ * missing from this list, which would have made this page report "not
+ * logged in" for an InputSupplier/MarketVenue org with no other portal's
+ * session cached in the same browser.
  */
 const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
   ? "http://localhost:4000"
@@ -21,7 +28,10 @@ const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
 // if the backend gets redeployed under a new URL, update it above to
 // match exactly what's shown on the service's page in the Render
 // Dashboard, not just the service name.
-const SESSION_KEYS = ["agrolink_lender_session", "agrolink_buyer_session", "agrolink_machinery_session"];
+const SESSION_KEYS = [
+  "agrolink_lender_session", "agrolink_buyer_session", "agrolink_machinery_session",
+  "agrolink_inputsupplier_session", "agrolink_marketvenue_session",
+];
 
 function findSession() {
   for (const key of SESSION_KEYS) {

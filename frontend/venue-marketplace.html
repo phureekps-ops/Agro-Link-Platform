@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — หาที่ขายสินค้า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🏪</span><span>AgroLink Platform — หาที่ขายสินค้า</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      ค้นหาตลาดค้าส่ง ตลาดสด และตลาดนัดที่เปิดรับเกษตรกร/สหกรณ์/วิสาหกิจชุมชนมาจำหน่ายสินค้า —
+      เหมาะสำหรับช่วงที่ผลผลิตล้นตลาดหรือราคาตกต่ำ เมื่อขอจองแล้ว เจ้าของสถานที่จะเป็นผู้ยืนยัน/ปฏิเสธคำขอ
+      ค่าบริการ (ถ้ามี) ชำระโดยตรงกับเจ้าของสถานที่หน้างาน ท่านต้องนำสินค้าไปจำหน่ายด้วยตนเอง
+    </p>
+
+    <div class="section-title">🔍 ค้นหาพื้นที่ขายสินค้า</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="venueTypeFilter">ประเภทสถานที่</label>
+        <select id="venueTypeFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="wholesale_market">ตลาดค้าส่ง</option>
+          <option value="fresh_market">ตลาดสด</option>
+          <option value="popup_market">ตลาดนัด/ตลาดชั่วคราว</option>
+          <option value="other">อื่นๆ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="provinceFilter">จังหวัด</label>
+        <select id="provinceFilter">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">📍 พื้นที่ขายสินค้าที่เปิดรับ</div>
+    <div id="listingListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดพื้นที่ขายสินค้า…</div>
+    </div>
+
+    <div class="section-title" id="bookingFormTitle" style="display:none;">📝 ขอจองพื้นที่</div>
+    <form id="bookingForm" class="panel" style="display:none;">
+      <input type="hidden" id="bookingListingId" value="" />
+      <div style="font-weight:700; margin-bottom:12px;" id="bookingVenueNameLabel"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="bookingProductType">ชนิดสินค้าที่จะนำไปจำหน่าย</label>
+          <input type="text" id="bookingProductType" placeholder="เช่น ข้าวหอมมะลิ, มะม่วง" required />
+        </div>
+        <div class="field">
+          <label for="bookingQuantityNote">ปริมาณโดยประมาณ (ถ้าทราบ)</label>
+          <input type="text" id="bookingQuantityNote" placeholder="เช่น 500 กก., 20 กระสอบ" />
+        </div>
+        <div class="field">
+          <label for="bookingPreferredDate">วันที่ต้องการใช้พื้นที่</label>
+          <input type="date" id="bookingPreferredDate" required />
+        </div>
+        <div class="field full">
+          <label for="bookingFarmerNote">หมายเหตุถึงเจ้าของสถานที่ (ถ้ามี)</label>
+          <input type="text" id="bookingFarmerNote" placeholder="เช่น ต้องการพื้นที่ขนาดใหญ่ มีรถบรรทุก" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="bookingSubmitBtn" style="max-width:220px;">ส่งคำขอจอง</button>
+      <button type="button" class="btn btn-ghost" id="bookingCancelBtn" style="max-width:160px;">ยกเลิก</button>
+    </form>
+
+    <div class="section-title">🧾 คำขอจองของท่าน</div>
+    <div id="bookingHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอจอง…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/provinces.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/venue-marketplace.js"></script>
+</body>
+</html>

@@ -19,10 +19,13 @@ router.use(requireAuth, requireOrganization);
 // were removed from both lists together on 2026-07-24, per the same product
 // decision as ORG_SELF_REGISTER_TYPES in auth.js — an org can no longer
 // self-request either of these as an additional role, same as it can no
-// longer self-register as one from scratch.
+// longer self-register as one from scratch. 'MarketVenue' (เจ้าของสถานที่
+// จำหน่ายสินค้า) added 2026-07-26 alongside the new Selling-Space Matching
+// Portal — see grant_market_venue_marketplace.sql.
 const ORG_REQUESTABLE_ROLE_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer',
   'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
+  'MarketVenue',
 ];
 
 const ROLE_LABEL_TH = {
@@ -31,6 +34,7 @@ const ROLE_LABEL_TH = {
   TractorService: 'บริการรถไถ', DroneService: 'บริการโดรน/ฉีดพ่นสารเคมี',
   HarvesterService: 'บริการรถเกี่ยวข้าว', TruckService: 'บริการรถบรรทุก',
   DryingYardService: 'บริการลานตากข้าว',
+  MarketVenue: 'เจ้าของสถานที่จำหน่ายสินค้า (ตลาด/ลานค้า)',
 };
 
 /**

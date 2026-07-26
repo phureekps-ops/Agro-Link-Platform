@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลเจ้าของสถานที่จำหน่ายสินค้า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🏪</span><span>AgroLink Platform — พอร์ทัลเจ้าของสถานที่จำหน่ายสินค้า</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">📥 คำขอจองพื้นที่ที่ต้องดำเนินการ</div>
+    <div id="bookingReviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอจอง…</div>
+    </div>
+
+    <div class="section-title">📋 ประวัติคำขอจองทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="bookingStatusFilter">กรองตามสถานะ</label>
+        <select id="bookingStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="Requested">รอการยืนยัน</option>
+          <option value="Accepted">รับจองแล้ว</option>
+          <option value="Declined">ปฏิเสธแล้ว</option>
+          <option value="Cancelled">ยกเลิกโดยเกษตรกร</option>
+        </select>
+      </div>
+    </div>
+    <div id="bookingHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติคำขอจอง…</div>
+    </div>
+
+    <div class="section-title">➕ เพิ่ม/แก้ไขพื้นที่ประกาศ</div>
+    <form id="listingForm" class="panel">
+      <input type="hidden" id="editingListingId" value="" />
+      <div class="form-grid">
+        <div class="field">
+          <label for="venueNameInput">ชื่อสถานที่/ตลาด</label>
+          <input type="text" id="venueNameInput" placeholder="เช่น ตลาดค้าส่งสี่มุมเมือง" required />
+        </div>
+        <div class="field">
+          <label for="venueTypeSelect">ประเภทสถานที่</label>
+          <select id="venueTypeSelect" required>
+            <option value="wholesale_market">ตลาดค้าส่ง</option>
+            <option value="fresh_market">ตลาดสด</option>
+            <option value="popup_market">ตลาดนัด/ตลาดชั่วคราว</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="provinceSelect">จังหวัด</label>
+          <select id="provinceSelect" required></select>
+        </div>
+        <div class="field">
+          <label for="feeAmountInput">ค่าบริการ (ถ้ามี)</label>
+          <input type="number" id="feeAmountInput" min="0" step="0.01" placeholder="เช่น 100" />
+        </div>
+        <div class="field">
+          <label for="feeUnitInput">หน่วยค่าบริการ</label>
+          <input type="text" id="feeUnitInput" placeholder="เช่น บาท/ล็อค/วัน, บาท/ตร.ม./วัน" />
+        </div>
+        <div class="field full">
+          <label for="addressDetailInput">ที่อยู่/รายละเอียดทำเล</label>
+          <input type="text" id="addressDetailInput" placeholder="เช่น ถนน... ตำบล... อำเภอ..." />
+        </div>
+        <div class="field full">
+          <label for="acceptedProductsInput">ประเภทสินค้าที่รับ (ถ้ามีข้อจำกัด)</label>
+          <input type="text" id="acceptedProductsInput" placeholder="เช่น ข้าว ผัก ผลไม้ตามฤดูกาล — เว้นว่างหากรับทุกประเภท" />
+        </div>
+        <div class="field full">
+          <label for="spaceDescriptionInput">รายละเอียดพื้นที่</label>
+          <input type="text" id="spaceDescriptionInput" placeholder="เช่น ล็อคขนาด 2x3 เมตร จำนวน 10 ล็อค มีที่จอดรถ" />
+        </div>
+        <div class="field full">
+          <label for="scheduleNoteInput">วัน/ช่วงเวลาที่เปิดให้ใช้พื้นที่</label>
+          <input type="text" id="scheduleNoteInput" placeholder="เช่น ทุกวันเสาร์-อาทิตย์ 05:00-12:00 น. หรือ วันที่ 1-3 ส.ค. 2569" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="listingSubmitBtn" style="max-width:220px;">เพิ่มพื้นที่ประกาศ</button>
+      <button type="button" class="btn btn-ghost" id="listingCancelEditBtn" style="max-width:160px; display:none;">ยกเลิกการแก้ไข</button>
+    </form>
+
+    <div class="section-title">📍 พื้นที่ประกาศของท่าน</div>
+    <div id="listingListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดพื้นที่ประกาศ…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/provinces.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
