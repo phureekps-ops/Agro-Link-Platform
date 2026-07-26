@@ -81,6 +81,36 @@
       <div class="loading-line">กำลังโหลดรายชื่อองค์กร…</div>
     </div>
 
+    <div class="section-title">✍️ จัดการเนื้อหา "เกี่ยวกับเรา"</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หัวข้อและข้อความด้านล่างนี้จะแสดงบนหน้าเว็บสาธารณะ "เกี่ยวกับเรา" (about.html) ที่เกษตรกร/ผู้ให้บริการทั่วไปมองเห็นได้
+      แก้ไข/เพิ่ม/ซ่อน/ลบได้ทันที โดยไม่ต้องแก้โค้ด
+    </p>
+    <div id="aboutSectionsList" class="card-list">
+      <div class="loading-line">กำลังโหลดเนื้อหา…</div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <div class="row"><span class="title">➕ เพิ่มหัวข้อใหม่</span></div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="newAboutTitle">ชื่อหัวข้อที่แสดงบนเว็บ</label>
+          <input type="text" id="newAboutTitle" placeholder="เช่น ผู้ปล่อยกู้ (Lender)" />
+        </div>
+        <div class="field">
+          <label for="newAboutOrder">ลำดับการแสดงผล (ตัวเลขน้อย = แสดงก่อน)</label>
+          <input type="number" id="newAboutOrder" value="100" />
+        </div>
+        <div class="field full">
+          <label for="newAboutBody">เนื้อหา/คำอธิบาย</label>
+          <textarea id="newAboutBody" rows="4" placeholder="พิมพ์คำอธิบายบริการนี้..."></textarea>
+        </div>
+      </div>
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" id="addAboutSectionBtn">บันทึกหัวข้อใหม่</button>
+      </div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>

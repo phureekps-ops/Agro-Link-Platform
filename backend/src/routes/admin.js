@@ -463,4 +463,150 @@ router.post('/organizations/:id/roles/:role_type/status', async (req, res, next)
   }
 });
 
+/**
+ * GET /admin/about-sections
+ *
+ * Every content.about_section row (including inactive/hidden ones) for the
+ * admin content-management screen -- deliberately NOT filtered to
+ * is_active=true like the public GET /about is, so Platform Ops can see
+ * (and re-enable) hidden sections too.
+ */
+router.get('/about-sections', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT section_id, title, body, display_order, is_active, created_at, updated_at
+           FROM content.about_section
+          ORDER BY display_order ASC, section_id ASC`,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/about-sections
+ * Body: { title, body, display_order?, is_active? }
+ *
+ * Creates a new "เกี่ยวกับเรา" content section. This is plain content
+ * management, not a workflow with downstream FK dependents like
+ * marketplace.venue_listing -- nothing references content.about_section by
+ * id, so unlike the "deactivate, don't delete" convention used for
+ * listings, DELETE below is a real hard delete.
+ */
+router.post('/about-sections', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { title, body, display_order: displayOrder, is_active: isActive } = req.body || {};
+
+  if (!title || !String(title).trim() || !body || !String(body).trim()) {
+    return res.status(400).json({ error: 'missing_required_fields' });
+  }
+
+  try {
+    const section = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO content.about_section (title, body, display_order, is_active)
+         VALUES ($1, $2, $3, $4)
+         RETURNING section_id, title, body, display_order, is_active, created_at, updated_at`,
+        [
+          String(title).trim(),
+          String(body).trim(),
+          Number.isFinite(displayOrder) ? displayOrder : 0,
+          isActive !== false,
+        ],
+      );
+      await logAccess(client, 'write', 'content.about_section', String(rows[0].section_id));
+      return rows[0];
+    });
+    return res.status(201).json(section);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PUT /admin/about-sections/:id
+ * Body: any of { title, body, display_order, is_active }
+ *
+ * Partial update -- only the fields present in the body are changed, so
+ * the admin edit form can save a single field (e.g. just toggling
+ * is_active to hide a section) without resending the whole section.
+ */
+router.put('/about-sections/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { title, body, display_order: displayOrder, is_active: isActive } = req.body || {};
+
+  if (title !== undefined && !String(title).trim()) {
+    return res.status(400).json({ error: 'title_cannot_be_empty' });
+  }
+  if (body !== undefined && !String(body).trim()) {
+    return res.status(400).json({ error: 'body_cannot_be_empty' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE content.about_section
+            SET title = COALESCE($1, title),
+                body = COALESCE($2, body),
+                display_order = COALESCE($3, display_order),
+                is_active = COALESCE($4, is_active),
+                updated_at = now()
+          WHERE section_id = $5
+          RETURNING section_id, title, body, display_order, is_active, created_at, updated_at`,
+        [
+          title !== undefined ? String(title).trim() : null,
+          body !== undefined ? String(body).trim() : null,
+          Number.isFinite(displayOrder) ? displayOrder : null,
+          typeof isActive === 'boolean' ? isActive : null,
+          id,
+        ],
+      );
+      if (rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'content.about_section', id);
+      return { section: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'section_not_found' });
+    }
+    return res.json(result.section);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * DELETE /admin/about-sections/:id -- permanently removes the section. See
+ * the doc comment on POST above for why a hard delete is safe here.
+ */
+router.delete('/about-sections/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'DELETE FROM content.about_section WHERE section_id = $1 RETURNING section_id',
+        [id],
+      );
+      if (rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'content.about_section', id);
+      return { deleted: true };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'section_not_found' });
+    }
+    return res.json({ deleted: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

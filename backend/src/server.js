@@ -12,6 +12,7 @@ const machineryRouter = require('./routes/machinery');
 const organizationRouter = require('./routes/organization');
 const inputSupplierRouter = require('./routes/inputsupplier');
 const marketVenueRouter = require('./routes/marketvenue');
+const contentRouter = require('./routes/content');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use('/machinery', machineryRouter);
 app.use('/organization', organizationRouter);
 app.use('/inputsupplier', inputSupplierRouter);
 app.use('/marketvenue', marketVenueRouter);
+app.use('/about', contentRouter);
 
 // Fallback 404
 app.use((req, res) => {

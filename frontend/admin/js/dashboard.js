@@ -326,6 +326,119 @@ async function loadAllOrgs() {
 }
 document.getElementById("orgKybFilter").addEventListener("change", () => loadAllOrgs());
 
+// ---------- เนื้อหา "เกี่ยวกับเรา" (about.html) ----------
+function aboutSectionCard(s) {
+  return `
+    <div class="item-card" data-section-id="${s.section_id}">
+      <div class="form-grid">
+        <div class="field">
+          <label>ชื่อหัวข้อที่แสดงบนเว็บ</label>
+          <input type="text" class="about-title-input" value="${escapeHtml(s.title)}" />
+        </div>
+        <div class="field">
+          <label>ลำดับการแสดงผล</label>
+          <input type="number" class="about-order-input" value="${s.display_order}" />
+        </div>
+        <div class="field full">
+          <label>เนื้อหา/คำอธิบาย</label>
+          <textarea class="about-body-input" rows="4">${escapeHtml(s.body)}</textarea>
+        </div>
+        <div class="field">
+          <label>สถานะการแสดงผล</label>
+          <select class="about-active-select">
+            <option value="true" ${s.is_active ? "selected" : ""}>แสดงบนเว็บ</option>
+            <option value="false" ${!s.is_active ? "selected" : ""}>ซ่อนไว้ก่อน (ยังไม่ลบ)</option>
+          </select>
+        </div>
+      </div>
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm save-about-btn">บันทึกการแก้ไข</button>
+        <button type="button" class="btn btn-decline btn-sm delete-about-btn">ลบหัวข้อนี้ทิ้ง</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadAboutSections() {
+  const el = document.getElementById("aboutSectionsList");
+  try {
+    const sections = await AgroLinkAdminAPI.get("/admin/about-sections");
+    if (sections.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีเนื้อหา — เพิ่มหัวข้อแรกได้ที่ฟอร์มด้านล่าง</div>`;
+      return;
+    }
+    el.innerHTML = sections.map(aboutSectionCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดเนื้อหาไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("aboutSectionsList").addEventListener("click", async (e) => {
+  const card = e.target.closest(".item-card");
+  if (!card) return;
+  const sectionId = card.dataset.sectionId;
+
+  if (e.target.classList.contains("save-about-btn")) {
+    const title = card.querySelector(".about-title-input").value.trim();
+    const body = card.querySelector(".about-body-input").value.trim();
+    const displayOrder = Number(card.querySelector(".about-order-input").value);
+    const isActive = card.querySelector(".about-active-select").value === "true";
+    if (!title || !body) {
+      toast("กรุณากรอกชื่อหัวข้อและเนื้อหาให้ครบ", true);
+      return;
+    }
+    e.target.disabled = true;
+    try {
+      await AgroLinkAdminAPI.put(`/admin/about-sections/${sectionId}`, {
+        title, body, display_order: Number.isFinite(displayOrder) ? displayOrder : 0, is_active: isActive,
+      });
+      toast("บันทึกการแก้ไขเรียบร้อยแล้ว");
+      await loadAboutSections();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + err.message, true);
+      e.target.disabled = false;
+    }
+  }
+
+  if (e.target.classList.contains("delete-about-btn")) {
+    e.target.disabled = true;
+    try {
+      await AgroLinkAdminAPI.del(`/admin/about-sections/${sectionId}`);
+      toast("ลบหัวข้อเรียบร้อยแล้ว");
+      await loadAboutSections();
+    } catch (err) {
+      toast("ลบไม่สำเร็จ: " + err.message, true);
+      e.target.disabled = false;
+    }
+  }
+});
+
+document.getElementById("addAboutSectionBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("addAboutSectionBtn");
+  const title = document.getElementById("newAboutTitle").value.trim();
+  const body = document.getElementById("newAboutBody").value.trim();
+  const displayOrder = Number(document.getElementById("newAboutOrder").value);
+  if (!title || !body) {
+    toast("กรุณากรอกชื่อหัวข้อและเนื้อหาให้ครบ", true);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await AgroLinkAdminAPI.post("/admin/about-sections", {
+      title, body, display_order: Number.isFinite(displayOrder) ? displayOrder : 0, is_active: true,
+    });
+    toast("เพิ่มหัวข้อใหม่เรียบร้อยแล้ว");
+    document.getElementById("newAboutTitle").value = "";
+    document.getElementById("newAboutBody").value = "";
+    document.getElementById("newAboutOrder").value = "100";
+    await loadAboutSections();
+  } catch (err) {
+    toast("เพิ่มหัวข้อไม่สำเร็จ: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 async function refreshAll() {
   await Promise.all([
     loadSummaryAndHealth(), loadKycQueue(), loadKybQueue(), loadRoleRequestQueue(), loadAllFarmers(), loadAllOrgs(),
@@ -342,3 +455,4 @@ loadKybQueue();
 loadRoleRequestQueue();
 loadAllFarmers();
 loadAllOrgs();
+loadAboutSections();

@@ -123,6 +123,8 @@ const AgroLinkAdminAPI = (() => {
 
   const get = (path) => request(path, { method: "GET" });
   const post = (path, data) => request(path, { method: "POST", body: JSON.stringify(data) });
+  const put = (path, data) => request(path, { method: "PUT", body: JSON.stringify(data) });
+  const del = (path) => request(path, { method: "DELETE" });
 
   return {
     getSession,
@@ -131,5 +133,7 @@ const AgroLinkAdminAPI = (() => {
     logout,
     get,
     post,
+    put,
+    del,
   };
 })();
