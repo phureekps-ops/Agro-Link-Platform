@@ -47,6 +47,18 @@
       <div class="loading-line">กำลังโหลดประวัติคำขอใช้บริการ…</div>
     </div>
 
+    <div class="section-title">🗺️ พื้นที่ให้บริการ (จังหวัด)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      เลือกจังหวัดที่ท่านสามารถให้บริการได้ — เกษตรกรจะกรองหาผู้ให้บริการตามจังหวัดได้จากหน้า "บริการเครื่องจักรกล/ลานตากข้าว"
+      หากท่านไม่เลือกจังหวัดใดเลย ผู้ให้บริการของท่านจะไม่ปรากฏเมื่อเกษตรกรกรองตามจังหวัด (แต่ยังปรากฏตามปกติเมื่อเกษตรกรดูแบบ "ทั้งหมด")
+    </p>
+    <form id="serviceRegionsForm" class="panel">
+      <div id="serviceRegionsFields" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:8px 16px; margin-bottom:14px;">
+        <div class="loading-line">กำลังโหลดจังหวัด…</div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="serviceRegionsSubmitBtn" style="max-width:260px;">บันทึกพื้นที่ให้บริการ</button>
+    </form>
+
     <div class="section-title">💰 ราคาบริการ (Rate Card)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       กรอกเฉพาะบริการที่ท่านให้บริการจริง — ช่องที่ไม่กรอก (หรือกรอก 0) จะไม่แสดงราคาบริการนั้นแก่เกษตรกร
@@ -87,6 +99,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="../js/provinces.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>

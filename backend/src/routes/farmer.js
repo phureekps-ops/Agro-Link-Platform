@@ -347,24 +347,40 @@ router.get('/rice-prices', async (req, res, next) => {
 const PRODUCT_CATEGORIES = ['fertilizer_hormone', 'chemical_pesticide', 'equipment', 'other'];
 
 /**
- * GET /farmer/input-suppliers — every Verified InputSupplier organization,
- * with how many active products it currently has listed, so a farmer can
- * browse "by supplier" before drilling into GET /farmer/products?org_id=.
- * Mirrors GET /farmer/lenders' shape (a small supporting directory endpoint
- * so the frontend never has to hardcode an org_id).
+ * GET /farmer/input-suppliers?province_code= — every Verified InputSupplier
+ * organization, with how many active products it currently has listed, so
+ * a farmer can browse "by supplier" before drilling into GET /farmer/
+ * products?org_id=. Mirrors GET /farmer/lenders' shape (a small supporting
+ * directory endpoint so the frontend never has to hardcode an org_id).
+ *
+ * province_code filters on partner.vendor_profile.service_regions, same
+ * column/shape as GET /farmer/machinery-providers?province_code= — see
+ * PUT /inputsupplier/service-regions (src/routes/inputsupplier.js) for how
+ * a supplier org declares which provinces it covers. An org that has never
+ * set any service_regions (still '{}', the column default) simply never
+ * matches a province filter — it still shows up under "ทั้งหมด" (no filter
+ * applied).
  */
 router.get('/input-suppliers', async (req, res, next) => {
   const { subjectId } = req.subject;
+  const { province_code: provinceCode } = req.query;
   try {
     const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [];
+      const filters = ["o.kyb_status = 'Verified'"];
+      if (provinceCode) { params.push(provinceCode); filters.push(`$${params.length} = ANY(vp.service_regions)`); }
+
       const result = await client.query(
-        `SELECT o.org_id, o.org_name, COUNT(p.listing_id) FILTER (WHERE p.is_active) AS active_product_count
+        `SELECT o.org_id, o.org_name, COALESCE(vp.service_regions, '{}') AS service_regions,
+                COUNT(p.listing_id) FILTER (WHERE p.is_active) AS active_product_count
            FROM identity.organization o
            JOIN identity.organization_role r ON r.org_id = o.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = o.org_id
            LEFT JOIN marketplace.product_listing p ON p.org_id = o.org_id
-          WHERE o.kyb_status = 'Verified'
-          GROUP BY o.org_id, o.org_name
+          WHERE ${filters.join(' AND ')}
+          GROUP BY o.org_id, o.org_name, vp.service_regions
           ORDER BY o.org_name`,
+        params,
       );
       return result.rows;
     });
@@ -376,25 +392,31 @@ router.get('/input-suppliers', async (req, res, next) => {
 });
 
 /**
- * GET /farmer/products?category=&org_id= — browse the ACTIVE catalog
- * across every Verified InputSupplier (or one, via org_id), joined with the
- * supplier's org_name so a farmer knows who they'd be buying from, plus
- * each product's own photos (marketplace.product_photo — per-PRODUCT here,
- * unlike marketplace.vendor_photo's per-ORG gallery on the machinery side;
- * see grant_input_supplier_and_buy_prices.sql's doc comment). Only
- * `is_active = true` rows — a deactivated listing (see the deactivate-only
- * note on DELETE /inputsupplier/products/:id) simply stops appearing here,
- * same as a deactivated machinery rate-card item stops appearing priced.
+ * GET /farmer/products?category=&org_id=&province_code= — browse the
+ * ACTIVE catalog across every Verified InputSupplier (or one, via org_id),
+ * joined with the supplier's org_name so a farmer knows who they'd be
+ * buying from, plus each product's own photos (marketplace.product_photo —
+ * per-PRODUCT here, unlike marketplace.vendor_photo's per-ORG gallery on
+ * the machinery side; see grant_input_supplier_and_buy_prices.sql's doc
+ * comment). Only `is_active = true` rows — a deactivated listing (see the
+ * deactivate-only note on DELETE /inputsupplier/products/:id) simply stops
+ * appearing here, same as a deactivated machinery rate-card item stops
+ * appearing priced.
  *
  * Suppliers have been able to upload per-product photos (GET/POST/DELETE
  * /inputsupplier/products/:id/photos) since this catalog was built, but
  * this route never surfaced them to the farmer browsing it until now — the
  * same "feature exists on one side, never wired to the other" gap already
  * fixed once for GET /farmer/machinery-providers' photo gallery.
+ *
+ * province_code filters on the supplier's partner.vendor_profile.
+ * service_regions, same column/pattern as GET /farmer/machinery-providers
+ * ?province_code= — see PUT /inputsupplier/service-regions for how a
+ * supplier declares which provinces it covers.
  */
 router.get('/products', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { category, org_id: orgId } = req.query;
+  const { category, org_id: orgId, province_code: provinceCode } = req.query;
 
   if (category && !PRODUCT_CATEGORIES.includes(category)) {
     return res.status(400).json({ error: 'invalid_category', valid: PRODUCT_CATEGORIES });
@@ -406,13 +428,16 @@ router.get('/products', async (req, res, next) => {
       const filters = ['p.is_active = true'];
       if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
       if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
+      if (provinceCode) { params.push(provinceCode); filters.push(`$${params.length} = ANY(vp.service_regions)`); }
 
       const result = await client.query(
         `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
                 p.description, p.unit_price, p.price_unit, p.updated_at,
+                COALESCE(vp.service_regions, '{}') AS service_regions,
                 COALESCE(photos.photos, '[]'::json) AS photos
            FROM marketplace.product_listing p
            JOIN identity.organization o ON o.org_id = p.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = p.org_id
            LEFT JOIN LATERAL (
              SELECT json_agg(
                       json_build_object(

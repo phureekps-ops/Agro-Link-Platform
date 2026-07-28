@@ -48,6 +48,18 @@
       <div class="loading-line">กำลังโหลดประวัติคำสั่งซื้อ…</div>
     </div>
 
+    <div class="section-title">🗺️ พื้นที่ให้บริการ (จังหวัด)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      เลือกจังหวัดที่ท่านสามารถจัดส่ง/ให้บริการได้ — เกษตรกรจะกรองหาผู้จำหน่ายตามจังหวัดได้จากหน้า "ตลาดปัจจัยการผลิต"
+      หากท่านไม่เลือกจังหวัดใดเลย ร้านของท่านจะไม่ปรากฏเมื่อเกษตรกรกรองตามจังหวัด (แต่ยังปรากฏตามปกติเมื่อเกษตรกรดูแบบ "ทั้งหมด")
+    </p>
+    <form id="serviceRegionsForm" class="panel">
+      <div id="serviceRegionsFields" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:8px 16px; margin-bottom:14px;">
+        <div class="loading-line">กำลังโหลดจังหวัด…</div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="serviceRegionsSubmitBtn" style="max-width:260px;">บันทึกพื้นที่ให้บริการ</button>
+    </form>
+
     <div class="section-title">➕ เพิ่ม/แก้ไขสินค้าในแค็ตตาล็อก</div>
     <form id="productForm" class="panel">
       <input type="hidden" id="editingListingId" value="" />
@@ -107,6 +119,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="../js/provinces.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>

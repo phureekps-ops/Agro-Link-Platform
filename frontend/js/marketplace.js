@@ -50,6 +50,21 @@ const ORDER_STATUS_BADGE_CLASS = {
   cancelled: "status-declined",
 };
 
+// Populate the province filter from TH_PROVINCES (frontend/js/provinces.js)
+// — same pattern as frontend/js/machinery-marketplace.js's provinceFilter.
+const provinceFilter = document.getElementById("provinceFilter");
+TH_PROVINCES.forEach(([code, name]) => {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = name;
+  provinceFilter.appendChild(opt);
+});
+
+function provinceName(code) {
+  const found = TH_PROVINCES.find((p) => p[0] === code);
+  return found ? found[1] : code;
+}
+
 // ---------- ผู้จำหน่าย (สำหรับตัวกรอง) ----------
 async function loadSuppliersIntoFilter() {
   const select = document.getElementById("supplierFilter");
@@ -95,6 +110,7 @@ function productCard(p) {
       </div>
       ${photoGalleryHtml(p.photos)}
       <div class="detail-line">ผู้จำหน่าย: ${escapeHtml(p.org_name)}</div>
+      ${(p.service_regions || []).length > 0 ? `<div class="detail-line muted">จัดส่ง/ให้บริการในจังหวัด: ${escapeHtml((p.service_regions || []).map(provinceName).join(", "))}</div>` : ""}
       ${p.description ? `<div class="detail-line muted">${escapeHtml(p.description)}</div>` : ""}
       <div class="detail-line" style="font-weight:700; color:var(--green-900);">
         ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit)}
@@ -111,10 +127,12 @@ async function loadProducts() {
   const el = document.getElementById("productListSection");
   const category = document.getElementById("categoryFilter").value;
   const orgId = document.getElementById("supplierFilter").value;
+  const provinceCode = document.getElementById("provinceFilter").value;
   try {
     const params = new URLSearchParams();
     if (category) params.set("category", category);
     if (orgId) params.set("org_id", orgId);
+    if (provinceCode) params.set("province_code", provinceCode);
     const query = params.toString() ? `?${params.toString()}` : "";
     const products = await AgroLinkAPI.get(`/farmer/products${query}`);
     if (products.length === 0) {
@@ -129,6 +147,7 @@ async function loadProducts() {
 
 document.getElementById("categoryFilter").addEventListener("change", () => loadProducts());
 document.getElementById("supplierFilter").addEventListener("change", () => loadProducts());
+document.getElementById("provinceFilter").addEventListener("change", () => loadProducts());
 
 document.getElementById("productListSection").addEventListener("click", async (e) => {
   const orderBtn = e.target.closest("[data-order]");

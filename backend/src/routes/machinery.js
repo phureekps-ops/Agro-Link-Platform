@@ -547,4 +547,72 @@ router.post('/bookings/:id/decline', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /machinery/service-regions — this org's currently declared service
+ * regions (partner.vendor_profile.service_regions text[] of ISO 3166-2:TH
+ * province codes — see frontend/js/provinces.js's TH_PROVINCES for the
+ * full list this maps to). Every org already has a vendor_profile row
+ * auto-created at registration (src/routes/auth.js), defaulted to '{}' —
+ * so this is always a read of an existing row, never a "not found" case.
+ *
+ * This closes a real gap: GET /farmer/machinery-providers?province_code=
+ * has filtered on this column since it was built, but until this route
+ * (and PUT below) existed, nothing anywhere ever let an org SET it — every
+ * org's service_regions was permanently '{}', silently making that filter
+ * return zero results whenever a farmer actually picked a province.
+ */
+router.get('/service-regions', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const regions = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        'SELECT service_regions FROM partner.vendor_profile WHERE org_id = $1',
+        [subjectId],
+      );
+      return result.rows[0] ? result.rows[0].service_regions : [];
+    });
+    return res.json({ service_regions: regions });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PUT /machinery/service-regions
+ * Body: { service_regions: string[] }
+ *
+ * Replaces (not merges) this org's declared service regions wholesale —
+ * same "PUT replaces the full set" shape as PUT /machinery/rate-card.
+ * Values aren't validated against TH_PROVINCES server-side (same trust
+ * level as identity.farmer.region_code elsewhere in this project) — the
+ * frontend only ever offers checkboxes from that fixed list, so a
+ * malformed value here would mean a bypassed frontend, not a real user
+ * path.
+ */
+router.put('/service-regions', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { service_regions: serviceRegions } = req.body || {};
+
+  if (!Array.isArray(serviceRegions) || !serviceRegions.every((r) => typeof r === 'string')) {
+    return res.status(400).json({ error: 'invalid_service_regions', expected: 'array_of_strings' });
+  }
+
+  try {
+    const regions = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `UPDATE partner.vendor_profile
+            SET service_regions = $2, updated_at = now()
+          WHERE org_id = $1
+          RETURNING service_regions`,
+        [subjectId, serviceRegions],
+      );
+      await logAccess(client, 'write', 'partner.vendor_profile', subjectId);
+      return result.rows[0] ? result.rows[0].service_regions : [];
+    });
+    return res.json({ service_regions: regions });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

@@ -314,6 +314,53 @@ document.getElementById("rateCardForm").addEventListener("submit", async (e) => 
   }
 });
 
+// ---------- พื้นที่ให้บริการ (จังหวัด) ----------
+// TH_PROVINCES comes from frontend/js/provinces.js (loaded before this
+// file — see the <script> order in dashboard.html). Backs GET/PUT
+// /machinery/service-regions (src/routes/machinery.js), which closes the
+// gap where the farmer-side province filter on GET /farmer/machinery-
+// providers?province_code= had nothing anywhere letting an org actually
+// set partner.vendor_profile.service_regions.
+function serviceRegionCheckboxRow(code, name) {
+  return `
+    <label style="display:flex; align-items:center; gap:6px; font-size:14px; font-weight:400;">
+      <input type="checkbox" value="${code}" data-service-region="${code}" /> ${escapeHtml(name)}
+    </label>
+  `;
+}
+
+async function loadServiceRegions() {
+  const el = document.getElementById("serviceRegionsFields");
+  el.innerHTML = TH_PROVINCES.map(([code, name]) => serviceRegionCheckboxRow(code, name)).join("");
+  try {
+    const { service_regions: current } = await AgroLinkMachineryAPI.get("/machinery/service-regions");
+    const currentSet = new Set(current || []);
+    document.querySelectorAll("#serviceRegionsFields [data-service-region]").forEach((input) => {
+      input.checked = currentSet.has(input.value);
+    });
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดพื้นที่ให้บริการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("serviceRegionsForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("serviceRegionsSubmitBtn");
+  const checked = Array.from(
+    document.querySelectorAll("#serviceRegionsFields [data-service-region]:checked"),
+  ).map((i) => i.value);
+
+  btn.disabled = true;
+  try {
+    await AgroLinkMachineryAPI.put("/machinery/service-regions", { service_regions: checked });
+    toast("บันทึกพื้นที่ให้บริการเรียบร้อยแล้ว");
+  } catch (err) {
+    toast("บันทึกพื้นที่ให้บริการไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---------- รูปภาพบริการ/เครื่องจักรกล ----------
 function photoCard(p) {
   return `
@@ -438,6 +485,7 @@ async function init() {
   loadBookingReviewQueue();
   loadBookingHistory();
   loadRateCard();
+  loadServiceRegions();
   loadPhotos();
 }
 
