@@ -89,6 +89,7 @@ psql -d agrolink_test -f db/grant_farmer_product_orders.sql
 psql -d agrolink_test -f db/grant_market_venue_marketplace.sql
 psql -d agrolink_test -f db/grant_about_content.sql
 psql -d agrolink_test -f db/grant_admin_dashboard_views.sql
+psql -d agrolink_test -f db/grant_machinery_booking.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -148,6 +149,24 @@ psql -d agrolink_test -f db/04_reference_data.sql
   missing grant. The panel threw `permission denied` through the API from
   the day the route was added until this script was found and run. Plain
   additive `GRANT`, safe to run any number of times.
+- `grant_machinery_booking.sql` — adds `marketplace.machinery_booking`, the
+  request/accept/decline record backing "เลือกผู้ให้บริการ" → บริการ
+  เครื่องจักรกล/ลานตาก on the Farmer Portal. Deliberately a NEW table rather
+  than wiring up the older, already-present-but-unwired `marketplace.
+  service_request` (+ `accept_service_request`/`complete_service_request`/
+  `request_service` functions from the original `02_full_schema.sql`
+  export): that mechanism requires a `registry.production_unit` on every
+  request and its "complete" step performs a real ledger fund transfer via
+  `partner.vendor_profile.settlement_account_id` — neither fits the scope
+  agreed for this feature, which (like `marketplace.venue_booking`) is a
+  simple request/accept/decline record with payment handled OFFLINE between
+  farmer and provider. Mirrors `venue_booking`'s proven shape instead:
+  snapshot-at-request-time columns (`service_key`/`label_th`/`service_type`/
+  `unit_price`/`price_unit`), `decided_reason`/`decided_at`, no RLS (explicit
+  `WHERE org_id`/`WHERE farmer_id` is the security boundary). See
+  `GET/POST /farmer/machinery-providers` and `/farmer/machinery-bookings*`
+  (farmer side, in `src/routes/farmer.js`) and `GET /machinery/bookings` +
+  accept/decline (provider side, in `src/routes/machinery.js`).
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
   it membership in `agrolink_app`, and grants it direct `EXECUTE` on
   `security.resolve_subject_from_external_claim()` (needed pre-login, before

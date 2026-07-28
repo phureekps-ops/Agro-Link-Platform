@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — บริการเครื่องจักรกล/ลานตาก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🚜</span><span>AgroLink Platform — บริการเครื่องจักรกล/ลานตาก</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      ค้นหาผู้ให้บริการรถไถ/โดรน/รถเกี่ยว/รถบรรทุก/ลานตากข้าว ที่ผ่านการตรวจสอบแล้ว —
+      เมื่อขอใช้บริการแล้ว ผู้ให้บริการจะเป็นผู้ยืนยัน/ปฏิเสธคำขอ ค่าบริการชำระโดยตรงกับผู้ให้บริการหน้างาน
+    </p>
+
+    <div class="section-title">🔍 ค้นหาบริการ</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="serviceKeyFilter">ประเภทบริการ</label>
+        <select id="serviceKeyFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="plow_rough">ไถดะ</option>
+          <option value="plow_secondary_seed">ไถแปรและหว่าน</option>
+          <option value="rotary_till">ปั่นดิน</option>
+          <option value="spraying">ฉีดพ่นสารเคมี (โดรน/รถฉีดพ่น)</option>
+          <option value="harvesting">เกี่ยวข้าว</option>
+          <option value="trucking">ขนส่งด้วยรถบรรทุก</option>
+          <option value="drying">ลานตากข้าว/ตากผลผลิต</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="provinceFilter">จังหวัดที่ให้บริการ</label>
+        <select id="provinceFilter">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">🚜 ผู้ให้บริการที่เปิดรับ</div>
+    <div id="listingListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดผู้ให้บริการ…</div>
+    </div>
+
+    <div class="section-title" id="bookingFormTitle" style="display:none;">📝 ขอใช้บริการ</div>
+    <form id="bookingForm" class="panel" style="display:none;">
+      <input type="hidden" id="bookingListingId" value="" />
+      <div style="font-weight:700; margin-bottom:12px;" id="bookingLabel"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="bookingQuantityNote">พื้นที่/ปริมาณโดยประมาณ (ถ้าทราบ)</label>
+          <input type="text" id="bookingQuantityNote" placeholder="เช่น 5 ไร่, ข้าว 3 ตัน" />
+        </div>
+        <div class="field">
+          <label for="bookingPreferredDate">วันที่ต้องการใช้บริการ</label>
+          <input type="date" id="bookingPreferredDate" required />
+        </div>
+        <div class="field full">
+          <label for="bookingFarmerNote">หมายเหตุถึงผู้ให้บริการ (ถ้ามี)</label>
+          <input type="text" id="bookingFarmerNote" placeholder="เช่น ทางเข้าแปลงเป็นดินลูกรัง รถเข้าถึงได้" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="bookingSubmitBtn" style="max-width:220px;">ส่งคำขอใช้บริการ</button>
+      <button type="button" class="btn btn-ghost" id="bookingCancelBtn" style="max-width:160px;">ยกเลิก</button>
+    </form>
+
+    <div class="section-title">🧾 คำขอใช้บริการของท่าน</div>
+    <div id="bookingHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอใช้บริการ…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/provinces.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/machinery-marketplace.js"></script>
+</body>
+</html>

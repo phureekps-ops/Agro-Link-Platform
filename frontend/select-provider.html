@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — เลือกผู้ให้บริการ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  /* Small page-local grid — not shared elsewhere, kept self-contained here
+     the same way frontend/about.html adds its own <style> block reusing
+     the root CSS variables from css/style.css. */
+  .provider-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .provider-card {
+    background: #fff;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .provider-card .icon { font-size: 30px; }
+  .provider-card .name { font-weight: 700; font-size: 16px; color: var(--green-900); }
+  .provider-card .desc { font-size: 13px; color: var(--gray-700); flex-grow: 1; }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🧭</span><span>AgroLink Platform — เลือกผู้ให้บริการ</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      เลือกประเภทผู้ให้บริการที่ท่านต้องการติดต่อ — สินเชื่อ ผู้รับซื้อผลผลิต ปัจจัยการผลิต บริการเครื่องจักรกล/ลานตาก
+      หรือพื้นที่จำหน่ายสินค้า ทุกประเภทใช้รูปแบบ "ส่งคำขอ รอผู้ให้บริการยืนยัน" ยกเว้นสินเชื่อซึ่งเป็นการยื่นคำขอสินเชื่อโดยตรง
+    </p>
+
+    <div class="provider-grid">
+
+      <div class="provider-card">
+        <div class="icon">🏦</div>
+        <div class="name">ผู้ปล่อยกู้ (Lender)</div>
+        <div class="desc">ยื่นคำขอสินเชื่อโดยเลือกผู้ปล่อยกู้ที่ต้องการ — ระบบจะประเมินและแจ้งผลเบื้องต้นให้ทันที</div>
+        <a href="dashboard.html#loanForm" class="btn btn-primary" style="text-align:center; text-decoration:none;">ไปที่แบบฟอร์มขอสินเชื่อ</a>
+      </div>
+
+      <div class="provider-card">
+        <div class="icon">🌾</div>
+        <div class="name">ผู้รับซื้อผลผลิต (Buyer)</div>
+        <div class="desc">เปรียบเทียบราคารับซื้อข้าวแต่ละเกรดจากผู้รับซื้อที่ประกาศราคาไว้ เพื่อเลือกขายในราคาที่ดีที่สุด</div>
+        <a href="rice-prices.html" class="btn btn-primary" style="text-align:center; text-decoration:none;">เปรียบเทียบราคารับซื้อข้าว</a>
+      </div>
+
+      <div class="provider-card">
+        <div class="icon">🧪</div>
+        <div class="name">ผู้จำหน่ายปัจจัยการผลิต (InputSupplier)</div>
+        <div class="desc">เลือกซื้อปุ๋ย ฮอร์โมน สารเคมี และอุปกรณ์การเกษตรจากผู้จำหน่ายที่ผ่านการตรวจสอบแล้ว</div>
+        <a href="marketplace.html" class="btn btn-primary" style="text-align:center; text-decoration:none;">ตลาดปัจจัยการผลิต</a>
+      </div>
+
+      <div class="provider-card">
+        <div class="icon">🚜</div>
+        <div class="name">บริการเครื่องจักรกล/ลานตาก</div>
+        <div class="desc">ขอใช้บริการรถไถ โดรนฉีดพ่นสารเคมี รถเกี่ยว รถบรรทุก หรือลานตากข้าว — ส่งคำขอแล้วรอผู้ให้บริการยืนยัน</div>
+        <a href="machinery-marketplace.html" class="btn btn-primary" style="text-align:center; text-decoration:none;">ค้นหาบริการเครื่องจักรกล</a>
+      </div>
+
+      <div class="provider-card">
+        <div class="icon">🏪</div>
+        <div class="name">พื้นที่จำหน่ายสินค้า (MarketVenue)</div>
+        <div class="desc">ค้นหาตลาดค้าส่ง ตลาดสด หรือตลาดนัดที่เปิดรับเกษตรกรมาจำหน่ายสินค้า — เหมาะเมื่อผลผลิตล้นตลาด</div>
+        <a href="venue-marketplace.html" class="btn btn-primary" style="text-align:center; text-decoration:none;">หาที่ขายสินค้า</a>
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>

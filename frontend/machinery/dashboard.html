@@ -25,6 +25,28 @@
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
+    <div class="section-title">📥 คำขอใช้บริการที่ต้องดำเนินการ</div>
+    <div id="bookingReviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอใช้บริการ…</div>
+    </div>
+
+    <div class="section-title">📋 ประวัติคำขอใช้บริการทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="bookingStatusFilter">กรองตามสถานะ</label>
+        <select id="bookingStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="Requested">รอการยืนยัน</option>
+          <option value="Accepted">รับคำขอแล้ว</option>
+          <option value="Declined">ปฏิเสธแล้ว</option>
+          <option value="Cancelled">ยกเลิกโดยเกษตรกร</option>
+        </select>
+      </div>
+    </div>
+    <div id="bookingHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติคำขอใช้บริการ…</div>
+    </div>
+
     <div class="section-title">💰 ราคาบริการ (Rate Card)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       กรอกเฉพาะบริการที่ท่านให้บริการจริง — ช่องที่ไม่กรอก (หรือกรอก 0) จะไม่แสดงราคาบริการนั้นแก่เกษตรกร

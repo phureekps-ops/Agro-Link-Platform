@@ -734,4 +734,207 @@ router.post('/venue-bookings/:id/cancel', async (req, res, next) => {
   }
 });
 
+// Same five role types src/routes/machinery.js's requireMachineryOrg gates
+// on — duplicated locally rather than imported, matching this project's
+// established pattern of small local constant duplicates across route
+// files with no shared module bundler (e.g. SERVICE_TYPE_LABEL_TH in
+// frontend/machinery/js/dashboard.js).
+const MACHINERY_ORG_TYPES = ['TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService'];
+const MACHINERY_SERVICE_KEYS = ['plow_rough', 'plow_secondary_seed', 'rotary_till', 'spraying', 'harvesting', 'trucking', 'drying'];
+
+/**
+ * GET /farmer/machinery-providers?service_key=&province_code= — browse
+ * ACTIVE, priced rate-card items across every Verified machinery/drying-
+ * yard organization (any of the five MACHINERY_ORG_TYPES — see
+ * requireMachineryOrg in src/routes/machinery.js), joined with the
+ * provider's org_name and, where recorded, the service regions they cover
+ * (partner.vendor_profile.service_regions — see grant_machinery_booking.sql).
+ * Uses EXISTS rather than a JOIN against identity.organization_role so an
+ * org holding more than one Verified machinery role (e.g. TractorService +
+ * TruckService) doesn't get its listings duplicated once per matching role.
+ * Same shape as GET /farmer/venue-listings — is_active filter only,
+ * optional narrowing filters, no pagination.
+ */
+router.get('/machinery-providers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { service_key: serviceKey, province_code: provinceCode } = req.query;
+
+  if (serviceKey && !MACHINERY_SERVICE_KEYS.includes(serviceKey)) {
+    return res.status(400).json({ error: 'invalid_service_key', valid: MACHINERY_SERVICE_KEYS });
+  }
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [MACHINERY_ORG_TYPES];
+      const filters = [
+        'sl.is_active = true',
+        'sl.service_key IS NOT NULL',
+        "o.kyb_status = 'Verified'",
+        `EXISTS (
+           SELECT 1 FROM identity.organization_role r
+            WHERE r.org_id = sl.org_id AND r.role_type = ANY($1) AND r.status = 'Verified'
+         )`,
+      ];
+      if (serviceKey) { params.push(serviceKey); filters.push(`sl.service_key = $${params.length}`); }
+      if (provinceCode) { params.push(provinceCode); filters.push(`$${params.length} = ANY(vp.service_regions)`); }
+
+      const result = await client.query(
+        `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
+                sl.description AS label_th, sl.unit_price, sl.price_unit,
+                COALESCE(vp.service_regions, '{}') AS service_regions
+           FROM marketplace.service_listing sl
+           JOIN identity.organization o ON o.org_id = sl.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = sl.org_id
+          WHERE ${filters.join(' AND ')}
+          ORDER BY o.org_name, sl.service_key`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/machinery-bookings
+ * Body: { listing_id, preferred_date, quantity_note?, farmer_note? }
+ *
+ * Requests one priced rate-card item on a given date. service_key/label_th/
+ * service_type/unit_price/price_unit are SNAPSHOTTED from the listing at
+ * this moment (same reasoning as POST /farmer/venue-bookings — a provider
+ * editing their rate card tomorrow must not silently change what a farmer
+ * already requested today). Payment happens OFFLINE directly between the
+ * farmer and the provider — this only records the booking request itself,
+ * per the same scope decision made for MarketVenue bookings.
+ */
+router.post('/machinery-bookings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    listing_id: listingId, preferred_date: preferredDate,
+    quantity_note: quantityNote, farmer_note: farmerNote,
+  } = req.body || {};
+
+  if (!listingId || !preferredDate) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['listing_id', 'preferred_date'],
+    });
+  }
+  if (Number.isNaN(Date.parse(preferredDate))) {
+    return res.status(400).json({ error: 'invalid_preferred_date' });
+  }
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const listing = await client.query(
+        `SELECT listing_id, org_id, service_key, service_type, description AS label_th, unit_price, price_unit
+           FROM marketplace.service_listing
+          WHERE listing_id = $1 AND is_active = true AND service_key IS NOT NULL`,
+        [listingId],
+      );
+      if (listing.rows.length === 0) return { listingNotFound: true };
+      const l = listing.rows[0];
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.machinery_booking
+           (listing_id, org_id, farmer_id, service_key, label_th, service_type, unit_price, price_unit,
+            quantity_note, preferred_date, farmer_note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING booking_id, listing_id, org_id, service_key, label_th, service_type, unit_price,
+                   price_unit, quantity_note, preferred_date, farmer_note, status, requested_at`,
+        [
+          listingId, l.org_id, subjectId, l.service_key, l.label_th, l.service_type, l.unit_price, l.price_unit,
+          quantityNote || null, preferredDate, farmerNote || null,
+        ],
+      );
+      await logAccess(client, 'write', 'marketplace.machinery_booking', rows[0].booking_id);
+      return { booking: rows[0] };
+    });
+
+    if (result.listingNotFound) {
+      return res.status(404).json({ error: 'machinery_listing_not_found' });
+    }
+    return res.status(201).json(result.booking);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/machinery-bookings?status=... — this farmer's own booking
+ * requests across every provider, joined with the provider's org_name.
+ */
+router.get('/machinery-bookings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status) { params.push(status); filter = 'AND b.status = $2'; }
+
+      const result = await client.query(
+        `SELECT b.booking_id, b.org_id, org.org_name, b.service_key, b.label_th, b.service_type,
+                b.unit_price, b.price_unit, b.quantity_note, b.preferred_date, b.farmer_note,
+                b.status, b.decided_reason, b.requested_at, b.decided_at
+           FROM marketplace.machinery_booking b
+           JOIN identity.organization org ON org.org_id = b.org_id
+          WHERE b.farmer_id = $1 ${filter}
+          ORDER BY b.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.machinery_booking', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/machinery-bookings/:id/cancel — a farmer can cancel their
+ * OWN booking request, only while it's still `Requested` (before the
+ * provider has acted on it). Same ownership-gate + status-guard shape as
+ * POST /farmer/venue-bookings/:id/cancel.
+ */
+router.post('/machinery-bookings/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.machinery_booking WHERE farmer_id = $1 AND booking_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'Requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.machinery_booking
+            SET status = 'Cancelled', updated_at = now()
+          WHERE farmer_id = $1 AND booking_id = $2
+          RETURNING booking_id, status`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.machinery_booking', id);
+      return { booking: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'booking_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'booking_not_cancellable', current_status: result.wrongStatus });
+    }
+    return res.json(result.booking);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

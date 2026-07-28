@@ -117,20 +117,22 @@ async function requireMachineryOrg(req, res, next) {
 router.use(requireMachineryOrg);
 
 /**
- * IMPORTANT: marketplace.service_listing and marketplace.vendor_photo have
- * NO row-level security at all (relrowsecurity = false — verified, see the
- * comment block at the end of grant_machinery_marketplace.sql). There is no
- * database-level backstop scoping rows to this org. Every query below MUST
- * include an explicit `WHERE org_id = $1` — this is not defense-in-depth
- * here, it is the entire security boundary, same situation as
- * GET /buyer/deliveries and GET /farmer/notifications elsewhere in this
+ * IMPORTANT: marketplace.service_listing, marketplace.vendor_photo, and
+ * marketplace.machinery_booking have NO row-level security at all
+ * (relrowsecurity = false — verified, see the comment block at the end of
+ * grant_machinery_marketplace.sql and grant_machinery_booking.sql). There is
+ * no database-level backstop scoping rows to this org. Every query below
+ * MUST include an explicit `WHERE org_id = $1` — this is not
+ * defense-in-depth here, it is the entire security boundary, same situation
+ * as GET /buyer/deliveries and GET /farmer/notifications elsewhere in this
  * project.
  */
 
 /**
  * GET /machinery/dashboard — org info plus how many of the seven rate-card
- * items are currently priced, and a photo count, so the frontend has enough
- * to render a summary without a second round trip.
+ * items are currently priced, a photo count, and a booking-status
+ * breakdown, so the frontend has enough to render a summary without extra
+ * round trips.
  */
 router.get('/dashboard', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -146,9 +148,19 @@ router.get('/dashboard', async (req, res, next) => {
         'SELECT COUNT(*)::int AS count FROM marketplace.vendor_photo WHERE org_id = $1',
         [subjectId],
       );
+      const bookingsByStatus = await client.query(
+        `SELECT status, COUNT(*)::int AS count
+           FROM marketplace.machinery_booking
+          WHERE org_id = $1
+          GROUP BY status`,
+        [subjectId],
+      );
       await logAccess(client, 'read', 'marketplace.service_listing', subjectId);
 
       const pricedCount = listings.rows.filter((r) => r.is_active).length;
+      const bookingsByStatusMap = {};
+      bookingsByStatus.rows.forEach((r) => { bookingsByStatusMap[r.status] = r.count; });
+
       return {
         org_name: req.org.org_name,
         // Verified machinery role(s) actually held (e.g. ["TractorService",
@@ -161,6 +173,7 @@ router.get('/dashboard', async (req, res, next) => {
         priced_items_count: pricedCount,
         total_rate_card_items: RATE_CARD_KEYS.length,
         photo_count: photos.rows[0].count,
+        bookings_by_status: bookingsByStatusMap,
       };
     });
 
@@ -219,7 +232,7 @@ router.get('/rate-card', async (req, res, next) => {
  * partial unique index added in grant_machinery_marketplace.sql). A key set
  * to null/0/omitted-then-explicitly-cleared is handled by setting
  * is_active = false rather than deleting the row outright — deleting could
- * violate marketplace.service_request's FK to listing_id if a farmer has
+ * violate marketplace.machinery_booking's FK to listing_id if a farmer has
  * already booked against it (no ON DELETE clause = NO ACTION), and
  * is_active = false already has the right meaning ("not currently offered")
  * without that risk. GET /machinery/rate-card and the dashboard both filter
@@ -408,6 +421,127 @@ router.delete('/photos/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'photo_not_found' });
     }
     return res.status(204).send();
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /machinery/bookings?status=... — booking requests against THIS org's
+ * rate-card listings (never another provider's), joined with the requesting
+ * farmer's name/phone. `status=action_needed` is shorthand for `Requested`
+ * — the only status this portal still needs to act on. Same shape as
+ * GET /marketvenue/bookings.
+ */
+router.get('/bookings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status === 'action_needed') {
+        filter = "AND b.status = 'Requested'";
+      } else if (status) {
+        params.push(status);
+        filter = 'AND b.status = $2';
+      }
+      const result = await client.query(
+        `SELECT b.booking_id, b.listing_id, b.service_key, b.label_th, b.service_type,
+                b.unit_price, b.price_unit, b.quantity_note, b.preferred_date, b.farmer_note,
+                b.status, b.decided_reason, b.requested_at, b.decided_at, b.farmer_id,
+                f.full_name AS farmer_name, f.phone AS farmer_phone
+           FROM marketplace.machinery_booking b
+           JOIN identity.farmer f ON f.farmer_id = b.farmer_id
+          WHERE b.org_id = $1 ${filter}
+          ORDER BY b.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.machinery_booking', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /machinery/bookings/:id/accept — Requested -> Accepted. Same
+ * ownership-gate + status-guard shape as POST /marketvenue/bookings/:id/accept.
+ */
+router.post('/bookings/:id/accept', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.machinery_booking WHERE org_id = $1 AND booking_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'Requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.machinery_booking
+            SET status = 'Accepted', decided_at = now(), updated_at = now()
+          WHERE org_id = $1 AND booking_id = $2
+          RETURNING booking_id, status, decided_at`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.machinery_booking', id);
+      return { booking: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'booking_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'booking_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.booking);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /machinery/bookings/:id/decline
+ * Body: { reason? } — Requested -> Declined. Same ownership-gate + status
+ * guard as accept above.
+ */
+router.post('/bookings/:id/decline', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { reason } = req.body || {};
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.machinery_booking WHERE org_id = $1 AND booking_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'Requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.machinery_booking
+            SET status = 'Declined', decided_reason = $3, decided_at = now(), updated_at = now()
+          WHERE org_id = $1 AND booking_id = $2
+          RETURNING booking_id, status, decided_reason, decided_at`,
+        [subjectId, id, reason || null],
+      );
+      await logAccess(client, 'write', 'marketplace.machinery_booking', id);
+      return { booking: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'booking_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'booking_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.booking);
   } catch (err) {
     return next(err);
   }

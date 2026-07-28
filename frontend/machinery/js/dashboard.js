@@ -15,6 +15,11 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
+function thaiDate(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 const PHOTO_TYPE_LABEL = { machinery: "รูปเครื่องจักรกล", service: "รูปการให้บริการ" };
 
 // Same Thai labels as frontend/js/register-provider.js's own copy — kept as
@@ -25,6 +30,21 @@ const SERVICE_TYPE_LABEL_TH = {
   TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี",
   HarvesterService: "บริการรถเกี่ยวข้าว", TruckService: "บริการรถบรรทุก",
   DryingYardService: "บริการลานตากข้าว",
+};
+
+// Same seven fixed rate-card items as backend/src/routes/machinery.js's
+// RATE_CARD_ITEMS — used here only to label a booking's snapshotted
+// service_key on the booking cards below (loadRateCard renders its own
+// label_th straight from the API, this is a fallback for the booking
+// queue/history cards).
+const SERVICE_KEY_LABEL_TH = {
+  plow_rough: "ไถดะ",
+  plow_secondary_seed: "ไถแปรและหว่าน",
+  rotary_till: "ปั่นดิน",
+  spraying: "ฉีดพ่นสารเคมี (โดรน/รถฉีดพ่น)",
+  harvesting: "เกี่ยวข้าว",
+  trucking: "ขนส่งด้วยรถบรรทุก",
+  drying: "ลานตากข้าว/ตากผลผลิต",
 };
 
 /**
@@ -96,13 +116,148 @@ function renderSummary(d) {
   const serviceTypesLabel = (d.service_types || [])
     .map((t) => SERVICE_TYPE_LABEL_TH[t] || t)
     .join(" · ") || "-";
+  const byStatus = d.bookings_by_status || {};
   document.getElementById("summarySection").innerHTML = `
     <div class="stat-card"><div class="label">ประเภทบริการ</div><div class="value" style="font-size:16px;">${escapeHtml(serviceTypesLabel)}</div></div>
     <div class="stat-card"><div class="label">สถานะ KYB</div><div class="value" style="font-size:16px;">${escapeHtml(d.kyb_status)}</div></div>
     <div class="stat-card"><div class="label">บริการที่ตั้งราคาแล้ว</div><div class="value">${d.priced_items_count} / ${d.total_rate_card_items}</div></div>
     <div class="stat-card"><div class="label">รูปภาพที่อัปโหลด</div><div class="value">${d.photo_count}</div></div>
+    <div class="stat-card"><div class="label">คำขอใช้บริการที่รอตอบ</div><div class="value">${byStatus.Requested || 0}</div></div>
+    <div class="stat-card"><div class="label">รับคำขอแล้ว</div><div class="value">${byStatus.Accepted || 0}</div></div>
   `;
 }
+
+async function refreshSummary() {
+  try {
+    const d = await AgroLinkMachineryAPI.get("/machinery/dashboard");
+    renderSummary(d);
+  } catch (err) {
+    // Dashboard already loaded once successfully to get this far — a
+    // transient failure on refresh isn't worth interrupting the user.
+  }
+}
+
+// ---------- คำขอใช้บริการจากเกษตรกร ----------
+const BOOKING_STATUS_LABEL_TH = {
+  Requested: "รอการยืนยัน",
+  Accepted: "รับคำขอแล้ว",
+  Declined: "ปฏิเสธแล้ว",
+  Cancelled: "ยกเลิกโดยเกษตรกร",
+};
+const BOOKING_STATUS_BADGE_CLASS = {
+  Requested: "status-pending",
+  Accepted: "status-active",
+  Declined: "status-declined",
+  Cancelled: "status-declined",
+};
+
+function bookingCard(b) {
+  const badgeClass = BOOKING_STATUS_BADGE_CLASS[b.status] || "status-pending";
+  const badge = `<span class="badge ${badgeClass}">${escapeHtml(BOOKING_STATUS_LABEL_TH[b.status] || b.status)}</span>`;
+
+  let actions = "";
+  if (b.status === "Requested") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-accept-booking="${b.booking_id}">รับคำขอ</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-decline-reason-for="${b.booking_id}" placeholder="เหตุผลการปฏิเสธ (ไม่บังคับ)" />
+        <button type="button" class="btn btn-decline btn-sm" data-decline-booking="${b.booking_id}">ปฏิเสธ</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card" data-booking-id="${b.booking_id}">
+      <div class="row"><span class="title">${escapeHtml(b.farmer_name)} — ${escapeHtml(b.label_th || SERVICE_KEY_LABEL_TH[b.service_key] || b.service_key)}</span>${badge}</div>
+      ${b.quantity_note ? `<div class="detail-line">พื้นที่/ปริมาณโดยประมาณ: ${escapeHtml(b.quantity_note)}</div>` : ""}
+      <div class="detail-line">วันที่ต้องการใช้บริการ: ${escapeHtml(b.preferred_date)}</div>
+      <div class="detail-line muted">ค่าบริการ (จ่ายหน้างานโดยตรง): ${Number(b.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(b.price_unit || "")}</div>
+      ${b.farmer_note ? `<div class="detail-line muted">หมายเหตุจากเกษตรกร: ${escapeHtml(b.farmer_note)}</div>` : ""}
+      <div class="detail-line muted">โทร: ${escapeHtml(b.farmer_phone || "-")}</div>
+      ${b.decided_reason ? `<div class="detail-line muted">เหตุผล: ${escapeHtml(b.decided_reason)}</div>` : ""}
+      <div class="detail-line muted">ขอใช้บริการเมื่อ ${thaiDate(b.requested_at)}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadBookingReviewQueue() {
+  const el = document.getElementById("bookingReviewQueueSection");
+  try {
+    const bookings = await AgroLinkMachineryAPI.get("/machinery/bookings?status=action_needed");
+    if (bookings.length === 0) {
+      el.innerHTML = `<div class="empty-state">ไม่มีคำขอใช้บริการที่ต้องดำเนินการในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = bookings.map(bookingCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำขอใช้บริการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadBookingHistory() {
+  const el = document.getElementById("bookingHistorySection");
+  const status = document.getElementById("bookingStatusFilter").value;
+  try {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const bookings = await AgroLinkMachineryAPI.get(`/machinery/bookings${query}`);
+    if (bookings.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคำขอใช้บริการ</div>`;
+      return;
+    }
+    el.innerHTML = bookings.map(bookingCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดประวัติคำขอใช้บริการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshBookingsAndSummary() {
+  await Promise.all([loadBookingReviewQueue(), loadBookingHistory(), refreshSummary()]);
+}
+
+document.getElementById("bookingStatusFilter").addEventListener("change", () => loadBookingHistory());
+
+function handleBookingActionClick(container) {
+  container.addEventListener("click", async (e) => {
+    const acceptBtn = e.target.closest("[data-accept-booking]");
+    const declineBtn = e.target.closest("[data-decline-booking]");
+
+    if (acceptBtn) {
+      const bookingId = acceptBtn.dataset.acceptBooking;
+      acceptBtn.disabled = true;
+      try {
+        await AgroLinkMachineryAPI.post(`/machinery/bookings/${bookingId}/accept`, {});
+        toast("รับคำขอใช้บริการเรียบร้อยแล้ว");
+        await refreshBookingsAndSummary();
+      } catch (err) {
+        toast("รับคำขอไม่สำเร็จ: " + err.message, true);
+        acceptBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (declineBtn) {
+      const bookingId = declineBtn.dataset.declineBooking;
+      const reasonInput = container.querySelector(`[data-decline-reason-for="${bookingId}"]`);
+      declineBtn.disabled = true;
+      try {
+        await AgroLinkMachineryAPI.post(`/machinery/bookings/${bookingId}/decline`, {
+          reason: (reasonInput && reasonInput.value.trim()) || null,
+        });
+        toast("ปฏิเสธคำขอใช้บริการเรียบร้อยแล้ว");
+        await refreshBookingsAndSummary();
+      } catch (err) {
+        toast("ปฏิเสธคำขอไม่สำเร็จ: " + err.message, true);
+        declineBtn.disabled = false;
+      }
+    }
+  });
+}
+
+handleBookingActionClick(document.getElementById("bookingReviewQueueSection"));
+handleBookingActionClick(document.getElementById("bookingHistorySection"));
 
 // ---------- ราคาบริการ (Rate Card) ----------
 function rateCardFieldRow(item) {
@@ -158,16 +313,6 @@ document.getElementById("rateCardForm").addEventListener("submit", async (e) => 
     btn.disabled = false;
   }
 });
-
-async function refreshSummary() {
-  try {
-    const d = await AgroLinkMachineryAPI.get("/machinery/dashboard");
-    renderSummary(d);
-  } catch (err) {
-    // Dashboard already loaded once successfully to get this far — a
-    // transient failure on refresh isn't worth interrupting the user.
-  }
-}
 
 // ---------- รูปภาพบริการ/เครื่องจักรกล ----------
 function photoCard(p) {
@@ -288,8 +433,10 @@ async function init() {
     return;
   }
 
-  // Only reached once KYB is confirmed Verified — independent panels below,
-  // one broken panel doesn't take down the rest of the page.
+  // Only reached once KYB + role are confirmed Verified — independent
+  // panels below, one broken panel doesn't take down the rest of the page.
+  loadBookingReviewQueue();
+  loadBookingHistory();
   loadRateCard();
   loadPhotos();
 }
