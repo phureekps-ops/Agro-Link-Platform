@@ -378,10 +378,19 @@ router.get('/input-suppliers', async (req, res, next) => {
 /**
  * GET /farmer/products?category=&org_id= — browse the ACTIVE catalog
  * across every Verified InputSupplier (or one, via org_id), joined with the
- * supplier's org_name so a farmer knows who they'd be buying from. Only
+ * supplier's org_name so a farmer knows who they'd be buying from, plus
+ * each product's own photos (marketplace.product_photo — per-PRODUCT here,
+ * unlike marketplace.vendor_photo's per-ORG gallery on the machinery side;
+ * see grant_input_supplier_and_buy_prices.sql's doc comment). Only
  * `is_active = true` rows — a deactivated listing (see the deactivate-only
  * note on DELETE /inputsupplier/products/:id) simply stops appearing here,
  * same as a deactivated machinery rate-card item stops appearing priced.
+ *
+ * Suppliers have been able to upload per-product photos (GET/POST/DELETE
+ * /inputsupplier/products/:id/photos) since this catalog was built, but
+ * this route never surfaced them to the farmer browsing it until now — the
+ * same "feature exists on one side, never wired to the other" gap already
+ * fixed once for GET /farmer/machinery-providers' photo gallery.
  */
 router.get('/products', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -400,9 +409,19 @@ router.get('/products', async (req, res, next) => {
 
       const result = await client.query(
         `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
-                p.description, p.unit_price, p.price_unit, p.updated_at
+                p.description, p.unit_price, p.price_unit, p.updated_at,
+                COALESCE(photos.photos, '[]'::json) AS photos
            FROM marketplace.product_listing p
            JOIN identity.organization o ON o.org_id = p.org_id
+           LEFT JOIN LATERAL (
+             SELECT json_agg(
+                      json_build_object(
+                        'photo_id', ph.photo_id, 'photo_data_url', ph.photo_data_url, 'caption', ph.caption
+                      ) ORDER BY ph.created_at DESC
+                    ) AS photos
+               FROM marketplace.product_photo ph
+              WHERE ph.listing_id = p.listing_id
+           ) photos ON true
           WHERE ${filters.join(' AND ')}
           ORDER BY o.org_name, p.category, p.product_name`,
         params,

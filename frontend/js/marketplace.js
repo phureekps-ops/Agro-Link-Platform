@@ -67,6 +67,25 @@ async function loadSuppliersIntoFilter() {
 }
 
 // ---------- รายการสินค้า ----------
+/**
+ * Small horizontal thumbnail strip from marketplace.product_photo — per-
+ * PRODUCT here (unlike frontend/js/machinery-marketplace.js's per-ORG
+ * gallery), since GET /farmer/products now returns each product's own
+ * `photos` array (see farmer.js's doc comment on the LATERAL join added
+ * for this). Same rendering shape as machinery-marketplace.js's
+ * photoGalleryHtml — kept as a local duplicate per this project's
+ * established no-shared-bundler convention.
+ */
+function photoGalleryHtml(photos) {
+  if (!photos || photos.length === 0) return "";
+  const thumbs = photos.slice(0, 4).map((p) => `
+    <img src="${p.photo_data_url}" alt="${escapeHtml(p.caption || "")}"
+         style="width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--gray-300);" />
+  `).join("");
+  const more = photos.length > 4 ? `<span style="font-size:12px; color:var(--gray-500); align-self:center;">+${photos.length - 4} รูป</span>` : "";
+  return `<div style="display:flex; gap:6px; margin:8px 0; overflow-x:auto;">${thumbs}${more}</div>`;
+}
+
 function productCard(p) {
   return `
     <div class="item-card" data-listing-id="${p.listing_id}">
@@ -74,6 +93,7 @@ function productCard(p) {
         <span class="title">${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
         <span class="badge status-active">${escapeHtml(CATEGORY_LABEL_TH[p.category] || p.category)}</span>
       </div>
+      ${photoGalleryHtml(p.photos)}
       <div class="detail-line">ผู้จำหน่าย: ${escapeHtml(p.org_name)}</div>
       ${p.description ? `<div class="detail-line muted">${escapeHtml(p.description)}</div>` : ""}
       <div class="detail-line" style="font-weight:700; color:var(--green-900);">
