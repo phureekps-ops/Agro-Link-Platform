@@ -69,6 +69,24 @@ function provinceName(code) {
 }
 
 // ---------- ผู้ให้บริการ ----------
+/**
+ * Small horizontal thumbnail strip from marketplace.vendor_photo (both
+ * 'machinery' and 'service' photo_type together — this is a browse catalog,
+ * not the provider's own management view, so no need to separate them).
+ * Photos are the same org_id-wide gallery the provider portal manages
+ * (frontend/machinery/js/dashboard.js), not tied to one specific
+ * service_key/listing_id — see GET /farmer/machinery-providers' doc comment.
+ */
+function photoGalleryHtml(photos) {
+  if (!photos || photos.length === 0) return "";
+  const thumbs = photos.slice(0, 4).map((p) => `
+    <img src="${p.photo_data_url}" alt="${escapeHtml(p.caption || "")}"
+         style="width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--gray-300);" />
+  `).join("");
+  const more = photos.length > 4 ? `<span style="font-size:12px; color:var(--gray-500); align-self:center;">+${photos.length - 4} รูป</span>` : "";
+  return `<div style="display:flex; gap:6px; margin:8px 0; overflow-x:auto;">${thumbs}${more}</div>`;
+}
+
 function listingCard(l) {
   const regions = (l.service_regions || []).map(provinceName).join(", ");
   return `
@@ -77,6 +95,7 @@ function listingCard(l) {
         <span class="title">${escapeHtml(l.org_name)}</span>
         <span class="badge status-active">${escapeHtml(SERVICE_KEY_LABEL_TH[l.service_key] || l.service_key)}</span>
       </div>
+      ${photoGalleryHtml(l.photos)}
       ${regions ? `<div class="detail-line muted">พื้นที่ให้บริการ: ${escapeHtml(regions)}</div>` : ""}
       <div class="detail-line" style="font-weight:700; color:var(--green-900);">${Number(l.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(l.price_unit || "")} (ชำระหน้างานโดยตรง)</div>
       <div class="action-row">
@@ -117,12 +136,70 @@ const bookingForm = document.getElementById("bookingForm");
 const bookingFormTitle = document.getElementById("bookingFormTitle");
 const bookingListingIdInput = document.getElementById("bookingListingId");
 const bookingLabel = document.getElementById("bookingLabel");
+const bookingPreferredDateInput = document.getElementById("bookingPreferredDate");
+const bookingDateWarning = document.getElementById("bookingDateWarning");
+
+// Set of preferred_date strings (YYYY-MM-DD) already Requested/Accepted
+// against the listing currently open in the booking form — populated by
+// loadBookedDates() below, consulted by the date-input listener to warn
+// (not block — see GET /farmer/machinery-providers/:listingId/booked-dates'
+// doc comment: a booking is only ever a request, the provider decides).
+let bookedDatesForCurrentListing = {};
+
+const BOOKED_DATE_STATUS_LABEL_TH = {
+  Requested: "รอการยืนยัน",
+  Accepted: "รับคำขอแล้ว",
+};
+
+function bookedDateRow(row) {
+  return `
+    <div class="item-card" style="padding:8px 12px;">
+      <div class="row">
+        <span class="detail-line" style="margin:0;">${escapeHtml(row.preferred_date)}</span>
+        <span class="badge ${row.status === "Accepted" ? "status-active" : "status-pending"}">${escapeHtml(BOOKED_DATE_STATUS_LABEL_TH[row.status] || row.status)}</span>
+      </div>
+    </div>
+  `;
+}
+
+async function loadBookedDates(listingId) {
+  const el = document.getElementById("bookedDatesSection");
+  bookedDatesForCurrentListing = {};
+  try {
+    const rows = await AgroLinkAPI.get(`/farmer/machinery-providers/${listingId}/booked-dates`);
+    if (rows.length === 0) {
+      el.innerHTML = `<div class="empty-state" style="padding:10px;">ยังไม่มีคิวจองสำหรับบริการนี้ — ทุกวันว่าง</div>`;
+      return;
+    }
+    rows.forEach((r) => { bookedDatesForCurrentListing[r.preferred_date] = r.status; });
+    el.innerHTML = rows.map(bookedDateRow).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state" style="padding:10px;">โหลดคิวจองไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function checkBookingDateWarning() {
+  const value = bookingPreferredDateInput.value;
+  const status = bookedDatesForCurrentListing[value];
+  if (status) {
+    bookingDateWarning.textContent = `⚠️ วันที่นี้มีคิวจองแล้ว (${BOOKED_DATE_STATUS_LABEL_TH[status] || status}) ยังส่งคำขอได้ แต่แนะนำให้เลือกวันอื่นเพื่อโอกาสได้คิวสูงกว่า`;
+    bookingDateWarning.style.display = "block";
+  } else {
+    bookingDateWarning.style.display = "none";
+  }
+}
+bookingPreferredDateInput.addEventListener("change", checkBookingDateWarning);
+// Don't let a farmer pick a date that's already in the past.
+bookingPreferredDateInput.min = new Date().toISOString().slice(0, 10);
 
 function openBookingForm(listingId, label) {
   bookingListingIdInput.value = listingId;
   bookingLabel.textContent = `บริการ: ${label}`;
   bookingFormTitle.style.display = "flex";
   bookingForm.style.display = "block";
+  bookingDateWarning.style.display = "none";
+  document.getElementById("bookedDatesSection").innerHTML = `<div class="loading-line">กำลังโหลดคิวจอง…</div>`;
+  loadBookedDates(listingId);
   bookingForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -131,6 +208,8 @@ function closeBookingForm() {
   bookingListingIdInput.value = "";
   bookingFormTitle.style.display = "none";
   bookingForm.style.display = "none";
+  bookingDateWarning.style.display = "none";
+  bookedDatesForCurrentListing = {};
 }
 
 document.getElementById("listingListSection").addEventListener("click", (e) => {

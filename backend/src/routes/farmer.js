@@ -781,13 +781,57 @@ router.get('/machinery-providers', async (req, res, next) => {
       const result = await client.query(
         `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
                 sl.description AS label_th, sl.unit_price, sl.price_unit,
-                COALESCE(vp.service_regions, '{}') AS service_regions
+                COALESCE(vp.service_regions, '{}') AS service_regions,
+                COALESCE(photos.photos, '[]'::json) AS photos
            FROM marketplace.service_listing sl
            JOIN identity.organization o ON o.org_id = sl.org_id
            LEFT JOIN partner.vendor_profile vp ON vp.org_id = sl.org_id
+           LEFT JOIN LATERAL (
+             SELECT json_agg(
+                      json_build_object(
+                        'photo_id', p.photo_id, 'photo_type', p.photo_type,
+                        'photo_data_url', p.photo_data_url, 'caption', p.caption
+                      ) ORDER BY p.created_at DESC
+                    ) AS photos
+               FROM marketplace.vendor_photo p
+              WHERE p.org_id = sl.org_id
+           ) photos ON true
           WHERE ${filters.join(' AND ')}
           ORDER BY o.org_name, sl.service_key`,
         params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/machinery-providers/:listingId/booked-dates — dates already
+ * Requested/Accepted against ONE listing, so a farmer can see which days
+ * are already spoken for before picking a preferred_date. Only exposes the
+ * date + status — never who booked it or any other farmer's details. A
+ * booking is still just a REQUEST (see grant_machinery_booking.sql's doc
+ * comment on why this mirrors venue_booking rather than the older service_
+ * request mechanism) — nothing stops a farmer from submitting a date
+ * that's already Requested/Accepted by someone else, the provider is the
+ * one who ultimately decides; this endpoint only helps a farmer pick a
+ * less-contested date, it does not enforce exclusivity.
+ */
+router.get('/machinery-providers/:listingId/booked-dates', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { listingId } = req.params;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT preferred_date, status
+           FROM marketplace.machinery_booking
+          WHERE listing_id = $1 AND status IN ('Requested', 'Accepted')
+          ORDER BY preferred_date ASC`,
+        [listingId],
       );
       return result.rows;
     });

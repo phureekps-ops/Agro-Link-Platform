@@ -55,6 +55,16 @@
     <form id="bookingForm" class="panel" style="display:none;">
       <input type="hidden" id="bookingListingId" value="" />
       <div style="font-weight:700; margin-bottom:12px;" id="bookingLabel"></div>
+
+      <div style="font-weight:700; font-size:13px; margin-bottom:6px;">📅 คิวจองที่มีอยู่แล้วสำหรับบริการนี้</div>
+      <p style="font-size:12px; color:var(--gray-500); margin:0 0 10px;">
+        วันที่แสดงด้านล่างมีเกษตรกรรายอื่นขอใช้บริการนี้ไว้แล้ว — ยังส่งคำขอในวันเดียวกันได้ แต่ผู้ให้บริการจะเป็นผู้ตัดสินใจว่ารับคิวใดก่อน
+        แนะนำให้เลือกวันที่ยังว่างเพื่อโอกาสได้รับคิวสูงกว่า
+      </p>
+      <div id="bookedDatesSection" class="card-list" style="margin-bottom:16px;">
+        <div class="loading-line">กำลังโหลดคิวจอง…</div>
+      </div>
+
       <div class="form-grid">
         <div class="field">
           <label for="bookingQuantityNote">พื้นที่/ปริมาณโดยประมาณ (ถ้าทราบ)</label>
@@ -63,6 +73,7 @@
         <div class="field">
           <label for="bookingPreferredDate">วันที่ต้องการใช้บริการ</label>
           <input type="date" id="bookingPreferredDate" required />
+          <div id="bookingDateWarning" style="display:none; font-size:12px; color:var(--gold-500); margin-top:4px;"></div>
         </div>
         <div class="field full">
           <label for="bookingFarmerNote">หมายเหตุถึงผู้ให้บริการ (ถ้ามี)</label>
