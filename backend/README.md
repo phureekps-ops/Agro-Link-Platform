@@ -90,6 +90,7 @@ psql -d agrolink_test -f db/grant_market_venue_marketplace.sql
 psql -d agrolink_test -f db/grant_about_content.sql
 psql -d agrolink_test -f db/grant_admin_dashboard_views.sql
 psql -d agrolink_test -f db/grant_machinery_booking.sql
+psql -d agrolink_test -f db/grant_featured_listings.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -167,6 +168,22 @@ psql -d agrolink_test -f db/04_reference_data.sql
   `GET/POST /farmer/machinery-providers` and `/farmer/machinery-bookings*`
   (farmer side, in `src/routes/farmer.js`) and `GET /machinery/bookings` +
   accept/decline (provider side, in `src/routes/machinery.js`).
+- `grant_featured_listings.sql` — adds `is_featured`/`featured_until` to
+  `marketplace.product_listing` and `marketplace.service_listing`, backing
+  the "สินค้า/บริการแนะนำ" (Featured Listing) promotion feature: a Platform
+  Ops admin (`GET/POST /admin/product-listings*` and
+  `/admin/service-listings*` in `src/routes/admin.js`) flips a listing
+  featured for a chosen number of days, and `GET /farmer/products` /
+  `GET /farmer/machinery-providers` sort featured rows to the top with a
+  "⭐ แนะนำ" badge. Deliberately admin-toggled rather than self-serve by the
+  provider org — like every other paid interaction on this platform there
+  is no real online payment gateway, so a provider pays the AgroLink team
+  offline and an admin flips the flag, same operating model as KYB/role
+  approval elsewhere in `admin.js`. Only `ALTER TABLE ADD COLUMN` + two
+  partial indexes — no new `GRANT` needed, since `agrolink_app` already has
+  `UPDATE` on both tables from `grant_input_supplier_and_buy_prices.sql`
+  and `grant_machinery_marketplace.sql` (a table-level grant automatically
+  covers columns added afterward).
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
   it membership in `agrolink_app`, and grants it direct `EXECUTE` on
   `security.resolve_subject_from_external_claim()` (needed pre-login, before

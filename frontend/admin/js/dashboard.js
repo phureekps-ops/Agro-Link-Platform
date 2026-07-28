@@ -439,6 +439,121 @@ document.getElementById("addAboutSectionBtn").addEventListener("click", async ()
   }
 });
 
+// ---------- จัดการสินค้า/บริการแนะนำ (Featured Listings) ----------
+// Local duplicates of category/service-key labels used elsewhere (e.g.
+// frontend/js/marketplace.js's CATEGORY_LABEL_TH, frontend/machinery/js/
+// dashboard.js's SERVICE_KEY_LABEL_TH) — kept as a local copy per this
+// project's established no-shared-bundler convention. Backs GET/POST
+// /admin/product-listings* and /admin/service-listings* (src/routes/
+// admin.js) — see grant_featured_listings.sql's doc comment on why this
+// is admin-toggled (offline payment) rather than self-serve.
+const FEATURED_CATEGORY_LABEL_TH = {
+  fertilizer_hormone: "ปุ๋ย/ฮอร์โมน",
+  chemical_pesticide: "สารเคมีและยาปราบศัตรูพืช",
+  equipment: "อุปกรณ์การเกษตร",
+  other: "อื่นๆ",
+};
+const FEATURED_SERVICE_KEY_LABEL_TH = {
+  plow_rough: "ไถดะ",
+  plow_secondary_seed: "ไถแปรและหว่าน",
+  rotary_till: "ปั่นดิน",
+  spraying: "ฉีดพ่นสารเคมี (โดรน/รถฉีดพ่น)",
+  harvesting: "เกี่ยวข้าว",
+  trucking: "ขนส่งด้วยรถบรรทุก",
+  drying: "ลานตากข้าว/ตากผลผลิต",
+};
+
+function isEffectivelyFeatured(item) {
+  if (!item.is_featured) return false;
+  if (!item.featured_until) return true;
+  return new Date(item.featured_until) > new Date();
+}
+
+function featuredListingCard(item, type) {
+  const label = type === "product"
+    ? escapeHtml(item.product_name) + (item.brand ? " · " + escapeHtml(item.brand) : "")
+    : escapeHtml(item.label_th || FEATURED_SERVICE_KEY_LABEL_TH[item.service_key] || item.service_key);
+  const subLabel = type === "product"
+    ? escapeHtml(FEATURED_CATEGORY_LABEL_TH[item.category] || item.category)
+    : escapeHtml(item.service_type || "");
+  const effectivelyFeatured = isEffectivelyFeatured(item);
+  const badge = effectivelyFeatured
+    ? `<span class="badge status-active">⭐ แนะนำ (ถึง ${thaiDate(item.featured_until)})</span>`
+    : `<span class="badge status-pending">ไม่ได้แนะนำ</span>`;
+
+  const typePath = type === "product" ? "product-listings" : "service-listings";
+
+  return `
+    <div class="item-card" data-listing-id="${item.listing_id}">
+      <div class="row"><span class="title">${label} — ${escapeHtml(item.org_name)}</span>${badge}</div>
+      <div class="detail-line muted">${subLabel} · ${Number(item.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(item.price_unit || "")}</div>
+      <div class="action-row">
+        <input type="number" class="feature-days-input" data-days-for="${item.listing_id}" min="1" step="1" value="30" style="max-width:100px;" />
+        <button type="button" class="btn btn-approve btn-sm" data-feature-listing="${item.listing_id}" data-type="${typePath}">ตั้งเป็นแนะนำ (วัน)</button>
+        ${effectivelyFeatured ? `<button type="button" class="btn btn-decline btn-sm" data-unfeature-listing="${item.listing_id}" data-type="${typePath}">ยกเลิกแนะนำ</button>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+async function loadFeaturedListings() {
+  const el = document.getElementById("featuredListingsSection");
+  const type = document.getElementById("featuredListingTypeFilter").value;
+  const path = type === "product" ? "/admin/product-listings" : "/admin/service-listings";
+  try {
+    const items = await AgroLinkAdminAPI.get(path);
+    if (items.length === 0) {
+      el.innerHTML = `<div class="empty-state">ไม่พบรายการที่ใช้งานอยู่ในหมวดนี้</div>`;
+      return;
+    }
+    el.innerHTML = items.map((item) => featuredListingCard(item, type)).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("featuredListingTypeFilter").addEventListener("change", () => loadFeaturedListings());
+
+document.getElementById("featuredListingsSection").addEventListener("click", async (e) => {
+  const featureBtn = e.target.closest("[data-feature-listing]");
+  const unfeatureBtn = e.target.closest("[data-unfeature-listing]");
+
+  if (featureBtn) {
+    const listingId = featureBtn.dataset.featureListing;
+    const typePath = featureBtn.dataset.type;
+    const daysInput = document.querySelector(`[data-days-for="${listingId}"]`);
+    const days = Number(daysInput ? daysInput.value : 0);
+    if (!Number.isFinite(days) || days <= 0) {
+      toast("กรุณาระบุจำนวนวันที่มากกว่า 0", true);
+      return;
+    }
+    featureBtn.disabled = true;
+    try {
+      await AgroLinkAdminAPI.post(`/admin/${typePath}/${listingId}/feature`, { days });
+      toast("ตั้งเป็นรายการแนะนำเรียบร้อยแล้ว");
+      await loadFeaturedListings();
+    } catch (err) {
+      toast("ตั้งเป็นแนะนำไม่สำเร็จ: " + err.message, true);
+      featureBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (unfeatureBtn) {
+    const listingId = unfeatureBtn.dataset.unfeatureListing;
+    const typePath = unfeatureBtn.dataset.type;
+    unfeatureBtn.disabled = true;
+    try {
+      await AgroLinkAdminAPI.post(`/admin/${typePath}/${listingId}/unfeature`, {});
+      toast("ยกเลิกรายการแนะนำเรียบร้อยแล้ว");
+      await loadFeaturedListings();
+    } catch (err) {
+      toast("ยกเลิกไม่สำเร็จ: " + err.message, true);
+      unfeatureBtn.disabled = false;
+    }
+  }
+});
+
 async function refreshAll() {
   await Promise.all([
     loadSummaryAndHealth(), loadKycQueue(), loadKybQueue(), loadRoleRequestQueue(), loadAllFarmers(), loadAllOrgs(),
@@ -456,3 +571,4 @@ loadRoleRequestQueue();
 loadAllFarmers();
 loadAllOrgs();
 loadAboutSections();
+loadFeaturedListings();

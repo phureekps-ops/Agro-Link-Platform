@@ -434,6 +434,7 @@ router.get('/products', async (req, res, next) => {
         `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
                 p.description, p.unit_price, p.price_unit, p.updated_at,
                 COALESCE(vp.service_regions, '{}') AS service_regions,
+                (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) AS is_featured,
                 COALESCE(photos.photos, '[]'::json) AS photos
            FROM marketplace.product_listing p
            JOIN identity.organization o ON o.org_id = p.org_id
@@ -448,7 +449,8 @@ router.get('/products', async (req, res, next) => {
               WHERE ph.listing_id = p.listing_id
            ) photos ON true
           WHERE ${filters.join(' AND ')}
-          ORDER BY o.org_name, p.category, p.product_name`,
+          ORDER BY (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) DESC,
+                   o.org_name, p.category, p.product_name`,
         params,
       );
       return result.rows;
@@ -826,6 +828,7 @@ router.get('/machinery-providers', async (req, res, next) => {
         `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
                 sl.description AS label_th, sl.unit_price, sl.price_unit,
                 COALESCE(vp.service_regions, '{}') AS service_regions,
+                (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) AS is_featured,
                 COALESCE(photos.photos, '[]'::json) AS photos
            FROM marketplace.service_listing sl
            JOIN identity.organization o ON o.org_id = sl.org_id
@@ -841,7 +844,8 @@ router.get('/machinery-providers', async (req, res, next) => {
               WHERE p.org_id = sl.org_id
            ) photos ON true
           WHERE ${filters.join(' AND ')}
-          ORDER BY o.org_name, sl.service_key`,
+          ORDER BY (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) DESC,
+                   o.org_name, sl.service_key`,
         params,
       );
       return result.rows;

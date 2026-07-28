@@ -111,6 +111,25 @@
       </div>
     </div>
 
+    <div class="section-title">📣 จัดการสินค้า/บริการแนะนำ (โฆษณา)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      รายการที่ตั้งเป็น "แนะนำ" จะถูกจัดให้ขึ้นแสดงบนสุดของหน้าตลาดที่เกษตรกรเห็น พร้อมป้าย "⭐ แนะนำ"
+      จนกว่าจะครบกำหนดวันที่ตั้งไว้ — ระบบยังไม่มีการชำระเงินออนไลน์สำหรับส่วนนี้ ผู้จำหน่าย/ผู้ให้บริการชำระค่าโฆษณากับทีมงานโดยตรง (นอกระบบ)
+      แล้วเจ้าหน้าที่จึงมากดตั้งค่าให้ที่นี่
+    </p>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="featuredListingTypeFilter">ประเภทรายการ</label>
+        <select id="featuredListingTypeFilter">
+          <option value="product">สินค้าปัจจัยการผลิต (InputSupplier)</option>
+          <option value="service">บริการเครื่องจักรกล/ลานตาก (Machinery)</option>
+        </select>
+      </div>
+    </div>
+    <div id="featuredListingsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการ…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>

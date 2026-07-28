@@ -92,8 +92,9 @@ function listingCard(l) {
   return `
     <div class="item-card" data-listing-id="${l.listing_id}">
       <div class="row">
-        <span class="title">${escapeHtml(l.org_name)}</span>
+        <span class="title">${l.is_featured ? "⭐ " : ""}${escapeHtml(l.org_name)}</span>
         <span class="badge status-active">${escapeHtml(SERVICE_KEY_LABEL_TH[l.service_key] || l.service_key)}</span>
+        ${l.is_featured ? `<span class="badge status-approved">แนะนำ</span>` : ""}
       </div>
       ${photoGalleryHtml(l.photos)}
       ${regions ? `<div class="detail-line muted">พื้นที่ให้บริการ: ${escapeHtml(regions)}</div>` : ""}

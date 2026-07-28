@@ -105,8 +105,9 @@ function productCard(p) {
   return `
     <div class="item-card" data-listing-id="${p.listing_id}">
       <div class="row">
-        <span class="title">${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
+        <span class="title">${p.is_featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
         <span class="badge status-active">${escapeHtml(CATEGORY_LABEL_TH[p.category] || p.category)}</span>
+        ${p.is_featured ? `<span class="badge status-approved">แนะนำ</span>` : ""}
       </div>
       ${photoGalleryHtml(p.photos)}
       <div class="detail-line">ผู้จำหน่าย: ${escapeHtml(p.org_name)}</div>

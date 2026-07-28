@@ -609,4 +609,218 @@ router.delete('/about-sections/:id', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /admin/product-listings?featured_only=
+ *
+ * Browses marketplace.product_listing (InputSupplier catalog) across
+ * every org, for the "จัดการสินค้า/บริการแนะนำ" (Featured Listing) admin
+ * panel — see grant_featured_listings.sql's doc comment on why this is
+ * admin-toggled rather than self-serve by the provider org. Only
+ * is_active = true rows — a deactivated listing can't be featured.
+ * featured_only=true narrows to rows currently effectively featured
+ * (is_featured AND not yet expired), so the admin can see what's live
+ * right now without scrolling the full catalog.
+ */
+router.get('/product-listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { featured_only: featuredOnly } = req.query;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const filters = ['p.is_active = true'];
+      if (featuredOnly === 'true') {
+        filters.push('p.is_featured = true AND (p.featured_until IS NULL OR p.featured_until > now())');
+      }
+      const result = await client.query(
+        `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
+                p.unit_price, p.price_unit, p.is_featured, p.featured_until
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE ${filters.join(' AND ')}
+          ORDER BY p.is_featured DESC, o.org_name, p.product_name`,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/product-listings/:id/feature
+ * Body: { days } — positive number of days from now (e.g. 7 or 30, matching
+ * however many days the provider paid the AgroLink team for offline).
+ *
+ * Re-running this on an already-featured listing simply resets the expiry
+ * to `days` from NOW — it does not stack/extend on top of the remaining
+ * time, so an admin re-charging a provider for another period always sets
+ * a clean new expiry rather than accumulating.
+ */
+router.post('/product-listings/:id/feature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { days } = req.body || {};
+
+  const numDays = Number(days);
+  if (!Number.isFinite(numDays) || numDays <= 0) {
+    return res.status(400).json({ error: 'invalid_days', expected: 'positive_number' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_listing
+            SET is_featured = true, featured_until = now() + ($2 || ' days')::interval, updated_at = now()
+          WHERE listing_id = $1
+          RETURNING listing_id, is_featured, featured_until`,
+        [id, numDays],
+      );
+      if (rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'marketplace.product_listing', id);
+      return { listing: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'listing_not_found' });
+    }
+    return res.json(result.listing);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/product-listings/:id/unfeature — clears is_featured/
+ * featured_until immediately (the provider's paid period ended, or the
+ * admin needs to correct a mistake).
+ */
+router.post('/product-listings/:id/unfeature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_listing
+            SET is_featured = false, featured_until = NULL, updated_at = now()
+          WHERE listing_id = $1
+          RETURNING listing_id, is_featured, featured_until`,
+        [id],
+      );
+      if (rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'marketplace.product_listing', id);
+      return { listing: rows[0] };
+    });
+    if (result.notFound) {
+      return res.status(404).json({ error: 'listing_not_found' });
+    }
+    return res.json(result.listing);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/service-listings?featured_only= — same shape as GET
+ * /admin/product-listings above, for marketplace.service_listing
+ * (Machinery rate card) instead. service_key IS NOT NULL filters out any
+ * legacy non-rate-card rows the same way GET /farmer/machinery-providers
+ * already does. NOTE: marketplace.service_listing has no updated_at
+ * column (unlike product_listing) — see 02_full_schema.sql — so the
+ * UPDATE below deliberately does not try to set one.
+ */
+router.get('/service-listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { featured_only: featuredOnly } = req.query;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const filters = ['sl.is_active = true', 'sl.service_key IS NOT NULL'];
+      if (featuredOnly === 'true') {
+        filters.push('sl.is_featured = true AND (sl.featured_until IS NULL OR sl.featured_until > now())');
+      }
+      const result = await client.query(
+        `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
+                sl.description AS label_th, sl.unit_price, sl.price_unit,
+                sl.is_featured, sl.featured_until
+           FROM marketplace.service_listing sl
+           JOIN identity.organization o ON o.org_id = sl.org_id
+          WHERE ${filters.join(' AND ')}
+          ORDER BY sl.is_featured DESC, o.org_name, sl.service_key`,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/service-listings/:id/feature — same Body/behavior as POST
+ * /admin/product-listings/:id/feature above, applied to
+ * marketplace.service_listing.
+ */
+router.post('/service-listings/:id/feature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { days } = req.body || {};
+
+  const numDays = Number(days);
+  if (!Number.isFinite(numDays) || numDays <= 0) {
+    return res.status(400).json({ error: 'invalid_days', expected: 'positive_number' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.service_listing
+            SET is_featured = true, featured_until = now() + ($2 || ' days')::interval
+          WHERE listing_id = $1
+          RETURNING listing_id, is_featured, featured_until`,
+        [id, numDays],
+      );
+      if (rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'marketplace.service_listing', id);
+      return { listing: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'listing_not_found' });
+    }
+    return res.json(result.listing);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/service-listings/:id/unfeature — same as POST
+ * /admin/product-listings/:id/unfeature above, applied to
+ * marketplace.service_listing.
+ */
+router.post('/service-listings/:id/unfeature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.service_listing
+            SET is_featured = false, featured_until = NULL
+          WHERE listing_id = $1
+          RETURNING listing_id, is_featured, featured_until`,
+        [id],
+      );
+      if (rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'marketplace.service_listing', id);
+      return { listing: rows[0] };
+    });
+    if (result.notFound) {
+      return res.status(404).json({ error: 'listing_not_found' });
+    }
+    return res.json(result.listing);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
 module.exports = router;
