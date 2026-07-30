@@ -56,11 +56,15 @@ TH_PROVINCES.forEach(([code, name]) => {
 
 // ---------- พื้นที่ขายสินค้า ----------
 function listingCard(l) {
+  const matchBadge = l.match_score !== undefined && l.match_score !== null
+    ? `<span class="badge status-active" style="background:var(--gold-100, #fff6dd); color:var(--gold-700, #8a6d1a);">ตรงกับท่าน ${Math.round(l.match_score * 100)}%</span>`
+    : "";
   return `
     <div class="item-card" data-listing-id="${l.listing_id}">
       <div class="row">
         <span class="title">${escapeHtml(l.venue_name)}</span>
         <span class="badge status-active">${escapeHtml(VENUE_TYPE_LABEL_TH[l.venue_type] || l.venue_type)}</span>
+        ${matchBadge}
       </div>
       <div class="detail-line">ผู้ดูแล: ${escapeHtml(l.org_name)}</div>
       ${l.address_detail ? `<div class="detail-line muted">${escapeHtml(l.address_detail)}</div>` : ""}
@@ -73,6 +77,27 @@ function listingCard(l) {
       </div>
     </div>
   `;
+}
+
+/**
+ * "แนะนำสำหรับท่าน" — GET /farmer/venue-listings/recommended. Same
+ * listingCard renderer as the main browse list (now match_score-aware),
+ * same data-request-booking wiring reused via handleRequestBookingClick
+ * above, so a farmer can open the booking form directly from a
+ * recommended card.
+ */
+async function loadRecommendedVenues() {
+  const el = document.getElementById("recommendedVenuesSection");
+  try {
+    const listings = await AgroLinkAPI.get("/farmer/venue-listings/recommended?limit=6");
+    if (listings.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคำแนะนำในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = listings.map(listingCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำแนะนำไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
 }
 
 async function loadListings() {
@@ -119,11 +144,14 @@ function closeBookingForm() {
   bookingForm.style.display = "none";
 }
 
-document.getElementById("listingListSection").addEventListener("click", (e) => {
+function handleRequestBookingClick(e) {
   const btn = e.target.closest("[data-request-booking]");
   if (!btn) return;
   openBookingForm(btn.dataset.requestBooking, btn.dataset.venueName);
-});
+}
+
+document.getElementById("listingListSection").addEventListener("click", handleRequestBookingClick);
+document.getElementById("recommendedVenuesSection").addEventListener("click", handleRequestBookingClick);
 
 document.getElementById("bookingCancelBtn").addEventListener("click", () => closeBookingForm());
 
@@ -208,7 +236,7 @@ document.getElementById("bookingHistorySection").addEventListener("click", async
 });
 
 async function init() {
-  await Promise.all([loadListings(), loadBookingHistory()]);
+  await Promise.all([loadListings(), loadBookingHistory(), loadRecommendedVenues()]);
 }
 
 init();

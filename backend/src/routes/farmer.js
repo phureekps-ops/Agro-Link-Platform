@@ -1029,4 +1029,299 @@ router.post('/machinery-bookings/:id/cancel', async (req, res, next) => {
   }
 });
 
+
+// ---------- "แนะนำสำหรับท่าน" (AI Matching) ----------
+// Backs a "recommended for you" section on marketplace.html /
+// machinery-marketplace.html / venue-marketplace.html. This is a
+// legitimate multi-factor CONTENT-BASED scoring/ranking system — NOT deep
+// learning or an LLM — deliberately built and described honestly this way
+// per the "where in AgroLink is AI actually used" conversation earlier.
+// Every candidate listing gets a match_score in [0, 1] from three signals,
+// computed entirely in SQL against the same live data every other browse
+// route already reads (no separate offline training step, unlike
+// risk.credit_model above — this re-scores fresh on every request):
+//
+//   40% region match     — does the farmer's identity.farmer.region_code
+//                           appear in the provider's service area (
+//                           partner.vendor_profile.service_regions for
+//                           InputSupplier/Machinery, marketplace.
+//                           venue_listing.province_code directly for
+//                           MarketVenue)? A provider that has never set a
+//                           service area gets a neutral 0.5 rather than 0
+//                           — many existing providers predate the service-
+//                           area feature and shouldn't be penalized for it.
+//   30% price competitiveness — this listing's price vs. the average
+//                           price of other active listings in the same
+//                           category/service_key/venue_type. At-or-below
+//                           the group average scores 1.0, linearly falling
+//                           to 0 at double the average. A listing with no
+//                           comparable price data (e.g. only listing in
+//                           its group, or a venue with no fee_amount set)
+//                           gets a neutral 0.5.
+//   30% reliability        — this provider's historical success rate:
+//                           fulfilled product_order rows / (fulfilled +
+//                           rejected) for InputSupplier, Accepted /
+//                           (Accepted + Declined) machinery_booking rows
+//                           for Machinery, same shape for venue_booking.
+//                           Pending (requested/Requested) and farmer-
+//                           cancelled rows are excluded from both the
+//                           numerator and denominator — neither reflects
+//                           on the provider. A provider with no terminal
+//                           history yet gets a neutral 0.5, not a penalty
+//                           for being new.
+//
+// Every route below re-uses the exact same base filters (is_active,
+// kyb_status/organization_role verification where the plain browse route
+// already checks them) as its non-"recommended" sibling above, so a
+// provider that wouldn't show up in the normal browse list never shows up
+// here either.
+
+/**
+ * GET /farmer/products/recommended
+ * Query: category? (see PRODUCT_CATEGORIES), limit? (default 10, max 50)
+ */
+router.get('/products/recommended', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { category } = req.query;
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
+
+  if (category && !PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: PRODUCT_CATEGORIES });
+  }
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId];
+      const filters = ['p.is_active = true'];
+      if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
+      params.push(limit);
+      const limitPlaceholder = `$${params.length}`;
+
+      const result = await client.query(
+        `WITH farmer_region AS (
+           SELECT region_code FROM identity.farmer WHERE farmer_id = $1
+         ),
+         reliability AS (
+           SELECT org_id,
+                  count(*) FILTER (WHERE status = 'fulfilled') AS success_count,
+                  count(*) FILTER (WHERE status IN ('fulfilled', 'rejected')) AS terminal_count
+             FROM marketplace.product_order
+            GROUP BY org_id
+         )
+         SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
+                p.description, p.unit_price, p.price_unit, p.updated_at,
+                COALESCE(vp.service_regions, '{}') AS service_regions,
+                (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) AS is_featured,
+                COALESCE(photos.photos, '[]'::json) AS photos,
+                ROUND((
+                  0.4 * (CASE
+                           WHEN COALESCE(cardinality(vp.service_regions), 0) = 0 THEN 0.5
+                           WHEN fr.region_code = ANY(vp.service_regions) THEN 1.0
+                           ELSE 0.0
+                         END)
+                + 0.3 * COALESCE(LEAST(1.0, GREATEST(0.0,
+                    1 - (p.unit_price - cat_avg.avg_price) / NULLIF(cat_avg.avg_price, 0)
+                  )), 0.5)
+                + 0.3 * (CASE WHEN COALESCE(rel.terminal_count, 0) = 0 THEN 0.5
+                              ELSE rel.success_count::numeric / rel.terminal_count END)
+                )::numeric, 4) AS match_score
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = p.org_id
+           CROSS JOIN farmer_region fr
+           LEFT JOIN reliability rel ON rel.org_id = p.org_id
+           LEFT JOIN LATERAL (
+             SELECT AVG(p2.unit_price) AS avg_price
+               FROM marketplace.product_listing p2
+              WHERE p2.category = p.category AND p2.is_active = true AND p2.listing_id <> p.listing_id
+           ) cat_avg ON true
+           LEFT JOIN LATERAL (
+             SELECT json_agg(
+                      json_build_object(
+                        'photo_id', ph.photo_id, 'photo_data_url', ph.photo_data_url, 'caption', ph.caption
+                      ) ORDER BY ph.created_at DESC
+                    ) AS photos
+               FROM marketplace.product_photo ph
+              WHERE ph.listing_id = p.listing_id
+           ) photos ON true
+          WHERE ${filters.join(' AND ')}
+          ORDER BY match_score DESC, p.updated_at DESC
+          LIMIT ${limitPlaceholder}`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/machinery-providers/recommended
+ * Query: service_key? (see MACHINERY_SERVICE_KEYS), limit? (default 10, max 50)
+ */
+router.get('/machinery-providers/recommended', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { service_key: serviceKey } = req.query;
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
+
+  if (serviceKey && !MACHINERY_SERVICE_KEYS.includes(serviceKey)) {
+    return res.status(400).json({ error: 'invalid_service_key', valid: MACHINERY_SERVICE_KEYS });
+  }
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId, MACHINERY_ORG_TYPES];
+      const filters = [
+        'sl.is_active = true',
+        'sl.service_key IS NOT NULL',
+        "o.kyb_status = 'Verified'",
+        `EXISTS (
+           SELECT 1 FROM identity.organization_role r
+            WHERE r.org_id = sl.org_id AND r.role_type = ANY($2) AND r.status = 'Verified'
+         )`,
+      ];
+      if (serviceKey) { params.push(serviceKey); filters.push(`sl.service_key = $${params.length}`); }
+      params.push(limit);
+      const limitPlaceholder = `$${params.length}`;
+
+      const result = await client.query(
+        `WITH farmer_region AS (
+           SELECT region_code FROM identity.farmer WHERE farmer_id = $1
+         ),
+         reliability AS (
+           SELECT org_id,
+                  count(*) FILTER (WHERE status = 'Accepted') AS success_count,
+                  count(*) FILTER (WHERE status IN ('Accepted', 'Declined')) AS terminal_count
+             FROM marketplace.machinery_booking
+            GROUP BY org_id
+         )
+         SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
+                sl.description AS label_th, sl.unit_price, sl.price_unit,
+                COALESCE(vp.service_regions, '{}') AS service_regions,
+                (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) AS is_featured,
+                COALESCE(photos.photos, '[]'::json) AS photos,
+                ROUND((
+                  0.4 * (CASE
+                           WHEN COALESCE(cardinality(vp.service_regions), 0) = 0 THEN 0.5
+                           WHEN fr.region_code = ANY(vp.service_regions) THEN 1.0
+                           ELSE 0.0
+                         END)
+                + 0.3 * COALESCE(LEAST(1.0, GREATEST(0.0,
+                    1 - (sl.unit_price - key_avg.avg_price) / NULLIF(key_avg.avg_price, 0)
+                  )), 0.5)
+                + 0.3 * (CASE WHEN COALESCE(rel.terminal_count, 0) = 0 THEN 0.5
+                              ELSE rel.success_count::numeric / rel.terminal_count END)
+                )::numeric, 4) AS match_score
+           FROM marketplace.service_listing sl
+           JOIN identity.organization o ON o.org_id = sl.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = sl.org_id
+           CROSS JOIN farmer_region fr
+           LEFT JOIN reliability rel ON rel.org_id = sl.org_id
+           LEFT JOIN LATERAL (
+             SELECT AVG(sl2.unit_price) AS avg_price
+               FROM marketplace.service_listing sl2
+              WHERE sl2.service_key = sl.service_key AND sl2.is_active = true AND sl2.listing_id <> sl.listing_id
+           ) key_avg ON true
+           LEFT JOIN LATERAL (
+             SELECT json_agg(
+                      json_build_object(
+                        'photo_id', p.photo_id, 'photo_type', p.photo_type,
+                        'photo_data_url', p.photo_data_url, 'caption', p.caption
+                      ) ORDER BY p.created_at DESC
+                    ) AS photos
+               FROM marketplace.vendor_photo p
+              WHERE p.org_id = sl.org_id
+           ) photos ON true
+          WHERE ${filters.join(' AND ')}
+          ORDER BY match_score DESC, sl.service_key
+          LIMIT ${limitPlaceholder}`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/venue-listings/recommended
+ * Query: venue_type? (see VENUE_TYPES), limit? (default 10, max 50)
+ *
+ * marketplace.venue_listing carries province_code directly (no
+ * vendor_profile join needed, unlike InputSupplier/Machinery) and
+ * fee_amount is nullable — both handled below the same way GET
+ * /farmer/venue-listings already handles them.
+ */
+router.get('/venue-listings/recommended', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { venue_type: venueType } = req.query;
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
+
+  if (venueType && !VENUE_TYPES.includes(venueType)) {
+    return res.status(400).json({ error: 'invalid_venue_type', valid: VENUE_TYPES });
+  }
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId];
+      const filters = ['v.is_active = true', "r.status = 'Verified'", "o.kyb_status = 'Verified'"];
+      if (venueType) { params.push(venueType); filters.push(`v.venue_type = $${params.length}`); }
+      params.push(limit);
+      const limitPlaceholder = `$${params.length}`;
+
+      const result = await client.query(
+        `WITH farmer_region AS (
+           SELECT region_code FROM identity.farmer WHERE farmer_id = $1
+         ),
+         reliability AS (
+           SELECT org_id,
+                  count(*) FILTER (WHERE status = 'Accepted') AS success_count,
+                  count(*) FILTER (WHERE status IN ('Accepted', 'Declined')) AS terminal_count
+             FROM marketplace.venue_booking
+            GROUP BY org_id
+         )
+         SELECT v.listing_id, v.org_id, o.org_name, v.venue_name, v.venue_type, v.province_code,
+                v.address_detail, v.accepted_products, v.space_description, v.fee_amount,
+                v.fee_unit, v.schedule_note, v.updated_at,
+                ROUND((
+                  0.4 * (CASE WHEN fr.region_code = v.province_code THEN 1.0 ELSE 0.0 END)
+                + 0.3 * (CASE WHEN v.fee_amount IS NULL THEN 0.5
+                              ELSE COALESCE(LEAST(1.0, GREATEST(0.0,
+                                1 - (v.fee_amount - type_avg.avg_fee) / NULLIF(type_avg.avg_fee, 0)
+                              )), 0.5)
+                         END)
+                + 0.3 * (CASE WHEN COALESCE(rel.terminal_count, 0) = 0 THEN 0.5
+                              ELSE rel.success_count::numeric / rel.terminal_count END)
+                )::numeric, 4) AS match_score
+           FROM marketplace.venue_listing v
+           JOIN identity.organization o ON o.org_id = v.org_id
+           JOIN identity.organization_role r ON r.org_id = v.org_id AND r.role_type = 'MarketVenue'
+           CROSS JOIN farmer_region fr
+           LEFT JOIN reliability rel ON rel.org_id = v.org_id
+           LEFT JOIN LATERAL (
+             SELECT AVG(v2.fee_amount) AS avg_fee
+               FROM marketplace.venue_listing v2
+              WHERE v2.venue_type = v.venue_type AND v2.is_active = true
+                AND v2.fee_amount IS NOT NULL AND v2.listing_id <> v.listing_id
+           ) type_avg ON true
+          WHERE ${filters.join(' AND ')}
+          ORDER BY match_score DESC, v.venue_name
+          LIMIT ${limitPlaceholder}`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

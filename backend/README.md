@@ -91,6 +91,7 @@ psql -d agrolink_test -f db/grant_about_content.sql
 psql -d agrolink_test -f db/grant_admin_dashboard_views.sql
 psql -d agrolink_test -f db/grant_machinery_booking.sql
 psql -d agrolink_test -f db/grant_featured_listings.sql
+psql -d agrolink_test -f db/grant_credit_model.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -184,6 +185,24 @@ psql -d agrolink_test -f db/04_reference_data.sql
   `UPDATE` on both tables from `grant_input_supplier_and_buy_prices.sql`
   and `grant_machinery_marketplace.sql` (a table-level grant automatically
   covers columns added afterward).
+- `grant_credit_model.sql` — replaces the credit-score formula's output
+  layer without removing the original: `risk.compute_credit_score()` still
+  computes the same 4 factor ratios (production-verification-on-time,
+  contract-completion, on-time-repayment, delivery-settlement) exactly as
+  before, but now checks `risk.credit_model` for an active, sufficiently-
+  trained logistic-regression model and uses its score/tier instead when
+  one exists — wrapped in its own exception handler so any ML-path failure
+  falls back to the rule-based result. Training happens via
+  `POST /admin/credit-model/retrain` (`src/routes/admin.js`): a hand-
+  written gradient-descent logistic regression (no new npm dependency) is
+  fit over the same 4 factor ratios, labeled from real contract/repayment
+  outcomes, and refuses to activate below `MIN_TRAINING_SAMPLES = 20` /
+  `MIN_PER_CLASS = 5` — below that threshold every farmer keeps being
+  scored by the original fixed-weight formula, reported via
+  `GET /admin/credit-model`. Every `risk.credit_score` row records which
+  method actually produced it (pre-existing `model_version` column, plus a
+  new `scoring_method` key inside `factors` jsonb), so nothing is silently
+  guessed at by an admin or a farmer reviewing their own score history.
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
   it membership in `agrolink_app`, and grants it direct `EXECUTE` on
   `security.resolve_subject_from_external_claim()` (needed pre-login, before
@@ -616,6 +635,51 @@ target). A non-partial PK means `ON CONFLICT (org_id, grade_code) DO
 UPDATE` never needs a matching `WHERE` predicate — this was a deliberate
 design choice made specifically to avoid re-triggering that class of bug,
 not an accident.
+
+## AI Matching ("แนะนำสำหรับท่าน") — content-based scoring, not deep learning
+
+Three new sibling routes in `src/routes/farmer.js` — `GET
+/farmer/products/recommended`, `GET /farmer/machinery-providers/recommended`,
+`GET /farmer/venue-listings/recommended` — back a "แนะนำสำหรับท่าน" section on
+each of `marketplace.html` / `machinery-marketplace.html` /
+`venue-marketplace.html`. This is deliberately a legitimate multi-factor
+**content-based ranking system**, not an ML model and not an LLM — worth
+being explicit about, per the "where in AgroLink is AI actually used"
+conversation that preceded this feature. Every candidate listing gets a
+`match_score` in `[0, 1]`, computed fresh on every request (no offline
+training step, unlike `risk.credit_model` above) from three signals in one
+SQL query per route:
+
+- **40% region match** — does the farmer's `identity.farmer.region_code`
+  appear in the provider's service area (`partner.vendor_profile.
+  service_regions` for InputSupplier/Machinery, `marketplace.venue_listing.
+  province_code` directly for MarketVenue, since venue listings carry their
+  province directly rather than through a vendor profile)? A provider that
+  has never set a service area gets a neutral `0.5` rather than `0` — many
+  existing providers predate the service-area feature (see "province-level
+  service area" further up) and shouldn't be penalized for a gap that isn't
+  their fault.
+- **30% price competitiveness** — this listing's price vs. the average price
+  of other active listings in the same `category`/`service_key`/
+  `venue_type` group. At-or-below the group average scores `1.0`, falling
+  linearly to `0` at double the average. No comparable price data (only
+  listing in its group, or a venue with no `fee_amount` set) scores a
+  neutral `0.5`.
+- **30% reliability** — the provider's historical success rate on TERMINAL
+  outcomes only: `fulfilled / (fulfilled + rejected)` `marketplace.
+  product_order` rows for InputSupplier, `Accepted / (Accepted + Declined)`
+  `marketplace.machinery_booking`/`marketplace.venue_booking` rows for
+  Machinery/MarketVenue. Pending (`requested`/`Requested`) and
+  farmer-cancelled rows are excluded from both sides of the ratio — neither
+  reflects on the provider. No terminal history yet scores a neutral `0.5`,
+  not a penalty for being new.
+
+Every `/recommended` route reuses the exact same base filters (`is_active`,
+`kyb_status`/`organization_role` verification) as its plain-browse sibling
+above it in this same file, so a provider that wouldn't show up in the
+normal browse list never shows up in "recommended" either. Query params:
+an optional category/service_key/venue_type filter (same domain as the
+sibling route) plus `limit` (default 10, max 50).
 
 ## What's mocked / simplified (be aware of this before relying on it)
 

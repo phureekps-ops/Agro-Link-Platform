@@ -89,12 +89,16 @@ function photoGalleryHtml(photos) {
 
 function listingCard(l) {
   const regions = (l.service_regions || []).map(provinceName).join(", ");
+  const matchBadge = l.match_score !== undefined && l.match_score !== null
+    ? `<span class="badge status-active" style="background:var(--gold-100, #fff6dd); color:var(--gold-700, #8a6d1a);">ตรงกับท่าน ${Math.round(l.match_score * 100)}%</span>`
+    : "";
   return `
     <div class="item-card" data-listing-id="${l.listing_id}">
       <div class="row">
         <span class="title">${l.is_featured ? "⭐ " : ""}${escapeHtml(l.org_name)}</span>
         <span class="badge status-active">${escapeHtml(SERVICE_KEY_LABEL_TH[l.service_key] || l.service_key)}</span>
         ${l.is_featured ? `<span class="badge status-approved">แนะนำ</span>` : ""}
+        ${matchBadge}
       </div>
       ${photoGalleryHtml(l.photos)}
       ${regions ? `<div class="detail-line muted">พื้นที่ให้บริการ: ${escapeHtml(regions)}</div>` : ""}
@@ -107,6 +111,27 @@ function listingCard(l) {
       </div>
     </div>
   `;
+}
+
+/**
+ * "แนะนำสำหรับท่าน" — GET /farmer/machinery-providers/recommended. Same
+ * listingCard renderer as the main browse list (now match_score-aware),
+ * same data-request-booking wiring reused via handleRequestBookingClick
+ * above, so a farmer can open the booking form directly from a
+ * recommended card.
+ */
+async function loadRecommendedProviders() {
+  const el = document.getElementById("recommendedProvidersSection");
+  try {
+    const listings = await AgroLinkAPI.get("/farmer/machinery-providers/recommended?limit=6");
+    if (listings.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคำแนะนำในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = listings.map(listingCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำแนะนำไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
 }
 
 async function loadListings() {
@@ -213,11 +238,14 @@ function closeBookingForm() {
   bookedDatesForCurrentListing = {};
 }
 
-document.getElementById("listingListSection").addEventListener("click", (e) => {
+function handleRequestBookingClick(e) {
   const btn = e.target.closest("[data-request-booking]");
   if (!btn) return;
   openBookingForm(btn.dataset.requestBooking, btn.dataset.label);
-});
+}
+
+document.getElementById("listingListSection").addEventListener("click", handleRequestBookingClick);
+document.getElementById("recommendedProvidersSection").addEventListener("click", handleRequestBookingClick);
 
 document.getElementById("bookingCancelBtn").addEventListener("click", () => closeBookingForm());
 
@@ -302,7 +330,7 @@ document.getElementById("bookingHistorySection").addEventListener("click", async
 });
 
 async function init() {
-  await Promise.all([loadListings(), loadBookingHistory()]);
+  await Promise.all([loadListings(), loadBookingHistory(), loadRecommendedProviders()]);
 }
 
 init();

@@ -823,4 +823,277 @@ router.post('/service-listings/:id/unfeature', async (req, res, next) => {
 });
 
 
+
+// ---------- คะแนนเครดิตด้วยโมเดลที่เรียนรู้จากข้อมูลจริง (Featured this round) ----------
+// Backs the "credit score should be a model that learns from real data,
+// not a fixed formula" request. See grant_credit_model.sql's doc comment
+// for the full design rationale (why logistic regression, why gated on a
+// minimum sample size, why the rule-based formula in 02_full_schema.sql's
+// risk.compute_credit_score() is never removed — only optionally
+// overridden when a sufficiently-trained model exists).
+//
+// MIN_TRAINING_SAMPLES / MIN_PER_CLASS are deliberately conservative for
+// an early-stage pilot: below these, POST /admin/credit-model/retrain
+// refuses to activate a new model and reports why, leaving whatever was
+// previously active (or the rule-based formula, if nothing ever trained
+// successfully) untouched.
+const MIN_TRAINING_SAMPLES = 20;
+const MIN_PER_CLASS = 5;
+const CREDIT_MODEL_FEATURE_KEYS = ['production', 'contract', 'repayment', 'delivery'];
+
+/**
+ * Computes the mean of an array of numbers, or `fallback` if the array is
+ * empty (e.g. a factor no farmer in the training set has any history for).
+ */
+function mean(values, fallback) {
+  if (values.length === 0) return fallback;
+  return values.reduce((s, v) => s + v, 0) / values.length;
+}
+
+/**
+ * Population standard deviation, with a floor of 1 to avoid a div-by-zero
+ * (or a wildly unstable z-score) when every training example happens to
+ * share the exact same value for a feature.
+ */
+function stdDev(values, meanValue) {
+  if (values.length === 0) return 1;
+  const variance = values.reduce((s, v) => s + (v - meanValue) ** 2, 0) / values.length;
+  return Math.max(Math.sqrt(variance), 1e-6);
+}
+
+function sigmoid(z) {
+  return 1 / (1 + Math.exp(-z));
+}
+
+/**
+ * Hand-written gradient-descent logistic regression — deliberately not a
+ * library dependency (this stack has never had one; see
+ * grant_credit_model.sql's doc comment) — over the 4 already-computed
+ * rule-based factor ratios as features, L2-regularized to reduce
+ * overfitting on what is likely still a small pilot-stage sample.
+ * Returns fitted weights (object keyed by CREDIT_MODEL_FEATURE_KEYS),
+ * bias, and training accuracy (fraction of training rows the fitted
+ * model classifies correctly at a 0.5 threshold).
+ */
+function trainLogisticRegression(featureRows, labels, { epochs = 800, learningRate = 0.15, l2 = 0.02 } = {}) {
+  const n = featureRows.length;
+  const d = CREDIT_MODEL_FEATURE_KEYS.length;
+  let weights = new Array(d).fill(0);
+  let bias = 0;
+
+  for (let epoch = 0; epoch < epochs; epoch += 1) {
+    const gradW = new Array(d).fill(0);
+    let gradB = 0;
+    for (let i = 0; i < n; i += 1) {
+      let z = bias;
+      for (let j = 0; j < d; j += 1) z += featureRows[i][j] * weights[j];
+      const pred = sigmoid(z);
+      const error = pred - labels[i];
+      for (let j = 0; j < d; j += 1) gradW[j] += error * featureRows[i][j];
+      gradB += error;
+    }
+    for (let j = 0; j < d; j += 1) {
+      weights[j] -= learningRate * (gradW[j] / n + l2 * weights[j]);
+    }
+    bias -= learningRate * (gradB / n);
+  }
+
+  let correct = 0;
+  for (let i = 0; i < n; i += 1) {
+    let z = bias;
+    for (let j = 0; j < d; j += 1) z += featureRows[i][j] * weights[j];
+    const predictedLabel = sigmoid(z) >= 0.5 ? 1 : 0;
+    if (predictedLabel === labels[i]) correct += 1;
+  }
+
+  const weightsObj = {};
+  CREDIT_MODEL_FEATURE_KEYS.forEach((key, idx) => { weightsObj[key] = weights[idx]; });
+
+  return { weights: weightsObj, bias, accuracy: n > 0 ? correct / n : null };
+}
+
+/**
+ * GET /admin/credit-model — current active model's metadata, or a flag
+ * saying nothing has ever been activated (every farmer is still scored by
+ * the original rule-based formula in that case). Never returns the raw
+ * weights to the frontend beyond what's needed to show training
+ * diagnostics — there's nothing sensitive in them, but there's also no UI
+ * need to show the actual coefficients.
+ */
+router.get('/credit-model', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const active = await client.query(
+        `SELECT model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy, is_active
+           FROM risk.credit_model
+          WHERE is_active = true
+          LIMIT 1`,
+      );
+      const history = await client.query(
+        `SELECT model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy, is_active, notes
+           FROM risk.credit_model
+          ORDER BY trained_at DESC
+          LIMIT 20`,
+      );
+      return { active: active.rows[0] || null, history: history.rows };
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/credit-model/retrain
+ *
+ * Pulls the SAME 4 factor ratios risk.compute_credit_score() already
+ * computes per farmer (production-verification-on-time rate, contract-
+ * completion rate, on-time-repayment rate, delivery-settlement rate),
+ * fits a logistic regression against a label built from actual contract/
+ * repayment outcomes (label = 1 "good" if every terminal contract this
+ * farmer has ever had was 'completed' — none 'terminated'/'breached' — AND
+ * every recorded repayment was 'paid_on_time'; label = 0 "risky" if either
+ * had at least one bad outcome), and — ONLY if the result clears
+ * MIN_TRAINING_SAMPLES/MIN_PER_CLASS — deactivates whatever model was
+ * previously active and activates this new one.
+ *
+ * Farmers with NEITHER a terminal contract NOR a repayment record are
+ * excluded entirely: there is no credit-relevant outcome to learn from for
+ * them (matches risk.compute_credit_score()'s own "no signal → neutral
+ * 50.00" treatment — this training step simply never sees them as
+ * training examples, same underlying reasoning).
+ *
+ * Below the minimum thresholds, this is a NO-OP on risk.credit_model
+ * (nothing is written) — the response explains why, and every farmer
+ * keeps being scored however they were before this call (rule-based, or
+ * whatever model was already active).
+ */
+router.post('/credit-model/retrain', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(`
+        WITH per_farmer AS (
+          SELECT
+            f.farmer_id,
+            (SELECT CASE WHEN count(*) = 0 THEN NULL
+                         ELSE 100.0 * count(*) FILTER (WHERE sc.actual_date <= sc.planned_date) / count(*) END
+               FROM production.stage_calendar sc
+               JOIN production.crop_cycle cc ON cc.cycle_id = sc.cycle_id
+               JOIN registry.production_unit pu ON pu.unit_id = cc.unit_id
+              WHERE pu.owner_farmer_id = f.farmer_id AND sc.status = 'verified') AS production_factor,
+            (SELECT count(DISTINCT c.contract_id) FILTER (WHERE c.status IN ('completed','terminated','breached'))
+               FROM contract.contract c
+               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
+              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS contract_total,
+            (SELECT count(DISTINCT c.contract_id) FILTER (WHERE c.status = 'completed')
+               FROM contract.contract c
+               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
+              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS contract_completed,
+            (SELECT count(r.repayment_id)
+               FROM credit.loan_repayment r
+               JOIN contract.contract c ON c.contract_id = r.contract_id
+               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
+              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS repayment_total,
+            (SELECT count(r.repayment_id) FILTER (WHERE r.status = 'paid_on_time')
+               FROM credit.loan_repayment r
+               JOIN contract.contract c ON c.contract_id = r.contract_id
+               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
+              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS repayment_on_time,
+            (SELECT CASE WHEN count(*) FILTER (WHERE d.status IN ('settled','rejected')) = 0 THEN NULL
+                         ELSE 100.0 * count(*) FILTER (WHERE d.status = 'settled')
+                              / count(*) FILTER (WHERE d.status IN ('settled','rejected')) END
+               FROM produce.delivery d
+               JOIN registry.production_unit pu ON pu.unit_id = d.unit_id
+              WHERE pu.owner_farmer_id = f.farmer_id) AS delivery_factor
+          FROM identity.farmer f
+        )
+        SELECT farmer_id, production_factor, delivery_factor,
+               contract_total, contract_completed, repayment_total, repayment_on_time,
+               CASE WHEN contract_total > 0 THEN 100.0 * contract_completed / contract_total ELSE NULL END AS contract_factor,
+               CASE WHEN repayment_total > 0 THEN 100.0 * repayment_on_time / repayment_total ELSE NULL END AS repayment_factor
+          FROM per_farmer
+         WHERE COALESCE(contract_total, 0) > 0 OR COALESCE(repayment_total, 0) > 0
+      `);
+
+      const trainingRows = rows.map((r) => ({
+        production: r.production_factor === null ? null : Number(r.production_factor),
+        contract: r.contract_factor === null ? null : Number(r.contract_factor),
+        repayment: r.repayment_factor === null ? null : Number(r.repayment_factor),
+        delivery: r.delivery_factor === null ? null : Number(r.delivery_factor),
+        label: (
+          (Number(r.contract_total) === 0 || Number(r.contract_completed) === Number(r.contract_total))
+          && (Number(r.repayment_total) === 0 || Number(r.repayment_on_time) === Number(r.repayment_total))
+        ) ? 1 : 0,
+      }));
+
+      const sampleSize = trainingRows.length;
+      const positiveCount = trainingRows.filter((r) => r.label === 1).length;
+      const negativeCount = sampleSize - positiveCount;
+
+      if (sampleSize < MIN_TRAINING_SAMPLES || positiveCount < MIN_PER_CLASS || negativeCount < MIN_PER_CLASS) {
+        return {
+          activated: false,
+          sample_size: sampleSize,
+          positive_count: positiveCount,
+          negative_count: negativeCount,
+          min_training_samples: MIN_TRAINING_SAMPLES,
+          min_per_class: MIN_PER_CLASS,
+          reason: 'insufficient_data',
+        };
+      }
+
+      // Per-feature mean/std — imputation mean is over only the farmers
+      // who actually have that factor (production/delivery can be null
+      // even for farmers included via contract/repayment history alone).
+      const featureMeans = {};
+      const featureStds = {};
+      CREDIT_MODEL_FEATURE_KEYS.forEach((key) => {
+        const observed = trainingRows.map((r) => r[key]).filter((v) => v !== null);
+        const m = mean(observed, 50);
+        featureMeans[key] = m;
+        featureStds[key] = stdDev(observed, m);
+      });
+
+      const featureRows = trainingRows.map((r) => CREDIT_MODEL_FEATURE_KEYS.map((key) => {
+        const raw = r[key] === null ? featureMeans[key] : r[key];
+        return (raw - featureMeans[key]) / featureStds[key];
+      }));
+      const labels = trainingRows.map((r) => r.label);
+
+      const { weights, bias, accuracy } = trainLogisticRegression(featureRows, labels);
+
+      // Same `client` this whole route already has open (from the outer
+      // withSessionContext call) — deliberately NOT a second nested
+      // withSessionContext (that would open a wasted extra pool
+      // connection for no benefit, since ROLE/session context are already
+      // set on this one).
+      await client.query('UPDATE risk.credit_model SET is_active = false WHERE is_active = true');
+      const { rows: inserted } = await client.query(
+        `INSERT INTO risk.credit_model
+           (sample_size, positive_count, negative_count, feature_means, feature_stds, weights, bias, training_accuracy, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+         RETURNING model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy`,
+        // jsonb columns — explicit JSON.stringify rather than relying on
+        // pg's implicit object->JSON serialization, since no other route
+        // in this codebase writes a jsonb column from a JS-side parameter
+        // (every other jsonb write in this project builds the JSON at the
+        // SQL level via jsonb_build_object) — nothing to match here, so
+        // being explicit removes any ambiguity.
+        [sampleSize, positiveCount, negativeCount, JSON.stringify(featureMeans), JSON.stringify(featureStds), JSON.stringify(weights), bias, accuracy],
+      );
+      const model = inserted[0];
+      await logAccess(client, 'write', 'risk.credit_model', model.model_id);
+
+      return { activated: true, ...model };
+    });
+
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
 module.exports = router;
