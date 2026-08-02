@@ -129,6 +129,10 @@
   }
   .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 50px; align-items: center; }
   @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+  .hero-topline { text-align: center; margin-bottom: 44px; }
+  .hero-topline .th { display: block; font-size: 30px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+  .hero-topline .en { display: block; font-size: 16px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+  @media (max-width: 640px) { .hero-topline .th { font-size: 24px; } }
   .hero h1 { font-size: 46px; line-height: 1.2; margin-bottom: 20px; }
   .hero h1 span { color: var(--green); }
   .hero p.lead { font-size: 18px; color: var(--muted); max-width: 560px; margin-bottom: 30px; }
@@ -341,7 +345,12 @@
 </header>
 
 <section class="hero">
-  <div class="container hero-grid">
+  <div class="container">
+    <div class="hero-topline">
+      <span class="th">ระบบนิเวศน์การเกษตรไทย</span>
+      <span class="en">Thailand Agricultural Ecosystem</span>
+    </div>
+    <div class="hero-grid">
     <div>
       <div class="eyebrow"><i class="fa-solid fa-seedling"></i> ส่วนหนึ่งของเครือข่าย Galaxy</div>
       <h1><span>บริการเกษตรครบวงจรด้วย AI และสินเชื่อเชื่อมโยงสำหรับเกษตรกรไทยทุกแปลง</span></h1>
@@ -369,6 +378,7 @@
         </div>
       </div>
       <div class="float-badge fb2"><i class="fa-solid fa-coins"></i> วงเงินคงเหลือ 4,200 บาท</div>
+    </div>
     </div>
   </div>
 </section>
