@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ปฏิทินแผนการผลิต</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🗓️</span><span>AgroLink Platform — ปฏิทินแผนการผลิต</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="panel" style="background:#e8f5e9; border-color:#a5d6a7;">
+      <div style="font-weight:700; margin-bottom:6px;">ℹ️ เกี่ยวกับปฏิทินนี้</div>
+      <div style="font-size:13px; line-height:1.6;">
+        เกษตรกรกดยืนยันแต่ละขั้นตอนด้วยตนเองในแอปนี้ (ไม่มีเจ้าหน้าที่ภาคสนามมายืนยันแทน) ต้องทำตามลำดับขั้นตอนทีละขั้น
+        และขั้น "ตรวจดิน + สั่งสูตรปุ๋ย" ต้องใช้เครื่องมือ AI ปุ๋ยสั่งตัดคำนวณสูตรอย่างน้อย 1 ครั้งก่อน จึงจะกดยืนยันขั้นนี้ได้
+      </div>
+    </div>
+
+    <div class="section-title">🌾 เลือกแปลง/หน่วยผลิต</div>
+    <div class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="unitSelect">แปลง/หน่วยผลิต</label>
+          <select id="unitSelect">
+            <option value="">กำลังโหลด…</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="startCycleSection"></div>
+
+    <div id="activeCycleSection"></div>
+
+    <div class="section-title">📜 ประวัติรอบปลูกที่ผ่านมา</div>
+    <div id="cycleHistorySection" class="card-list">
+      <div class="empty-state">เลือกแปลงด้านบนเพื่อดูประวัติรอบปลูก</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/crop-cycle.js"></script>
+</body>
+</html>

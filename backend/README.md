@@ -93,6 +93,7 @@ psql -d agrolink_test -f db/grant_machinery_booking.sql
 psql -d agrolink_test -f db/grant_featured_listings.sql
 psql -d agrolink_test -f db/grant_credit_model.sql
 psql -d agrolink_test -f db/grant_fertilizer_formula.sql
+psql -d agrolink_test -f db/grant_stage_calendar_farmer.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -335,6 +336,37 @@ psql -d agrolink_test -f db/04_reference_data.sql
   3-path Fulfillment Marketplace, or the Bulk Sourcing group-buying
   marketplace with importers — those all need new org roles/portals that
   don't exist yet and were out of scope for this pass.
+
+- `grant_stage_calendar_farmer.sql` — the real "Stage Calendar auto-
+  integration" this project's analysis doc asked for. Before this
+  migration, `production.stage_template`/`production.stage_calendar`/
+  `production.crop_cycle` existed only in the schema — `stage_template`
+  had zero seed rows and no farmer-facing route ever created a
+  `crop_cycle`/`stage_calendar` row (only one hardcoded demo cycle existed,
+  in `dev_sample_data.sql`, and the only code reading these tables was a
+  read-only subquery in the admin credit-model retrain endpoint). This
+  migration: (1) seeds `production.stage_template` with a 5-stage template
+  each for RICE_JASMINE/RICE_PADDY/CASSAVA — **the same explicit
+  non-authoritative-placeholder caveat on `typical_offset_days` as the
+  fertilizer formula's N-P-K reference table applies here**; (2) adds a
+  nullable `stage_key` column (checked to `NULL` or
+  `'soil_test_fertilizer'`) to both `stage_template` and `stage_calendar`
+  so application code can reliably identify the fertilizer stage instead
+  of string-matching Thai stage names; (3) grants `agrolink_app` table
+  privileges on `production.crop_cycle`/`production.stage_calendar` that
+  were missing before this migration (only schema-level `USAGE` existed —
+  the admin retrain query would likely have failed permission-denied
+  against a from-scratch database). New routes in
+  `src/routes/stagecalendar.js` let a farmer start a crop cycle and
+  confirm each stage themselves, in-app — a deliberate choice over a
+  field-agent verification workflow (which this project has not built).
+  Self-reported confirmations are stamped `verified_by =
+  'self_reported:<farmer_id>'`, distinct from the hardcoded demo cycle's
+  `verified_by = 'field_agent:FA-0012'`, so nothing pretends a human
+  verified the farmer's own claim. The fertilizer stage specifically
+  requires at least one `production.fertilizer_formula_calc` row for the
+  cycle's unit before it can be confirmed — a real functional gate tying
+  the fertilizer calculator into the calendar, not just a label.
 
 ## Running
 

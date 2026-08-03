@@ -144,6 +144,7 @@ grant_machinery_booking.sql
 grant_featured_listings.sql
 grant_credit_model.sql
 grant_fertilizer_formula.sql
+grant_stage_calendar_farmer.sql
 04_reference_data.sql
 ```
 
