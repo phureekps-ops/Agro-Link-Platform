@@ -246,13 +246,24 @@ const editingListingIdInput = document.getElementById("editingListingId");
 const productSubmitBtn = document.getElementById("productSubmitBtn");
 const productCancelEditBtn = document.getElementById("productCancelEditBtn");
 
+function updateFertilizerFieldsVisibility() {
+  const isFertilizer = document.getElementById("categorySelect").value === "fertilizer_hormone";
+  document.getElementById("fertilizerNpkGradeField").style.display = isFertilizer ? "" : "none";
+  document.getElementById("fertilizerKgPerUnitField").style.display = isFertilizer ? "" : "none";
+}
+
 function resetProductForm() {
   productForm.reset();
   document.getElementById("priceUnitInput").value = "บาท/หน่วย";
+  document.getElementById("fertilizerNpkGradeInput").value = "";
+  document.getElementById("fertilizerKgPerUnitInput").value = "";
   editingListingIdInput.value = "";
   productSubmitBtn.textContent = "เพิ่มสินค้า";
   productCancelEditBtn.style.display = "none";
+  updateFertilizerFieldsVisibility();
 }
+
+document.getElementById("categorySelect").addEventListener("change", updateFertilizerFieldsVisibility);
 
 function startEditingProduct(p) {
   editingListingIdInput.value = p.listing_id;
@@ -261,7 +272,10 @@ function startEditingProduct(p) {
   document.getElementById("brandInput").value = p.brand || "";
   document.getElementById("priceInput").value = p.unit_price;
   document.getElementById("priceUnitInput").value = p.price_unit;
+  document.getElementById("fertilizerNpkGradeInput").value = p.fertilizer_npk_grade || "";
+  document.getElementById("fertilizerKgPerUnitInput").value = p.fertilizer_kg_per_unit || "";
   document.getElementById("descriptionInput").value = p.description || "";
+  updateFertilizerFieldsVisibility();
   productSubmitBtn.textContent = "บันทึกการแก้ไข";
   productCancelEditBtn.style.display = "inline-block";
   productForm.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -272,6 +286,7 @@ productCancelEditBtn.addEventListener("click", () => resetProductForm());
 productForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const listingId = editingListingIdInput.value;
+  const fertilizerKgPerUnitRaw = document.getElementById("fertilizerKgPerUnitInput").value.trim();
   const payload = {
     category: document.getElementById("categorySelect").value,
     product_name: document.getElementById("productNameInput").value.trim(),
@@ -279,6 +294,8 @@ productForm.addEventListener("submit", async (e) => {
     description: document.getElementById("descriptionInput").value.trim() || null,
     unit_price: Number(document.getElementById("priceInput").value),
     price_unit: document.getElementById("priceUnitInput").value.trim() || "บาท/หน่วย",
+    fertilizer_npk_grade: document.getElementById("fertilizerNpkGradeInput").value.trim() || null,
+    fertilizer_kg_per_unit: fertilizerKgPerUnitRaw ? Number(fertilizerKgPerUnitRaw) : null,
   };
 
   if (!payload.product_name) {
@@ -287,6 +304,11 @@ productForm.addEventListener("submit", async (e) => {
   }
   if (!Number.isFinite(payload.unit_price) || payload.unit_price <= 0) {
     toast("กรุณากรอกราคาที่มากกว่า 0", true);
+    return;
+  }
+  if (payload.fertilizer_kg_per_unit !== null
+      && (!Number.isFinite(payload.fertilizer_kg_per_unit) || payload.fertilizer_kg_per_unit <= 0)) {
+    toast("กรุณากรอกน้ำหนักต่อหน่วยราคาที่มากกว่า 0 หรือเว้นว่างไว้", true);
     return;
   }
 
@@ -342,6 +364,12 @@ function productCard(p) {
       <div class="detail-line" style="font-weight:700; color:var(--green-900);">
         ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit)}
       </div>
+      ${(p.fertilizer_npk_grade || p.fertilizer_kg_per_unit) ? `
+      <div class="detail-line muted">
+        ${p.fertilizer_npk_grade ? "เกรด N-P-K: " + escapeHtml(p.fertilizer_npk_grade) : ""}
+        ${p.fertilizer_npk_grade && p.fertilizer_kg_per_unit ? " · " : ""}
+        ${p.fertilizer_kg_per_unit ? "น้ำหนัก " + Number(p.fertilizer_kg_per_unit).toLocaleString("th-TH") + " กก./หน่วย" : ""}
+      </div>` : ""}
 
       <div class="photo-grid" style="grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); margin:10px 0;" data-photo-grid="${p.listing_id}">
         ${photosHtml || `<div class="muted" style="font-size:12px;">ยังไม่มีรูปภาพสินค้านี้</div>`}
@@ -526,6 +554,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkInp
 async function init() {
   const session = AgroLinkInputSupplierAPI.requireSessionOrRedirect();
   if (!session) return;
+  updateFertilizerFieldsVisibility();
 
   try {
     const d = await AgroLinkInputSupplierAPI.get("/inputsupplier/dashboard");

@@ -151,7 +151,8 @@ router.get('/products', async (req, res, next) => {
         filter = 'AND category = $2';
       }
       const result = await client.query(
-        `SELECT listing_id, category, product_name, brand, description, unit_price, price_unit, is_active, created_at, updated_at
+        `SELECT listing_id, category, product_name, brand, description, unit_price, price_unit,
+                fertilizer_npk_grade, fertilizer_kg_per_unit, is_active, created_at, updated_at
            FROM marketplace.product_listing
           WHERE org_id = $1 ${filter}
           ORDER BY category, product_name`,
@@ -181,6 +182,7 @@ router.post('/products', async (req, res, next) => {
   const {
     category, product_name: productName, brand, description,
     unit_price: unitPrice, price_unit: priceUnit,
+    fertilizer_npk_grade: fertilizerNpkGrade, fertilizer_kg_per_unit: fertilizerKgPerUnit,
   } = req.body || {};
 
   if (!category || !PRODUCT_CATEGORIES.includes(category)) {
@@ -193,14 +195,24 @@ router.post('/products', async (req, res, next) => {
   if (!Number.isFinite(price) || price <= 0) {
     return res.status(400).json({ error: 'invalid_unit_price' });
   }
+  if (fertilizerKgPerUnit !== undefined && fertilizerKgPerUnit !== null
+      && (!Number.isFinite(Number(fertilizerKgPerUnit)) || Number(fertilizerKgPerUnit) <= 0)) {
+    return res.status(400).json({ error: 'invalid_fertilizer_kg_per_unit' });
+  }
 
   try {
     const row = await withSessionContext('organization', subjectId, async (client) => {
       const { rows } = await client.query(
-        `INSERT INTO marketplace.product_listing (org_id, category, product_name, brand, description, unit_price, price_unit)
-         VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'บาท/หน่วย'))
-         RETURNING listing_id, category, product_name, brand, description, unit_price, price_unit, is_active, created_at, updated_at`,
-        [subjectId, category, productName.trim(), brand || null, description || null, price, priceUnit || null],
+        `INSERT INTO marketplace.product_listing
+           (org_id, category, product_name, brand, description, unit_price, price_unit, fertilizer_npk_grade, fertilizer_kg_per_unit)
+         VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'บาท/หน่วย'), $8, $9)
+         RETURNING listing_id, category, product_name, brand, description, unit_price, price_unit,
+                   fertilizer_npk_grade, fertilizer_kg_per_unit, is_active, created_at, updated_at`,
+        [
+          subjectId, category, productName.trim(), brand || null, description || null, price, priceUnit || null,
+          fertilizerNpkGrade || null,
+          fertilizerKgPerUnit !== undefined && fertilizerKgPerUnit !== null ? Number(fertilizerKgPerUnit) : null,
+        ],
       );
       await logAccess(client, 'write', 'marketplace.product_listing', rows[0].listing_id);
       return rows[0];
@@ -227,6 +239,7 @@ router.put('/products/:id', async (req, res, next) => {
   const {
     category, product_name: productName, brand, description,
     unit_price: unitPrice, price_unit: priceUnit, is_active: isActive,
+    fertilizer_npk_grade: fertilizerNpkGrade, fertilizer_kg_per_unit: fertilizerKgPerUnit,
   } = req.body || {};
 
   if (category !== undefined && !PRODUCT_CATEGORIES.includes(category)) {
@@ -237,6 +250,10 @@ router.put('/products/:id', async (req, res, next) => {
   }
   if (unitPrice !== undefined && (!Number.isFinite(Number(unitPrice)) || Number(unitPrice) <= 0)) {
     return res.status(400).json({ error: 'invalid_unit_price' });
+  }
+  if (fertilizerKgPerUnit !== undefined && fertilizerKgPerUnit !== null
+      && (!Number.isFinite(Number(fertilizerKgPerUnit)) || Number(fertilizerKgPerUnit) <= 0)) {
+    return res.status(400).json({ error: 'invalid_fertilizer_kg_per_unit' });
   }
 
   try {
@@ -249,16 +266,19 @@ router.put('/products/:id', async (req, res, next) => {
 
       const { rows } = await client.query(
         `UPDATE marketplace.product_listing SET
-           category     = COALESCE($3, category),
-           product_name = COALESCE($4, product_name),
-           brand        = CASE WHEN $5::boolean THEN $6 ELSE brand END,
-           description  = CASE WHEN $7::boolean THEN $8 ELSE description END,
-           unit_price   = COALESCE($9, unit_price),
-           price_unit   = COALESCE($10, price_unit),
-           is_active    = COALESCE($11, is_active),
-           updated_at   = now()
+           category               = COALESCE($3, category),
+           product_name           = COALESCE($4, product_name),
+           brand                  = CASE WHEN $5::boolean THEN $6 ELSE brand END,
+           description             = CASE WHEN $7::boolean THEN $8 ELSE description END,
+           unit_price              = COALESCE($9, unit_price),
+           price_unit              = COALESCE($10, price_unit),
+           is_active               = COALESCE($11, is_active),
+           fertilizer_npk_grade    = CASE WHEN $12::boolean THEN $13 ELSE fertilizer_npk_grade END,
+           fertilizer_kg_per_unit  = CASE WHEN $14::boolean THEN $15 ELSE fertilizer_kg_per_unit END,
+           updated_at              = now()
          WHERE org_id = $1 AND listing_id = $2
-         RETURNING listing_id, category, product_name, brand, description, unit_price, price_unit, is_active, created_at, updated_at`,
+         RETURNING listing_id, category, product_name, brand, description, unit_price, price_unit,
+                   fertilizer_npk_grade, fertilizer_kg_per_unit, is_active, created_at, updated_at`,
         [
           subjectId, id,
           category || null, productName ? productName.trim() : null,
@@ -267,6 +287,9 @@ router.put('/products/:id', async (req, res, next) => {
           unitPrice !== undefined ? Number(unitPrice) : null,
           priceUnit || null,
           isActive !== undefined ? Boolean(isActive) : null,
+          fertilizerNpkGrade !== undefined, fertilizerNpkGrade || null,
+          fertilizerKgPerUnit !== undefined,
+          fertilizerKgPerUnit !== undefined && fertilizerKgPerUnit !== null ? Number(fertilizerKgPerUnit) : null,
         ],
       );
       await logAccess(client, 'write', 'marketplace.product_listing', id);

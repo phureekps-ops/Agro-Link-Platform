@@ -143,6 +143,7 @@ grant_admin_dashboard_views.sql
 grant_machinery_booking.sql
 grant_featured_listings.sql
 grant_credit_model.sql
+grant_fertilizer_formula.sql
 04_reference_data.sql
 ```
 

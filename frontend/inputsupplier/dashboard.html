@@ -89,6 +89,14 @@
           <label for="priceUnitInput">หน่วยราคา</label>
           <input type="text" id="priceUnitInput" placeholder="เช่น บาท/กระสอบ, บาท/ขวด, บาท/ชิ้น" value="บาท/หน่วย" />
         </div>
+        <div class="field" id="fertilizerNpkGradeField">
+          <label for="fertilizerNpkGradeInput">เกรดปุ๋ย N-P-K (สำหรับสินค้าปุ๋ยเท่านั้น ไม่บังคับ)</label>
+          <input type="text" id="fertilizerNpkGradeInput" placeholder="เช่น 46-0-0 (ยูเรีย), 18-46-0 (DAP), 0-0-60 (โพแทสเซียมคลอไรด์/MOP)" />
+        </div>
+        <div class="field" id="fertilizerKgPerUnitField">
+          <label for="fertilizerKgPerUnitInput">น้ำหนักจริงต่อหน่วยราคา (กก., ไม่บังคับ)</label>
+          <input type="number" id="fertilizerKgPerUnitInput" min="0.01" step="0.01" placeholder="เช่น 50 ถ้าราคาข้างต้นคือราคาต่อกระสอบ 50 กก." />
+        </div>
         <div class="field full">
           <label for="descriptionInput">รายละเอียดสินค้า (ถ้ามี)</label>
           <input type="text" id="descriptionInput" placeholder="เช่น กระสอบ 50 กก., ขวดละ 1 ลิตร" />

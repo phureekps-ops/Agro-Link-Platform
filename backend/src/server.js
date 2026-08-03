@@ -11,6 +11,7 @@ const adminRouter = require('./routes/admin');
 const machineryRouter = require('./routes/machinery');
 const organizationRouter = require('./routes/organization');
 const inputSupplierRouter = require('./routes/inputsupplier');
+const fertilizerRouter = require('./routes/fertilizer');
 const marketVenueRouter = require('./routes/marketvenue');
 const contentRouter = require('./routes/content');
 
@@ -36,6 +37,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/auth', authRouter);
 app.use('/farmer', farmerRouter);
+app.use('/farmer', fertilizerRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
 app.use('/admin', adminRouter);

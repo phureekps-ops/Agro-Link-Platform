@@ -92,6 +92,7 @@ psql -d agrolink_test -f db/grant_admin_dashboard_views.sql
 psql -d agrolink_test -f db/grant_machinery_booking.sql
 psql -d agrolink_test -f db/grant_featured_listings.sql
 psql -d agrolink_test -f db/grant_credit_model.sql
+psql -d agrolink_test -f db/grant_fertilizer_formula.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -310,6 +311,30 @@ psql -d agrolink_test -f db/04_reference_data.sql
   `agrolink_app` `INSERT` on `identity.organization` and
   `partner.vendor_profile`, the first thing to ever create either as
   `agrolink_app` rather than through direct seeding.
+- `grant_fertilizer_formula.sql` — adds the AI Prescription Fertilizer
+  Formula Calculator feature: `production.soil_test` (self-reported soil
+  test results, categorical N/P/K levels plus optional pH/organic-matter),
+  `production.crop_nutrient_requirement` (a reference table seeded with
+  placeholder N-P-K requirements for a few commodities — **explicitly
+  marked in the data and in `COMMENT ON TABLE` as non-authoritative
+  placeholder values**, not official Department of Agriculture figures),
+  and `production.fertilizer_formula_calc` (calculation history). Also
+  extends `marketplace.product_listing` with `fertilizer_npk_grade` and
+  `fertilizer_kg_per_unit` so a fertilizer listing's real per-kg price can
+  be computed from whatever sack/bottle/unit price the supplier entered.
+  This is a rule-based blending calculation (Urea/DAP/MOP), not a machine-
+  learning model — consistent with this project's existing "AI" features,
+  which are content-based scoring rather than deep learning.
+
+  **Scope note (honesty about what shipped vs. what's deferred):** this
+  migration and the routes/pages built on top of it cover only the
+  self-reported soil test tier and the formula calculator itself, plus a
+  real price linkage into the existing InputSupplier catalog. It does
+  **not** include: automatic integration with the Stage Calendar, tying
+  fertilizer purchases to Milestone-Verified Credit Tranches, the full
+  3-path Fulfillment Marketplace, or the Bulk Sourcing group-buying
+  marketplace with importers — those all need new org roles/portals that
+  don't exist yet and were out of scope for this pass.
 
 ## Running
 
