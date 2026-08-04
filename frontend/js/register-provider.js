@@ -45,6 +45,7 @@ const loginBuyerLink = document.getElementById("loginBuyerLink");
 const loginMachineryLink = document.getElementById("loginMachineryLink");
 const loginInputSupplierLink = document.getElementById("loginInputSupplierLink");
 const loginMarketVenueLink = document.getElementById("loginMarketVenueLink");
+const loginFertilizerMixingLink = document.getElementById("loginFertilizerMixingLink");
 const registerBtn = document.getElementById("registerBtn");
 
 const ORG_TYPE_LABEL = {
@@ -54,6 +55,7 @@ const ORG_TYPE_LABEL = {
   HarvesterService: "บริการรถเกี่ยวข้าว", TruckService: "บริการรถบรรทุก",
   DryingYardService: "บริการลานตากข้าว",
   MarketVenue: "เจ้าของสถานที่จำหน่ายสินค้า (ตลาดค้าส่ง/ตลาดสด/ตลาดนัด)",
+  FertilizerMixingService: "ผู้ให้บริการผสมปุ๋ยสั่งตัด",
 };
 
 // The five org_types that share the unified "เครื่องจักรกล/ลานตาก" portal
@@ -126,6 +128,11 @@ registerForm.addEventListener("submit", async (e) => {
       window.location.href = "marketvenue/dashboard.html";
       return;
     }
+    if (orgType === "FertilizerMixingService") {
+      localStorage.setItem("agrolink_fertilizermixing_session", JSON.stringify(body));
+      window.location.href = "fertilizermixing/dashboard.html";
+      return;
+    }
     if (MACHINERY_ORG_TYPES.includes(orgType)) {
       localStorage.setItem("agrolink_machinery_session", JSON.stringify(body));
       window.location.href = "machinery/dashboard.html";
@@ -140,6 +147,7 @@ registerForm.addEventListener("submit", async (e) => {
     loginMachineryLink.style.display = "none";
     if (loginInputSupplierLink) loginInputSupplierLink.style.display = "none";
     if (loginMarketVenueLink) loginMarketVenueLink.style.display = "none";
+    if (loginFertilizerMixingLink) loginFertilizerMixingLink.style.display = "none";
     successDetail.textContent =
       `"${orgName}" (${ORG_TYPE_LABEL[orgType] || orgType}) อยู่ระหว่างการตรวจสอบ (KYB) ` +
       "เจ้าหน้าที่ผู้ดูแลระบบจะตรวจสอบและติดต่อกลับเมื่ออนุมัติแล้ว";

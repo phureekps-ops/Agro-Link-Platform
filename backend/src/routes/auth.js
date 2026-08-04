@@ -32,7 +32,7 @@ const REGISTER_CONSTRAINT_ERRORS = {
 const ORG_SELF_REGISTER_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer',
   'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
-  'MarketVenue',
+  'MarketVenue', 'FertilizerMixingService',
 ];
 const ORG_REGISTER_CONSTRAINT_ERRORS = {
   uq_organization_tax_id: 'tax_id_already_registered',

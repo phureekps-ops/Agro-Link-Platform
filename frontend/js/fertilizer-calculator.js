@@ -174,6 +174,20 @@ function fertilizerBreakdownHtml(breakdown) {
   `).join("");
 }
 
+function fertilizerMixingOrderUrl(calc) {
+  const kgByGrade = {};
+  (calc.fertilizer_breakdown || []).forEach((item) => {
+    kgByGrade[item.grade] = item.kg;
+  });
+  const params = new URLSearchParams();
+  if (calc.calc_id) params.set("calc_id", calc.calc_id);
+  if (calc.unit_id) params.set("unit_id", calc.unit_id);
+  if (kgByGrade["46-0-0"] !== undefined) params.set("urea_kg", kgByGrade["46-0-0"]);
+  if (kgByGrade["18-46-0"] !== undefined) params.set("dap_kg", kgByGrade["18-46-0"]);
+  if (kgByGrade["0-0-60"] !== undefined) params.set("mop_kg", kgByGrade["0-0-60"]);
+  return `fertilizer-mixing-marketplace.html?${params.toString()}`;
+}
+
 function renderCalcResult(calc) {
   const el = document.getElementById("calcResultSection");
   el.innerHTML = `
@@ -194,6 +208,7 @@ function renderCalcResult(calc) {
           : "ไม่สามารถประเมินต้นทุนรวมได้ครบทุกรายการ (ยังไม่มีสินค้าในระบบที่ระบุเกรด N-P-K และน้ำหนักต่อหน่วยครบทุกชนิด)"}
       </div>
       <div class="detail-line muted" style="margin-top:14px; font-size:12px;">${escapeHtml(calc.disclaimer)}</div>
+      <a href="${fertilizerMixingOrderUrl(calc)}" class="btn btn-primary" style="max-width:280px; margin-top:14px; text-decoration:none; display:inline-block; text-align:center;">สั่งบริการผสมปุ๋ยตามสูตรนี้</a>
     </div>
   `;
   el.scrollIntoView({ behavior: "smooth", block: "start" });

@@ -436,4 +436,267 @@ router.get('/fertilizer-formula/history', async (req, res, next) => {
   }
 });
 
+
+// =======================================================================
+// Fulfillment Marketplace เส้นทาง A (module 2.3) — สั่งบริการผสมปุ๋ยสั่งตัด
+// ผ่านผู้ให้บริการที่ลงทะเบียน/ผ่าน KYB แล้ว (FertilizerMixingService org
+// type — see grant_fertilizer_mixing_service.sql). Kept in this file
+// rather than farmer.js for the same reason this whole file is already
+// separate from farmer.js: it's the same "ปุ๋ยสั่งตัด" feature area
+// (calculate a formula, then order it mixed), and farmer.js is already
+// 1300+ lines — see the file-header comment at the top of this file.
+// Same offline-payment / dedicated-table design decision as the machinery
+// and market-venue booking features — see grant_fertilizer_mixing_service
+// .sql's header comment for the full reasoning.
+// =======================================================================
+
+const FERTILIZER_MIXING_ORG_TYPES = ['FertilizerMixingService'];
+
+/**
+ * GET /farmer/fertilizer-mixing-providers — browse ACTIVE, priced
+ * fertilizer_custom_mix listings across every Verified
+ * FertilizerMixingService organization, joined with the provider's
+ * org_name. Same shape as GET /farmer/machinery-providers, minus the
+ * province/photo columns (this portal doesn't collect those yet — see
+ * grant_fertilizer_mixing_service.sql's scope note).
+ */
+router.get('/fertilizer-mixing-providers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
+                sl.description AS label_th, sl.unit_price, sl.price_unit
+           FROM marketplace.service_listing sl
+           JOIN identity.organization o ON o.org_id = sl.org_id
+          WHERE sl.is_active = true
+            AND sl.service_key = 'fertilizer_custom_mix'
+            AND o.kyb_status = 'Verified'
+            AND EXISTS (
+              SELECT 1 FROM identity.organization_role r
+               WHERE r.org_id = sl.org_id AND r.role_type = ANY($1) AND r.status = 'Verified'
+            )
+          ORDER BY o.org_name`,
+        [FERTILIZER_MIXING_ORG_TYPES],
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/fertilizer-mixing-orders
+ * Body: { listing_id, unit_id, cycle_id?, stage_id?, calc_id?,
+ *         requested_urea_kg?, requested_dap_kg?, requested_mop_kg?,
+ *         delivery_option?, delivery_address?, preferred_date, farmer_note? }
+ *
+ * unit_id is REQUIRED and ownership-checked (WHERE owner_farmer_id = $1),
+ * same as every other route that reaches into registry.production_unit.
+ * cycle_id/stage_id/calc_id are each OPTIONAL but, when given, are also
+ * ownership-checked through their own chain back to this farmer — a
+ * cycle_id belonging to another farmer's unit, or a calc_id from another
+ * farmer's calculator run, is rejected with 404 rather than silently
+ * accepted (same "looks identical to not-found" convention used
+ * everywhere else in this project).
+ *
+ * If calc_id is given and requested_urea_kg/dap_kg/mop_kg are omitted,
+ * they default to that calculation's own urea_kg/dap_kg/mop_kg — so a
+ * farmer coming straight from "ผลการคำนวณ" doesn't have to retype the
+ * numbers the calculator already produced, but can still override them.
+ *
+ * service_key/label_th/service_type/unit_price/price_unit are SNAPSHOTTED
+ * from the listing at this moment (same reasoning as every other
+ * marketplace order/booking route in this project).
+ */
+router.post('/fertilizer-mixing-orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    listing_id: listingId, unit_id: unitId, cycle_id: cycleId, stage_id: stageId, calc_id: calcId,
+    requested_urea_kg: requestedUreaKgRaw, requested_dap_kg: requestedDapKgRaw, requested_mop_kg: requestedMopKgRaw,
+    delivery_option: deliveryOptionRaw, delivery_address: deliveryAddress,
+    preferred_date: preferredDate, farmer_note: farmerNote,
+  } = req.body || {};
+
+  if (!listingId || !unitId || !preferredDate) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['listing_id', 'unit_id', 'preferred_date'],
+    });
+  }
+  if (Number.isNaN(Date.parse(preferredDate))) {
+    return res.status(400).json({ error: 'invalid_preferred_date' });
+  }
+  const deliveryOption = deliveryOptionRaw || 'pickup';
+  if (!['pickup', 'delivery'].includes(deliveryOption)) {
+    return res.status(400).json({ error: 'invalid_delivery_option', valid: ['pickup', 'delivery'] });
+  }
+  if (deliveryOption === 'delivery' && !deliveryAddress) {
+    return res.status(400).json({ error: 'missing_delivery_address' });
+  }
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const unit = await client.query(
+        'SELECT unit_id FROM registry.production_unit WHERE unit_id = $1 AND owner_farmer_id = $2',
+        [unitId, subjectId],
+      );
+      if (unit.rows.length === 0) return { unitNotFound: true };
+
+      if (cycleId) {
+        const cycle = await client.query(
+          `SELECT cc.cycle_id FROM production.crop_cycle cc
+             JOIN registry.production_unit pu ON pu.unit_id = cc.unit_id
+            WHERE cc.cycle_id = $1 AND pu.owner_farmer_id = $2`,
+          [cycleId, subjectId],
+        );
+        if (cycle.rows.length === 0) return { cycleNotFound: true };
+      }
+
+      if (stageId) {
+        const stage = await client.query(
+          `SELECT sc.stage_id FROM production.stage_calendar sc
+             JOIN production.crop_cycle cc ON cc.cycle_id = sc.cycle_id
+             JOIN registry.production_unit pu ON pu.unit_id = cc.unit_id
+            WHERE sc.stage_id = $1 AND pu.owner_farmer_id = $2`,
+          [stageId, subjectId],
+        );
+        if (stage.rows.length === 0) return { stageNotFound: true };
+      }
+
+      let requestedUreaKg = requestedUreaKgRaw ?? null;
+      let requestedDapKg = requestedDapKgRaw ?? null;
+      let requestedMopKg = requestedMopKgRaw ?? null;
+
+      if (calcId) {
+        const calc = await client.query(
+          `SELECT calc_id, urea_kg, dap_kg, mop_kg FROM production.fertilizer_formula_calc
+            WHERE calc_id = $1 AND farmer_id = $2`,
+          [calcId, subjectId],
+        );
+        if (calc.rows.length === 0) return { calcNotFound: true };
+        const c = calc.rows[0];
+        if (requestedUreaKg === null) requestedUreaKg = c.urea_kg;
+        if (requestedDapKg === null) requestedDapKg = c.dap_kg;
+        if (requestedMopKg === null) requestedMopKg = c.mop_kg;
+      }
+
+      const listing = await client.query(
+        `SELECT listing_id, org_id, service_key, service_type, description AS label_th, unit_price, price_unit
+           FROM marketplace.service_listing
+          WHERE listing_id = $1 AND is_active = true AND service_key = 'fertilizer_custom_mix'`,
+        [listingId],
+      );
+      if (listing.rows.length === 0) return { listingNotFound: true };
+      const l = listing.rows[0];
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.fertilizer_mixing_order
+           (listing_id, org_id, farmer_id, unit_id, cycle_id, stage_id, calc_id,
+            service_key, label_th, service_type, unit_price, price_unit,
+            requested_urea_kg, requested_dap_kg, requested_mop_kg,
+            delivery_option, delivery_address, preferred_date, farmer_note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+         RETURNING order_id, listing_id, org_id, unit_id, cycle_id, stage_id, calc_id,
+                   service_key, label_th, service_type, unit_price, price_unit,
+                   requested_urea_kg, requested_dap_kg, requested_mop_kg,
+                   delivery_option, delivery_address, preferred_date, farmer_note,
+                   status, requested_at`,
+        [
+          listingId, l.org_id, subjectId, unitId, cycleId || null, stageId || null, calcId || null,
+          l.service_key, l.label_th, l.service_type, l.unit_price, l.price_unit,
+          requestedUreaKg, requestedDapKg, requestedMopKg,
+          deliveryOption, deliveryAddress || null, preferredDate, farmerNote || null,
+        ],
+      );
+      await logAccess(client, 'write', 'marketplace.fertilizer_mixing_order', rows[0].order_id);
+      return { order: rows[0] };
+    });
+
+    if (result.unitNotFound) return res.status(404).json({ error: 'production_unit_not_found' });
+    if (result.cycleNotFound) return res.status(404).json({ error: 'crop_cycle_not_found' });
+    if (result.stageNotFound) return res.status(404).json({ error: 'stage_not_found' });
+    if (result.calcNotFound) return res.status(404).json({ error: 'fertilizer_formula_calc_not_found' });
+    if (result.listingNotFound) return res.status(404).json({ error: 'fertilizer_mixing_listing_not_found' });
+    return res.status(201).json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/fertilizer-mixing-orders?status=... — this farmer's own
+ * orders across every provider, joined with the provider's org_name.
+ */
+router.get('/fertilizer-mixing-orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status) { params.push(status); filter = 'AND o.status = $2'; }
+
+      const result = await client.query(
+        `SELECT o.order_id, o.org_id, org.org_name, o.unit_id, o.cycle_id, o.stage_id, o.calc_id,
+                o.service_key, o.label_th, o.service_type, o.unit_price, o.price_unit,
+                o.requested_urea_kg, o.requested_dap_kg, o.requested_mop_kg,
+                o.delivery_option, o.delivery_address, o.preferred_date, o.farmer_note,
+                o.status, o.decided_reason, o.requested_at, o.decided_at, o.completed_at
+           FROM marketplace.fertilizer_mixing_order o
+           JOIN identity.organization org ON org.org_id = o.org_id
+          WHERE o.farmer_id = $1 ${filter}
+          ORDER BY o.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.fertilizer_mixing_order', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/fertilizer-mixing-orders/:id/cancel — a farmer can cancel
+ * their OWN order, only while it's still `Requested` (before the provider
+ * has acted on it). Same ownership-gate + status-guard shape as
+ * POST /farmer/machinery-bookings/:id/cancel.
+ */
+router.post('/fertilizer-mixing-orders/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.fertilizer_mixing_order WHERE farmer_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'Requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.fertilizer_mixing_order
+            SET status = 'Cancelled', updated_at = now()
+          WHERE farmer_id = $1 AND order_id = $2
+          RETURNING order_id, status`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.fertilizer_mixing_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'order_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'order_not_cancellable', current_status: result.wrongStatus });
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

@@ -94,6 +94,7 @@ psql -d agrolink_test -f db/grant_featured_listings.sql
 psql -d agrolink_test -f db/grant_credit_model.sql
 psql -d agrolink_test -f db/grant_fertilizer_formula.sql
 psql -d agrolink_test -f db/grant_stage_calendar_farmer.sql
+psql -d agrolink_test -f db/grant_fertilizer_mixing_service.sql
 psql -d agrolink_test -f db/04_reference_data.sql
 ```
 
@@ -368,6 +369,35 @@ psql -d agrolink_test -f db/04_reference_data.sql
   cycle's unit before it can be confirmed — a real functional gate tying
   the fertilizer calculator into the calendar, not just a label.
 
+- `grant_fertilizer_mixing_service.sql` — adds **Path A of the Fulfillment
+  Marketplace** (module 2.3): a farmer orders a custom fertilizer-mixing
+  service from a registered, KYB-Verified `FertilizerMixingService`
+  provider. Widens `identity.organization.org_type` (and
+  `organization_role.role_type`) to add `FertilizerMixingService`, and
+  `marketplace.service_listing`'s `service_type`/`service_key` CHECKs to
+  add `fertilizer_mixing` / `fertilizer_custom_mix`. Creates a dedicated
+  `marketplace.fertilizer_mixing_order` table — deliberately **not**
+  built on the older `marketplace.service_request` mechanism, because
+  that mechanism performs a real ledger fund transfer requiring a farmer
+  `unit_wallet` account that nothing in this codebase provisions for a
+  real (non-seed-data) farmer. Instead this follows the exact same
+  offline-payment / dedicated-table pattern already proven by
+  `marketplace.machinery_booking` (see `grant_machinery_booking.sql`):
+  the farmer and provider settle payment directly, and the platform only
+  records the request/accept/decline/complete lifecycle. The order table
+  snapshots `unit_price`/`price_unit`/`label_th` at request time (from the
+  provider's rate card) so a provider editing their price later doesn't
+  retroactively change an already-placed order, and optionally links back
+  to a `production.fertilizer_formula_calc` row (`calc_id`) so a farmer
+  can order the exact urea/DAP/MOP quantities their AI-calculated formula
+  produced with one click from the calculator's result panel.
+
+  **Scope note:** this migration covers Path A only. Path B (order
+  pooling / group buying among nearby farmers) and Path C (streamlined
+  new-provider onboarding via KYB) — the other two paths of the
+  Fulfillment Marketplace design — are deliberately out of scope for this
+  pass and still need their own migrations.
+
 ## Running
 
 ```
@@ -383,7 +413,7 @@ npm start          # or: node src/server.js
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
 - `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
-- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank`/`VillageFund` are deliberately excluded, see "what's mocked" below, and `Cooperative`/`Mill` were removed from this list on 2026-07-24 per an explicit product decision — both values still exist in `identity.organization`'s underlying `org_type` domain, they just aren't self-registerable through this endpoint anymore). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
+- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService`/`MarketVenue`/`FertilizerMixingService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank`/`VillageFund` are deliberately excluded, see "what's mocked" below, and `Cooperative`/`Mill` were removed from this list on 2026-07-24 per an explicit product decision — both values still exist in `identity.organization`'s underlying `org_type` domain, they just aren't self-registerable through this endpoint anymore). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
 
 Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already

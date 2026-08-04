@@ -14,6 +14,7 @@ const inputSupplierRouter = require('./routes/inputsupplier');
 const fertilizerRouter = require('./routes/fertilizer');
 const stagecalendarRouter = require('./routes/stagecalendar');
 const marketVenueRouter = require('./routes/marketvenue');
+const fertilizerMixingRouter = require('./routes/fertilizermixing');
 const contentRouter = require('./routes/content');
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/machinery', machineryRouter);
 app.use('/organization', organizationRouter);
 app.use('/inputsupplier', inputSupplierRouter);
 app.use('/marketvenue', marketVenueRouter);
+app.use('/fertilizermixing', fertilizerMixingRouter);
 app.use('/about', contentRouter);
 
 // Fallback 404
