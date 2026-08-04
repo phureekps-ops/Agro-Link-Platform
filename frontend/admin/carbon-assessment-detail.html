@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — รายละเอียดการตรวจสอบ AWD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  .water-log-row {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border-bottom:1px solid #eee; padding:8px 0; font-size:13px;
+  }
+  .water-log-row:last-child { border-bottom:none; }
+  .water-status-tag { font-weight:700; }
+  .water-status-tag.flooded { color:#1565c0; }
+  .water-status-tag.dry { color:#c62828; }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🛡️</span><span>AgroLink Platform — รายละเอียดการตรวจสอบ AWD</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับคิวตรวจสอบ</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="panel" id="summaryPanel" style="margin-bottom:16px;">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div style="font-weight:700; margin-bottom:8px;">📝 ประวัติการบันทึกระดับน้ำ (เกษตรกรรายงานเอง)</div>
+        <div id="waterLogSection"></div>
+      </div>
+      <div class="panel">
+        <div style="font-weight:700; margin-bottom:8px;">🛰️ ข้อมูลยืนยันเสริมจากดาวเทียม</div>
+        <div id="satelliteSection" class="card-list"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="actionPanel" style="margin-top:16px;">
+      <div class="field">
+        <label for="reviewNoteInput">หมายเหตุการตรวจสอบ</label>
+        <input type="text" id="reviewNoteInput" placeholder="บังคับกรอกถ้าปฏิเสธ" />
+      </div>
+      <button type="button" class="btn btn-approve" id="verifyBtn">รับรองข้อมูล</button>
+      <button type="button" class="btn btn-decline" id="rejectBtn">ปฏิเสธ</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/carbon-assessment-detail.js"></script>
+</body>
+</html>

@@ -16,6 +16,7 @@ const contentRouter = require('./routes/content');
 const stageCalendarRouter = require('./routes/stagecalendar');
 const fertilizerRouter = require('./routes/fertilizer');
 const fertilizerMixingRouter = require('./routes/fertilizermixing');
+const carbonRouter = require('./routes/carbon');
 
 const app = express();
 
@@ -51,6 +52,11 @@ app.use('/farmer', farmerRouter);
 // frontend/js/fertilizer-mixing-marketplace.js all already assume.
 app.use('/farmer', stageCalendarRouter);
 app.use('/farmer', fertilizerRouter);
+// carbon.js (AWD water-log + carbon-credit-estimate endpoints, all under
+// /farmer/carbon/*) — same shared-'/farmer'-prefix pattern as above; no
+// path collision with farmer.js/stagecalendar.js/fertilizer.js (none of
+// them use a /carbon/* sub-path).
+app.use('/farmer', carbonRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
 app.use('/admin', adminRouter);

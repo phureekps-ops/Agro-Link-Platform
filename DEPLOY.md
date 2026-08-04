@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (27 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (28 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -148,7 +148,12 @@ grant_fertilizer_formula.sql
 grant_stage_calendar_farmer.sql
 grant_fertilizer_mixing_service.sql
 grant_fertilizer_mixing_group_order.sql
+grant_carbon_awd.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-04 (เช้า):** `grant_carbon_awd.sql` — ระบบยืนยันการปลูกข้าว
+คาร์บอนต่ำแบบเปียกสลับแห้ง (AWD) + ประเมินคาร์บอนเครดิต ดูรายละเอียดที่
+`backend/README.md` หัวข้อ "Low-Carbon Rice Cultivation Verification"
 
 **แก้ไขเมื่อ 2026-08-04:** รายการนี้เคยขาดไฟล์ไป 9 ไฟล์ (ตั้งแต่ `grant_about_content.sql`
 ถึง `grant_fertilizer_mixing_service.sql` ด้านบน) — ไฟล์เหล่านี้มีอยู่จริงในโฟลเดอร์

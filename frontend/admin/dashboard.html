@@ -48,6 +48,44 @@
       <div class="loading-line">กำลังโหลดคำขอเพิ่มบทบาทธุรกิจ…</div>
     </div>
 
+    <div class="section-title">🌱 คิวตรวจสอบคาร์บอนเครดิต AWD ที่รอตรวจสอบ</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      รอบปลูกข้าวที่เกษตรกรบันทึกระดับน้ำแบบเปียกสลับแห้ง (AWD) และส่งขอตรวจสอบแล้ว —
+      อนุมัติ = รับรองข้อมูล + ประเมินคาร์บอนเครดิต (เป็นการประเมินภายในเท่านั้น ไม่ใช่การขึ้นทะเบียนเครดิตจริง),
+      ปฏิเสธ = ตีกลับพร้อมเหตุผล เกษตรกรแก้ไขและส่งใหม่ได้
+    </p>
+    <div id="awdQueueSection" class="card-list" style="margin-bottom:16px;">
+      <div class="loading-line">กำลังโหลดคิวตรวจสอบ AWD…</div>
+    </div>
+
+    <div class="panel" id="awdConfigPanel" style="margin-bottom:24px;">
+      <div style="font-weight:700; margin-bottom:12px;">⚙️ เกณฑ์การประเมินคาร์บอนเครดิต AWD ปัจจุบัน</div>
+      <div id="awdConfigCurrent" class="detail-line" style="margin-bottom:14px;">กำลังโหลด…</div>
+      <form id="awdConfigForm" class="form-grid">
+        <div class="field">
+          <label for="awdEmissionFactor">tCO2e ต่อไร่ ต่อรอบที่เข้าเกณฑ์</label>
+          <input type="number" id="awdEmissionFactor" step="0.0001" min="0" required />
+        </div>
+        <div class="field">
+          <label for="awdMinDryEvents">จำนวนรอบแห้งขั้นต่ำต่อฤดู</label>
+          <input type="number" id="awdMinDryEvents" min="1" step="1" required />
+        </div>
+        <div class="field">
+          <label for="awdMinDryDays">จำนวนวันแห้งต่อเนื่องขั้นต่ำต่อรอบ</label>
+          <input type="number" id="awdMinDryDays" min="1" step="1" required />
+        </div>
+        <div class="field">
+          <label for="awdMinDropCm">ระดับน้ำต่ำกว่าผิวดินขั้นต่ำ (ซม.)</label>
+          <input type="number" id="awdMinDropCm" min="0" step="0.01" required />
+        </div>
+        <div class="field full">
+          <label for="awdConfigNote">หมายเหตุ (เช่น อ้างอิงประกาศ อบก. ฉบับที่เท่าไร)</label>
+          <input type="text" id="awdConfigNote" />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="awdConfigSaveBtn" style="max-width:220px; margin-top:10px;">บันทึกเกณฑ์ใหม่ (มีผลกับการประเมินครั้งถัดไป)</button>
+    </div>
+
     <div class="section-title">📋 เกษตรกรทั้งหมด</div>
     <div class="filter-bar">
       <div class="field">
@@ -79,72 +117,6 @@
     </div>
     <div id="allOrgsSection" class="card-list">
       <div class="loading-line">กำลังโหลดรายชื่อองค์กร…</div>
-    </div>
-
-    <div class="section-title">✍️ จัดการเนื้อหา "เกี่ยวกับเรา"</div>
-    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      หัวข้อและข้อความด้านล่างนี้จะแสดงบนหน้าเว็บสาธารณะ "เกี่ยวกับเรา" (about.html) ที่เกษตรกร/ผู้ให้บริการทั่วไปมองเห็นได้
-      แก้ไข/เพิ่ม/ซ่อน/ลบได้ทันที โดยไม่ต้องแก้โค้ด
-    </p>
-    <div id="aboutSectionsList" class="card-list">
-      <div class="loading-line">กำลังโหลดเนื้อหา…</div>
-    </div>
-
-    <div class="panel" style="margin-top:18px;">
-      <div class="row"><span class="title">➕ เพิ่มหัวข้อใหม่</span></div>
-      <div class="form-grid">
-        <div class="field">
-          <label for="newAboutTitle">ชื่อหัวข้อที่แสดงบนเว็บ</label>
-          <input type="text" id="newAboutTitle" placeholder="เช่น ผู้ปล่อยกู้ (Lender)" />
-        </div>
-        <div class="field">
-          <label for="newAboutOrder">ลำดับการแสดงผล (ตัวเลขน้อย = แสดงก่อน)</label>
-          <input type="number" id="newAboutOrder" value="100" />
-        </div>
-        <div class="field full">
-          <label for="newAboutBody">เนื้อหา/คำอธิบาย</label>
-          <textarea id="newAboutBody" rows="4" placeholder="พิมพ์คำอธิบายบริการนี้..."></textarea>
-        </div>
-      </div>
-      <div class="action-row">
-        <button type="button" class="btn btn-approve btn-sm" id="addAboutSectionBtn">บันทึกหัวข้อใหม่</button>
-      </div>
-    </div>
-
-    <div class="section-title">📣 จัดการสินค้า/บริการแนะนำ (โฆษณา)</div>
-    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      รายการที่ตั้งเป็น "แนะนำ" จะถูกจัดให้ขึ้นแสดงบนสุดของหน้าตลาดที่เกษตรกรเห็น พร้อมป้าย "⭐ แนะนำ"
-      จนกว่าจะครบกำหนดวันที่ตั้งไว้ — ระบบยังไม่มีการชำระเงินออนไลน์สำหรับส่วนนี้ ผู้จำหน่าย/ผู้ให้บริการชำระค่าโฆษณากับทีมงานโดยตรง (นอกระบบ)
-      แล้วเจ้าหน้าที่จึงมากดตั้งค่าให้ที่นี่
-    </p>
-    <div class="filter-bar">
-      <div class="field">
-        <label for="featuredListingTypeFilter">ประเภทรายการ</label>
-        <select id="featuredListingTypeFilter">
-          <option value="product">สินค้าปัจจัยการผลิต (InputSupplier)</option>
-          <option value="service">บริการเครื่องจักรกล/ลานตาก (Machinery)</option>
-        </select>
-      </div>
-    </div>
-    <div id="featuredListingsSection" class="card-list">
-      <div class="loading-line">กำลังโหลดรายการ…</div>
-    </div>
-
-    <div class="section-title">🧠 โมเดลคะแนนเครดิต (Machine Learning)</div>
-    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      เดิมคะแนนเครดิตเกษตรกรคำนวณจากสูตรถ่วงน้ำหนักคงที่ (30/25/25/20%) — ส่วนนี้ให้ระบบ "ฝึก" โมเดล (logistic regression)
-      จากประวัติสัญญา/การชำระคืนสินเชื่อจริงของเกษตรกรในระบบแทน หากข้อมูลยังไม่พอ (ต้องมีอย่างน้อย 20 ราย และอย่างน้อย 5 รายในแต่ละกลุ่ม "ดี/เสี่ยง")
-      ระบบจะไม่เปิดใช้งานโมเดลใหม่ และเกษตรกรทุกคนจะยังคงใช้สูตรเดิมต่อไปโดยอัตโนมัติ — ไม่มีทางเสียหาย
-    </p>
-    <div id="creditModelStatusSection" class="card-list">
-      <div class="loading-line">กำลังโหลดสถานะโมเดล…</div>
-    </div>
-    <div class="action-row" style="margin:12px 0 20px;">
-      <button type="button" class="btn btn-primary" id="retrainCreditModelBtn">🔄 ฝึกโมเดลใหม่ด้วยข้อมูลล่าสุด</button>
-    </div>
-    <div class="section-title" style="font-size:14px;">ประวัติการฝึกโมเดล</div>
-    <div id="creditModelHistorySection" class="card-list">
-      <div class="loading-line">กำลังโหลดประวัติ…</div>
     </div>
 
   </div>

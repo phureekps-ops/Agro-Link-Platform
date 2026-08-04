@@ -463,181 +463,53 @@ router.post('/organizations/:id/roles/:role_type/status', async (req, res, next)
   }
 });
 
-/**
- * GET /admin/about-sections
- *
- * Every content.about_section row (including inactive/hidden ones) for the
- * admin content-management screen -- deliberately NOT filtered to
- * is_active=true like the public GET /about is, so Platform Ops can see
- * (and re-enable) hidden sections too.
- */
-router.get('/about-sections', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  try {
-    const rows = await withSessionContext('platform', subjectId, async (client) => {
-      const result = await client.query(
-        `SELECT section_id, title, body, display_order, is_active, created_at, updated_at
-           FROM content.about_section
-          ORDER BY display_order ASC, section_id ASC`,
-      );
-      return result.rows;
-    });
-    return res.json(rows);
-  } catch (err) {
-    return next(err);
-  }
-});
+// ---------------------------------------------------------------------
+// คาร์บอนเครดิต AWD (Low-Carbon Rice / Alternate Wetting and Drying) —
+// Platform Ops review queue for carbon.awd_cycle_assessment, reusing the
+// same team/role that already reviews KYC/KYB (see AskUserQuestion answer
+// captured in this migration's commit — no dedicated verifier org role was
+// built). See grant_carbon_awd.sql for the full schema + methodology
+// caveats and src/routes/carbon.js for the farmer-facing side.
+// ---------------------------------------------------------------------
+const AWD_ASSESSMENT_STATUSES = ['draft', 'pending_review', 'verified', 'rejected'];
 
 /**
- * POST /admin/about-sections
- * Body: { title, body, display_order?, is_active? }
- *
- * Creates a new "เกี่ยวกับเรา" content section. This is plain content
- * management, not a workflow with downstream FK dependents like
- * marketplace.venue_listing -- nothing references content.about_section by
- * id, so unlike the "deactivate, don't delete" convention used for
- * listings, DELETE below is a real hard delete.
+ * GET /admin/carbon/assessments?status=pending_review — the review queue.
+ * Defaults to no filter (every assessment) if status is omitted; the admin
+ * frontend always passes status=pending_review for its queue section.
  */
-router.post('/about-sections', async (req, res, next) => {
+router.get('/carbon/assessments', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { title, body, display_order: displayOrder, is_active: isActive } = req.body || {};
+  const { status } = req.query;
 
-  if (!title || !String(title).trim() || !body || !String(body).trim()) {
-    return res.status(400).json({ error: 'missing_required_fields' });
+  if (status && !AWD_ASSESSMENT_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: AWD_ASSESSMENT_STATUSES });
   }
 
-  try {
-    const section = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(
-        `INSERT INTO content.about_section (title, body, display_order, is_active)
-         VALUES ($1, $2, $3, $4)
-         RETURNING section_id, title, body, display_order, is_active, created_at, updated_at`,
-        [
-          String(title).trim(),
-          String(body).trim(),
-          Number.isFinite(displayOrder) ? displayOrder : 0,
-          isActive !== false,
-        ],
-      );
-      await logAccess(client, 'write', 'content.about_section', String(rows[0].section_id));
-      return rows[0];
-    });
-    return res.status(201).json(section);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * PUT /admin/about-sections/:id
- * Body: any of { title, body, display_order, is_active }
- *
- * Partial update -- only the fields present in the body are changed, so
- * the admin edit form can save a single field (e.g. just toggling
- * is_active to hide a section) without resending the whole section.
- */
-router.put('/about-sections/:id', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { id } = req.params;
-  const { title, body, display_order: displayOrder, is_active: isActive } = req.body || {};
-
-  if (title !== undefined && !String(title).trim()) {
-    return res.status(400).json({ error: 'title_cannot_be_empty' });
-  }
-  if (body !== undefined && !String(body).trim()) {
-    return res.status(400).json({ error: 'body_cannot_be_empty' });
-  }
-
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(
-        `UPDATE content.about_section
-            SET title = COALESCE($1, title),
-                body = COALESCE($2, body),
-                display_order = COALESCE($3, display_order),
-                is_active = COALESCE($4, is_active),
-                updated_at = now()
-          WHERE section_id = $5
-          RETURNING section_id, title, body, display_order, is_active, created_at, updated_at`,
-        [
-          title !== undefined ? String(title).trim() : null,
-          body !== undefined ? String(body).trim() : null,
-          Number.isFinite(displayOrder) ? displayOrder : null,
-          typeof isActive === 'boolean' ? isActive : null,
-          id,
-        ],
-      );
-      if (rows.length === 0) return { notFound: true };
-      await logAccess(client, 'write', 'content.about_section', id);
-      return { section: rows[0] };
-    });
-
-    if (result.notFound) {
-      return res.status(404).json({ error: 'section_not_found' });
-    }
-    return res.json(result.section);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * DELETE /admin/about-sections/:id -- permanently removes the section. See
- * the doc comment on POST above for why a hard delete is safe here.
- */
-router.delete('/about-sections/:id', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { id } = req.params;
-
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(
-        'DELETE FROM content.about_section WHERE section_id = $1 RETURNING section_id',
-        [id],
-      );
-      if (rows.length === 0) return { notFound: true };
-      await logAccess(client, 'write', 'content.about_section', id);
-      return { deleted: true };
-    });
-
-    if (result.notFound) {
-      return res.status(404).json({ error: 'section_not_found' });
-    }
-    return res.json({ deleted: true });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * GET /admin/product-listings?featured_only=
- *
- * Browses marketplace.product_listing (InputSupplier catalog) across
- * every org, for the "จัดการสินค้า/บริการแนะนำ" (Featured Listing) admin
- * panel — see grant_featured_listings.sql's doc comment on why this is
- * admin-toggled rather than self-serve by the provider org. Only
- * is_active = true rows — a deactivated listing can't be featured.
- * featured_only=true narrows to rows currently effectively featured
- * (is_featured AND not yet expired), so the admin can see what's live
- * right now without scrolling the full catalog.
- */
-router.get('/product-listings', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { featured_only: featuredOnly } = req.query;
   try {
     const rows = await withSessionContext('platform', subjectId, async (client) => {
-      const filters = ['p.is_active = true'];
-      if (featuredOnly === 'true') {
-        filters.push('p.is_featured = true AND (p.featured_until IS NULL OR p.featured_until > now())');
+      const params = [];
+      let filter = '';
+      if (status) {
+        params.push(status);
+        filter = 'WHERE a.status = $1';
       }
       const result = await client.query(
-        `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
-                p.unit_price, p.price_unit, p.is_featured, p.featured_until
-           FROM marketplace.product_listing p
-           JOIN identity.organization o ON o.org_id = p.org_id
-          WHERE ${filters.join(' AND ')}
-          ORDER BY p.is_featured DESC, o.org_name, p.product_name`,
+        `SELECT a.assessment_id, a.cycle_id, a.unit_id, a.farmer_id, a.area_rai,
+                a.methodology_ref, a.emission_factor_tco2e_per_rai, a.min_dry_events_required,
+                a.qualifying_dry_events, a.total_dry_days, a.is_eligible, a.estimated_credit_tco2e,
+                a.status, a.submitted_at, a.verified_by, a.verified_at, a.review_note,
+                a.last_calculated_at,
+                f.full_name AS farmer_name, cc.commodity_code, r.name_th AS commodity_name_th
+           FROM carbon.awd_cycle_assessment a
+           JOIN identity.farmer f ON f.farmer_id = a.farmer_id
+           JOIN production.crop_cycle cc ON cc.cycle_id = a.cycle_id
+           JOIN registry.commodity_ref r ON r.commodity_code = cc.commodity_code
+           ${filter}
+          ORDER BY a.submitted_at DESC NULLS LAST, a.updated_at DESC`,
+        params,
       );
+      await logAccess(client, 'read', 'carbon.awd_cycle_assessment', null);
       return result.rows;
     });
     return res.json(rows);
@@ -647,297 +519,55 @@ router.get('/product-listings', async (req, res, next) => {
 });
 
 /**
- * POST /admin/product-listings/:id/feature
- * Body: { days } — positive number of days from now (e.g. 7 or 30, matching
- * however many days the provider paid the AgroLink team for offline).
- *
- * Re-running this on an already-featured listing simply resets the expiry
- * to `days` from NOW — it does not stack/extend on top of the remaining
- * time, so an admin re-charging a provider for another period always sets
- * a clean new expiry rather than accumulating.
+ * GET /admin/carbon/assessments/:id — full detail for one assessment,
+ * including its water-log history and any satellite observations for the
+ * same plot, so Platform Ops can cross-check the farmer's self-reported
+ * log against the (optional, manually-ingested for now) satellite evidence
+ * before deciding.
  */
-router.post('/product-listings/:id/feature', async (req, res, next) => {
+router.get('/carbon/assessments/:id', async (req, res, next) => {
   const { subjectId } = req.subject;
   const { id } = req.params;
-  const { days } = req.body || {};
-
-  const numDays = Number(days);
-  if (!Number.isFinite(numDays) || numDays <= 0) {
-    return res.status(400).json({ error: 'invalid_days', expected: 'positive_number' });
-  }
 
   try {
     const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(
-        `UPDATE marketplace.product_listing
-            SET is_featured = true, featured_until = now() + ($2 || ' days')::interval, updated_at = now()
-          WHERE listing_id = $1
-          RETURNING listing_id, is_featured, featured_until`,
-        [id, numDays],
-      );
-      if (rows.length === 0) return { notFound: true };
-      await logAccess(client, 'write', 'marketplace.product_listing', id);
-      return { listing: rows[0] };
-    });
-
-    if (result.notFound) {
-      return res.status(404).json({ error: 'listing_not_found' });
-    }
-    return res.json(result.listing);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * POST /admin/product-listings/:id/unfeature — clears is_featured/
- * featured_until immediately (the provider's paid period ended, or the
- * admin needs to correct a mistake).
- */
-router.post('/product-listings/:id/unfeature', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { id } = req.params;
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(
-        `UPDATE marketplace.product_listing
-            SET is_featured = false, featured_until = NULL, updated_at = now()
-          WHERE listing_id = $1
-          RETURNING listing_id, is_featured, featured_until`,
+      const assessmentRes = await client.query(
+        `SELECT a.*, f.full_name AS farmer_name, f.phone AS farmer_phone,
+                cc.commodity_code, cc.planned_start_date, cc.planned_harvest_date,
+                cc.actual_harvest_date, cc.status AS cycle_status
+           FROM carbon.awd_cycle_assessment a
+           JOIN identity.farmer f ON f.farmer_id = a.farmer_id
+           JOIN production.crop_cycle cc ON cc.cycle_id = a.cycle_id
+          WHERE a.assessment_id = $1`,
         [id],
       );
-      if (rows.length === 0) return { notFound: true };
-      await logAccess(client, 'write', 'marketplace.product_listing', id);
-      return { listing: rows[0] };
-    });
-    if (result.notFound) {
-      return res.status(404).json({ error: 'listing_not_found' });
-    }
-    return res.json(result.listing);
-  } catch (err) {
-    return next(err);
-  }
-});
+      if (assessmentRes.rows.length === 0) return { notFound: true };
+      const assessment = assessmentRes.rows[0];
 
-/**
- * GET /admin/service-listings?featured_only= — same shape as GET
- * /admin/product-listings above, for marketplace.service_listing
- * (Machinery rate card) instead. service_key IS NOT NULL filters out any
- * legacy non-rate-card rows the same way GET /farmer/machinery-providers
- * already does. NOTE: marketplace.service_listing has no updated_at
- * column (unlike product_listing) — see 02_full_schema.sql — so the
- * UPDATE below deliberately does not try to set one.
- */
-router.get('/service-listings', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { featured_only: featuredOnly } = req.query;
-  try {
-    const rows = await withSessionContext('platform', subjectId, async (client) => {
-      const filters = ['sl.is_active = true', 'sl.service_key IS NOT NULL'];
-      if (featuredOnly === 'true') {
-        filters.push('sl.is_featured = true AND (sl.featured_until IS NULL OR sl.featured_until > now())');
-      }
-      const result = await client.query(
-        `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
-                sl.description AS label_th, sl.unit_price, sl.price_unit,
-                sl.is_featured, sl.featured_until
-           FROM marketplace.service_listing sl
-           JOIN identity.organization o ON o.org_id = sl.org_id
-          WHERE ${filters.join(' AND ')}
-          ORDER BY sl.is_featured DESC, o.org_name, sl.service_key`,
+      const logsRes = await client.query(
+        `SELECT log_id, water_status, water_level_cm, photo_url, note, recorded_at
+           FROM carbon.awd_water_log
+          WHERE cycle_id = $1
+          ORDER BY recorded_at ASC`,
+        [assessment.cycle_id],
       );
-      return result.rows;
-    });
-    return res.json(rows);
-  } catch (err) {
-    return next(err);
-  }
-});
 
-/**
- * POST /admin/service-listings/:id/feature — same Body/behavior as POST
- * /admin/product-listings/:id/feature above, applied to
- * marketplace.service_listing.
- */
-router.post('/service-listings/:id/feature', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { id } = req.params;
-  const { days } = req.body || {};
-
-  const numDays = Number(days);
-  if (!Number.isFinite(numDays) || numDays <= 0) {
-    return res.status(400).json({ error: 'invalid_days', expected: 'positive_number' });
-  }
-
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(
-        `UPDATE marketplace.service_listing
-            SET is_featured = true, featured_until = now() + ($2 || ' days')::interval
-          WHERE listing_id = $1
-          RETURNING listing_id, is_featured, featured_until`,
-        [id, numDays],
+      const satelliteRes = await client.query(
+        `SELECT obs_id, observation_date, source_provider, inferred_water_status, image_ref, note
+           FROM carbon.satellite_observation
+          WHERE unit_id = $1
+            AND observation_date BETWEEN $2 AND COALESCE($3, CURRENT_DATE)
+          ORDER BY observation_date ASC`,
+        [assessment.unit_id, assessment.planned_start_date, assessment.actual_harvest_date],
       );
-      if (rows.length === 0) return { notFound: true };
-      await logAccess(client, 'write', 'marketplace.service_listing', id);
-      return { listing: rows[0] };
+
+      await logAccess(client, 'read', 'carbon.awd_cycle_assessment', id);
+      return { assessment, water_log: logsRes.rows, satellite_observations: satelliteRes.rows };
     });
 
     if (result.notFound) {
-      return res.status(404).json({ error: 'listing_not_found' });
+      return res.status(404).json({ error: 'assessment_not_found' });
     }
-    return res.json(result.listing);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * POST /admin/service-listings/:id/unfeature — same as POST
- * /admin/product-listings/:id/unfeature above, applied to
- * marketplace.service_listing.
- */
-router.post('/service-listings/:id/unfeature', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { id } = req.params;
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(
-        `UPDATE marketplace.service_listing
-            SET is_featured = false, featured_until = NULL
-          WHERE listing_id = $1
-          RETURNING listing_id, is_featured, featured_until`,
-        [id],
-      );
-      if (rows.length === 0) return { notFound: true };
-      await logAccess(client, 'write', 'marketplace.service_listing', id);
-      return { listing: rows[0] };
-    });
-    if (result.notFound) {
-      return res.status(404).json({ error: 'listing_not_found' });
-    }
-    return res.json(result.listing);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-
-
-// ---------- คะแนนเครดิตด้วยโมเดลที่เรียนรู้จากข้อมูลจริง (Featured this round) ----------
-// Backs the "credit score should be a model that learns from real data,
-// not a fixed formula" request. See grant_credit_model.sql's doc comment
-// for the full design rationale (why logistic regression, why gated on a
-// minimum sample size, why the rule-based formula in 02_full_schema.sql's
-// risk.compute_credit_score() is never removed — only optionally
-// overridden when a sufficiently-trained model exists).
-//
-// MIN_TRAINING_SAMPLES / MIN_PER_CLASS are deliberately conservative for
-// an early-stage pilot: below these, POST /admin/credit-model/retrain
-// refuses to activate a new model and reports why, leaving whatever was
-// previously active (or the rule-based formula, if nothing ever trained
-// successfully) untouched.
-const MIN_TRAINING_SAMPLES = 20;
-const MIN_PER_CLASS = 5;
-const CREDIT_MODEL_FEATURE_KEYS = ['production', 'contract', 'repayment', 'delivery'];
-
-/**
- * Computes the mean of an array of numbers, or `fallback` if the array is
- * empty (e.g. a factor no farmer in the training set has any history for).
- */
-function mean(values, fallback) {
-  if (values.length === 0) return fallback;
-  return values.reduce((s, v) => s + v, 0) / values.length;
-}
-
-/**
- * Population standard deviation, with a floor of 1 to avoid a div-by-zero
- * (or a wildly unstable z-score) when every training example happens to
- * share the exact same value for a feature.
- */
-function stdDev(values, meanValue) {
-  if (values.length === 0) return 1;
-  const variance = values.reduce((s, v) => s + (v - meanValue) ** 2, 0) / values.length;
-  return Math.max(Math.sqrt(variance), 1e-6);
-}
-
-function sigmoid(z) {
-  return 1 / (1 + Math.exp(-z));
-}
-
-/**
- * Hand-written gradient-descent logistic regression — deliberately not a
- * library dependency (this stack has never had one; see
- * grant_credit_model.sql's doc comment) — over the 4 already-computed
- * rule-based factor ratios as features, L2-regularized to reduce
- * overfitting on what is likely still a small pilot-stage sample.
- * Returns fitted weights (object keyed by CREDIT_MODEL_FEATURE_KEYS),
- * bias, and training accuracy (fraction of training rows the fitted
- * model classifies correctly at a 0.5 threshold).
- */
-function trainLogisticRegression(featureRows, labels, { epochs = 800, learningRate = 0.15, l2 = 0.02 } = {}) {
-  const n = featureRows.length;
-  const d = CREDIT_MODEL_FEATURE_KEYS.length;
-  let weights = new Array(d).fill(0);
-  let bias = 0;
-
-  for (let epoch = 0; epoch < epochs; epoch += 1) {
-    const gradW = new Array(d).fill(0);
-    let gradB = 0;
-    for (let i = 0; i < n; i += 1) {
-      let z = bias;
-      for (let j = 0; j < d; j += 1) z += featureRows[i][j] * weights[j];
-      const pred = sigmoid(z);
-      const error = pred - labels[i];
-      for (let j = 0; j < d; j += 1) gradW[j] += error * featureRows[i][j];
-      gradB += error;
-    }
-    for (let j = 0; j < d; j += 1) {
-      weights[j] -= learningRate * (gradW[j] / n + l2 * weights[j]);
-    }
-    bias -= learningRate * (gradB / n);
-  }
-
-  let correct = 0;
-  for (let i = 0; i < n; i += 1) {
-    let z = bias;
-    for (let j = 0; j < d; j += 1) z += featureRows[i][j] * weights[j];
-    const predictedLabel = sigmoid(z) >= 0.5 ? 1 : 0;
-    if (predictedLabel === labels[i]) correct += 1;
-  }
-
-  const weightsObj = {};
-  CREDIT_MODEL_FEATURE_KEYS.forEach((key, idx) => { weightsObj[key] = weights[idx]; });
-
-  return { weights: weightsObj, bias, accuracy: n > 0 ? correct / n : null };
-}
-
-/**
- * GET /admin/credit-model — current active model's metadata, or a flag
- * saying nothing has ever been activated (every farmer is still scored by
- * the original rule-based formula in that case). Never returns the raw
- * weights to the frontend beyond what's needed to show training
- * diagnostics — there's nothing sensitive in them, but there's also no UI
- * need to show the actual coefficients.
- */
-router.get('/credit-model', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const active = await client.query(
-        `SELECT model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy, is_active
-           FROM risk.credit_model
-          WHERE is_active = true
-          LIMIT 1`,
-      );
-      const history = await client.query(
-        `SELECT model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy, is_active, notes
-           FROM risk.credit_model
-          ORDER BY trained_at DESC
-          LIMIT 20`,
-      );
-      return { active: active.rows[0] || null, history: history.rows };
-    });
     return res.json(result);
   } catch (err) {
     return next(err);
@@ -945,155 +575,297 @@ router.get('/credit-model', async (req, res, next) => {
 });
 
 /**
- * POST /admin/credit-model/retrain
+ * POST /admin/carbon/assessments/:id/verify
+ * Body: { review_note? }
  *
- * Pulls the SAME 4 factor ratios risk.compute_credit_score() already
- * computes per farmer (production-verification-on-time rate, contract-
- * completion rate, on-time-repayment rate, delivery-settlement rate),
- * fits a logistic regression against a label built from actual contract/
- * repayment outcomes (label = 1 "good" if every terminal contract this
- * farmer has ever had was 'completed' — none 'terminated'/'breached' — AND
- * every recorded repayment was 'paid_on_time'; label = 0 "risky" if either
- * had at least one bad outcome), and — ONLY if the result clears
- * MIN_TRAINING_SAMPLES/MIN_PER_CLASS — deactivates whatever model was
- * previously active and activates this new one.
- *
- * Farmers with NEITHER a terminal contract NOR a repayment record are
- * excluded entirely: there is no credit-relevant outcome to learn from for
- * them (matches risk.compute_credit_score()'s own "no signal → neutral
- * 50.00" treatment — this training step simply never sees them as
- * training examples, same underlying reasoning).
- *
- * Below the minimum thresholds, this is a NO-OP on risk.credit_model
- * (nothing is written) — the response explains why, and every farmer
- * keeps being scored however they were before this call (rule-based, or
- * whatever model was already active).
+ * Only valid from 'pending_review' (an assessment must be submitted by the
+ * farmer first — Platform Ops does not reach into a draft and certify it
+ * unasked). verified_by is a fixed free-text label, not an FK, matching
+ * production.stage_calendar.verified_by's convention — this project has no
+ * per-admin identity table (see middleware/auth.js requireAuth's note on
+ * subjectType='platform' having no real subjectId).
  */
-router.post('/credit-model/retrain', async (req, res, next) => {
+router.post('/carbon/assessments/:id/verify', async (req, res, next) => {
   const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { review_note: reviewNote } = req.body || {};
+
   try {
     const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(`
-        WITH per_farmer AS (
-          SELECT
-            f.farmer_id,
-            (SELECT CASE WHEN count(*) = 0 THEN NULL
-                         ELSE 100.0 * count(*) FILTER (WHERE sc.actual_date <= sc.planned_date) / count(*) END
-               FROM production.stage_calendar sc
-               JOIN production.crop_cycle cc ON cc.cycle_id = sc.cycle_id
-               JOIN registry.production_unit pu ON pu.unit_id = cc.unit_id
-              WHERE pu.owner_farmer_id = f.farmer_id AND sc.status = 'verified') AS production_factor,
-            (SELECT count(DISTINCT c.contract_id) FILTER (WHERE c.status IN ('completed','terminated','breached'))
-               FROM contract.contract c
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS contract_total,
-            (SELECT count(DISTINCT c.contract_id) FILTER (WHERE c.status = 'completed')
-               FROM contract.contract c
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS contract_completed,
-            (SELECT count(r.repayment_id)
-               FROM credit.loan_repayment r
-               JOIN contract.contract c ON c.contract_id = r.contract_id
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS repayment_total,
-            (SELECT count(r.repayment_id) FILTER (WHERE r.status = 'paid_on_time')
-               FROM credit.loan_repayment r
-               JOIN contract.contract c ON c.contract_id = r.contract_id
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS repayment_on_time,
-            (SELECT CASE WHEN count(*) FILTER (WHERE d.status IN ('settled','rejected')) = 0 THEN NULL
-                         ELSE 100.0 * count(*) FILTER (WHERE d.status = 'settled')
-                              / count(*) FILTER (WHERE d.status IN ('settled','rejected')) END
-               FROM produce.delivery d
-               JOIN registry.production_unit pu ON pu.unit_id = d.unit_id
-              WHERE pu.owner_farmer_id = f.farmer_id) AS delivery_factor
-          FROM identity.farmer f
-        )
-        SELECT farmer_id, production_factor, delivery_factor,
-               contract_total, contract_completed, repayment_total, repayment_on_time,
-               CASE WHEN contract_total > 0 THEN 100.0 * contract_completed / contract_total ELSE NULL END AS contract_factor,
-               CASE WHEN repayment_total > 0 THEN 100.0 * repayment_on_time / repayment_total ELSE NULL END AS repayment_factor
-          FROM per_farmer
-         WHERE COALESCE(contract_total, 0) > 0 OR COALESCE(repayment_total, 0) > 0
-      `);
-
-      const trainingRows = rows.map((r) => ({
-        production: r.production_factor === null ? null : Number(r.production_factor),
-        contract: r.contract_factor === null ? null : Number(r.contract_factor),
-        repayment: r.repayment_factor === null ? null : Number(r.repayment_factor),
-        delivery: r.delivery_factor === null ? null : Number(r.delivery_factor),
-        label: (
-          (Number(r.contract_total) === 0 || Number(r.contract_completed) === Number(r.contract_total))
-          && (Number(r.repayment_total) === 0 || Number(r.repayment_on_time) === Number(r.repayment_total))
-        ) ? 1 : 0,
-      }));
-
-      const sampleSize = trainingRows.length;
-      const positiveCount = trainingRows.filter((r) => r.label === 1).length;
-      const negativeCount = sampleSize - positiveCount;
-
-      if (sampleSize < MIN_TRAINING_SAMPLES || positiveCount < MIN_PER_CLASS || negativeCount < MIN_PER_CLASS) {
-        return {
-          activated: false,
-          sample_size: sampleSize,
-          positive_count: positiveCount,
-          negative_count: negativeCount,
-          min_training_samples: MIN_TRAINING_SAMPLES,
-          min_per_class: MIN_PER_CLASS,
-          reason: 'insufficient_data',
-        };
+      const current = await client.query(
+        'SELECT assessment_id, farmer_id, status FROM carbon.awd_cycle_assessment WHERE assessment_id = $1',
+        [id],
+      );
+      if (current.rows.length === 0) return { notFound: true };
+      if (current.rows[0].status !== 'pending_review') {
+        return { notPendingReview: true, status: current.rows[0].status };
       }
 
-      // Per-feature mean/std — imputation mean is over only the farmers
-      // who actually have that factor (production/delivery can be null
-      // even for farmers included via contract/repayment history alone).
-      const featureMeans = {};
-      const featureStds = {};
-      CREDIT_MODEL_FEATURE_KEYS.forEach((key) => {
-        const observed = trainingRows.map((r) => r[key]).filter((v) => v !== null);
-        const m = mean(observed, 50);
-        featureMeans[key] = m;
-        featureStds[key] = stdDev(observed, m);
-      });
-
-      const featureRows = trainingRows.map((r) => CREDIT_MODEL_FEATURE_KEYS.map((key) => {
-        const raw = r[key] === null ? featureMeans[key] : r[key];
-        return (raw - featureMeans[key]) / featureStds[key];
-      }));
-      const labels = trainingRows.map((r) => r.label);
-
-      const { weights, bias, accuracy } = trainLogisticRegression(featureRows, labels);
-
-      // Same `client` this whole route already has open (from the outer
-      // withSessionContext call) — deliberately NOT a second nested
-      // withSessionContext (that would open a wasted extra pool
-      // connection for no benefit, since ROLE/session context are already
-      // set on this one).
-      await client.query('UPDATE risk.credit_model SET is_active = false WHERE is_active = true');
-      const { rows: inserted } = await client.query(
-        `INSERT INTO risk.credit_model
-           (sample_size, positive_count, negative_count, feature_means, feature_stds, weights, bias, training_accuracy, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
-         RETURNING model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy`,
-        // jsonb columns — explicit JSON.stringify rather than relying on
-        // pg's implicit object->JSON serialization, since no other route
-        // in this codebase writes a jsonb column from a JS-side parameter
-        // (every other jsonb write in this project builds the JSON at the
-        // SQL level via jsonb_build_object) — nothing to match here, so
-        // being explicit removes any ambiguity.
-        [sampleSize, positiveCount, negativeCount, JSON.stringify(featureMeans), JSON.stringify(featureStds), JSON.stringify(weights), bias, accuracy],
+      const updateRes = await client.query(
+        `UPDATE carbon.awd_cycle_assessment
+            SET status = 'verified', verified_by = 'platform_ops', verified_at = now(),
+                review_note = $2, updated_at = now()
+          WHERE assessment_id = $1
+        RETURNING *`,
+        [id, reviewNote || null],
       );
-      const model = inserted[0];
-      await logAccess(client, 'write', 'risk.credit_model', model.model_id);
+      await logAccess(client, 'write', 'carbon.awd_cycle_assessment', id);
 
-      return { activated: true, ...model };
+      const a = updateRes.rows[0];
+      const message = a.is_eligible
+        ? `รอบปลูกของท่านผ่านการตรวจสอบแล้ว ประเมินได้รับคาร์บอนเครดิตประมาณ ${Number(a.estimated_credit_tco2e).toLocaleString('th-TH')} tCO2e (เป็นการประเมินเบื้องต้น ไม่ใช่การขึ้นทะเบียนเครดิตจริง)`
+        : 'รอบปลูกของท่านผ่านการตรวจสอบแล้ว แต่ยังไม่เข้าเกณฑ์จำนวนรอบแห้งขั้นต่ำสำหรับคาร์บอนเครดิต';
+      await client.query(
+        `SELECT notification.notify($1, $2, 'farmer', $3, $4)`,
+        ['awd_assessment_verified', 'info', a.farmer_id, message],
+      );
+
+      return { assessment: a };
     });
 
-    return res.json(result);
+    if (result.notFound) {
+      return res.status(404).json({ error: 'assessment_not_found' });
+    }
+    if (result.notPendingReview) {
+      return res.status(409).json({ error: 'not_pending_review', status: result.status });
+    }
+    return res.json(result.assessment);
   } catch (err) {
     return next(err);
   }
 });
 
+/**
+ * POST /admin/carbon/assessments/:id/reject
+ * Body: { review_note } (required — the farmer needs to know what to fix)
+ *
+ * Sets status back to 'rejected', which — per UNLOCKED_STATUSES in
+ * src/routes/carbon.js — re-opens the assessment so the farmer can log
+ * more water-level readings and resubmit, rather than a dead end.
+ */
+router.post('/carbon/assessments/:id/reject', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { review_note: reviewNote } = req.body || {};
+
+  if (!reviewNote || !reviewNote.trim()) {
+    return res.status(400).json({ error: 'review_note_required' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const current = await client.query(
+        'SELECT assessment_id, farmer_id, status FROM carbon.awd_cycle_assessment WHERE assessment_id = $1',
+        [id],
+      );
+      if (current.rows.length === 0) return { notFound: true };
+      if (current.rows[0].status !== 'pending_review') {
+        return { notPendingReview: true, status: current.rows[0].status };
+      }
+
+      const updateRes = await client.query(
+        `UPDATE carbon.awd_cycle_assessment
+            SET status = 'rejected', verified_by = 'platform_ops', verified_at = now(),
+                review_note = $2, updated_at = now()
+          WHERE assessment_id = $1
+        RETURNING *`,
+        [id, reviewNote.trim()],
+      );
+      await logAccess(client, 'write', 'carbon.awd_cycle_assessment', id);
+
+      await client.query(
+        `SELECT notification.notify($1, $2, 'farmer', $3, $4)`,
+        ['awd_assessment_rejected', 'warning', current.rows[0].farmer_id, `ข้อมูล AWD ของรอบปลูกถูกตีกลับ — เหตุผล: ${reviewNote.trim()} ท่านสามารถบันทึกข้อมูลเพิ่มเติมและส่งตรวจใหม่ได้`],
+      );
+
+      return { assessment: updateRes.rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'assessment_not_found' });
+    }
+    if (result.notPendingReview) {
+      return res.status(409).json({ error: 'not_pending_review', status: result.status });
+    }
+    return res.json(result.assessment);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/carbon/config — every carbon.awd_config version, newest
+ * first, so Platform Ops can see the current active thresholds plus the
+ * history of past values (each carbon.awd_cycle_assessment row keeps
+ * referencing whichever version was active when it was computed — see
+ * grant_carbon_awd.sql).
+ */
+router.get('/carbon/config', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        'SELECT * FROM carbon.awd_config ORDER BY effective_from DESC, created_at DESC',
+      );
+      await logAccess(client, 'read', 'carbon.awd_config', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/carbon/config
+ * Body: { emission_factor_tco2e_per_rai, min_dry_events_required,
+ *         min_dry_period_days, min_water_level_drop_cm, methodology_ref?, note? }
+ *
+ * Adds a NEW active config version rather than editing the current one in
+ * place (see grant_carbon_awd.sql's snapshot-pattern comment) — deactivates
+ * whichever version is currently active, then inserts the new one as
+ * active. Existing assessments are untouched; only assessments computed
+ * AFTER this call will use the new values.
+ */
+router.post('/carbon/config', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    emission_factor_tco2e_per_rai: emissionFactor,
+    min_dry_events_required: minDryEvents,
+    min_dry_period_days: minDryPeriodDays,
+    min_water_level_drop_cm: minWaterLevelDropCm,
+    methodology_ref: methodologyRef,
+    note,
+  } = req.body || {};
+
+  if ([emissionFactor, minDryEvents, minDryPeriodDays, minWaterLevelDropCm].some(
+    (v) => v === undefined || v === null || Number.isNaN(Number(v)),
+  )) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['emission_factor_tco2e_per_rai', 'min_dry_events_required', 'min_dry_period_days', 'min_water_level_drop_cm'],
+    });
+  }
+  if (Number(emissionFactor) < 0 || Number(minDryEvents) <= 0 || Number(minDryPeriodDays) <= 0 || Number(minWaterLevelDropCm) < 0) {
+    return res.status(400).json({ error: 'invalid_field_values' });
+  }
+
+  try {
+    const config = await withSessionContext('platform', subjectId, async (client) => {
+      await client.query('UPDATE carbon.awd_config SET is_active = false WHERE is_active = true');
+      const insertRes = await client.query(
+        `INSERT INTO carbon.awd_config
+           (methodology_ref, emission_factor_tco2e_per_rai, min_dry_events_required,
+            min_dry_period_days, min_water_level_drop_cm, note, is_active, effective_from)
+         VALUES ($1, $2, $3, $4, $5, $6, true, CURRENT_DATE)
+         RETURNING *`,
+        [
+          methodologyRef || 'T-VER_AWD_RICE_v1_estimate', emissionFactor, minDryEvents,
+          minDryPeriodDays, minWaterLevelDropCm, note || null,
+        ],
+      );
+      await logAccess(client, 'write', 'carbon.awd_config', insertRes.rows[0].config_id);
+      return insertRes.rows[0];
+    });
+    return res.status(201).json(config);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/carbon/satellite-observations?unit_id=
+ */
+router.get('/carbon/satellite-observations', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { unit_id: unitId } = req.query;
+
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      let filter = '';
+      if (unitId) {
+        params.push(unitId);
+        filter = 'WHERE unit_id = $1';
+      }
+      const result = await client.query(
+        `SELECT obs_id, unit_id, cycle_id, observation_date, source_provider,
+                inferred_water_status, image_ref, note, ingested_at
+           FROM carbon.satellite_observation
+           ${filter}
+          ORDER BY observation_date DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'carbon.satellite_observation', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/carbon/satellite-observations
+ * Body: { unit_id, observation_date, source_provider?, inferred_water_status, image_ref?, note?, cycle_id? }
+ *
+ * Manual ingestion point standing in for a real satellite-data-provider
+ * integration (Sentinel Hub / Google Earth Engine / GISTDA — none
+ * connected in this environment yet, see grant_carbon_awd.sql). Upserts on
+ * (unit_id, observation_date, source_provider) so re-ingesting the same
+ * plot/date/provider corrects rather than duplicates.
+ */
+router.post('/carbon/satellite-observations', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    unit_id: unitId,
+    observation_date: observationDate,
+    source_provider: sourceProvider,
+    inferred_water_status: inferredWaterStatus,
+    image_ref: imageRef,
+    note,
+    cycle_id: cycleId,
+  } = req.body || {};
+
+  if (!unitId || !observationDate || !inferredWaterStatus) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['unit_id', 'observation_date', 'inferred_water_status'],
+    });
+  }
+  if (!['flooded', 'dry', 'uncertain'].includes(inferredWaterStatus)) {
+    return res.status(400).json({ error: 'invalid_inferred_water_status', valid: ['flooded', 'dry', 'uncertain'] });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const unit = await client.query('SELECT unit_id FROM registry.production_unit WHERE unit_id = $1', [unitId]);
+      if (unit.rows.length === 0) return { unitNotFound: true };
+
+      const obsRes = await client.query(
+        `INSERT INTO carbon.satellite_observation
+           (unit_id, cycle_id, observation_date, source_provider, inferred_water_status, image_ref, note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (unit_id, observation_date, source_provider) DO UPDATE SET
+           inferred_water_status = EXCLUDED.inferred_water_status,
+           image_ref = EXCLUDED.image_ref,
+           note = EXCLUDED.note,
+           cycle_id = EXCLUDED.cycle_id,
+           ingested_at = now()
+         RETURNING *`,
+        [unitId, cycleId || null, observationDate, sourceProvider || 'manual', inferredWaterStatus, imageRef || null, note || null],
+      );
+      await logAccess(client, 'write', 'carbon.satellite_observation', obsRes.rows[0].obs_id);
+      return { observation: obsRes.rows[0] };
+    });
+
+    if (result.unitNotFound) {
+      return res.status(404).json({ error: 'production_unit_not_found' });
+    }
+    return res.status(201).json(result.observation);
+  } catch (err) {
+    return next(err);
+  }
+});
 
 module.exports = router;

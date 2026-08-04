@@ -277,6 +277,117 @@ document.getElementById("roleRequestQueueSection").addEventListener("click", asy
   }
 });
 
+// ---------- คิวตรวจสอบคาร์บอนเครดิต AWD ----------
+function awdCard(a) {
+  return `
+    <div class="item-card" data-assessment-id="${a.assessment_id}">
+      <div class="row"><span class="title">${escapeHtml(a.farmer_name)} — ${escapeHtml(a.commodity_name_th)}</span>
+        <span class="badge ${a.is_eligible ? "status-active" : "status-pending"}">${a.is_eligible ? "เข้าเกณฑ์" : "ยังไม่เข้าเกณฑ์"}</span></span>
+      </div>
+      <div class="detail-line">พื้นที่ ${escapeHtml(a.area_rai)} ไร่ · รอบแห้งที่ผ่านเกณฑ์ ${a.qualifying_dry_events}/${a.min_dry_events_required} รอบ (รวม ${a.total_dry_days} วัน)</div>
+      <div class="detail-line muted">ประเมินเครดิต: ${a.estimated_credit_tco2e} tCO2e · ส่งตรวจเมื่อ ${thaiDate(a.submitted_at)} · อ้างอิง ${escapeHtml(a.methodology_ref)}</div>
+      <div class="action-row">
+        <input type="text" class="reason-input" placeholder="เหตุผล (บังคับกรอกถ้าปฏิเสธ)" />
+      </div>
+      <div class="action-row">
+        <a class="btn btn-ghost btn-sm" href="carbon-assessment-detail.html?id=${a.assessment_id}" target="_blank" rel="noopener">ดูข้อมูลระดับน้ำ/ดาวเทียม</a>
+        <button type="button" class="btn btn-approve btn-sm approve-awd-btn">รับรอง</button>
+        <button type="button" class="btn btn-decline btn-sm reject-awd-btn">ปฏิเสธ</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadAwdQueue() {
+  const el = document.getElementById("awdQueueSection");
+  try {
+    const assessments = await AgroLinkAdminAPI.get("/admin/carbon/assessments?status=pending_review");
+    if (assessments.length === 0) {
+      el.innerHTML = `<div class="empty-state">ไม่มีข้อมูล AWD ที่รอตรวจสอบในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = assessments.map(awdCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคิวตรวจสอบ AWD ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("awdQueueSection").addEventListener("click", async (e) => {
+  const card = e.target.closest(".item-card");
+  if (!card) return;
+  const assessmentId = card.dataset.assessmentId;
+  const reason = card.querySelector(".reason-input") ? card.querySelector(".reason-input").value.trim() : "";
+
+  if (e.target.classList.contains("approve-awd-btn")) {
+    e.target.disabled = true;
+    try {
+      await AgroLinkAdminAPI.post(`/admin/carbon/assessments/${assessmentId}/verify`, { review_note: reason || undefined });
+      toast("รับรองข้อมูล AWD เรียบร้อยแล้ว");
+      await loadAwdQueue();
+    } catch (err) {
+      toast("ดำเนินการไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+      e.target.disabled = false;
+    }
+  } else if (e.target.classList.contains("reject-awd-btn")) {
+    if (!reason) {
+      toast("กรุณากรอกเหตุผลก่อนปฏิเสธ", true);
+      return;
+    }
+    e.target.disabled = true;
+    try {
+      await AgroLinkAdminAPI.post(`/admin/carbon/assessments/${assessmentId}/reject`, { review_note: reason });
+      toast("ปฏิเสธข้อมูล AWD เรียบร้อยแล้ว");
+      await loadAwdQueue();
+    } catch (err) {
+      toast("ดำเนินการไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+      e.target.disabled = false;
+    }
+  }
+});
+
+// ---------- เกณฑ์การประเมิน AWD ----------
+async function loadAwdConfig() {
+  const el = document.getElementById("awdConfigCurrent");
+  try {
+    const versions = await AgroLinkAdminAPI.get("/admin/carbon/config");
+    const active = versions.find((v) => v.is_active) || versions[0];
+    if (!active) {
+      el.textContent = "ยังไม่มีเกณฑ์การประเมิน";
+      return;
+    }
+    el.innerHTML = `ปัจจุบันใช้: <strong>${active.emission_factor_tco2e_per_rai}</strong> tCO2e/ไร่ · ขั้นต่ำ <strong>${active.min_dry_events_required}</strong> รอบ ·
+      รอบละอย่างน้อย <strong>${active.min_dry_period_days}</strong> วัน · ลึกอย่างน้อย <strong>${active.min_water_level_drop_cm}</strong> ซม.
+      (${escapeHtml(active.methodology_ref)}, ใช้ตั้งแต่ ${thaiDate(active.effective_from)}) · มีทั้งหมด ${versions.length} เวอร์ชันในประวัติ`;
+    document.getElementById("awdEmissionFactor").value = active.emission_factor_tco2e_per_rai;
+    document.getElementById("awdMinDryEvents").value = active.min_dry_events_required;
+    document.getElementById("awdMinDryDays").value = active.min_dry_period_days;
+    document.getElementById("awdMinDropCm").value = active.min_water_level_drop_cm;
+  } catch (err) {
+    el.innerHTML = `<span style="color:var(--red-600,#c62828)">โหลดเกณฑ์การประเมินไม่สำเร็จ: ${escapeHtml(err.message)}</span>`;
+  }
+}
+
+document.getElementById("awdConfigSaveBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("awdConfigSaveBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkAdminAPI.post("/admin/carbon/config", {
+      emission_factor_tco2e_per_rai: Number(document.getElementById("awdEmissionFactor").value),
+      min_dry_events_required: Number(document.getElementById("awdMinDryEvents").value),
+      min_dry_period_days: Number(document.getElementById("awdMinDryDays").value),
+      min_water_level_drop_cm: Number(document.getElementById("awdMinDropCm").value),
+      note: document.getElementById("awdConfigNote").value.trim() || undefined,
+    });
+    toast("บันทึกเกณฑ์การประเมินใหม่แล้ว — มีผลกับการคำนวณครั้งถัดไปเท่านั้น ไม่กระทบข้อมูลเก่า");
+    document.getElementById("awdConfigNote").value = "";
+    await loadAwdConfig();
+  } catch (err) {
+    toast("บันทึกไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---------- เกษตรกรทั้งหมด (อ่านอย่างเดียว) ----------
 async function loadAllFarmers() {
   const el = document.getElementById("allFarmersSection");
@@ -329,7 +440,8 @@ document.getElementById("orgKybFilter").addEventListener("change", () => loadAll
 
 async function refreshAll() {
   await Promise.all([
-    loadSummaryAndHealth(), loadKycQueue(), loadKybQueue(), loadRoleRequestQueue(), loadAllFarmers(), loadAllOrgs(),
+    loadSummaryAndHealth(), loadKycQueue(), loadKybQueue(), loadRoleRequestQueue(),
+    loadAwdQueue(), loadAwdConfig(), loadAllFarmers(), loadAllOrgs(),
   ]);
 }
 
@@ -341,5 +453,7 @@ loadSummaryAndHealth();
 loadKycQueue();
 loadKybQueue();
 loadRoleRequestQueue();
+loadAwdQueue();
+loadAwdConfig();
 loadAllFarmers();
 loadAllOrgs();

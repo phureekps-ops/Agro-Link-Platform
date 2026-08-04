@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ยืนยันการปลูกข้าวคาร์บอนต่ำ (AWD)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .awd-methodology-box {
+    background:#f1f8e9; border:1px solid #c5e1a5; border-radius:10px; padding:14px 16px; margin-bottom:20px; font-size:13px; line-height:1.7;
+  }
+  .awd-methodology-box .cap {
+    color:var(--gray-500); font-size:12px; margin-top:6px;
+  }
+  .credit-figure { font-size:22px; font-weight:700; color:var(--green-700, #2e7d32); }
+  .water-log-row {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border-bottom:1px solid #eee; padding:8px 0; font-size:13px;
+  }
+  .water-log-row:last-child { border-bottom:none; }
+  .water-status-tag { font-weight:700; }
+  .water-status-tag.flooded { color:#1565c0; }
+  .water-status-tag.dry { color:#c62828; }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🌱</span><span>AgroLink Platform — ยืนยันการปลูกข้าวคาร์บอนต่ำ (AWD)</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      บันทึกรอบ "เปียกสลับแห้ง" (Alternate Wetting and Drying, AWD) ของแปลงนาข้าวระหว่างฤดูปลูก
+      แล้วส่งให้ Platform Ops ตรวจสอบ เพื่อ<strong>ประเมิน</strong>ปริมาณคาร์บอนเครดิตที่แปลงอาจได้รับ —
+      <strong>นี่เป็นเครื่องมือประเมินภายในแพลตฟอร์มเท่านั้น ไม่ใช่การขึ้นทะเบียนคาร์บอนเครดิตจริงกับหน่วยงานใด</strong>
+      การขอเครดิตที่ซื้อขายได้จริงต้องยื่นเรื่องแยกต่างหากกับผู้รับรอง (เช่น อบก./TGO ภายใต้โครงการ T-VER)
+    </p>
+
+    <div class="section-title">📐 เกณฑ์การประเมินปัจจุบัน</div>
+    <div id="methodologyPanel" class="awd-methodology-box">
+      <div class="loading-line">กำลังโหลดเกณฑ์การประเมิน…</div>
+    </div>
+
+    <div class="section-title">🌾 รอบปลูกข้าวของฉัน</div>
+    <div id="cyclesListSection" class="card-list" style="margin-bottom:24px;">
+      <div class="loading-line">กำลังโหลดรอบปลูก…</div>
+    </div>
+
+    <div id="detailSection" style="display:none;">
+      <div class="section-title" id="detailTitle">📋 รายละเอียดรอบปลูก</div>
+
+      <div class="panel" id="detailSummaryPanel" style="margin-bottom:16px;"></div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div style="font-weight:700; margin-bottom:12px;">💧 บันทึกระดับน้ำใหม่</div>
+          <form id="waterLogForm">
+            <div class="field">
+              <label for="waterStatusSelect">สถานะน้ำในแปลง</label>
+              <select id="waterStatusSelect" required>
+                <option value="flooded">ท่วมขัง (Flooded)</option>
+                <option value="dry">แห้ง (Dry)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="waterLevelInput">ระดับน้ำจากท่อวัด (ซม. — ต่ำกว่าผิวดินให้ใส่ค่าติดลบ เช่น -18)</label>
+              <input type="number" id="waterLevelInput" step="0.01" placeholder="ไม่บังคับ" />
+            </div>
+            <div class="field">
+              <label for="photoUrlInput">ลิงก์รูปถ่ายท่อวัดระดับน้ำ (ถ้ามี)</label>
+              <input type="text" id="photoUrlInput" placeholder="วางลิงก์รูปที่อัปโหลดไว้ที่อื่น" />
+            </div>
+            <div class="field">
+              <label for="recordedAtInput">วันที่/เวลาที่วัด</label>
+              <input type="datetime-local" id="recordedAtInput" />
+            </div>
+            <div class="field">
+              <label for="waterNoteInput">หมายเหตุ (ถ้ามี)</label>
+              <input type="text" id="waterNoteInput" />
+            </div>
+            <button type="submit" class="btn btn-primary" id="waterLogSubmitBtn">บันทึกระดับน้ำ</button>
+          </form>
+          <div id="lockedNotice" class="empty-state" style="display:none; margin-top:10px;"></div>
+          <button type="button" class="btn btn-approve" id="submitAssessmentBtn" style="margin-top:14px; display:none;">
+            ส่งข้อมูลให้ Platform Ops ตรวจสอบ
+          </button>
+        </div>
+
+        <div>
+          <div class="panel" style="margin-bottom:16px;">
+            <div style="font-weight:700; margin-bottom:8px;">🛰️ ข้อมูลยืนยันเสริมจากดาวเทียม</div>
+            <div id="satelliteSection" class="card-list"></div>
+          </div>
+          <div class="panel">
+            <div style="font-weight:700; margin-bottom:8px;">📝 ประวัติการบันทึกระดับน้ำ</div>
+            <div id="waterLogHistorySection"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/carbon-credit.js"></script>
+</body>
+</html>

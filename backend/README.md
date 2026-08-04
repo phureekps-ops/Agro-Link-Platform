@@ -97,6 +97,7 @@ psql -d agrolink_test -f db/grant_fertilizer_formula.sql
 psql -d agrolink_test -f db/grant_stage_calendar_farmer.sql
 psql -d agrolink_test -f db/grant_fertilizer_mixing_service.sql
 psql -d agrolink_test -f db/grant_fertilizer_mixing_group_order.sql
+psql -d agrolink_test -f db/grant_carbon_awd.sql
 ```
 
 **2026-08-04 correction:** this list had silently fallen nine migrations
@@ -613,6 +614,109 @@ the actual rendered pages (headless Chromium against the real server and
 database, not a DOM/unit test) to catch UI-wiring bugs the API-level test
 alone couldn't — no bugs found; all toasts, badges, and progress displays
 matched the API responses driving them.
+
+## Low-Carbon Rice Cultivation Verification (AWD water-log + carbon-credit estimate)
+
+Added 2026-08-04 (`db/grant_carbon_awd.sql`, `src/routes/carbon.js`,
+`src/routes/admin.js` additions, `frontend/carbon-credit.html` +
+`frontend/js/carbon-credit.js`, `frontend/admin/carbon-assessment-detail.html`
++ its own js, and additions to `frontend/admin/dashboard.html`/`dashboard.js`).
+A completely new feature area (unrelated to the Fulfillment Marketplace
+above), requested as: "ระบบยืนยันการปลูกข้าวแบบคาร์บอนต่ำ (มีการควบคุมน้ำให้
+ท่วมให้แห้งระหว่างการปลูกข้าว) และการยืนยันเพื่อคิดคาร์บอนเครดิตสำหรับแปลง
+เกษตรกรที่เข้าเกณฑ์" — a farmer-self-reported AWD (Alternate Wetting and
+Drying) water-log, reviewed by Platform Ops, that produces an **estimated**
+carbon-credit figure for eligible rice crop cycles.
+
+**Scope, stated plainly**: this is an internal MRV (Measurement, Reporting,
+Verification) tool + a rough credit *estimate*, not real carbon-credit
+issuance. Getting a tradeable credit still requires a separate application
+to an actual registry/validator (e.g. Thailand's T-VER program run by
+TGO/อบก.). The calculation below is loosely inspired by T-VER's AWD
+approach (minimum qualifying dry-down count, minimum water-level drop,
+per-area credit) but every constant is a rough placeholder the operator
+must correct against the real published methodology before relying on it
+commercially — the same honesty caveat this project already applies to
+`stage_template.typical_offset_days` and `crop_nutrient_requirement`.
+
+**Design decisions, each confirmed with the user via AskUserQuestion before
+building:**
+- **Water-level data source**: farmer self-report is the primary source
+  (status flooded/dry + optional field-water-tube reading in cm + an
+  optional photo URL — no file-upload infra exists in this sandbox, so
+  `photo_url` is just a text link, same pattern as
+  `partner.vendor_document.document_ref`). Satellite imagery is explicitly
+  a *supplementary* corroborating signal, not the primary source — the user
+  has no Sentinel Hub/Google Earth Engine/GISTDA account yet, so
+  `carbon.satellite_observation` today is populated by Platform Ops typing
+  in a manual reading (`source_provider = 'manual'`); the other
+  `source_provider` values (`sentinel1_sar`, `sentinel2_optical`, `gistda`,
+  `other`) are reserved so a real automated integration can plug in later
+  with no schema change.
+- **Credit methodology**: loosely aligned with T-VER's AWD approach, with
+  every constant adjustable by Platform Ops (`carbon.awd_config`,
+  versioned — new values apply only to future calculations, never
+  retroactively, same snapshot pattern as price snapshotting on every
+  order/booking table in this project) rather than hardcoded.
+- **Reviewer**: the existing Platform Ops team (same team/role that
+  reviews KYC/KYB) — no dedicated "carbon verifier" org role was built.
+
+**Calculation model** (`recomputeAssessment()` in `src/routes/carbon.js`):
+walk a crop cycle's `carbon.awd_water_log` rows chronologically; a reading
+counts as "AWD-dry" if `water_status='dry'` AND (`water_level_cm IS NULL`
+OR `water_level_cm <= -min_water_level_drop_cm`) — a status-only report
+with no cm reading is trusted as-is. Consecutive AWD-dry readings form a
+run; a run "qualifies" as one dry event once its span reaches
+`min_dry_period_days`. The cycle is eligible for the *full* per-rai credit
+only once it accumulates `min_dry_events_required` qualifying events in the
+whole season — all-or-nothing per cycle, not partial credit per event, to
+keep this estimate model simple and legible rather than pretending to more
+precision than the input data supports.
+
+**State machine** (`carbon.awd_cycle_assessment`, one row per
+`production.crop_cycle`, restricted to `commodity_code LIKE 'RICE_%'` since
+AWD is rice-specific): `draft` (recalculated on every new water-log entry)
+→ farmer calls `POST /farmer/carbon/cycles/:id/submit` → `pending_review`
+(locks out further water-log inserts) → Platform Ops calls `POST
+/admin/carbon/assessments/:id/verify` → `verified` (permanently locked), or
+`POST .../reject` (requires a `review_note`) → `rejected`, which — like
+`draft` — still accepts new water-log entries and a resubmit, so a
+rejection is a bounce-back-and-fix loop, not a dead end.
+
+**Verified**: applied `grant_carbon_awd.sql` against the same from-scratch
+local Postgres 16 + PostGIS build used for the Fulfillment Marketplace
+verification below (full 30-file migration chain, zero errors — the same
+kind of `agrolink_app` grant gap that Fulfillment Marketplace's testing
+caught earlier would have surfaced here too). Then, against a real running
+`node src/server.js` + real HTTP requests: created a farmer, a rice
+production unit, and a crop cycle; logged a realistic sequence of
+flood/dry-with-cm-reading events covering three qualifying dry-downs, one
+too-short dry-down (3 days, correctly excluded), and one qualifying-length
+but too-shallow dry-down (-10cm against a -15cm threshold, correctly
+excluded) — the resulting `qualifying_dry_events=3`,
+`total_dry_days=23`, `estimated_credit_tco2e=0.8000` (10 rai × 0.08
+tCO2e/rai) all matched hand-calculation exactly. Also verified: the
+submit→lock→reject→reopen→resubmit→verify state machine end to end
+(including the 409 a farmer gets trying to log against a locked
+assessment); cross-tenant isolation (a second farmer gets 404, not another
+farmer's data); the `RICE_%` filter correctly excludes a CASSAVA cycle from
+every carbon endpoint; `carbon.awd_config` versioning (posting a new
+config deactivates the old one, and an already-verified assessment keeps
+its original snapshotted emission factor even after the config changes);
+the manual satellite-observation upsert (`ON CONFLICT (unit_id,
+observation_date, source_provider)`, re-ingesting corrects rather than
+duplicates); and both `notification.notify()` calls (verified/rejected)
+landing in `notification.notification_log`. Then repeated the
+create-cycle → log-water-levels → submit → (admin) verify flow through the
+actual rendered pages (headless Chromium against the real server and
+database) for both the farmer portal (`carbon-credit.html`) and the admin
+portal (`admin/dashboard.html`'s AWD queue +
+`admin/carbon-assessment-detail.html`) — this is where a real bug was
+caught and fixed: the new `loadAwdQueue()`/`loadAwdConfig()` functions were
+initially defined but never actually called from `dashboard.js`'s
+`refreshAll()`/page-load section, so the whole admin section would have
+silently sat on its loading spinner forever in production. No other
+UI-wiring bugs found.
 
 ## Product catalog vs. rate card (why InputSupplier isn't just Machinery again)
 
@@ -1176,6 +1280,13 @@ and the live `agrolink_test` database — not unit tests against mocks:
 
 ## Next steps (not yet built)
 
+- Real satellite-imagery integration for AWD verification (see the
+  Low-Carbon Rice Cultivation Verification section above) — `carbon.
+  satellite_observation` and `POST /admin/carbon/satellite-observations`
+  exist and work today, but only as a *manual* Platform Ops data-entry
+  point; a real Sentinel Hub/Google Earth Engine/GISTDA account +
+  automated ingestion job was explicitly out of scope for this pass (the
+  user does not have API credentials for any of those yet).
 - A scheduled job to auto-submit or auto-expire `Open` fertilizer-mixing
   groups (เส้นทาง B) once `join_deadline` passes — today `join_deadline` is
   purely advisory; the organizer must still explicitly submit or cancel,
