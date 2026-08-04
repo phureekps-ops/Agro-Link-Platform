@@ -10,13 +10,6 @@
  * has never opened the Buyer or Machinery portal still reach this page
  * (e.g. via the link on their Lender dashboard) and request a Buyer role
  * without needing to log in again anywhere.
- *
- * 'agrolink_inputsupplier_session' and 'agrolink_marketvenue_session' added
- * 2026-07-26 — both portals already link here from their own dashboards
- * (see inputsupplier/dashboard.html / marketvenue/dashboard.html) but were
- * missing from this list, which would have made this page report "not
- * logged in" for an InputSupplier/MarketVenue org with no other portal's
- * session cached in the same browser.
  */
 const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
   ? "http://localhost:4000"
@@ -28,9 +21,18 @@ const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
 // if the backend gets redeployed under a new URL, update it above to
 // match exactly what's shown on the service's page in the Render
 // Dashboard, not just the service name.
+// Kept in sync with every organization portal's own AUTH_STORAGE_KEY
+// (each portal's js/api.js) — missing an entry here doesn't break that
+// portal's own login, but it WOULD silently strand that org on this page
+// (findSession() returns null, shown as "not logged in") even though they
+// have a perfectly valid session in another tab's localStorage. Added
+// inputsupplier/fertilizermixing/marketvenue on 2026-08-04 (เส้นทาง C) so
+// an org that only ever logged into one of those three portals can still
+// reach this page and self-request FertilizerMixingService (or any other
+// role) as an additional business role.
 const SESSION_KEYS = [
   "agrolink_lender_session", "agrolink_buyer_session", "agrolink_machinery_session",
-  "agrolink_inputsupplier_session", "agrolink_marketvenue_session",
+  "agrolink_inputsupplier_session", "agrolink_fertilizermixing_session", "agrolink_marketvenue_session",
 ];
 
 function findSession() {

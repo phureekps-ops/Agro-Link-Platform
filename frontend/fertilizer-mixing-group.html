@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — รวมกลุ่มสั่งซื้อบริการผสมปุ๋ยสั่งตัด</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .progress-track { background:#eee; border-radius:8px; height:14px; overflow:hidden; margin:8px 0; }
+  .progress-fill { background:var(--green-700, #2e7d32); height:100%; transition:width .3s ease; }
+  .group-code-box {
+    display:inline-flex; align-items:center; gap:8px; background:#f1f8e9; border:1px dashed #9ccc65;
+    border-radius:8px; padding:6px 12px; font-weight:700; font-size:16px; letter-spacing:2px;
+  }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>👥</span><span>AgroLink Platform — รวมกลุ่มสั่งซื้อบริการผสมปุ๋ยสั่งตัด</span></div>
+    <div class="who">
+      <a href="fertilizer-mixing-marketplace.html" class="logout-btn" style="text-decoration:none;">สั่งบริการเดี่ยว</a>
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      เริ่มกลุ่มรวมสั่งซื้อบริการผสมปุ๋ยสั่งตัดกับผู้ให้บริการที่ผ่านการตรวจสอบแล้ว (KYB) แล้วชวนเกษตรกรคนอื่นเข้าร่วมด้วยรหัสเชิญ —
+      เมื่อยอดรวมของกลุ่มถึงเกณฑ์ที่ผู้ให้บริการตั้งไว้ ทุกคำสั่งซื้อในกลุ่มจะได้รับส่วนลดต่อกิโลกรัมเท่ากัน
+      ท่านผู้เริ่มกลุ่มเป็นผู้กดยืนยันส่งคำขอกลุ่มไปยังผู้ให้บริการเมื่อพร้อม
+    </p>
+
+    <div class="section-title">🔑 มีรหัสเชิญกลุ่มแล้ว?</div>
+    <div class="panel" style="margin-bottom:20px;">
+      <div class="form-grid">
+        <div class="field">
+          <label for="lookupCodeInput">กรอกรหัสกลุ่ม</label>
+          <input type="text" id="lookupCodeInput" placeholder="เช่น G4H2V2E" style="text-transform:uppercase;" />
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost" id="lookupCodeBtn" style="max-width:180px;">ค้นหากลุ่ม</button>
+      <div id="lookupResultSection" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="section-title">➕ เริ่มกลุ่มใหม่</div>
+    <div id="providerListSection" class="card-list" style="margin-bottom:16px;">
+      <div class="loading-line">กำลังโหลดผู้ให้บริการ…</div>
+    </div>
+
+    <form id="createGroupForm" class="panel" style="display:none;">
+      <input type="hidden" id="createListingId" value="" />
+      <div style="font-weight:700; margin-bottom:12px;" id="createGroupLabel"></div>
+      <div id="createGroupDiscountNotice" style="font-size:13px; color:var(--gray-500); margin-bottom:12px;"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="createUnitSelect">แปลง/หน่วยผลิต</label>
+          <select id="createUnitSelect"></select>
+        </div>
+        <div class="field">
+          <label for="createJoinDeadline">เปิดรับสมาชิกกลุ่มถึงเมื่อไร</label>
+          <input type="datetime-local" id="createJoinDeadline" required />
+        </div>
+        <div class="field">
+          <label for="createUreaKg">ยูเรีย (46-0-0) ที่ต้องการ (กก.)</label>
+          <input type="number" id="createUreaKg" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="createDapKg">DAP (18-46-0) ที่ต้องการ (กก.)</label>
+          <input type="number" id="createDapKg" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="createMopKg">MOP (0-0-60) ที่ต้องการ (กก.)</label>
+          <input type="number" id="createMopKg" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="createDeliveryOption">วิธีรับปุ๋ย</label>
+          <select id="createDeliveryOption">
+            <option value="pickup">รับเองที่ร้าน</option>
+            <option value="delivery">จัดส่งถึงแปลง</option>
+          </select>
+        </div>
+        <div class="field full" id="createDeliveryAddressField" style="display:none;">
+          <label for="createDeliveryAddress">ที่อยู่จัดส่ง</label>
+          <input type="text" id="createDeliveryAddress" placeholder="ที่อยู่สำหรับจัดส่งถึงแปลง" />
+        </div>
+        <div class="field">
+          <label for="createPreferredDate">วันที่ต้องการรับ/จัดส่ง</label>
+          <input type="date" id="createPreferredDate" required />
+        </div>
+        <div class="field full">
+          <label for="createFarmerNote">หมายเหตุถึงผู้ให้บริการ (ถ้ามี)</label>
+          <input type="text" id="createFarmerNote" placeholder="เช่น มีปุ๋ยยูเรียอยู่แล้วบางส่วน" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="createGroupSubmitBtn" style="max-width:180px;">เริ่มกลุ่ม</button>
+      <button type="button" class="btn btn-ghost" id="createGroupCancelBtn" style="max-width:120px;">ยกเลิก</button>
+    </form>
+
+    <div class="section-title">📋 กลุ่มของฉัน</div>
+    <div id="myGroupsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดกลุ่มของท่าน…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/fertilizer-mixing-group.js"></script>
+</body>
+</html>

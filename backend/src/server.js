@@ -11,11 +11,11 @@ const adminRouter = require('./routes/admin');
 const machineryRouter = require('./routes/machinery');
 const organizationRouter = require('./routes/organization');
 const inputSupplierRouter = require('./routes/inputsupplier');
-const fertilizerRouter = require('./routes/fertilizer');
-const stagecalendarRouter = require('./routes/stagecalendar');
 const marketVenueRouter = require('./routes/marketvenue');
-const fertilizerMixingRouter = require('./routes/fertilizermixing');
 const contentRouter = require('./routes/content');
+const stageCalendarRouter = require('./routes/stagecalendar');
+const fertilizerRouter = require('./routes/fertilizer');
+const fertilizerMixingRouter = require('./routes/fertilizermixing');
 
 const app = express();
 
@@ -39,16 +39,27 @@ app.get('/health', (_req, res) => {
 
 app.use('/auth', authRouter);
 app.use('/farmer', farmerRouter);
+// stagecalendar.js (crop-cycle/stage endpoints) and fertilizer.js (soil
+// test, fertilizer-formula calculator, and fertilizer-mixing-order
+// endpoints) are BOTH additional farmer-facing route files sharing the
+// same /farmer prefix as farmerRouter above — Express dispatches by exact
+// path match across all three in registration order, and none of their
+// route paths collide (verified: no two of farmer.js/stagecalendar.js/
+// fertilizer.js define the same sub-path), so mounting all three at
+// '/farmer' is safe and is what frontend/js/crop-cycle.js,
+// frontend/js/fertilizer-calculator.js, and
+// frontend/js/fertilizer-mixing-marketplace.js all already assume.
+app.use('/farmer', stageCalendarRouter);
 app.use('/farmer', fertilizerRouter);
-app.use('/farmer', stagecalendarRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
-app.use('/organization', organizationRouter);
-app.use('/inputsupplier', inputSupplierRouter);
 app.use('/marketvenue', marketVenueRouter);
 app.use('/fertilizermixing', fertilizerMixingRouter);
+app.use('/organization', organizationRouter);
+app.use('/inputsupplier', inputSupplierRouter);
+// GET /about — public, no auth (see content.js's own doc comment).
 app.use('/about', contentRouter);
 
 // Fallback 404

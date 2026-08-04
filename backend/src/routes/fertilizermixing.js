@@ -138,14 +138,22 @@ router.get('/dashboard', async (req, res, next) => {
 
 /**
  * GET /fertilizermixing/rate-card — same shape as GET /machinery/rate-card,
- * just one item.
+ * just one item, plus (เส้นทาง B) that item's optional group-buying
+ * discount policy: bulk_discount_min_kg / bulk_discount_percent, both null
+ * when the provider hasn't opted into group discounts. See
+ * grant_fertilizer_mixing_group_order.sql's header comment for the full
+ * design — a farmer-organized group's combined kg crossing
+ * bulk_discount_min_kg gets every order in that group priced at
+ * unit_price * (1 - bulk_discount_percent/100) when the organizer submits
+ * (POST /farmer/fertilizer-mixing-groups/:id/submit in src/routes/
+ * fertilizer.js).
  */
 router.get('/rate-card', async (req, res, next) => {
   const { subjectId } = req.subject;
   try {
     const rows = await withSessionContext('organization', subjectId, async (client) => {
       const result = await client.query(
-        `SELECT service_key, unit_price, price_unit, is_active
+        `SELECT service_key, unit_price, price_unit, is_active, bulk_discount_min_kg, bulk_discount_percent
            FROM marketplace.service_listing
           WHERE org_id = $1 AND service_key IS NOT NULL`,
         [subjectId],
@@ -160,12 +168,15 @@ router.get('/rate-card', async (req, res, next) => {
     const items = RATE_CARD_KEYS.map((key) => {
       const def = RATE_CARD_ITEMS[key];
       const existing = byKey[key];
+      const active = existing && existing.is_active;
       return {
         service_key: key,
         label_th: def.label_th,
         service_type: def.service_type,
         price_unit: def.price_unit,
-        unit_price: existing && existing.is_active ? Number(existing.unit_price) : null,
+        unit_price: active ? Number(existing.unit_price) : null,
+        bulk_discount_min_kg: active && existing.bulk_discount_min_kg !== null ? Number(existing.bulk_discount_min_kg) : null,
+        bulk_discount_percent: active && existing.bulk_discount_percent !== null ? Number(existing.bulk_discount_percent) : null,
       };
     });
 
@@ -177,16 +188,29 @@ router.get('/rate-card', async (req, res, next) => {
 
 /**
  * PUT /fertilizermixing/rate-card
- * Body: { prices: { fertilizer_custom_mix?: number|null } }
+ * Body: { prices: { fertilizer_custom_mix?: number|null },
+ *         bulk_discount?: { fertilizer_custom_mix?: { min_kg, percent } | null } }
  *
  * Same upsert-or-deactivate shape as PUT /machinery/rate-card — see that
  * route's doc comment for why clearing a price deactivates the row rather
  * than deleting it (marketplace.fertilizer_mixing_order's FK to listing_id
  * would break on delete if a farmer already ordered against it).
+ *
+ * bulk_discount (เส้นทาง B, additive on top of the existing prices shape —
+ * a caller that omits it entirely leaves each item's existing discount
+ * policy untouched) sets or clears that item's group-buying threshold:
+ * { min_kg, percent } to set both together (both required, and only
+ * meaningful together — a threshold with no percent, or a percent with no
+ * threshold, cannot express a real discount policy), or null to clear
+ * both. min_kg must be > 0; percent must be in (0, 50]. Only applied when
+ * the item ALSO has an active price this same call (or already did) —
+ * setting a discount policy on an item with no price makes no sense and
+ * is rejected with 409 the same way an unpriced item is simply absent
+ * from the marketplace already.
  */
 router.put('/rate-card', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { prices } = req.body || {};
+  const { prices, bulk_discount: bulkDiscount } = req.body || {};
 
   if (!prices || typeof prices !== 'object' || Array.isArray(prices)) {
     return res.status(400).json({ error: 'missing_prices_object' });
@@ -200,6 +224,23 @@ router.put('/rate-card', async (req, res, next) => {
   for (const [key, value] of Object.entries(prices)) {
     if (value !== null && value !== undefined && value !== '' && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) {
       return res.status(400).json({ error: 'invalid_price', service_key: key });
+    }
+  }
+
+  const discountEntries = bulkDiscount && typeof bulkDiscount === 'object' && !Array.isArray(bulkDiscount)
+    ? Object.entries(bulkDiscount) : [];
+  const unknownDiscountKeys = discountEntries.map(([k]) => k).filter((k) => !RATE_CARD_KEYS.includes(k));
+  if (unknownDiscountKeys.length > 0) {
+    return res.status(400).json({ error: 'unknown_service_key', unknown: unknownDiscountKeys, valid: RATE_CARD_KEYS });
+  }
+  for (const [key, policy] of discountEntries) {
+    if (policy === null) continue;
+    if (
+      typeof policy !== 'object' || Array.isArray(policy)
+      || typeof policy.min_kg !== 'number' || !Number.isFinite(policy.min_kg) || policy.min_kg <= 0
+      || typeof policy.percent !== 'number' || !Number.isFinite(policy.percent) || policy.percent <= 0 || policy.percent > 50
+    ) {
+      return res.status(400).json({ error: 'invalid_bulk_discount', service_key: key });
     }
   }
 
@@ -236,10 +277,19 @@ router.put('/rate-card', async (req, res, next) => {
         );
       }
 
+      for (const [key, policy] of discountEntries) {
+        await client.query(
+          `UPDATE marketplace.service_listing
+              SET bulk_discount_min_kg = $1, bulk_discount_percent = $2
+            WHERE org_id = $3 AND service_key = $4`,
+          [policy === null ? null : policy.min_kg, policy === null ? null : policy.percent, subjectId, key],
+        );
+      }
+
       await logAccess(client, 'write', 'marketplace.service_listing', subjectId);
 
       const result = await client.query(
-        `SELECT service_key, unit_price, price_unit, is_active
+        `SELECT service_key, unit_price, price_unit, is_active, bulk_discount_min_kg, bulk_discount_percent
            FROM marketplace.service_listing
           WHERE org_id = $1 AND service_key IS NOT NULL`,
         [subjectId],
@@ -252,12 +302,15 @@ router.put('/rate-card', async (req, res, next) => {
     const responseItems = RATE_CARD_KEYS.map((key) => {
       const def = RATE_CARD_ITEMS[key];
       const existing = byKey[key];
+      const active = existing && existing.is_active;
       return {
         service_key: key,
         label_th: def.label_th,
         service_type: def.service_type,
         price_unit: def.price_unit,
-        unit_price: existing && existing.is_active ? Number(existing.unit_price) : null,
+        unit_price: active ? Number(existing.unit_price) : null,
+        bulk_discount_min_kg: active && existing.bulk_discount_min_kg !== null ? Number(existing.bulk_discount_min_kg) : null,
+        bulk_discount_percent: active && existing.bulk_discount_percent !== null ? Number(existing.bulk_discount_percent) : null,
       };
     });
 
@@ -291,7 +344,7 @@ router.get('/orders', async (req, res, next) => {
                 o.unit_price, o.price_unit, o.requested_urea_kg, o.requested_dap_kg, o.requested_mop_kg,
                 o.delivery_option, o.delivery_address, o.preferred_date, o.farmer_note,
                 o.status, o.decided_reason, o.requested_at, o.decided_at, o.completed_at, o.farmer_id,
-                f.full_name AS farmer_name, f.phone AS farmer_phone
+                o.group_id, f.full_name AS farmer_name, f.phone AS farmer_phone
            FROM marketplace.fertilizer_mixing_order o
            JOIN identity.farmer f ON f.farmer_id = o.farmer_id
           WHERE o.org_id = $1 ${filter}

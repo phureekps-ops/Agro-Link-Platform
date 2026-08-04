@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireFarmer } = require('../middleware/auth');
@@ -694,6 +695,541 @@ router.post('/fertilizer-mixing-orders/:id/cancel', async (req, res, next) => {
     if (result.notFound) return res.status(404).json({ error: 'order_not_found' });
     if (result.wrongStatus) return res.status(409).json({ error: 'order_not_cancellable', current_status: result.wrongStatus });
     return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// =============================================================================
+// Fulfillment Marketplace เส้นทาง B — รวมกลุ่มสั่งซื้อบริการผสมปุ๋ยสั่งตัด
+// (group buying / order pooling). See grant_fertilizer_mixing_group_order
+// .sql's header comment for the full design: a farmer starts a group
+// against one provider's listing, shares group_code with other farmers,
+// and only when the ORGANIZER explicitly submits does the group turn into
+// real marketplace.fertilizer_mixing_order rows (one per participant),
+// priced with a discount if the group's combined kg met the provider's
+// bulk_discount_min_kg threshold.
+// =============================================================================
+
+const GROUP_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L — avoids misreads when a code is read aloud or handwritten
+function generateGroupCode(length = 7) {
+  const bytes = crypto.randomBytes(length);
+  let code = '';
+  for (let i = 0; i < length; i += 1) {
+    code += GROUP_CODE_ALPHABET[bytes[i] % GROUP_CODE_ALPHABET.length];
+  }
+  return code;
+}
+
+/** Sum of urea+dap+mop kg for one participant, nulls treated as 0. */
+function participantTotalKg(p) {
+  return Number(p.requested_urea_kg || 0) + Number(p.requested_dap_kg || 0) + Number(p.requested_mop_kg || 0);
+}
+
+/**
+ * Shared validation for both POST /fertilizer-mixing-groups (creating,
+ * where the organizer supplies their own participant fields) and POST
+ * /fertilizer-mixing-groups/:code/join (a joiner supplying the same
+ * shape) — kept as one function so the two entry points can never
+ * silently drift apart on what counts as a valid participation.
+ */
+function validateParticipantFields(body) {
+  const {
+    unit_id: unitId,
+    requested_urea_kg: requestedUreaKgRaw, requested_dap_kg: requestedDapKgRaw, requested_mop_kg: requestedMopKgRaw,
+    delivery_option: deliveryOptionRaw, delivery_address: deliveryAddress,
+    preferred_date: preferredDate, farmer_note: farmerNote,
+  } = body || {};
+
+  if (!unitId || !preferredDate) {
+    return { error: { status: 400, body: { error: 'missing_required_fields', required: ['unit_id', 'preferred_date'] } } };
+  }
+  if (Number.isNaN(Date.parse(preferredDate))) {
+    return { error: { status: 400, body: { error: 'invalid_preferred_date' } } };
+  }
+  const deliveryOption = deliveryOptionRaw || 'pickup';
+  if (!['pickup', 'delivery'].includes(deliveryOption)) {
+    return { error: { status: 400, body: { error: 'invalid_delivery_option', valid: ['pickup', 'delivery'] } } };
+  }
+  if (deliveryOption === 'delivery' && !deliveryAddress) {
+    return { error: { status: 400, body: { error: 'missing_delivery_address' } } };
+  }
+
+  return {
+    fields: {
+      unitId,
+      requestedUreaKg: requestedUreaKgRaw ?? null,
+      requestedDapKg: requestedDapKgRaw ?? null,
+      requestedMopKg: requestedMopKgRaw ?? null,
+      deliveryOption,
+      deliveryAddress: deliveryAddress || null,
+      preferredDate,
+      farmerNote: farmerNote || null,
+    },
+  };
+}
+
+/**
+ * POST /farmer/fertilizer-mixing-groups
+ * Body: { listing_id, join_deadline, unit_id, requested_urea_kg?,
+ *         requested_dap_kg?, requested_mop_kg?, delivery_option?,
+ *         delivery_address?, preferred_date, farmer_note? }
+ *
+ * Starts a new group against a Verified provider's listing AND enrolls the
+ * organizer as its first participant, in one call — an organizer with no
+ * fertilizer needs of their own isn't a real scenario this feature targets
+ * (see header comment), so there is no separate "create empty group" step.
+ * listing_id/join_deadline are new; every other field is the same
+ * participation shape POST /fertilizer-mixing-orders already takes (see
+ * that route's own doc comment) MINUS cycle_id/stage_id/calc_id, which
+ * group orders don't support in v1 (documented scope cut — see migration
+ * file header).
+ */
+router.post('/fertilizer-mixing-groups', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { listing_id: listingId, join_deadline: joinDeadline } = req.body || {};
+
+  if (!listingId || !joinDeadline) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['listing_id', 'join_deadline'] });
+  }
+  if (Number.isNaN(Date.parse(joinDeadline)) || new Date(joinDeadline).getTime() <= Date.now()) {
+    return res.status(400).json({ error: 'invalid_join_deadline', reason: 'must_be_a_future_datetime' });
+  }
+
+  const validated = validateParticipantFields(req.body);
+  if (validated.error) return res.status(validated.error.status).json(validated.error.body);
+  const f = validated.fields;
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const unit = await client.query(
+        'SELECT unit_id FROM registry.production_unit WHERE unit_id = $1 AND owner_farmer_id = $2',
+        [f.unitId, subjectId],
+      );
+      if (unit.rows.length === 0) return { unitNotFound: true };
+
+      const listing = await client.query(
+        `SELECT listing_id, org_id, service_key, service_type, description AS label_th, unit_price, price_unit,
+                bulk_discount_min_kg, bulk_discount_percent
+           FROM marketplace.service_listing
+          WHERE listing_id = $1 AND is_active = true AND service_key = 'fertilizer_custom_mix'`,
+        [listingId],
+      );
+      if (listing.rows.length === 0) return { listingNotFound: true };
+      const l = listing.rows[0];
+
+      let groupRow;
+      // Extremely low realistic collision odds (7 chars from a 33-symbol
+      // alphabet ≈ 33^7 possibilities) — retry a few times rather than
+      // failing outright on the rare unique-constraint hit.
+      for (let attempt = 0; attempt < 5 && !groupRow; attempt += 1) {
+        try {
+          const { rows } = await client.query(
+            `INSERT INTO marketplace.fertilizer_mixing_group_order
+               (listing_id, org_id, organizer_farmer_id, group_code, join_deadline,
+                service_key, label_th, service_type, unit_price, price_unit,
+                bulk_discount_min_kg, bulk_discount_percent)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+             RETURNING group_id, group_code, status, join_deadline, org_id, listing_id,
+                       service_key, label_th, service_type, unit_price, price_unit,
+                       bulk_discount_min_kg, bulk_discount_percent, created_at`,
+            [
+              listingId, l.org_id, subjectId, generateGroupCode(), joinDeadline,
+              l.service_key, l.label_th, l.service_type, l.unit_price, l.price_unit,
+              l.bulk_discount_min_kg, l.bulk_discount_percent,
+            ],
+          );
+          groupRow = rows[0];
+        } catch (insertErr) {
+          if (insertErr.code === '23505' && attempt < 4) continue; // unique_violation on group_code — retry with a fresh one
+          throw insertErr;
+        }
+      }
+
+      const { rows: participantRows } = await client.query(
+        `INSERT INTO marketplace.fertilizer_mixing_group_participant
+           (group_id, farmer_id, unit_id, requested_urea_kg, requested_dap_kg, requested_mop_kg,
+            delivery_option, delivery_address, preferred_date, farmer_note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING participant_id, status, requested_urea_kg, requested_dap_kg, requested_mop_kg, joined_at`,
+        [
+          groupRow.group_id, subjectId, f.unitId, f.requestedUreaKg, f.requestedDapKg, f.requestedMopKg,
+          f.deliveryOption, f.deliveryAddress, f.preferredDate, f.farmerNote,
+        ],
+      );
+      await logAccess(client, 'write', 'marketplace.fertilizer_mixing_group_order', groupRow.group_id);
+
+      return { group: groupRow, organizerParticipant: participantRows[0] };
+    });
+
+    if (result.unitNotFound) return res.status(404).json({ error: 'production_unit_not_found' });
+    if (result.listingNotFound) return res.status(404).json({ error: 'fertilizer_mixing_listing_not_found' });
+    return res.status(201).json({ ...result.group, my_participation: result.organizerParticipant, is_organizer: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/fertilizer-mixing-groups — every group this farmer is
+ * involved in (as organizer OR as a joiner — the organizer is always also
+ * a participant row, see POST above, so one query covers both), newest
+ * first, with a live-computed current_total_kg/current_participant_count
+ * across every still-Joined participant (only meaningful pre-submission;
+ * once Submitted, final_total_kg on the group row itself is the number
+ * that was actually used to price everyone).
+ */
+router.get('/fertilizer-mixing-groups', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT g.group_id, g.group_code, g.status, g.join_deadline, g.org_id, org.org_name,
+                g.listing_id, g.label_th, g.unit_price, g.price_unit,
+                g.bulk_discount_min_kg, g.bulk_discount_percent,
+                g.final_total_kg, g.final_unit_price, g.discount_applied,
+                g.created_at, g.submitted_at, g.cancelled_at,
+                (g.organizer_farmer_id = $1) AS is_organizer,
+                mine.status AS my_status,
+                COALESCE(agg.participant_count, 0) AS current_participant_count,
+                COALESCE(agg.total_kg, 0) AS current_total_kg
+           FROM marketplace.fertilizer_mixing_group_order g
+           JOIN identity.organization org ON org.org_id = g.org_id
+           JOIN marketplace.fertilizer_mixing_group_participant mine
+             ON mine.group_id = g.group_id AND mine.farmer_id = $1
+           LEFT JOIN (
+             SELECT group_id, COUNT(*)::int AS participant_count,
+                    SUM(COALESCE(requested_urea_kg, 0) + COALESCE(requested_dap_kg, 0) + COALESCE(requested_mop_kg, 0)) AS total_kg
+               FROM marketplace.fertilizer_mixing_group_participant
+              WHERE status = 'Joined'
+              GROUP BY group_id
+           ) agg ON agg.group_id = g.group_id
+          ORDER BY g.created_at DESC`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'marketplace.fertilizer_mixing_group_order', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/fertilizer-mixing-groups/:code — lookup by the SHAREABLE
+ * code (not group_id) for a farmer following an invite link who may not
+ * have joined yet. Deliberately readable by ANY authenticated farmer who
+ * has the code (see the migration file's own reminder comment) — that's
+ * the whole point of an invite code — but still reveals nothing a farmer
+ * couldn't already see once they join (no other participants' personal
+ * details, just the aggregate count/kg).
+ */
+router.get('/fertilizer-mixing-groups/:code', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { code } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const group = await client.query(
+        `SELECT g.group_id, g.group_code, g.status, g.join_deadline, g.org_id, org.org_name,
+                g.listing_id, g.label_th, g.unit_price, g.price_unit,
+                g.bulk_discount_min_kg, g.bulk_discount_percent,
+                g.final_total_kg, g.final_unit_price, g.discount_applied,
+                g.created_at, g.submitted_at,
+                (g.organizer_farmer_id = $2) AS is_organizer
+           FROM marketplace.fertilizer_mixing_group_order g
+           JOIN identity.organization org ON org.org_id = g.org_id
+          WHERE g.group_code = $1`,
+        [code.toUpperCase(), subjectId],
+      );
+      if (group.rows.length === 0) return { notFound: true };
+      const g = group.rows[0];
+
+      const agg = await client.query(
+        `SELECT COUNT(*)::int AS participant_count,
+                SUM(COALESCE(requested_urea_kg, 0) + COALESCE(requested_dap_kg, 0) + COALESCE(requested_mop_kg, 0)) AS total_kg
+           FROM marketplace.fertilizer_mixing_group_participant
+          WHERE group_id = $1 AND status = 'Joined'`,
+        [g.group_id],
+      );
+      const mine = await client.query(
+        `SELECT status FROM marketplace.fertilizer_mixing_group_participant WHERE group_id = $1 AND farmer_id = $2`,
+        [g.group_id, subjectId],
+      );
+
+      return {
+        group: {
+          ...g,
+          current_participant_count: agg.rows[0].participant_count || 0,
+          current_total_kg: Number(agg.rows[0].total_kg || 0),
+          my_status: mine.rows[0] ? mine.rows[0].status : null,
+        },
+      };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'group_not_found' });
+    return res.json(result.group);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/fertilizer-mixing-groups/:code/join
+ * Body: same participant shape as POST /fertilizer-mixing-groups (minus
+ * listing_id/join_deadline, which are the GROUP's, not the joiner's, to
+ * set).
+ *
+ * Rejects with 409 if the group isn't Open, the join_deadline has passed,
+ * or this farmer already has a row for this group — INCLUDING a
+ * Withdrawn one (re-joining the same group after withdrawing is not
+ * supported in v1 — see UNIQUE(group_id, farmer_id) in the migration
+ * file's own comment).
+ */
+router.post('/fertilizer-mixing-groups/:code/join', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { code } = req.params;
+
+  const validated = validateParticipantFields(req.body);
+  if (validated.error) return res.status(validated.error.status).json(validated.error.body);
+  const f = validated.fields;
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const group = await client.query(
+        `SELECT group_id, status, join_deadline FROM marketplace.fertilizer_mixing_group_order WHERE group_code = $1`,
+        [code.toUpperCase()],
+      );
+      if (group.rows.length === 0) return { notFound: true };
+      const g = group.rows[0];
+      if (g.status !== 'Open') return { wrongStatus: g.status };
+      if (new Date(g.join_deadline).getTime() <= Date.now()) return { deadlinePassed: true };
+
+      const existing = await client.query(
+        'SELECT status FROM marketplace.fertilizer_mixing_group_participant WHERE group_id = $1 AND farmer_id = $2',
+        [g.group_id, subjectId],
+      );
+      if (existing.rows.length > 0) return { alreadyParticipant: existing.rows[0].status };
+
+      const unit = await client.query(
+        'SELECT unit_id FROM registry.production_unit WHERE unit_id = $1 AND owner_farmer_id = $2',
+        [f.unitId, subjectId],
+      );
+      if (unit.rows.length === 0) return { unitNotFound: true };
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.fertilizer_mixing_group_participant
+           (group_id, farmer_id, unit_id, requested_urea_kg, requested_dap_kg, requested_mop_kg,
+            delivery_option, delivery_address, preferred_date, farmer_note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING participant_id, status, requested_urea_kg, requested_dap_kg, requested_mop_kg, joined_at`,
+        [
+          g.group_id, subjectId, f.unitId, f.requestedUreaKg, f.requestedDapKg, f.requestedMopKg,
+          f.deliveryOption, f.deliveryAddress, f.preferredDate, f.farmerNote,
+        ],
+      );
+      await logAccess(client, 'write', 'marketplace.fertilizer_mixing_group_participant', rows[0].participant_id);
+      return { participant: rows[0] };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'group_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'group_not_open', current_status: result.wrongStatus });
+    if (result.deadlinePassed) return res.status(409).json({ error: 'join_deadline_passed' });
+    if (result.alreadyParticipant) return res.status(409).json({ error: 'already_participant', current_status: result.alreadyParticipant });
+    if (result.unitNotFound) return res.status(404).json({ error: 'production_unit_not_found' });
+    return res.status(201).json(result.participant);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/fertilizer-mixing-groups/:id/withdraw — a non-organizer
+ * participant leaves the group before it's submitted. The organizer
+ * cannot withdraw through this endpoint (409 organizer_cannot_withdraw —
+ * use POST .../:id/cancel instead, which ends the whole group), since a
+ * group with participants but no organizer has no one able to submit or
+ * cancel it.
+ */
+router.post('/fertilizer-mixing-groups/:id/withdraw', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const group = await client.query(
+        'SELECT group_id, status, organizer_farmer_id FROM marketplace.fertilizer_mixing_group_order WHERE group_id = $1',
+        [id],
+      );
+      if (group.rows.length === 0) return { notFound: true };
+      if (group.rows[0].organizer_farmer_id === subjectId) return { isOrganizer: true };
+      if (group.rows[0].status !== 'Open') return { wrongStatus: group.rows[0].status };
+
+      const existing = await client.query(
+        'SELECT participant_id, status FROM marketplace.fertilizer_mixing_group_participant WHERE group_id = $1 AND farmer_id = $2',
+        [id, subjectId],
+      );
+      if (existing.rows.length === 0) return { notParticipant: true };
+      if (existing.rows[0].status !== 'Joined') return { alreadyWithdrawn: true };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.fertilizer_mixing_group_participant
+            SET status = 'Withdrawn', withdrawn_at = now()
+          WHERE group_id = $1 AND farmer_id = $2
+          RETURNING participant_id, status, withdrawn_at`,
+        [id, subjectId],
+      );
+      await logAccess(client, 'write', 'marketplace.fertilizer_mixing_group_participant', rows[0].participant_id);
+      return { participant: rows[0] };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'group_not_found' });
+    if (result.isOrganizer) return res.status(409).json({ error: 'organizer_cannot_withdraw' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'group_not_open', current_status: result.wrongStatus });
+    if (result.notParticipant) return res.status(404).json({ error: 'not_a_participant' });
+    if (result.alreadyWithdrawn) return res.status(409).json({ error: 'already_withdrawn' });
+    return res.json(result.participant);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/fertilizer-mixing-groups/:id/cancel — organizer-only, ends
+ * the whole group before submission. Every participant's pledge stays in
+ * the database (for history) but the group can never be submitted after
+ * this — no real orders are ever created from a Cancelled group.
+ */
+router.post('/fertilizer-mixing-groups/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const group = await client.query(
+        'SELECT group_id, status FROM marketplace.fertilizer_mixing_group_order WHERE group_id = $1 AND organizer_farmer_id = $2',
+        [id, subjectId],
+      );
+      if (group.rows.length === 0) return { notFound: true };
+      if (group.rows[0].status !== 'Open') return { wrongStatus: group.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.fertilizer_mixing_group_order
+            SET status = 'Cancelled', cancelled_at = now(), updated_at = now()
+          WHERE group_id = $1
+          RETURNING group_id, status, cancelled_at`,
+        [id],
+      );
+      await logAccess(client, 'write', 'marketplace.fertilizer_mixing_group_order', id);
+      return { group: rows[0] };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'group_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'group_not_open', current_status: result.wrongStatus });
+    return res.json(result.group);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/fertilizer-mixing-groups/:id/submit — organizer-only,
+ * finalizes the group: every current 'Joined' participant becomes a real
+ * marketplace.fertilizer_mixing_order row (group_id set), priced at the
+ * group's discounted unit_price if the combined kg met
+ * bulk_discount_min_kg, at the normal snapshotted unit_price otherwise.
+ *
+ * The ONLY explicit multi-statement transaction (BEGIN/COMMIT/ROLLBACK)
+ * in this codebase — every other write path here is a single INSERT/
+ * UPDATE, but this one creates N order rows + updates N participant rows
+ * + updates the group row, and a crash mid-loop must not leave some
+ * participants with a real order and others silently without one.
+ */
+router.post('/fertilizer-mixing-groups/:id/submit', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const group = await client.query(
+        `SELECT group_id, status, listing_id, org_id, service_key, label_th, service_type,
+                unit_price, price_unit, bulk_discount_min_kg, bulk_discount_percent
+           FROM marketplace.fertilizer_mixing_group_order
+          WHERE group_id = $1 AND organizer_farmer_id = $2`,
+        [id, subjectId],
+      );
+      if (group.rows.length === 0) return { notFound: true };
+      const g = group.rows[0];
+      if (g.status !== 'Open') return { wrongStatus: g.status };
+
+      const participants = await client.query(
+        `SELECT participant_id, farmer_id, unit_id, requested_urea_kg, requested_dap_kg, requested_mop_kg,
+                delivery_option, delivery_address, preferred_date, farmer_note
+           FROM marketplace.fertilizer_mixing_group_participant
+          WHERE group_id = $1 AND status = 'Joined'`,
+        [id],
+      );
+      if (participants.rows.length === 0) return { noParticipants: true };
+
+      const totalKg = participants.rows.reduce((sum, p) => sum + participantTotalKg(p), 0);
+      const discountApplied = g.bulk_discount_min_kg !== null && g.bulk_discount_percent !== null
+        && totalKg >= Number(g.bulk_discount_min_kg);
+      const finalUnitPrice = discountApplied
+        ? round2(Number(g.unit_price) * (1 - Number(g.bulk_discount_percent) / 100))
+        : Number(g.unit_price);
+
+      await client.query('BEGIN');
+      try {
+        const createdOrders = [];
+        for (const p of participants.rows) {
+          const { rows } = await client.query(
+            `INSERT INTO marketplace.fertilizer_mixing_order
+               (listing_id, org_id, farmer_id, unit_id, group_id,
+                service_key, label_th, service_type, unit_price, price_unit,
+                requested_urea_kg, requested_dap_kg, requested_mop_kg,
+                delivery_option, delivery_address, preferred_date, farmer_note)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+             RETURNING order_id`,
+            [
+              g.listing_id, g.org_id, p.farmer_id, p.unit_id, id,
+              g.service_key, g.label_th, g.service_type, finalUnitPrice, g.price_unit,
+              p.requested_urea_kg, p.requested_dap_kg, p.requested_mop_kg,
+              p.delivery_option, p.delivery_address, p.preferred_date, p.farmer_note,
+            ],
+          );
+          const orderId = rows[0].order_id;
+          createdOrders.push(orderId);
+          await client.query(
+            'UPDATE marketplace.fertilizer_mixing_group_participant SET order_id = $1 WHERE participant_id = $2',
+            [orderId, p.participant_id],
+          );
+        }
+
+        await client.query(
+          `UPDATE marketplace.fertilizer_mixing_group_order
+              SET status = 'Submitted', submitted_at = now(), updated_at = now(),
+                  final_total_kg = $1, final_unit_price = $2, discount_applied = $3
+            WHERE group_id = $4`,
+          [totalKg, finalUnitPrice, discountApplied, id],
+        );
+
+        await client.query('COMMIT');
+        await logAccess(client, 'write', 'marketplace.fertilizer_mixing_group_order', id);
+        return {
+          group: {
+            group_id: id, status: 'Submitted', final_total_kg: totalKg,
+            final_unit_price: finalUnitPrice, discount_applied: discountApplied,
+            orders_created: createdOrders.length,
+          },
+        };
+      } catch (txErr) {
+        await client.query('ROLLBACK');
+        throw txErr;
+      }
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'group_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'group_not_open', current_status: result.wrongStatus });
+    if (result.noParticipants) return res.status(409).json({ error: 'no_participants' });
+    return res.json(result.group);
   } catch (err) {
     return next(err);
   }

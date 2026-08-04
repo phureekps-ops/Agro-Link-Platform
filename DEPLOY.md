@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (23 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (27 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -138,6 +138,7 @@ grant_organization_roles.sql
 grant_input_supplier_and_buy_prices.sql
 grant_farmer_product_orders.sql
 grant_market_venue_marketplace.sql
+04_reference_data.sql
 grant_about_content.sql
 grant_admin_dashboard_views.sql
 grant_machinery_booking.sql
@@ -146,8 +147,17 @@ grant_credit_model.sql
 grant_fertilizer_formula.sql
 grant_stage_calendar_farmer.sql
 grant_fertilizer_mixing_service.sql
-04_reference_data.sql
+grant_fertilizer_mixing_group_order.sql
 ```
+
+**แก้ไขเมื่อ 2026-08-04:** รายการนี้เคยขาดไฟล์ไป 9 ไฟล์ (ตั้งแต่ `grant_about_content.sql`
+ถึง `grant_fertilizer_mixing_service.sql` ด้านบน) — ไฟล์เหล่านี้มีอยู่จริงในโฟลเดอร์
+`backend/db` และฟีเจอร์ที่เกี่ยวข้อง (หน้า "เกี่ยวกับเรา", แดชบอร์ดผู้ดูแลระบบ, การจองเครื่องจักรกล,
+รายการสินค้าแนะนำ, โมเดลคะแนนเครดิต, เครื่องคำนวณสูตรปุ๋ย, ปฏิทินขั้นตอนการเพาะปลูก,
+และบริการผสมปุ๋ยสั่งตัด) ก็ใช้งานได้บน Render อยู่แล้วในทางปฏิบัติ (แปลว่าน่าจะเคยรันสคริปต์เหล่านี้
+ไปแล้วด้วยมือ แต่ไม่เคยถูกบันทึกไว้ในรายการนี้) — เพิ่มเข้ามาให้ตรงกับความเป็นจริงในรอบนี้
+เพื่อให้การ deploy ฐานข้อมูลใหม่ตั้งแต่ต้น (เช่น ย้ายไป Render instance ใหม่) ได้ครบทุกฟีเจอร์
+โดยไม่ต้องมานั่งไล่หาไฟล์ที่ขาดไปทีหลัง
 
 **สังเกตว่าไม่มี `setup_backend_role.sql` ในรายการนี้** — อันนี้ตั้งใจ ต่างจากตอนตั้งค่าฐานข้อมูลในเครื่อง local (ที่ backend/README.md อธิบายไว้): บน Render เราให้ backend เชื่อมต่อด้วยบัญชีฐานข้อมูลที่ Render สร้างให้อัตโนมัติเลย (ผ่าน `DATABASE_URL`) แทนที่จะสร้างบัญชีแยกต่างหาก ซึ่งง่ายกว่าและทดสอบแล้วว่าใช้งานได้จริงบน Render ปลอดภัยเหมือนกัน (ไฟล์ `00_roles.sql` มีคำสั่งที่ทำให้บัญชีของ Render ใช้สิทธิ์ที่ระบบ RLS ต้องการได้)
 

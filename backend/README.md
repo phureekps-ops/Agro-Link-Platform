@@ -87,6 +87,7 @@ psql -d agrolink_test -f db/grant_organization_roles.sql
 psql -d agrolink_test -f db/grant_input_supplier_and_buy_prices.sql
 psql -d agrolink_test -f db/grant_farmer_product_orders.sql
 psql -d agrolink_test -f db/grant_market_venue_marketplace.sql
+psql -d agrolink_test -f db/04_reference_data.sql
 psql -d agrolink_test -f db/grant_about_content.sql
 psql -d agrolink_test -f db/grant_admin_dashboard_views.sql
 psql -d agrolink_test -f db/grant_machinery_booking.sql
@@ -95,8 +96,28 @@ psql -d agrolink_test -f db/grant_credit_model.sql
 psql -d agrolink_test -f db/grant_fertilizer_formula.sql
 psql -d agrolink_test -f db/grant_stage_calendar_farmer.sql
 psql -d agrolink_test -f db/grant_fertilizer_mixing_service.sql
-psql -d agrolink_test -f db/04_reference_data.sql
+psql -d agrolink_test -f db/grant_fertilizer_mixing_group_order.sql
 ```
+
+**2026-08-04 correction:** this list had silently fallen nine migrations
+behind actual `db/` contents — everything from `grant_about_content.sql`
+through `grant_fertilizer_mixing_service.sql` above existed on disk and was
+already relied on by shipped features (the "เกี่ยวกับเรา" page, the admin
+dashboard's summary views, machinery booking, featured listings, the
+credit-scoring model, the fertilizer-formula calculator, the crop-cycle
+stage calendar, and Fulfillment Marketplace เส้นทาง A) but was never added
+to this run list, meaning a from-scratch deploy following only the steps
+above would have booted an API with those routes returning 500s on their
+first query (missing tables/columns), not 404s — silent at the routing
+layer, loud only once a request actually reached the database. Order
+above was reconstructed from each file's own filesystem modification time,
+cross-checked against internal doc-comment references between files (e.g.
+`grant_fertilizer_mixing_service.sql` explicitly names
+`grant_machinery_booking.sql`/`grant_market_venue_marketplace.sql` as
+"the same design decision," confirming it belongs after both). Re-verified
+in this pass by actually running the full 28-file chain against a clean
+local Postgres 16 database with `ON_ERROR_STOP=1` end-to-end — it applies
+cleanly in the order listed above.
 
 - `00_roles.sql` / `01_extensions.sql` / `02_full_schema.sql` /
   `03_grant_schema_usage.sql` / `04_reference_data.sql` — added while
@@ -135,77 +156,6 @@ psql -d agrolink_test -f db/04_reference_data.sql
   only records the booking request itself, per an explicit product scope
   decision. See `src/routes/marketvenue.js` (venue owner side) and the
   `venue-*` endpoints added to `src/routes/farmer.js` (farmer side).
-- `grant_about_content.sql` — adds `content.about_section`, a small
-  platform-wide table (no RLS, no org_id/farmer_id ownership column — the
-  first table in the project with neither) backing the public
-  "เกี่ยวกับเรา" page (`frontend/about.html`, public `GET /about`) and its
-  admin content-management form (`GET/POST/PUT/DELETE
-  /admin/about-sections`, see `src/routes/admin.js` and
-  `src/routes/content.js`). Seeded with starter copy for the platform intro
-  and every existing service category, guarded so re-running the script
-  after an admin has edited/added/deleted content never duplicates rows.
-- `grant_admin_dashboard_views.sql` — **a real gap this build surfaced**:
-  `GET /admin/dashboard` (the Platform Ops "ภาพรวม" panel) reads
-  `ops.v_integrity_checksum`, `monitoring.v_go_live_readiness`, and
-  `monitoring.v_active_alerts` through `agrolink_app` like every other
-  route, but nobody had ever granted `agrolink_app` `SELECT` on those three
-  views specifically — they'd only ever been checked manually via psql as
-  the table/view owner during Layer 9/10 development, which masked the
-  missing grant. The panel threw `permission denied` through the API from
-  the day the route was added until this script was found and run. Plain
-  additive `GRANT`, safe to run any number of times.
-- `grant_machinery_booking.sql` — adds `marketplace.machinery_booking`, the
-  request/accept/decline record backing "เลือกผู้ให้บริการ" → บริการ
-  เครื่องจักรกล/ลานตาก on the Farmer Portal. Deliberately a NEW table rather
-  than wiring up the older, already-present-but-unwired `marketplace.
-  service_request` (+ `accept_service_request`/`complete_service_request`/
-  `request_service` functions from the original `02_full_schema.sql`
-  export): that mechanism requires a `registry.production_unit` on every
-  request and its "complete" step performs a real ledger fund transfer via
-  `partner.vendor_profile.settlement_account_id` — neither fits the scope
-  agreed for this feature, which (like `marketplace.venue_booking`) is a
-  simple request/accept/decline record with payment handled OFFLINE between
-  farmer and provider. Mirrors `venue_booking`'s proven shape instead:
-  snapshot-at-request-time columns (`service_key`/`label_th`/`service_type`/
-  `unit_price`/`price_unit`), `decided_reason`/`decided_at`, no RLS (explicit
-  `WHERE org_id`/`WHERE farmer_id` is the security boundary). See
-  `GET/POST /farmer/machinery-providers` and `/farmer/machinery-bookings*`
-  (farmer side, in `src/routes/farmer.js`) and `GET /machinery/bookings` +
-  accept/decline (provider side, in `src/routes/machinery.js`).
-- `grant_featured_listings.sql` — adds `is_featured`/`featured_until` to
-  `marketplace.product_listing` and `marketplace.service_listing`, backing
-  the "สินค้า/บริการแนะนำ" (Featured Listing) promotion feature: a Platform
-  Ops admin (`GET/POST /admin/product-listings*` and
-  `/admin/service-listings*` in `src/routes/admin.js`) flips a listing
-  featured for a chosen number of days, and `GET /farmer/products` /
-  `GET /farmer/machinery-providers` sort featured rows to the top with a
-  "⭐ แนะนำ" badge. Deliberately admin-toggled rather than self-serve by the
-  provider org — like every other paid interaction on this platform there
-  is no real online payment gateway, so a provider pays the AgroLink team
-  offline and an admin flips the flag, same operating model as KYB/role
-  approval elsewhere in `admin.js`. Only `ALTER TABLE ADD COLUMN` + two
-  partial indexes — no new `GRANT` needed, since `agrolink_app` already has
-  `UPDATE` on both tables from `grant_input_supplier_and_buy_prices.sql`
-  and `grant_machinery_marketplace.sql` (a table-level grant automatically
-  covers columns added afterward).
-- `grant_credit_model.sql` — replaces the credit-score formula's output
-  layer without removing the original: `risk.compute_credit_score()` still
-  computes the same 4 factor ratios (production-verification-on-time,
-  contract-completion, on-time-repayment, delivery-settlement) exactly as
-  before, but now checks `risk.credit_model` for an active, sufficiently-
-  trained logistic-regression model and uses its score/tier instead when
-  one exists — wrapped in its own exception handler so any ML-path failure
-  falls back to the rule-based result. Training happens via
-  `POST /admin/credit-model/retrain` (`src/routes/admin.js`): a hand-
-  written gradient-descent logistic regression (no new npm dependency) is
-  fit over the same 4 factor ratios, labeled from real contract/repayment
-  outcomes, and refuses to activate below `MIN_TRAINING_SAMPLES = 20` /
-  `MIN_PER_CLASS = 5` — below that threshold every farmer keeps being
-  scored by the original fixed-weight formula, reported via
-  `GET /admin/credit-model`. Every `risk.credit_score` row records which
-  method actually produced it (pre-existing `model_version` column, plus a
-  new `scoring_method` key inside `factors` jsonb), so nothing is silently
-  guessed at by an admin or a farmer reviewing their own score history.
 - `setup_backend_role.sql` creates the `agrolink_backend` LOGIN role, grants
   it membership in `agrolink_app`, and grants it direct `EXECUTE` on
   `security.resolve_subject_from_external_claim()` (needed pre-login, before
@@ -313,90 +263,6 @@ psql -d agrolink_test -f db/04_reference_data.sql
   `agrolink_app` `INSERT` on `identity.organization` and
   `partner.vendor_profile`, the first thing to ever create either as
   `agrolink_app` rather than through direct seeding.
-- `grant_fertilizer_formula.sql` — adds the AI Prescription Fertilizer
-  Formula Calculator feature: `production.soil_test` (self-reported soil
-  test results, categorical N/P/K levels plus optional pH/organic-matter),
-  `production.crop_nutrient_requirement` (a reference table seeded with
-  placeholder N-P-K requirements for a few commodities — **explicitly
-  marked in the data and in `COMMENT ON TABLE` as non-authoritative
-  placeholder values**, not official Department of Agriculture figures),
-  and `production.fertilizer_formula_calc` (calculation history). Also
-  extends `marketplace.product_listing` with `fertilizer_npk_grade` and
-  `fertilizer_kg_per_unit` so a fertilizer listing's real per-kg price can
-  be computed from whatever sack/bottle/unit price the supplier entered.
-  This is a rule-based blending calculation (Urea/DAP/MOP), not a machine-
-  learning model — consistent with this project's existing "AI" features,
-  which are content-based scoring rather than deep learning.
-
-  **Scope note (honesty about what shipped vs. what's deferred):** this
-  migration and the routes/pages built on top of it cover only the
-  self-reported soil test tier and the formula calculator itself, plus a
-  real price linkage into the existing InputSupplier catalog. It does
-  **not** include: automatic integration with the Stage Calendar, tying
-  fertilizer purchases to Milestone-Verified Credit Tranches, the full
-  3-path Fulfillment Marketplace, or the Bulk Sourcing group-buying
-  marketplace with importers — those all need new org roles/portals that
-  don't exist yet and were out of scope for this pass.
-
-- `grant_stage_calendar_farmer.sql` — the real "Stage Calendar auto-
-  integration" this project's analysis doc asked for. Before this
-  migration, `production.stage_template`/`production.stage_calendar`/
-  `production.crop_cycle` existed only in the schema — `stage_template`
-  had zero seed rows and no farmer-facing route ever created a
-  `crop_cycle`/`stage_calendar` row (only one hardcoded demo cycle existed,
-  in `dev_sample_data.sql`, and the only code reading these tables was a
-  read-only subquery in the admin credit-model retrain endpoint). This
-  migration: (1) seeds `production.stage_template` with a 5-stage template
-  each for RICE_JASMINE/RICE_PADDY/CASSAVA — **the same explicit
-  non-authoritative-placeholder caveat on `typical_offset_days` as the
-  fertilizer formula's N-P-K reference table applies here**; (2) adds a
-  nullable `stage_key` column (checked to `NULL` or
-  `'soil_test_fertilizer'`) to both `stage_template` and `stage_calendar`
-  so application code can reliably identify the fertilizer stage instead
-  of string-matching Thai stage names; (3) grants `agrolink_app` table
-  privileges on `production.crop_cycle`/`production.stage_calendar` that
-  were missing before this migration (only schema-level `USAGE` existed —
-  the admin retrain query would likely have failed permission-denied
-  against a from-scratch database). New routes in
-  `src/routes/stagecalendar.js` let a farmer start a crop cycle and
-  confirm each stage themselves, in-app — a deliberate choice over a
-  field-agent verification workflow (which this project has not built).
-  Self-reported confirmations are stamped `verified_by =
-  'self_reported:<farmer_id>'`, distinct from the hardcoded demo cycle's
-  `verified_by = 'field_agent:FA-0012'`, so nothing pretends a human
-  verified the farmer's own claim. The fertilizer stage specifically
-  requires at least one `production.fertilizer_formula_calc` row for the
-  cycle's unit before it can be confirmed — a real functional gate tying
-  the fertilizer calculator into the calendar, not just a label.
-
-- `grant_fertilizer_mixing_service.sql` — adds **Path A of the Fulfillment
-  Marketplace** (module 2.3): a farmer orders a custom fertilizer-mixing
-  service from a registered, KYB-Verified `FertilizerMixingService`
-  provider. Widens `identity.organization.org_type` (and
-  `organization_role.role_type`) to add `FertilizerMixingService`, and
-  `marketplace.service_listing`'s `service_type`/`service_key` CHECKs to
-  add `fertilizer_mixing` / `fertilizer_custom_mix`. Creates a dedicated
-  `marketplace.fertilizer_mixing_order` table — deliberately **not**
-  built on the older `marketplace.service_request` mechanism, because
-  that mechanism performs a real ledger fund transfer requiring a farmer
-  `unit_wallet` account that nothing in this codebase provisions for a
-  real (non-seed-data) farmer. Instead this follows the exact same
-  offline-payment / dedicated-table pattern already proven by
-  `marketplace.machinery_booking` (see `grant_machinery_booking.sql`):
-  the farmer and provider settle payment directly, and the platform only
-  records the request/accept/decline/complete lifecycle. The order table
-  snapshots `unit_price`/`price_unit`/`label_th` at request time (from the
-  provider's rate card) so a provider editing their price later doesn't
-  retroactively change an already-placed order, and optionally links back
-  to a `production.fertilizer_formula_calc` row (`calc_id`) so a farmer
-  can order the exact urea/DAP/MOP quantities their AI-calculated formula
-  produced with one click from the calculator's result panel.
-
-  **Scope note:** this migration covers Path A only. Path B (order
-  pooling / group buying among nearby farmers) and Path C (streamlined
-  new-provider onboarding via KYB) — the other two paths of the
-  Fulfillment Marketplace design — are deliberately out of scope for this
-  pass and still need their own migrations.
 
 ## Running
 
@@ -413,7 +279,7 @@ npm start          # or: node src/server.js
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
 - `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
-- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService`/`MarketVenue`/`FertilizerMixingService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank`/`VillageFund` are deliberately excluded, see "what's mocked" below, and `Cooperative`/`Mill` were removed from this list on 2026-07-24 per an explicit product decision — both values still exist in `identity.organization`'s underlying `org_type` domain, they just aren't self-registerable through this endpoint anymore). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
+- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank`/`VillageFund` are deliberately excluded, see "what's mocked" below, and `Cooperative`/`Mill` were removed from this list on 2026-07-24 per an explicit product decision — both values still exist in `identity.organization`'s underlying `org_type` domain, they just aren't self-registerable through this endpoint anymore). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
 
 Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already
@@ -611,6 +477,143 @@ machinery type at all (e.g. a Buyer org that added a Verified
 having `requireMachineryOrg` compute the actual Verified machinery role(s)
 held and returning those as `service_types` instead.
 
+**2026-08-04 addition (Fulfillment Marketplace เส้นทาง C):** `FertilizerMixingService`
+added to `ORG_REQUESTABLE_ROLE_TYPES`/`ROLE_LABEL_TH` in
+`src/routes/organization.js`. The `org_type`/`role_type` CHECK constraints
+already allowed this value (added by `grant_fertilizer_mixing_service.sql`
+for เส้นทาง A's own from-scratch self-registration path) — only the
+*requestable-as-a-secondary-role* list was missing it. Practical effect: an
+org that already cleared entity KYB under some other primary role (e.g. an
+`InputSupplier` already selling fertilizer) can now request
+`FertilizerMixingService` as an ADDITIONAL role through this exact
+mechanism, with zero new endpoints — it reuses `POST /organization/roles`
+and `POST /admin/organizations/:id/roles/:role_type/status` as-is. Also
+fixed while wiring this up: `frontend/js/manage-roles.js`'s `SESSION_KEYS`
+only checked the Lender/Buyer/Machinery portal session keys, silently
+stranding an InputSupplier/MarketVenue/FertilizerMixingService-only org on
+"ยังไม่ได้เข้าสู่ระบบ" even with a perfectly valid session in another
+portal's `localStorage` — now checks all six. Verified end-to-end (fresh
+local Postgres 16 + the real Node server + real HTTP requests): a
+`Verified` `InputSupplier` org's `GET /organization/roles` now lists
+`FertilizerMixingService` under `requestable_roles`, and `POST
+/organization/roles {"role_type":"FertilizerMixingService"}` correctly
+creates a `Pending` row for Platform Ops to review.
+
+## Fulfillment Marketplace — custom fertilizer-mixing service
+
+Three-path feature (named เส้นทาง A/B/C in the codebase's own comments):
+farmers order a custom urea/DAP/MOP blend from a KYB-verified mixing
+provider (**เส้นทาง A**, previously shipped but never written up in this
+README — corrected here), farmers can pool orders into a group for a
+volume discount (**เส้นทาง B**, this pass), and existing KYB-verified orgs
+can add fertilizer-mixing as a secondary business role (**เส้นทาง C**, this
+pass — see the dated note above). **เส้นทาง D (นักตรวจดินเคลื่อนที่ / mobile
+soil-test technician, the other new Stage-based Service Marketplace
+category the source analysis doc names alongside fertilizer-mixing) is
+NOT built** — out of scope for all three passes so far.
+
+**เส้นทาง A — solo orders** (`grant_fertilizer_mixing_service.sql`,
+`src/routes/fertilizer.js` farmer-side + `src/routes/fertilizermixing.js`
+provider-side, `frontend/fertilizermixing/*` provider portal,
+`frontend/fertilizer-mixing-marketplace.html` farmer page): a dedicated
+`marketplace.fertilizer_mixing_order` table (not the older, unwired
+`marketplace.service_request` mechanism — payment is offline between
+farmer and provider, same as every other `*_booking` table in this
+project). An order can optionally link back to the exact Stage Calendar
+fertilizer stage and/or AI-calculated formula run it came from, so a
+provider sees the real numbers, not a vague request. **Found and fixed in
+this pass, unrelated to Path B/C themselves but blocking all of เส้นทาง A
+in production:** `src/server.js` never actually `require()`'d or
+`app.use()`'d `fertilizer.js`, `fertilizermixing.js`, `stagecalendar.js`,
+`marketvenue.js`, or `content.js` — every route in all five files was
+returning `404 not_found`, not just failing some other way, despite the
+files themselves being complete and correct. Fixed by adding the five
+missing mounts (three of them — `farmer.js`, `stagecalendar.js`,
+`fertilizer.js` — deliberately share the `/farmer` prefix; verified no two
+of their route paths collide). Verified via a live route-reachability
+smoke test (every previously-404 path now correctly returns `401`, proving
+the router is reached) and, for the fertilizer-mixing/group-buying slice
+specifically, full functional verification against a real local Postgres
+16 database (see below). Also found and fixed: the farmer dashboard
+(`frontend/dashboard.html`) had no navigation link to
+`fertilizer-calculator.html`, `fertilizer-mixing-marketplace.html`, or
+(now) `fertilizer-mixing-group.html` at all — added all three. **Known
+still-broken, NOT fixed in this pass** (out of scope — unrelated to
+Fulfillment Marketplace): `frontend/js/venue-marketplace.js` calls `GET
+/farmer/venue-listings/recommended` and `POST`/`GET
+/farmer/venue-bookings`, none of which exist in ANY route file (not a
+mounting gap like the five above — these were never implemented). The
+Selling-Space Matching Portal's PROVIDER side (`src/routes/marketvenue.js`)
+is real and now reachable; the farmer-facing booking side is not.
+
+**เส้นทาง B — group buying** (`grant_fertilizer_mixing_group_order.sql`,
+new endpoints in `src/routes/fertilizer.js`, additive changes to `GET`/`PUT
+/fertilizermixing/rate-card` and `GET /fertilizermixing/orders` in
+`src/routes/fertilizermixing.js`, new `frontend/fertilizer-mixing-group.html`
++ `frontend/js/fertilizer-mixing-group.js`). Product decision made with the
+user: **a farmer starts the group** (not the platform auto-matching by
+location/time, and not the provider), and **the provider sets a volume
+threshold + percent discount** on their own rate card
+(`bulk_discount_min_kg`/`bulk_discount_percent` on
+`marketplace.service_listing`) that applies to every order in a group once
+crossed.
+
+- A group starts as a lightweight pledge:
+  `marketplace.fertilizer_mixing_group_order` (the shell — organizer,
+  shareable `group_code`, join deadline, a snapshot of the listing's price
+  + discount policy at creation time) plus one
+  `marketplace.fertilizer_mixing_group_participant` row per farmer who
+  joins. Neither is a real order yet — the provider sees nothing until
+  submission.
+- Only the ORGANIZER's explicit submit
+  (`POST /farmer/fertilizer-mixing-groups/:id/submit`) turns a group into
+  real orders: one `marketplace.fertilizer_mixing_order` row per current
+  participant (`group_id` set), priced at the group's discounted
+  `unit_price` if the combined kg met `bulk_discount_min_kg`, at the normal
+  snapshotted price otherwise. From that moment on, every one of those
+  orders flows through the EXACT SAME Accept/Decline/Complete lifecycle a
+  solo เส้นทาง A order does — the provider's dashboard needed no new
+  action endpoints, only two additive read-side touches (rate-card
+  discount fields; `group_id` surfaced on order rows, shown as a "👥
+  กลุ่มสั่งซื้อ" badge). This is the one place in the whole codebase with an
+  explicit `BEGIN`/`COMMIT`/`ROLLBACK` transaction (every other write path
+  here is a single `INSERT`/`UPDATE`) — submitting a group creates N order
+  rows + updates N participant rows + updates the group row, and a crash
+  mid-loop must not leave some participants with a real order and others
+  silently without one.
+- No auto-submit/auto-expire background job — this sandbox has no
+  scheduler. `join_deadline` is advisory (shown to a farmer deciding
+  whether to join a group about to close); the organizer must still
+  explicitly submit or cancel. Documented gap, see Next Steps.
+- Explicitly out of scope for this pass: multiple discount tiers (one
+  threshold + one flat percent per listing, matching เส้นทาง A's
+  one-rate-card-item simplicity), a shared delivery date/address across
+  the whole group (each participant still sets their own), re-joining a
+  group after withdrawing (`UNIQUE(group_id, farmer_id)` blocks it — a
+  farmer who changes their mind needs a fresh group).
+
+**End-to-end verification performed:** ran the FULL migration chain (all 29
+files, in the corrected order above) against a clean local Postgres 16
+database with `ON_ERROR_STOP=1` — applies cleanly, and the new migration
+is idempotent (re-ran it a second time, zero errors, only expected
+`already exists, skipping` notices). Started the real Node server against
+that database and drove the complete group-buying flow through the actual
+HTTP API: created a group as one seeded farmer (organizer), looked it up
+by `group_code` as a second seeded farmer, joined, confirmed a duplicate
+join 409s, confirmed the organizer cannot withdraw (`409
+organizer_cannot_withdraw`, must cancel instead), submitted the group with
+combined kg above the listing's threshold and confirmed the resulting
+orders both landed in the provider's `GET /fertilizermixing/orders` with
+the correct discounted `unit_price` and `group_id`, confirmed re-submitting
+an already-Submitted group 409s, separately confirmed a group whose
+combined kg stayed BELOW the threshold submits at the normal (undiscounted)
+price, and confirmed the cancel flow blocks a later submit attempt. Then
+repeated the group-creation → invite-by-URL → join → submit flow through
+the actual rendered pages (headless Chromium against the real server and
+database, not a DOM/unit test) to catch UI-wiring bugs the API-level test
+alone couldn't — no bugs found; all toasts, badges, and progress displays
+matched the API responses driving them.
+
 ## Product catalog vs. rate card (why InputSupplier isn't just Machinery again)
 
 The Machinery Portal's `marketplace.service_listing` is a **fixed-key rate
@@ -722,51 +725,6 @@ target). A non-partial PK means `ON CONFLICT (org_id, grade_code) DO
 UPDATE` never needs a matching `WHERE` predicate — this was a deliberate
 design choice made specifically to avoid re-triggering that class of bug,
 not an accident.
-
-## AI Matching ("แนะนำสำหรับท่าน") — content-based scoring, not deep learning
-
-Three new sibling routes in `src/routes/farmer.js` — `GET
-/farmer/products/recommended`, `GET /farmer/machinery-providers/recommended`,
-`GET /farmer/venue-listings/recommended` — back a "แนะนำสำหรับท่าน" section on
-each of `marketplace.html` / `machinery-marketplace.html` /
-`venue-marketplace.html`. This is deliberately a legitimate multi-factor
-**content-based ranking system**, not an ML model and not an LLM — worth
-being explicit about, per the "where in AgroLink is AI actually used"
-conversation that preceded this feature. Every candidate listing gets a
-`match_score` in `[0, 1]`, computed fresh on every request (no offline
-training step, unlike `risk.credit_model` above) from three signals in one
-SQL query per route:
-
-- **40% region match** — does the farmer's `identity.farmer.region_code`
-  appear in the provider's service area (`partner.vendor_profile.
-  service_regions` for InputSupplier/Machinery, `marketplace.venue_listing.
-  province_code` directly for MarketVenue, since venue listings carry their
-  province directly rather than through a vendor profile)? A provider that
-  has never set a service area gets a neutral `0.5` rather than `0` — many
-  existing providers predate the service-area feature (see "province-level
-  service area" further up) and shouldn't be penalized for a gap that isn't
-  their fault.
-- **30% price competitiveness** — this listing's price vs. the average price
-  of other active listings in the same `category`/`service_key`/
-  `venue_type` group. At-or-below the group average scores `1.0`, falling
-  linearly to `0` at double the average. No comparable price data (only
-  listing in its group, or a venue with no `fee_amount` set) scores a
-  neutral `0.5`.
-- **30% reliability** — the provider's historical success rate on TERMINAL
-  outcomes only: `fulfilled / (fulfilled + rejected)` `marketplace.
-  product_order` rows for InputSupplier, `Accepted / (Accepted + Declined)`
-  `marketplace.machinery_booking`/`marketplace.venue_booking` rows for
-  Machinery/MarketVenue. Pending (`requested`/`Requested`) and
-  farmer-cancelled rows are excluded from both sides of the ratio — neither
-  reflects on the provider. No terminal history yet scores a neutral `0.5`,
-  not a penalty for being new.
-
-Every `/recommended` route reuses the exact same base filters (`is_active`,
-`kyb_status`/`organization_role` verification) as its plain-browse sibling
-above it in this same file, so a provider that wouldn't show up in the
-normal browse list never shows up in "recommended" either. Query params:
-an optional category/service_key/venue_type filter (same domain as the
-sibling route) plus `limit` (default 10, max 50).
 
 ## What's mocked / simplified (be aware of this before relying on it)
 
@@ -1218,6 +1176,22 @@ and the live `agrolink_test` database — not unit tests against mocks:
 
 ## Next steps (not yet built)
 
+- A scheduled job to auto-submit or auto-expire `Open` fertilizer-mixing
+  groups (เส้นทาง B) once `join_deadline` passes — today `join_deadline` is
+  purely advisory; the organizer must still explicitly submit or cancel,
+  and a group nobody ever acts on just sits `Open` forever. This sandbox
+  has no scheduler/cron infrastructure at all yet, so this is blocked on
+  that being built generally, not specific to this feature.
+- Multiple discount tiers for fertilizer-mixing group buying (เส้นทาง B) —
+  v1 is one threshold + one flat percent per listing.
+- The farmer-facing half of the Selling-Space Matching Portal (เกี่ยวข้องกับ
+  MarketVenue, unrelated to fertilizer-mixing): `frontend/js/venue-marketplace.js`
+  calls `GET /farmer/venue-listings/recommended` and `POST`/`GET
+  /farmer/venue-bookings`, none of which exist in any route file — found
+  while auditing `src/server.js`'s router mounts in this pass (see the
+  Fulfillment Marketplace section above). The provider side
+  (`src/routes/marketvenue.js`) is real; only the farmer-booking side is
+  missing.
 - Real OIDC/JWKS verification in front of `POST /auth/login`.
 - RLS on `notification.notification_log` and `produce.delivery` — both
   currently rely entirely on API-layer `WHERE` clauses for their security

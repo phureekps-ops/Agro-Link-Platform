@@ -19,13 +19,27 @@ router.use(requireAuth, requireOrganization);
 // were removed from both lists together on 2026-07-24, per the same product
 // decision as ORG_SELF_REGISTER_TYPES in auth.js — an org can no longer
 // self-request either of these as an additional role, same as it can no
-// longer self-register as one from scratch. 'MarketVenue' (เจ้าของสถานที่
-// จำหน่ายสินค้า) added 2026-07-26 alongside the new Selling-Space Matching
-// Portal — see grant_market_venue_marketplace.sql.
+// longer self-register as one from scratch.
+//
+// 'FertilizerMixingService' added here for Fulfillment Marketplace เส้นทาง C
+// (KYB-driven onboarding for NEW fertilizer-mixing providers) — per the
+// explicit product decision, this deliberately does NOT introduce a
+// separate KYB workflow. It reuses this exact self-service request +
+// Platform Ops approval mechanism (already generic and already backing
+// InputSupplier/Lender/Logistics/Buyer/the four machinery types/
+// DryingYardService below) — the role_type/org_type CHECK constraints
+// already allow 'FertilizerMixingService' (see grant_fertilizer_mixing
+// _service.sql, written for เส้นทาง A), only this requestable-list entry
+// was ever missing. The practical effect: an org that already cleared
+// entity-level KYB for some OTHER primary role (e.g. an InputSupplier
+// already selling fertilizer) can now request FertilizerMixingService as
+// an ADDITIONAL role here — on top of the from-scratch self-registration
+// path (org_type = FertilizerMixingService via POST /auth/org-register)
+// that เส้นทาง A already shipped.
 const ORG_REQUESTABLE_ROLE_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer',
   'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
-  'MarketVenue',
+  'FertilizerMixingService',
 ];
 
 const ROLE_LABEL_TH = {
@@ -34,7 +48,7 @@ const ROLE_LABEL_TH = {
   TractorService: 'บริการรถไถ', DroneService: 'บริการโดรน/ฉีดพ่นสารเคมี',
   HarvesterService: 'บริการรถเกี่ยวข้าว', TruckService: 'บริการรถบรรทุก',
   DryingYardService: 'บริการลานตากข้าว',
-  MarketVenue: 'เจ้าของสถานที่จำหน่ายสินค้า (ตลาด/ลานค้า)',
+  FertilizerMixingService: 'ผู้ให้บริการผสมปุ๋ยสั่งตัด',
 };
 
 /**

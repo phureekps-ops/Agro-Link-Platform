@@ -144,9 +144,15 @@ function orderCard(o) {
     `;
   }
 
+  // เส้นทาง B: an order created from a farmer-organized group buy carries
+  // group_id — surfaced here as a small badge so the provider understands
+  // why several orders share the same (possibly discounted) unit_price,
+  // rather than looking like unrelated coincidences.
+  const groupBadge = o.group_id ? `<span class="badge status-active" title="คำสั่งนี้มาจากกลุ่มรวมสั่งซื้อ">👥 กลุ่มสั่งซื้อ</span>` : "";
+
   return `
     <div class="item-card" data-order-id="${o.order_id}">
-      <div class="row"><span class="title">${escapeHtml(o.farmer_name)} — ${escapeHtml(o.label_th)}</span>${badge}</div>
+      <div class="row"><span class="title">${escapeHtml(o.farmer_name)} — ${escapeHtml(o.label_th)}</span>${badge}${groupBadge}</div>
       <div class="detail-line">สูตรที่ต้องการ: ${requestedMixLine(o)}</div>
       <div class="detail-line">วิธีรับปุ๋ย: ${escapeHtml(DELIVERY_OPTION_LABEL_TH[o.delivery_option] || o.delivery_option)}${o.delivery_address ? ` — ${escapeHtml(o.delivery_address)}` : ""}</div>
       <div class="detail-line">วันที่ต้องการรับ/จัดส่ง: ${escapeHtml(o.preferred_date)}</div>
@@ -252,6 +258,13 @@ handleOrderActionClick(document.getElementById("orderReviewQueueSection"));
 handleOrderActionClick(document.getElementById("orderHistorySection"));
 
 // ---------- ราคาบริการ (Rate Card) ----------
+// เส้นทาง B: each item can optionally carry a group-buying discount policy
+// — a minimum combined kg threshold and a percent-off applied to EVERY
+// order in a farmer-organized group once that threshold is met (see
+// POST /farmer/fertilizer-mixing-groups/:id/submit). Both fields are
+// optional together; leaving either blank clears the whole policy for
+// that item (src/routes/fertilizermixing.js only writes a policy when
+// BOTH min_kg and percent are present and valid).
 function rateCardFieldRow(item) {
   return `
     <div class="field">
@@ -259,6 +272,19 @@ function rateCardFieldRow(item) {
       <input type="number" id="price_${item.service_key}" data-service-key="${item.service_key}"
              min="0" step="0.01" placeholder="ยังไม่ได้ตั้งราคา"
              value="${item.unit_price !== null ? item.unit_price : ""}" />
+    </div>
+    <div class="field" style="margin-top:-6px;">
+      <label style="font-size:12.5px; color:var(--gray-500);">
+        ส่วนลดกลุ่มรวมสั่งซื้อ (ไม่บังคับ) — เมื่อยอดรวมกลุ่มถึง (กก.) และเปอร์เซ็นต์ส่วนลด
+      </label>
+      <div style="display:flex; gap:8px;">
+        <input type="number" id="discount_min_kg_${item.service_key}" data-discount-min-kg="${item.service_key}"
+               min="0" step="1" placeholder="เกณฑ์ กก. เช่น 100"
+               value="${item.bulk_discount_min_kg !== null && item.bulk_discount_min_kg !== undefined ? item.bulk_discount_min_kg : ""}" style="flex:1;" />
+        <input type="number" id="discount_percent_${item.service_key}" data-discount-percent="${item.service_key}"
+               min="0" max="50" step="0.5" placeholder="% ส่วนลด เช่น 10"
+               value="${item.bulk_discount_percent !== null && item.bulk_discount_percent !== undefined ? item.bulk_discount_percent : ""}" style="flex:1;" />
+      </div>
     </div>
   `;
 }
@@ -289,14 +315,46 @@ document.getElementById("rateCardForm").addEventListener("submit", async (e) => 
       prices[key] = num;
     }
   });
+
+  // เส้นทาง B: build { service_key: {min_kg, percent} | null } from the
+  // paired min-kg/percent inputs next to each price field. Both blank ->
+  // null (clears any existing policy). Exactly one filled in is treated
+  // as invalid — a threshold with no discount, or vice versa, can't
+  // express a real policy (matches PUT /fertilizermixing/rate-card's own
+  // validation, checked again here so the error surfaces before the
+  // request even goes out).
+  const bulkDiscount = {};
+  document.querySelectorAll("#rateCardFields input[data-discount-min-kg]").forEach((minInput) => {
+    const key = minInput.dataset.discountMinKg;
+    const percentInput = document.getElementById(`discount_percent_${key}`);
+    const minRaw = minInput.value.trim();
+    const percentRaw = percentInput ? percentInput.value.trim() : "";
+
+    if (minRaw === "" && percentRaw === "") {
+      bulkDiscount[key] = null;
+      return;
+    }
+    if (minRaw === "" || percentRaw === "") {
+      hasInvalid = true;
+      return;
+    }
+    const minKg = Number(minRaw);
+    const percent = Number(percentRaw);
+    if (!Number.isFinite(minKg) || minKg <= 0 || !Number.isFinite(percent) || percent <= 0 || percent > 50) {
+      hasInvalid = true;
+      return;
+    }
+    bulkDiscount[key] = { min_kg: minKg, percent };
+  });
+
   if (hasInvalid) {
-    toast("กรุณากรอกราคาเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0", true);
+    toast("กรุณากรอกราคา/ส่วนลดกลุ่มให้ถูกต้อง (ทั้งเกณฑ์ กก. และ % ต้องกรอกคู่กัน หรือเว้นว่างทั้งคู่)", true);
     return;
   }
 
   btn.disabled = true;
   try {
-    await AgroLinkFertilizerMixingAPI.put("/fertilizermixing/rate-card", { prices });
+    await AgroLinkFertilizerMixingAPI.put("/fertilizermixing/rate-card", { prices, bulk_discount: bulkDiscount });
     toast("บันทึกราคาบริการเรียบร้อยแล้ว");
     await Promise.all([loadRateCard(), refreshSummary()]);
   } catch (err) {
