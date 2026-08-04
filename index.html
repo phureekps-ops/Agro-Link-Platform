@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgroLink Platform — แพลตฟอร์มบริการครบวงจรและระบบสินเชื่อเชื่อมโยงเพื่อเกษตรกรไทย</title>
+<title>AgroLink Platform — แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยงเพื่อเกษตรกรไทย</title>
 <style>
 /* Font Awesome 7 Free (Solid) — embedded inline, no external requests */
 /*!
@@ -129,10 +129,6 @@
   }
   .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 50px; align-items: center; }
   @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
-  .hero-topline { text-align: center; margin-bottom: 44px; }
-  .hero-topline .th { display: block; font-size: 30px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
-  .hero-topline .en { display: block; font-size: 16px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
-  @media (max-width: 640px) { .hero-topline .th { font-size: 24px; } }
   .hero h1 { font-size: 46px; line-height: 1.2; margin-bottom: 20px; }
   .hero h1 span { color: var(--green); }
   .hero p.lead { font-size: 18px; color: var(--muted); max-width: 560px; margin-bottom: 30px; }
@@ -327,7 +323,6 @@
     </div>
     <nav class="nav-links">
       <div class="nav-row">
-        <a href="about.html">เกี่ยวกับเรา</a>
         <a href="#concept">แนวคิดหลัก</a>
         <a href="#how">วิธีการทำงาน</a>
         <a href="#knowledge">คลังความรู้</a>
@@ -337,8 +332,8 @@
       <div class="nav-row">
         <a href="#roadmap">แผนสินค้า</a>
         <a href="#audience">สำหรับใคร</a>
+        <a href="frontend/carbon-credit.html">คาร์บอนเครดิต/ข้าวคาร์บอนต่ำ</a>
         <a href="#partners">พันธมิตร</a>
-        <a href="frontend/fertilizer-calculator.html">AI ปุ๋ยสั่งตัด</a>
         <a href="#contact">ติดต่อ</a>
       </div>
     </nav>
@@ -346,15 +341,10 @@
 </header>
 
 <section class="hero">
-  <div class="container">
-    <div class="hero-topline">
-      <span class="th">ระบบนิเวศน์การเกษตรไทย</span>
-      <span class="en">Thailand Agricultural Ecosystem</span>
-    </div>
-    <div class="hero-grid">
+  <div class="container hero-grid">
     <div>
       <div class="eyebrow"><i class="fa-solid fa-seedling"></i> ส่วนหนึ่งของเครือข่าย Galaxy</div>
-      <h1><span>บริการเกษตรครบวงจรด้วย AI และระบบสินเชื่อเชื่อมโยงสำหรับเกษตรกรไทยทุกแปลง</span></h1>
+      <h1><span>บริการเกษตรครบวงจร และสินเชื่อเชื่อมโยง สำหรับเกษตรกรไทยทุกแปลง</span></h1>
       <p class="lead">AgroLink คือแม่แบบวงจรการผลิตสากล ที่ผูกบริการทุกขั้นตอนการผลิต สินเชื่อหลายผู้ให้กู้แบบเบิกจ่ายเป็นงวดที่ตรวจสอบได้จริง และระบบเตือนภัยร่วม ไว้ในแพลตฟอร์มเดียว เริ่มต้นด้วยข้าว พร้อมขยายสู่พืชและสัตว์เศรษฐกิจทุกชนิด</p>
       <div class="hero-actions">
         <a href="frontend/register.html" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> สมัครเป็นเกษตรกร</a>
@@ -379,7 +369,6 @@
         </div>
       </div>
       <div class="float-badge fb2"><i class="fa-solid fa-coins"></i> วงเงินคงเหลือ 4,200 บาท</div>
-    </div>
     </div>
   </div>
 </section>
@@ -710,7 +699,7 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-leaf"></i></span>AgroLink</div>
-        <p class="desc">แพลตฟอร์มบริการครบวงจรและระบบสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด ส่วนหนึ่งของเครือข่าย Galaxy ที่พัฒนาโดย MyGalaxy Co., Ltd.</p>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด ส่วนหนึ่งของเครือข่าย Galaxy ที่พัฒนาโดย MyGalaxy Co., Ltd.</p>
       </div>
       <div>
         <h5>แพลตฟอร์ม</h5>
@@ -733,7 +722,6 @@
       <div>
         <h5>องค์กร</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
           <li><a href="#partners">พันธมิตร</a></li>
           <li><a href="#">เกี่ยวกับ Galaxy Core</a></li>
           <li><a href="#">นโยบายความเป็นส่วนตัว</a></li>
