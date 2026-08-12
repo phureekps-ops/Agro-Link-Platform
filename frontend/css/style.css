@@ -226,12 +226,12 @@ a { color: inherit; }
    .logout-btn white text almost unreadable. #portalNav gets its own solid,
    high-contrast treatment instead of inheriting the transparent look. */
 #portalNav {
-  background: #fff;
-  color: var(--green-900);
+  background: var(--green-700);
+  color: #fff;
   font-weight: 700;
   border: 1px solid rgba(255,255,255,0.6);
 }
-#portalNav:hover { background: var(--gold-100); }
+#portalNav:hover { background: var(--green-600); }
 
 .container {
   max-width: 1080px;
