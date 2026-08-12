@@ -365,6 +365,16 @@ async function loadNotifications() {
 
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkAPI.logout());
 
+// Quick "go to another portal" dropdown — a farmer stays logged in here and
+// only leaves to browse, so this is plain navigation (not a login/logout
+// action); the value resets itself so re-selecting the same portal twice in
+// a row still fires a change event.
+document.getElementById("portalNav").addEventListener("change", (e) => {
+  const target = e.target.value;
+  if (!target) return;
+  window.location.href = target;
+});
+
 /**
  * GET /farmer/dashboard doubles as the session/existence gate check here —
  * same init() pattern as every other portal, though a farmer session never
