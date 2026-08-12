@@ -17,6 +17,7 @@ const stageCalendarRouter = require('./routes/stagecalendar');
 const fertilizerRouter = require('./routes/fertilizer');
 const fertilizerMixingRouter = require('./routes/fertilizermixing');
 const carbonRouter = require('./routes/carbon');
+const farmerMachineryRouter = require('./routes/farmermachinery');
 
 const app = express();
 
@@ -57,6 +58,11 @@ app.use('/farmer', fertilizerRouter);
 // path collision with farmer.js/stagecalendar.js/fertilizer.js (none of
 // them use a /carbon/* sub-path).
 app.use('/farmer', carbonRouter);
+// farmermachinery.js (machinery/drying-yard service booking — browse
+// providers, book, view own bookings, cancel) — same shared '/farmer'
+// prefix pattern as above; no path collision with the other four farmer
+// route files (none of them define a /machinery-* sub-path).
+app.use('/farmer', farmerMachineryRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
 app.use('/admin', adminRouter);

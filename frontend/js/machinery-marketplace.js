@@ -1,12 +1,3 @@
-/**
- * AgroLink — บริการเครื่องจักรกล/ลานตาก (machinery-marketplace.html).
- *
- * Backs GET /farmer/machinery-providers, POST/GET /farmer/machinery-bookings,
- * and POST /farmer/machinery-bookings/:id/cancel. Same pattern as
- * venue-marketplace.js (the selling-space browse+book page) — lives at the
- * Farmer Portal's top level, reuses AgroLinkAPI/agrolink_farmer_session, no
- * login of its own.
- */
 const session = AgroLinkAPI.requireSessionOrRedirect();
 
 const toastEl = document.getElementById("toast");
@@ -18,7 +9,10 @@ function toast(message, isError = false) {
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return "";
-  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function thaiDate(iso) {
@@ -26,25 +20,19 @@ function thaiDate(iso) {
   return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Same seven fixed rate-card items as backend/src/routes/machinery.js's
-// RATE_CARD_ITEMS — duplicated locally, matching this project's established
-// pattern of small local constant duplicates across plain <script> files
-// with no shared module bundler (see SERVICE_TYPE_LABEL_TH in
-// frontend/machinery/js/dashboard.js).
-const SERVICE_KEY_LABEL_TH = {
-  plow_rough: "ไถดะ",
-  plow_secondary_seed: "ไถแปรและหว่าน",
-  rotary_till: "ปั่นดิน",
-  spraying: "ฉีดพ่นสารเคมี (โดรน/รถฉีดพ่น)",
-  harvesting: "เกี่ยวข้าว",
-  trucking: "ขนส่งด้วยรถบรรทุก",
-  drying: "ลานตากข้าว/ตากผลผลิต",
-};
+// node-pg returns a plain `date` column (preferred_date has no time
+// component) as a full ISO timestamp string once JSON-serialized (e.g.
+// "2026-09-01T00:00:00.000Z") — this trims it back to just the date so the
+// card doesn't show a confusing midnight-UTC timestamp for a date-only field.
+function dateOnly(value) {
+  if (!value) return "-";
+  return String(value).slice(0, 10);
+}
 
 const BOOKING_STATUS_LABEL_TH = {
-  Requested: "รอการยืนยันจากผู้ให้บริการ",
-  Accepted: "รับคำขอแล้ว",
-  Declined: "ผู้ให้บริการปฏิเสธ",
+  Requested: "รอการยืนยัน",
+  Accepted: "รับจองแล้ว",
+  Declined: "ปฏิเสธแล้ว",
   Cancelled: "ยกเลิกแล้ว",
 };
 const BOOKING_STATUS_BADGE_CLASS = {
@@ -54,247 +42,109 @@ const BOOKING_STATUS_BADGE_CLASS = {
   Cancelled: "status-declined",
 };
 
-// Populate the province filter from TH_PROVINCES (frontend/js/provinces.js).
-const provinceFilter = document.getElementById("provinceFilter");
-TH_PROVINCES.forEach(([code, name]) => {
-  const opt = document.createElement("option");
-  opt.value = code;
-  opt.textContent = name;
-  provinceFilter.appendChild(opt);
-});
-
-function provinceName(code) {
-  const found = TH_PROVINCES.find((p) => p[0] === code);
-  return found ? found[1] : code;
-}
-
 // ---------- ผู้ให้บริการ ----------
-/**
- * Small horizontal thumbnail strip from marketplace.vendor_photo (both
- * 'machinery' and 'service' photo_type together — this is a browse catalog,
- * not the provider's own management view, so no need to separate them).
- * Photos are the same org_id-wide gallery the provider portal manages
- * (frontend/machinery/js/dashboard.js), not tied to one specific
- * service_key/listing_id — see GET /farmer/machinery-providers' doc comment.
- */
-function photoGalleryHtml(photos) {
-  if (!photos || photos.length === 0) return "";
-  const thumbs = photos.slice(0, 4).map((p) => `
-    <img src="${p.photo_data_url}" alt="${escapeHtml(p.caption || "")}"
-         style="width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--gray-300);" />
-  `).join("");
-  const more = photos.length > 4 ? `<span style="font-size:12px; color:var(--gray-500); align-self:center;">+${photos.length - 4} รูป</span>` : "";
-  return `<div style="display:flex; gap:6px; margin:8px 0; overflow-x:auto;">${thumbs}${more}</div>`;
-}
-
-function listingCard(l) {
-  const regions = (l.service_regions || []).map(provinceName).join(", ");
-  const matchBadge = l.match_score !== undefined && l.match_score !== null
-    ? `<span class="badge status-active" style="background:var(--gold-100, #fff6dd); color:var(--gold-700, #8a6d1a);">ตรงกับท่าน ${Math.round(l.match_score * 100)}%</span>`
-    : "";
+function providerCard(p) {
   return `
-    <div class="item-card" data-listing-id="${l.listing_id}">
-      <div class="row">
-        <span class="title">${l.is_featured ? "⭐ " : ""}${escapeHtml(l.org_name)}</span>
-        <span class="badge status-active">${escapeHtml(SERVICE_KEY_LABEL_TH[l.service_key] || l.service_key)}</span>
-        ${l.is_featured ? `<span class="badge status-approved">แนะนำ</span>` : ""}
-        ${matchBadge}
-      </div>
-      ${photoGalleryHtml(l.photos)}
-      ${regions ? `<div class="detail-line muted">พื้นที่ให้บริการ: ${escapeHtml(regions)}</div>` : ""}
-      <div class="detail-line" style="font-weight:700; color:var(--green-900);">${Number(l.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(l.price_unit || "")} (ชำระหน้างานโดยตรง)</div>
+    <div class="item-card" data-listing-id="${p.listing_id}">
+      <div class="row"><span class="title">${escapeHtml(p.org_name)}</span></div>
+      <div class="detail-line">${escapeHtml(p.label_th)}</div>
+      <div class="detail-line muted">ราคา: ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit || "")}</div>
       <div class="action-row">
-        <button type="button" class="btn btn-primary btn-sm" data-request-booking="${l.listing_id}"
-                data-label="${escapeHtml((SERVICE_KEY_LABEL_TH[l.service_key] || l.service_key) + ' — ' + l.org_name)}">
-          ขอใช้บริการนี้
-        </button>
+        <button type="button" class="btn btn-primary btn-sm" data-book-from="${p.listing_id}" data-org-name="${escapeHtml(p.org_name)}" data-label-th="${escapeHtml(p.label_th)}">จองบริการนี้</button>
       </div>
     </div>
   `;
 }
 
-/**
- * "แนะนำสำหรับท่าน" — GET /farmer/machinery-providers/recommended. Same
- * listingCard renderer as the main browse list (now match_score-aware),
- * same data-request-booking wiring reused via handleRequestBookingClick
- * above, so a farmer can open the booking form directly from a
- * recommended card.
- */
-async function loadRecommendedProviders() {
-  const el = document.getElementById("recommendedProvidersSection");
+async function loadProviders() {
+  const el = document.getElementById("providerListSection");
+  const serviceType = document.getElementById("serviceTypeFilter").value;
   try {
-    const listings = await AgroLinkAPI.get("/farmer/machinery-providers/recommended?limit=6");
-    if (listings.length === 0) {
-      el.innerHTML = `<div class="empty-state">ยังไม่มีคำแนะนำในขณะนี้</div>`;
+    const query = serviceType ? `?service_type=${encodeURIComponent(serviceType)}` : "";
+    const providers = await AgroLinkAPI.get(`/farmer/machinery-providers${query}`);
+    if (providers.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีผู้ให้บริการเครื่องจักรกล/ลานตากที่เปิดรับในขณะนี้</div>`;
       return;
     }
-    el.innerHTML = listings.map(listingCard).join("");
-  } catch (err) {
-    el.innerHTML = `<div class="empty-state">โหลดคำแนะนำไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-async function loadListings() {
-  const el = document.getElementById("listingListSection");
-  const serviceKey = document.getElementById("serviceKeyFilter").value;
-  const provinceCode = document.getElementById("provinceFilter").value;
-  try {
-    const params = new URLSearchParams();
-    if (serviceKey) params.set("service_key", serviceKey);
-    if (provinceCode) params.set("province_code", provinceCode);
-    const query = params.toString() ? `?${params.toString()}` : "";
-    const listings = await AgroLinkAPI.get(`/farmer/machinery-providers${query}`);
-    if (listings.length === 0) {
-      el.innerHTML = `<div class="empty-state">ไม่พบผู้ให้บริการตามเงื่อนไขที่เลือก</div>`;
-      return;
-    }
-    el.innerHTML = listings.map(listingCard).join("");
+    el.innerHTML = providers.map(providerCard).join("");
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดผู้ให้บริการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
 }
 
-document.getElementById("serviceKeyFilter").addEventListener("change", () => loadListings());
-document.getElementById("provinceFilter").addEventListener("change", () => loadListings());
+document.getElementById("serviceTypeFilter").addEventListener("change", () => loadProviders());
 
-// ---------- แบบฟอร์มขอใช้บริการ ----------
-const bookingForm = document.getElementById("bookingForm");
-const bookingFormTitle = document.getElementById("bookingFormTitle");
-const bookingListingIdInput = document.getElementById("bookingListingId");
-const bookingLabel = document.getElementById("bookingLabel");
-const bookingPreferredDateInput = document.getElementById("bookingPreferredDate");
-const bookingDateWarning = document.getElementById("bookingDateWarning");
-
-// Set of preferred_date strings (YYYY-MM-DD) already Requested/Accepted
-// against the listing currently open in the booking form — populated by
-// loadBookedDates() below, consulted by the date-input listener to warn
-// (not block — see GET /farmer/machinery-providers/:listingId/booked-dates'
-// doc comment: a booking is only ever a request, the provider decides).
-let bookedDatesForCurrentListing = {};
-
-const BOOKED_DATE_STATUS_LABEL_TH = {
-  Requested: "รอการยืนยัน",
-  Accepted: "รับคำขอแล้ว",
-};
-
-function bookedDateRow(row) {
-  return `
-    <div class="item-card" style="padding:8px 12px;">
-      <div class="row">
-        <span class="detail-line" style="margin:0;">${escapeHtml(row.preferred_date)}</span>
-        <span class="badge ${row.status === "Accepted" ? "status-active" : "status-pending"}">${escapeHtml(BOOKED_DATE_STATUS_LABEL_TH[row.status] || row.status)}</span>
-      </div>
-    </div>
-  `;
-}
-
-async function loadBookedDates(listingId) {
-  const el = document.getElementById("bookedDatesSection");
-  bookedDatesForCurrentListing = {};
-  try {
-    const rows = await AgroLinkAPI.get(`/farmer/machinery-providers/${listingId}/booked-dates`);
-    if (rows.length === 0) {
-      el.innerHTML = `<div class="empty-state" style="padding:10px;">ยังไม่มีคิวจองสำหรับบริการนี้ — ทุกวันว่าง</div>`;
-      return;
-    }
-    rows.forEach((r) => { bookedDatesForCurrentListing[r.preferred_date] = r.status; });
-    el.innerHTML = rows.map(bookedDateRow).join("");
-  } catch (err) {
-    el.innerHTML = `<div class="empty-state" style="padding:10px;">โหลดคิวจองไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-function checkBookingDateWarning() {
-  const value = bookingPreferredDateInput.value;
-  const status = bookedDatesForCurrentListing[value];
-  if (status) {
-    bookingDateWarning.textContent = `⚠️ วันที่นี้มีคิวจองแล้ว (${BOOKED_DATE_STATUS_LABEL_TH[status] || status}) ยังส่งคำขอได้ แต่แนะนำให้เลือกวันอื่นเพื่อโอกาสได้คิวสูงกว่า`;
-    bookingDateWarning.style.display = "block";
-  } else {
-    bookingDateWarning.style.display = "none";
-  }
-}
-bookingPreferredDateInput.addEventListener("change", checkBookingDateWarning);
-// Don't let a farmer pick a date that's already in the past.
-bookingPreferredDateInput.min = new Date().toISOString().slice(0, 10);
-
-function openBookingForm(listingId, label) {
-  bookingListingIdInput.value = listingId;
-  bookingLabel.textContent = `บริการ: ${label}`;
-  bookingFormTitle.style.display = "flex";
-  bookingForm.style.display = "block";
-  bookingDateWarning.style.display = "none";
-  document.getElementById("bookedDatesSection").innerHTML = `<div class="loading-line">กำลังโหลดคิวจอง…</div>`;
-  loadBookedDates(listingId);
-  bookingForm.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function closeBookingForm() {
-  bookingForm.reset();
-  bookingListingIdInput.value = "";
-  bookingFormTitle.style.display = "none";
-  bookingForm.style.display = "none";
-  bookingDateWarning.style.display = "none";
-  bookedDatesForCurrentListing = {};
-}
-
-function handleRequestBookingClick(e) {
-  const btn = e.target.closest("[data-request-booking]");
+document.getElementById("providerListSection").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-book-from]");
   if (!btn) return;
-  openBookingForm(btn.dataset.requestBooking, btn.dataset.label);
-}
+  document.getElementById("bookingListingId").value = btn.dataset.bookFrom;
+  document.getElementById("bookingLabel").textContent = `${btn.dataset.orgName} — ${btn.dataset.labelTh}`;
+  document.getElementById("bookingFormTitle").style.display = "block";
+  document.getElementById("bookingForm").style.display = "block";
+  document.getElementById("bookingForm").scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
-document.getElementById("listingListSection").addEventListener("click", handleRequestBookingClick);
-document.getElementById("recommendedProvidersSection").addEventListener("click", handleRequestBookingClick);
+document.getElementById("bookingCancelBtn").addEventListener("click", () => {
+  document.getElementById("bookingFormTitle").style.display = "none";
+  document.getElementById("bookingForm").style.display = "none";
+  document.getElementById("bookingForm").reset();
+});
 
-document.getElementById("bookingCancelBtn").addEventListener("click", () => closeBookingForm());
-
-bookingForm.addEventListener("submit", async (e) => {
+// ---------- ส่งคำขอจอง ----------
+document.getElementById("bookingForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const payload = {
-    listing_id: bookingListingIdInput.value,
-    quantity_note: document.getElementById("bookingQuantityNote").value.trim() || null,
-    preferred_date: document.getElementById("bookingPreferredDate").value,
-    farmer_note: document.getElementById("bookingFarmerNote").value.trim() || null,
-  };
+  const listingId = document.getElementById("bookingListingId").value;
+  const preferredDate = document.getElementById("bookingPreferredDate").value;
 
-  if (!payload.preferred_date) {
+  if (!preferredDate) {
     toast("กรุณาเลือกวันที่ต้องการใช้บริการ", true);
     return;
   }
 
-  const submitBtn = document.getElementById("bookingSubmitBtn");
-  submitBtn.disabled = true;
+  const payload = {
+    listing_id: listingId,
+    preferred_date: preferredDate,
+    quantity_note: document.getElementById("bookingQuantityNote").value.trim() || undefined,
+    farmer_note: document.getElementById("bookingFarmerNote").value.trim() || undefined,
+  };
+
+  const btn = document.getElementById("bookingSubmitBtn");
+  btn.disabled = true;
   try {
     await AgroLinkAPI.post("/farmer/machinery-bookings", payload);
-    toast("ส่งคำขอใช้บริการเรียบร้อยแล้ว รอผู้ให้บริการยืนยัน");
-    closeBookingForm();
+    toast("ส่งคำขอจองเรียบร้อยแล้ว");
+    document.getElementById("bookingForm").reset();
+    document.getElementById("bookingFormTitle").style.display = "none";
+    document.getElementById("bookingForm").style.display = "none";
     await loadBookingHistory();
   } catch (err) {
-    toast("ส่งคำขอไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+    toast("ส่งคำขอจองไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
   } finally {
-    submitBtn.disabled = false;
+    btn.disabled = false;
   }
 });
 
-// ---------- คำขอใช้บริการของท่าน ----------
+// ---------- คำขอจองของท่าน ----------
 function bookingCard(b) {
   const badgeClass = BOOKING_STATUS_BADGE_CLASS[b.status] || "status-pending";
   const badge = `<span class="badge ${badgeClass}">${escapeHtml(BOOKING_STATUS_LABEL_TH[b.status] || b.status)}</span>`;
-  const cancelBtn = b.status === "Requested"
-    ? `<div class="action-row"><button type="button" class="btn btn-decline btn-sm" data-cancel-booking="${b.booking_id}">ยกเลิกคำขอ</button></div>`
-    : "";
-
+  let actions = "";
+  if (b.status === "Requested") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-decline btn-sm" data-cancel-booking="${b.booking_id}">ยกเลิกคำขอ</button>
+      </div>
+    `;
+  }
   return `
     <div class="item-card" data-booking-id="${b.booking_id}">
-      <div class="row"><span class="title">${escapeHtml(b.label_th)} — ${escapeHtml(b.org_name)}</span>${badge}</div>
-      ${b.quantity_note ? `<div class="detail-line">พื้นที่/ปริมาณโดยประมาณ: ${escapeHtml(b.quantity_note)}</div>` : ""}
-      <div class="detail-line">วันที่ต้องการใช้บริการ: ${escapeHtml(b.preferred_date)}</div>
-      <div class="detail-line muted">ค่าบริการ (ชำระหน้างาน): ${Number(b.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(b.price_unit || "")}</div>
-      ${b.farmer_note ? `<div class="detail-line muted">หมายเหตุของท่าน: ${escapeHtml(b.farmer_note)}</div>` : ""}
-      ${b.decided_reason ? `<div class="detail-line muted">เหตุผลจากผู้ให้บริการ: ${escapeHtml(b.decided_reason)}</div>` : ""}
-      <div class="detail-line muted">ขอใช้บริการเมื่อ ${thaiDate(b.requested_at)}</div>
-      ${cancelBtn}
+      <div class="row"><span class="title">${escapeHtml(b.org_name)} — ${escapeHtml(b.label_th)}</span>${badge}</div>
+      <div class="detail-line">วันที่ต้องการใช้บริการ: ${escapeHtml(dateOnly(b.preferred_date))}${b.quantity_note ? " · ปริมาณโดยประมาณ: " + escapeHtml(b.quantity_note) : ""}</div>
+      <div class="detail-line muted">ค่าบริการ (จ่ายหน้างานโดยตรง): ${Number(b.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(b.price_unit || "")}</div>
+      ${b.farmer_note ? `<div class="detail-line muted">หมายเหตุ: ${escapeHtml(b.farmer_note)}</div>` : ""}
+      ${b.decided_reason ? `<div class="detail-line muted">เหตุผล: ${escapeHtml(b.decided_reason)}</div>` : ""}
+      <div class="detail-line muted">ขอจองเมื่อ ${thaiDate(b.requested_at)}</div>
+      ${actions}
     </div>
   `;
 }
@@ -304,33 +154,34 @@ async function loadBookingHistory() {
   try {
     const bookings = await AgroLinkAPI.get("/farmer/machinery-bookings");
     if (bookings.length === 0) {
-      el.innerHTML = `<div class="empty-state">ท่านยังไม่เคยขอใช้บริการเครื่องจักรกล/ลานตาก</div>`;
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคำขอจอง</div>`;
       return;
     }
     el.innerHTML = bookings.map(bookingCard).join("");
   } catch (err) {
-    el.innerHTML = `<div class="empty-state">โหลดคำขอใช้บริการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    el.innerHTML = `<div class="empty-state">โหลดคำขอจองไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
 }
 
 document.getElementById("bookingHistorySection").addEventListener("click", async (e) => {
-  const cancelBtn = e.target.closest("[data-cancel-booking]");
-  if (!cancelBtn) return;
-
-  const bookingId = cancelBtn.dataset.cancelBooking;
-  cancelBtn.disabled = true;
+  const btn = e.target.closest("[data-cancel-booking]");
+  if (!btn) return;
+  const bookingId = btn.dataset.cancelBooking;
+  btn.disabled = true;
   try {
     await AgroLinkAPI.post(`/farmer/machinery-bookings/${bookingId}/cancel`, {});
-    toast("ยกเลิกคำขอใช้บริการเรียบร้อยแล้ว");
+    toast("ยกเลิกคำขอจองเรียบร้อยแล้ว");
     await loadBookingHistory();
   } catch (err) {
     toast("ยกเลิกไม่สำเร็จ: " + err.message, true);
-    cancelBtn.disabled = false;
+    btn.disabled = false;
   }
 });
 
+// ---------- เริ่มต้น ----------
 async function init() {
-  await Promise.all([loadListings(), loadBookingHistory(), loadRecommendedProviders()]);
+  await loadProviders();
+  await loadBookingHistory();
 }
 
 init();

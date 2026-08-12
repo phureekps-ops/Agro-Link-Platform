@@ -117,22 +117,20 @@ async function requireMachineryOrg(req, res, next) {
 router.use(requireMachineryOrg);
 
 /**
- * IMPORTANT: marketplace.service_listing, marketplace.vendor_photo, and
- * marketplace.machinery_booking have NO row-level security at all
- * (relrowsecurity = false — verified, see the comment block at the end of
- * grant_machinery_marketplace.sql and grant_machinery_booking.sql). There is
- * no database-level backstop scoping rows to this org. Every query below
- * MUST include an explicit `WHERE org_id = $1` — this is not
- * defense-in-depth here, it is the entire security boundary, same situation
- * as GET /buyer/deliveries and GET /farmer/notifications elsewhere in this
+ * IMPORTANT: marketplace.service_listing and marketplace.vendor_photo have
+ * NO row-level security at all (relrowsecurity = false — verified, see the
+ * comment block at the end of grant_machinery_marketplace.sql). There is no
+ * database-level backstop scoping rows to this org. Every query below MUST
+ * include an explicit `WHERE org_id = $1` — this is not defense-in-depth
+ * here, it is the entire security boundary, same situation as
+ * GET /buyer/deliveries and GET /farmer/notifications elsewhere in this
  * project.
  */
 
 /**
  * GET /machinery/dashboard — org info plus how many of the seven rate-card
- * items are currently priced, a photo count, and a booking-status
- * breakdown, so the frontend has enough to render a summary without extra
- * round trips.
+ * items are currently priced, a photo count, and booking counts by status,
+ * so the frontend has enough to render a summary without extra round trips.
  */
 router.get('/dashboard', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -148,18 +146,16 @@ router.get('/dashboard', async (req, res, next) => {
         'SELECT COUNT(*)::int AS count FROM marketplace.vendor_photo WHERE org_id = $1',
         [subjectId],
       );
-      const bookingsByStatus = await client.query(
-        `SELECT status, COUNT(*)::int AS count
-           FROM marketplace.machinery_booking
-          WHERE org_id = $1
-          GROUP BY status`,
+      const bookings = await client.query(
+        `SELECT status, COUNT(*)::int AS count FROM marketplace.machinery_booking
+          WHERE org_id = $1 GROUP BY status`,
         [subjectId],
       );
       await logAccess(client, 'read', 'marketplace.service_listing', subjectId);
 
       const pricedCount = listings.rows.filter((r) => r.is_active).length;
-      const bookingsByStatusMap = {};
-      bookingsByStatus.rows.forEach((r) => { bookingsByStatusMap[r.status] = r.count; });
+      const bookingsByStatus = { Requested: 0, Accepted: 0, Declined: 0, Cancelled: 0 };
+      bookings.rows.forEach((r) => { bookingsByStatus[r.status] = r.count; });
 
       return {
         org_name: req.org.org_name,
@@ -173,7 +169,8 @@ router.get('/dashboard', async (req, res, next) => {
         priced_items_count: pricedCount,
         total_rate_card_items: RATE_CARD_KEYS.length,
         photo_count: photos.rows[0].count,
-        bookings_by_status: bookingsByStatusMap,
+        bookings_by_status: bookingsByStatus,
+        pending_bookings_count: bookingsByStatus.Requested,
       };
     });
 
@@ -232,7 +229,7 @@ router.get('/rate-card', async (req, res, next) => {
  * partial unique index added in grant_machinery_marketplace.sql). A key set
  * to null/0/omitted-then-explicitly-cleared is handled by setting
  * is_active = false rather than deleting the row outright — deleting could
- * violate marketplace.machinery_booking's FK to listing_id if a farmer has
+ * violate marketplace.service_request's FK to listing_id if a farmer has
  * already booked against it (no ON DELETE clause = NO ACTION), and
  * is_active = false already has the right meaning ("not currently offered")
  * without that risk. GET /machinery/rate-card and the dashboard both filter
@@ -430,8 +427,7 @@ router.delete('/photos/:id', async (req, res, next) => {
  * GET /machinery/bookings?status=... — booking requests against THIS org's
  * rate-card listings (never another provider's), joined with the requesting
  * farmer's name/phone. `status=action_needed` is shorthand for `Requested`
- * — the only status this portal still needs to act on. Same shape as
- * GET /marketvenue/bookings.
+ * — same shorthand pattern as GET /marketvenue/bookings?status=action_needed.
  */
 router.get('/bookings', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -542,74 +538,6 @@ router.post('/bookings/:id/decline', async (req, res, next) => {
       return res.status(409).json({ error: 'booking_not_requested', current_status: result.wrongStatus });
     }
     return res.json(result.booking);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * GET /machinery/service-regions — this org's currently declared service
- * regions (partner.vendor_profile.service_regions text[] of ISO 3166-2:TH
- * province codes — see frontend/js/provinces.js's TH_PROVINCES for the
- * full list this maps to). Every org already has a vendor_profile row
- * auto-created at registration (src/routes/auth.js), defaulted to '{}' —
- * so this is always a read of an existing row, never a "not found" case.
- *
- * This closes a real gap: GET /farmer/machinery-providers?province_code=
- * has filtered on this column since it was built, but until this route
- * (and PUT below) existed, nothing anywhere ever let an org SET it — every
- * org's service_regions was permanently '{}', silently making that filter
- * return zero results whenever a farmer actually picked a province.
- */
-router.get('/service-regions', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  try {
-    const regions = await withSessionContext('organization', subjectId, async (client) => {
-      const result = await client.query(
-        'SELECT service_regions FROM partner.vendor_profile WHERE org_id = $1',
-        [subjectId],
-      );
-      return result.rows[0] ? result.rows[0].service_regions : [];
-    });
-    return res.json({ service_regions: regions });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * PUT /machinery/service-regions
- * Body: { service_regions: string[] }
- *
- * Replaces (not merges) this org's declared service regions wholesale —
- * same "PUT replaces the full set" shape as PUT /machinery/rate-card.
- * Values aren't validated against TH_PROVINCES server-side (same trust
- * level as identity.farmer.region_code elsewhere in this project) — the
- * frontend only ever offers checkboxes from that fixed list, so a
- * malformed value here would mean a bypassed frontend, not a real user
- * path.
- */
-router.put('/service-regions', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { service_regions: serviceRegions } = req.body || {};
-
-  if (!Array.isArray(serviceRegions) || !serviceRegions.every((r) => typeof r === 'string')) {
-    return res.status(400).json({ error: 'invalid_service_regions', expected: 'array_of_strings' });
-  }
-
-  try {
-    const regions = await withSessionContext('organization', subjectId, async (client) => {
-      const result = await client.query(
-        `UPDATE partner.vendor_profile
-            SET service_regions = $2, updated_at = now()
-          WHERE org_id = $1
-          RETURNING service_regions`,
-        [subjectId, serviceRegions],
-      );
-      await logAccess(client, 'write', 'partner.vendor_profile', subjectId);
-      return result.rows[0] ? result.rows[0].service_regions : [];
-    });
-    return res.json({ service_regions: regions });
   } catch (err) {
     return next(err);
   }
