@@ -25,73 +25,39 @@
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
-    <div class="section-title">📥 คำขอใช้บริการที่ต้องดำเนินการ</div>
-    <div id="bookingReviewQueueSection" class="card-list">
-      <div class="loading-line">กำลังโหลดคำขอใช้บริการ…</div>
+    <div class="section-title">💵 ตารางราคาค่าบริการ</div>
+    <div class="panel">
+      <div id="rateCardFormSection" class="form-grid">
+        <div class="loading-line">กำลังโหลดตารางราคา…</div>
+      </div>
+      <button type="button" class="btn btn-primary" id="rateCardSubmitBtn" style="max-width:220px; margin-top:12px;">บันทึกตารางราคา</button>
+      <div class="hint" style="margin-top:10px;">ไม่จำเป็นต้องตั้งราคาให้ครบทุกรายการ — เลือกตั้งเฉพาะบริการที่ท่านให้บริการจริง เว้นว่างไว้เพื่อไม่แสดงรายการนั้น</div>
     </div>
 
-    <div class="section-title">📋 ประวัติคำขอใช้บริการทั้งหมด</div>
-    <div class="filter-bar">
-      <div class="field">
-        <label for="bookingStatusFilter">กรองตามสถานะ</label>
-        <select id="bookingStatusFilter">
-          <option value="">ทั้งหมด</option>
-          <option value="Requested">รอการยืนยัน</option>
-          <option value="Accepted">รับคำขอแล้ว</option>
-          <option value="Declined">ปฏิเสธแล้ว</option>
-          <option value="Cancelled">ยกเลิกโดยเกษตรกร</option>
-        </select>
-      </div>
-    </div>
-    <div id="bookingHistorySection" class="card-list">
-      <div class="loading-line">กำลังโหลดประวัติคำขอใช้บริการ…</div>
-    </div>
-
-    <div class="section-title">🗺️ พื้นที่ให้บริการ (จังหวัด)</div>
-    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      เลือกจังหวัดที่ท่านสามารถให้บริการได้ — เกษตรกรจะกรองหาผู้ให้บริการตามจังหวัดได้จากหน้า "บริการเครื่องจักรกล/ลานตากข้าว"
-      หากท่านไม่เลือกจังหวัดใดเลย ผู้ให้บริการของท่านจะไม่ปรากฏเมื่อเกษตรกรกรองตามจังหวัด (แต่ยังปรากฏตามปกติเมื่อเกษตรกรดูแบบ "ทั้งหมด")
-    </p>
-    <form id="serviceRegionsForm" class="panel">
-      <div id="serviceRegionsFields" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:8px 16px; margin-bottom:14px;">
-        <div class="loading-line">กำลังโหลดจังหวัด…</div>
-      </div>
-      <button type="submit" class="btn btn-primary" id="serviceRegionsSubmitBtn" style="max-width:260px;">บันทึกพื้นที่ให้บริการ</button>
-    </form>
-
-    <div class="section-title">💰 ราคาบริการ (Rate Card)</div>
-    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      กรอกเฉพาะบริการที่ท่านให้บริการจริง — ช่องที่ไม่กรอก (หรือกรอก 0) จะไม่แสดงราคาบริการนั้นแก่เกษตรกร
-    </p>
-    <form id="rateCardForm" class="panel">
-      <div id="rateCardFields" class="form-grid">
-        <div class="loading-line">กำลังโหลดราคาบริการ…</div>
-      </div>
-      <button type="submit" class="btn btn-primary" id="rateCardSubmitBtn" style="max-width:260px;">บันทึกราคาบริการ</button>
-    </form>
-
-    <div class="section-title">📷 รูปภาพบริการ/เครื่องจักรกล</div>
+    <div class="section-title">➕ เพิ่มรูปภาพ</div>
     <div class="panel">
       <div class="form-grid">
         <div class="field">
           <label for="photoTypeSelect">ประเภทรูปภาพ</label>
           <select id="photoTypeSelect">
-            <option value="machinery">รูปเครื่องจักรกล</option>
+            <option value="machinery">รูปเครื่องจักร/อุปกรณ์</option>
             <option value="service">รูปการให้บริการ</option>
           </select>
         </div>
         <div class="field">
-          <label for="photoCaptionInput">คำอธิบายรูปภาพ (ถ้ามี)</label>
+          <label for="photoCaptionInput">คำอธิบายรูปภาพ (ไม่บังคับ)</label>
           <input type="text" id="photoCaptionInput" placeholder="เช่น รถไถคูโบต้า M7" />
         </div>
         <div class="field full">
-          <label for="photoFileInput">เลือกรูปภาพ</label>
+          <label for="photoFileInput">เลือกไฟล์รูปภาพ (สูงสุด 2MB)</label>
           <input type="file" id="photoFileInput" accept="image/*" />
         </div>
       </div>
-      <button type="button" class="btn btn-primary" id="photoUploadBtn" style="max-width:200px;">อัปโหลดรูปภาพ</button>
+      <button type="button" class="btn btn-primary" id="photoUploadBtn" style="max-width:220px;">อัปโหลดรูปภาพ</button>
     </div>
-    <div id="photoGallery" class="photo-grid">
+
+    <div class="section-title">🖼️ คลังรูปภาพของท่าน</div>
+    <div id="photoGallerySection" class="photo-grid">
       <div class="loading-line">กำลังโหลดรูปภาพ…</div>
     </div>
 
@@ -99,7 +65,6 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="../js/provinces.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>

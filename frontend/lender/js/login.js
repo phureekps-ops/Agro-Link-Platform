@@ -1,19 +1,7 @@
-/**
- * DEMO ACCOUNT — hardcoded for this sandbox only, mirroring
- * identity.organization.auth_subject_id for the one Lender org seeded
- * across earlier layers of this project (สหกรณ์สินเชื่อเกษตรยั่งยืน จำกัด).
- * Exists purely to make manual testing fast — a production build would not
- * ship a claim list in the frontend, same note as the Farmer Portal.
- */
-const DEMO_LENDERS = [
-  { name: "สหกรณ์สินเชื่อเกษตรยั่งยืน จำกัด", claim: "oidc|org-001" },
-];
-
 const errorBox = document.getElementById("errorBox");
 const loginForm = document.getElementById("loginForm");
 const claimInput = document.getElementById("claimInput");
 const loginBtn = document.getElementById("loginBtn");
-const demoGrid = document.getElementById("demoGrid");
 
 function showError(message) {
   errorBox.textContent = message;
@@ -47,20 +35,11 @@ loginForm.addEventListener("submit", (e) => {
   doLogin(claim);
 });
 
-DEMO_LENDERS.forEach((org) => {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "demo-btn";
-  btn.innerHTML = `<span class="name">${org.name}</span><span class="claim">${org.claim}</span>`;
-  btn.addEventListener("click", () => doLogin(org.claim));
-  demoGrid.appendChild(btn);
-});
-
 const params = new URLSearchParams(window.location.search);
 if (params.get("reason") === "session_expired") {
   showError("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");
 } else if (params.get("reason") === "not_a_lender") {
-  showError("บัญชีนี้ไม่ใช่บัญชีผู้ปล่อยกู้ กรุณาเข้าสู่ระบบด้วยบัญชีองค์กรผู้ปล่อยกู้");
+  showError("บัญชีนี้ไม่ใช่บัญชีผู้ปล่อยกู้ กรุณาเข้าสู่ระบบด้วยบัญชีที่ถูกต้อง");
 }
 
 // If already logged in, skip straight to the dashboard.

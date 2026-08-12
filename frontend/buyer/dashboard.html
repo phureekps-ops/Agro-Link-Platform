@@ -25,90 +25,73 @@
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
-    <div class="section-title">⏳ รายการที่ต้องดำเนินการ</div>
-    <div id="reviewQueueSection" class="card-list">
-      <div class="loading-line">กำลังโหลดรายการที่ต้องดำเนินการ…</div>
+    <div class="section-title">🚚 การส่งมอบที่ต้องดำเนินการ</div>
+    <div id="deliveryReviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการส่งมอบ…</div>
     </div>
 
-    <div class="two-col">
-      <div>
-        <div class="section-title">📦 การรับมอบทั้งหมด</div>
-        <div class="filter-bar">
-          <div class="field">
-            <label for="statusFilter">กรองตามสถานะ</label>
-            <select id="statusFilter">
-              <option value="">ทั้งหมด</option>
-              <option value="delivered">รอตรวจสอบคุณภาพ</option>
-              <option value="accepted">ผ่านคุณภาพแล้ว (รอชำระเงิน)</option>
-              <option value="rejected">ไม่ผ่านคุณภาพ</option>
-              <option value="settled">ชำระเงินแล้ว</option>
-            </select>
-          </div>
+    <div class="section-title">➕ บันทึกการส่งมอบใหม่</div>
+    <form id="deliveryForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="unitSelect">แปลง/หน่วยผลิตของเกษตรกร</label>
+          <select id="unitSelect" required>
+            <option value="">-- เลือกแปลง --</option>
+          </select>
         </div>
-        <div id="allDeliveriesSection" class="card-list">
-          <div class="loading-line">กำลังโหลดการรับมอบ…</div>
+        <div class="field">
+          <label for="commoditySelect">ชนิดผลผลิต</label>
+          <select id="commoditySelect" required>
+            <option value="">-- เลือกชนิดผลผลิต --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="quantityInput">น้ำหนัก (ตัน)</label>
+          <input type="number" id="quantityInput" min="0.01" step="0.01" placeholder="เช่น 5.5" required />
+        </div>
+        <div class="field">
+          <label for="contractSelect">สัญญาที่เกี่ยวข้อง (ถ้ามี)</label>
+          <select id="contractSelect">
+            <option value="">-- ไม่มีสัญญา (ซื้อขายทันที/Spot Sale) --</option>
+          </select>
+        </div>
+        <div class="field" id="unitPriceField">
+          <label for="unitPriceInput">ราคาต่อหน่วย (บาท/ตัน) — บังคับกรอกถ้าไม่มีสัญญา</label>
+          <input type="number" id="unitPriceInput" min="0.01" step="0.01" placeholder="เช่น 12500" />
         </div>
       </div>
+      <button type="submit" class="btn btn-primary" id="deliverySubmitBtn" style="max-width:220px;">บันทึกการส่งมอบ</button>
+    </form>
 
-      <div class="panel">
-        <div style="font-weight:700; margin-bottom:12px;">บันทึกการรับมอบผลผลิตใหม่</div>
-        <form id="deliveryForm">
-          <div class="field">
-            <label for="saleType">ประเภทการซื้อขาย</label>
-            <select id="saleType">
-              <option value="spot">ขายทันที (Spot Sale)</option>
-              <option value="contract">ตามสัญญาซื้อขายล่วงหน้า</option>
-            </select>
-          </div>
-
-          <div id="contractFields">
-            <div class="field">
-              <label for="contractSelect">สัญญาซื้อขายล่วงหน้า (Active)</label>
-              <select id="contractSelect"></select>
-            </div>
-          </div>
-
-          <div id="spotFields">
-            <div class="field">
-              <label for="unitSelect">หน่วยผลิต / เกษตรกร</label>
-              <select id="unitSelect"></select>
-            </div>
-            <div class="field">
-              <label for="commoditySelect">สินค้า</label>
-              <select id="commoditySelect"></select>
-            </div>
-            <div class="field">
-              <label for="unitPriceInput">ราคาต่อหน่วย (บาท/ตัน)</label>
-              <input type="number" id="unitPriceInput" min="0.01" step="0.01" />
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="quantityInput">ปริมาณ (ตัน)</label>
-            <input type="number" id="quantityInput" min="0.001" step="0.001" required />
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="deliverySubmitBtn">บันทึกการรับมอบ</button>
-        </form>
+    <div class="section-title">📋 ประวัติการส่งมอบทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="deliveryStatusFilter">กรองตามสถานะ</label>
+        <select id="deliveryStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="delivered">ส่งมอบแล้ว (รอตรวจคุณภาพ)</option>
+          <option value="accepted">ตรวจคุณภาพผ่านแล้ว (รอชำระเงิน)</option>
+          <option value="rejected">ไม่ผ่านการตรวจคุณภาพ</option>
+          <option value="settled">ชำระเงินแล้ว</option>
+        </select>
       </div>
     </div>
-
-    <div class="section-title">📄 สัญญาซื้อขายล่วงหน้า</div>
-    <div id="contractsSection" class="card-list">
-      <div class="loading-line">กำลังโหลดสัญญา…</div>
+    <div id="deliveryHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติการส่งมอบ…</div>
     </div>
 
-    <div class="section-title">📢 ประกาศราคารับซื้อข้าวเปลือกประจำวัน</div>
-    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      กรอกเฉพาะชนิดข้าวที่ท่านรับซื้อจริง — ราคาที่ตั้งไว้จะแสดงให้เกษตรกรเห็นและเปรียบเทียบกับผู้รับซื้อรายอื่นได้ที่หน้า "เปรียบเทียบราคารับซื้อข้าว" ของพอร์ทัลเกษตรกร
-      ช่องที่ไม่กรอก (หรือกรอก 0) จะไม่แสดงราคาชนิดข้าวนั้น
-    </p>
-    <form id="priceQuoteForm" class="panel">
-      <div id="priceQuoteFields" class="form-grid">
+    <div class="section-title">💰 ราคารับซื้อข้าวประจำวัน</div>
+    <div class="panel">
+      <div id="priceQuoteFormSection" class="form-grid">
         <div class="loading-line">กำลังโหลดราคารับซื้อ…</div>
       </div>
-      <button type="submit" class="btn btn-primary" id="priceQuoteSubmitBtn" style="max-width:260px;">บันทึกราคารับซื้อ</button>
-    </form>
+      <button type="button" class="btn btn-primary" id="priceQuoteSubmitBtn" style="max-width:220px; margin-top:12px;">บันทึกราคารับซื้อ</button>
+    </div>
+
+    <div class="section-title">📑 พอร์ตสัญญารับซื้อ</div>
+    <div id="contractListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดสัญญารับซื้อ…</div>
+    </div>
 
   </div>
 

@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AgroLink — พอร์ทัลเจ้าของสถานที่จำหน่ายสินค้า</title>
+<title>AgroLink — พอร์ทัลผู้ให้บริการลานตลาด</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
   <header class="app-header">
-    <div class="brand"><span>🏪</span><span>AgroLink Platform — พอร์ทัลเจ้าของสถานที่จำหน่ายสินค้า</span></div>
+    <div class="brand"><span>🏪</span><span>AgroLink Platform — พอร์ทัลผู้ให้บริการลานตลาด</span></div>
     <div class="who">
       <span class="name" id="orgName">กำลังโหลด…</span>
       <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
@@ -25,7 +25,7 @@
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
-    <div class="section-title">📥 คำขอจองพื้นที่ที่ต้องดำเนินการ</div>
+    <div class="section-title">🧾 คำขอจองที่ต้องดำเนินการ</div>
     <div id="bookingReviewQueueSection" class="card-list">
       <div class="loading-line">กำลังโหลดคำขอจอง…</div>
     </div>
@@ -53,7 +53,7 @@
       <div class="form-grid">
         <div class="field">
           <label for="venueNameInput">ชื่อสถานที่/ตลาด</label>
-          <input type="text" id="venueNameInput" placeholder="เช่น ตลาดค้าส่งสี่มุมเมือง" required />
+          <input type="text" id="venueNameInput" placeholder="เช่น ตลาดค้าส่งผลไม้บางแค" required />
         </div>
         <div class="field">
           <label for="venueTypeSelect">ประเภทสถานที่</label>
@@ -74,30 +74,30 @@
         </div>
         <div class="field">
           <label for="feeUnitInput">หน่วยค่าบริการ</label>
-          <input type="text" id="feeUnitInput" placeholder="เช่น บาท/ล็อค/วัน, บาท/ตร.ม./วัน" />
+          <input type="text" id="feeUnitInput" placeholder="เช่น บาท/แผง/วัน, บาท/คัน/วัน" />
         </div>
         <div class="field full">
-          <label for="addressDetailInput">ที่อยู่/รายละเอียดทำเล</label>
-          <input type="text" id="addressDetailInput" placeholder="เช่น ถนน... ตำบล... อำเภอ..." />
+          <label for="addressDetailInput">ที่อยู่/รายละเอียดสถานที่ (ถ้ามี)</label>
+          <input type="text" id="addressDetailInput" placeholder="เช่น เลขที่ 99 ถ.เพชรเกษม แขวงบางแค" />
         </div>
         <div class="field full">
-          <label for="acceptedProductsInput">ประเภทสินค้าที่รับ (ถ้ามีข้อจำกัด)</label>
-          <input type="text" id="acceptedProductsInput" placeholder="เช่น ข้าว ผัก ผลไม้ตามฤดูกาล — เว้นว่างหากรับทุกประเภท" />
+          <label for="acceptedProductsInput">สินค้าที่รับ (ถ้ามี)</label>
+          <input type="text" id="acceptedProductsInput" placeholder="เช่น ผัก ผลไม้ ข้าว" />
         </div>
         <div class="field full">
-          <label for="spaceDescriptionInput">รายละเอียดพื้นที่</label>
-          <input type="text" id="spaceDescriptionInput" placeholder="เช่น ล็อคขนาด 2x3 เมตร จำนวน 10 ล็อค มีที่จอดรถ" />
+          <label for="spaceDescriptionInput">รายละเอียดพื้นที่ (ถ้ามี)</label>
+          <input type="text" id="spaceDescriptionInput" placeholder="เช่น แผงขนาด 2x2 เมตร มีหลังคา" />
         </div>
         <div class="field full">
-          <label for="scheduleNoteInput">วัน/ช่วงเวลาที่เปิดให้ใช้พื้นที่</label>
-          <input type="text" id="scheduleNoteInput" placeholder="เช่น ทุกวันเสาร์-อาทิตย์ 05:00-12:00 น. หรือ วันที่ 1-3 ส.ค. 2569" />
+          <label for="scheduleNoteInput">ช่วงเวลาเปิดตลาด (ถ้ามี)</label>
+          <input type="text" id="scheduleNoteInput" placeholder="เช่น ทุกวันเสาร์-อาทิตย์ 06:00-12:00" />
         </div>
       </div>
       <button type="submit" class="btn btn-primary" id="listingSubmitBtn" style="max-width:220px;">เพิ่มพื้นที่ประกาศ</button>
       <button type="button" class="btn btn-ghost" id="listingCancelEditBtn" style="max-width:160px; display:none;">ยกเลิกการแก้ไข</button>
     </form>
 
-    <div class="section-title">📍 พื้นที่ประกาศของท่าน</div>
+    <div class="section-title">🏪 พื้นที่ประกาศของท่าน</div>
     <div id="listingListSection" class="card-list">
       <div class="loading-line">กำลังโหลดพื้นที่ประกาศ…</div>
     </div>
