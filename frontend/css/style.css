@@ -220,19 +220,6 @@ a { color: inherit; }
 }
 .logout-btn:hover { background: rgba(255,255,255,0.22); }
 
-/* Native <select> elements don't reliably render a semi-transparent
-   background over a dark header the way an <a>/<button> does — several
-   browsers fall back to a near-white control surface, which left the
-   .logout-btn white text almost unreadable. #portalNav gets its own solid,
-   high-contrast treatment instead of inheriting the transparent look. */
-#portalNav {
-  background: var(--green-700);
-  color: #fff;
-  font-weight: 700;
-  border: 1px solid rgba(255,255,255,0.6);
-}
-#portalNav:hover { background: var(--green-600); }
-
 .container {
   max-width: 1080px;
   margin: 0 auto;
