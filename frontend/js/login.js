@@ -1,16 +1,3 @@
-/**
- * DEMO ACCOUNTS — hardcoded for this sandbox only, mirroring
- * identity.farmer.auth_subject_id for the three farmers seeded across
- * earlier layers of this project. This list exists purely to make manual
- * testing fast; a real deployment would not ship a claim list in the
- * frontend at all — the claim would come from a real OIDC login redirect.
- */
-const DEMO_FARMERS = [
-  { name: "สมชาย ใจดี", claim: "oidc|farmer-001" },
-  { name: "สมหญิง รักนา", claim: "oidc|farmer-002" },
-  { name: "ประยุทธ นาดี", claim: "oidc|farmer-003" },
-];
-
 const errorBox = document.getElementById("errorBox");
 const loginForm = document.getElementById("loginForm");
 const claimInput = document.getElementById("claimInput");
@@ -49,16 +36,36 @@ loginForm.addEventListener("submit", (e) => {
   doLogin(claim);
 });
 
-DEMO_FARMERS.forEach((farmer) => {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "demo-btn";
-  btn.innerHTML = `<span class="name">${farmer.name}</span><span class="claim">${farmer.claim}</span>`;
-  btn.addEventListener("click", () => doLogin(farmer.claim));
-  demoGrid.appendChild(btn);
+/**
+ * Quick-login demo accounts — mirrors the farmers seeded by
+ * backend/db/dev_sample_data.sql (COPY identity.farmer ...). These three
+ * are the stable, always-present demo rows (auth_subject_id
+ * 'oidc|farmer-001' / '-002' / '-003'); the other seeded farmer rows use
+ * randomly-generated claims from ad-hoc testing and one is 'closed', so
+ * they're deliberately left out of this list.
+ */
+const DEMO_FARMERS = [
+  { name: "สมชาย ใจดี", claim: "oidc|farmer-001" },
+  { name: "สมหญิง รักนา", claim: "oidc|farmer-002" },
+  { name: "ประยุทธ นาดี", claim: "oidc|farmer-003" },
+];
+
+demoGrid.innerHTML = DEMO_FARMERS.map(
+  (f) => `
+    <button type="button" class="demo-btn" data-claim="${f.claim}">
+      <span class="name">${f.name}</span>
+      <span class="claim">${f.claim}</span>
+    </button>
+  `
+).join("");
+
+demoGrid.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-claim]");
+  if (!btn) return;
+  claimInput.value = btn.dataset.claim;
+  doLogin(btn.dataset.claim);
 });
 
-// If we were bounced here because a session expired, say so.
 const params = new URLSearchParams(window.location.search);
 if (params.get("reason") === "session_expired") {
   showError("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");

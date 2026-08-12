@@ -14,7 +14,7 @@
       <span class="leaf">🌾</span>
       <h1>AgroLink Platform</h1>
     </div>
-    <p class="login-sub">สมัครสมาชิกเกษตรกร — เริ่มเข้าถึงบริการและสินเชื่อครบวงจรได้ทันที</p>
+    <p class="login-sub">สมัครสมาชิกเกษตรกร — เพื่อบันทึกข้อมูลแปลง ขอสินเชื่อ ขายผลผลิต และเข้าถึงบริการทั้งหมดของ AgroLink</p>
 
     <div id="errorBox" class="error-box"></div>
 
@@ -25,26 +25,30 @@
       </div>
       <div class="field">
         <label for="phoneInput">เบอร์โทรศัพท์</label>
-        <input type="tel" id="phoneInput" placeholder="เช่น 0812345678" autocomplete="tel" required />
+        <input type="tel" id="phoneInput" placeholder="เช่น 0812345678" inputmode="tel" autocomplete="tel" required />
       </div>
       <div class="field">
-        <label for="nationalIdInput">เลขบัตรประจำตัวประชาชน</label>
+        <label for="nationalIdInput">เลขประจำตัวประชาชน</label>
         <input type="text" id="nationalIdInput" placeholder="13 หลัก" inputmode="numeric" maxlength="13" required />
-        <div class="hint">ระบบจะเก็บเฉพาะค่าแฮชของเลขบัตรเท่านั้น ไม่เก็บเลขจริงในฐานข้อมูล</div>
+        <div class="hint">
+          หมายเหตุ: ระบบจะเก็บเฉพาะค่าแฮชของเลขประจำตัวประชาชนของท่าน ไม่เก็บเลขจริงในฐานข้อมูล
+        </div>
       </div>
       <div class="field">
         <label for="regionSelect">จังหวัด</label>
-        <select id="regionSelect" required></select>
+        <select id="regionSelect" required>
+          <option value="">-- เลือกจังหวัด --</option>
+        </select>
       </div>
       <button type="submit" class="btn btn-primary" id="registerBtn">สมัครสมาชิก</button>
     </form>
 
     <div class="divider">มีบัญชีอยู่แล้ว?</div>
-    <a href="index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">เข้าสู่ระบบ</a>
+    <a href="index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">เข้าสู่ระบบเกษตรกร</a>
   </div>
 
-  <script src="js/api.js"></script>
   <script src="js/provinces.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/register.js"></script>
 </body>
 </html>
