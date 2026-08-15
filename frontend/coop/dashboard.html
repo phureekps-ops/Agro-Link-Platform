@@ -130,6 +130,7 @@
             <option value="Warehouse">คลังสินค้า (Warehouse)</option>
             <option value="DryingYard">ลานตาก (Drying Yard)</option>
             <option value="Silo">ไซโล (Silo)</option>
+            <option value="ProcessingPlant">โรงสี/โรงงานแปรรูป (Processing Plant)</option>
           </select>
         </div>
         <div class="field">
@@ -150,6 +151,122 @@
     </div>
     <div id="warehouseLotsSection" class="card-list">
       <div class="loading-line">กำลังโหลดล็อตในคลัง…</div>
+    </div>
+
+    <div class="section-title">🏭 การแปรรูปผลผลิต (Processing)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      แปรรูปล็อตที่รวบรวมไว้ (สี/อบแห้ง/คัดแยก/บรรจุ) ให้เป็นผลผลิตสำเร็จรูป พร้อมติดตามผลผลิตที่ได้เทียบกับวัตถุดิบ (yield) และ
+      แหล่งที่มาย้อนกลับไปถึงเกษตรกรที่ส่งวัตถุดิบเข้าล็อตนั้น
+    </p>
+    <form id="batchForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="batchFacilitySelect">โรงสี/โรงงาน (ถ้ามี)</label>
+          <select id="batchFacilitySelect">
+            <option value="">-- ไม่ระบุ --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="batchCommoditySelect">ชนิดผลผลิตต้นทาง</label>
+          <select id="batchCommoditySelect" required>
+            <option value="">-- เลือกชนิดผลผลิต --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="batchProcessTypeSelect">ประเภทกระบวนการ</label>
+          <select id="batchProcessTypeSelect" required>
+            <option value="Milling">สี/โม่ (Milling)</option>
+            <option value="Drying">อบแห้ง (Drying)</option>
+            <option value="Sorting">คัดแยก (Sorting)</option>
+            <option value="Packaging">บรรจุภัณฑ์ (Packaging)</option>
+            <option value="Other">อื่นๆ (Other)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="batchOutputNameInput">ชื่อผลผลิตหลักที่คาดว่าจะได้</label>
+          <input type="text" id="batchOutputNameInput" placeholder="เช่น ข้าวสารหอมมะลิ 5%" required />
+        </div>
+        <div class="field">
+          <label for="batchStartedByInput">ชื่อผู้เริ่มดำเนินการ</label>
+          <input type="text" id="batchStartedByInput" placeholder="เช่น เจ้าหน้าที่โรงสี ก." required />
+        </div>
+        <div class="field full">
+          <label for="batchNoteInput">หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="batchNoteInput" placeholder="เช่น รอบสีวันที่ ..." />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="batchSubmitBtn" style="max-width:220px;">เริ่มชุดการแปรรูปใหม่</button>
+    </form>
+    <div id="processingBatchesSection" class="card-list">
+      <div class="loading-line">กำลังโหลดชุดการแปรรูป…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">📦 สินค้าสำเร็จรูปคงเหลือ</div>
+    <div id="finishedGoodsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดสินค้าสำเร็จรูป…</div>
+    </div>
+
+    <div class="section-title">🚚 การขนส่ง (Logistics)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      จัดการผู้ขนส่งของสหกรณ์ (รถของสหกรณ์เองหรือผู้รับจ้างขนส่ง) และติดตามการจัดส่งสินค้า (ล็อตดิบหรือสินค้าสำเร็จรูป) ไปยังปลายทาง
+      พร้อมหลักฐานการส่งมอบและบันทึกข้อยกเว้นระหว่างทาง
+    </p>
+    <form id="carrierForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="carrierNameInput">ชื่อผู้ขนส่ง</label>
+          <input type="text" id="carrierNameInput" placeholder="เช่น รถบรรทุกสหกรณ์ 1" required />
+        </div>
+        <div class="field">
+          <label for="carrierTypeSelect">ประเภท</label>
+          <select id="carrierTypeSelect" required>
+            <option value="Internal">รถของสหกรณ์เอง (Internal)</option>
+            <option value="ThirdParty">ผู้รับจ้างขนส่ง (Third Party)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="carrierPhoneInput">เบอร์ติดต่อ (ถ้ามี)</label>
+          <input type="text" id="carrierPhoneInput" placeholder="เช่น 081-234-5678" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="carrierSubmitBtn" style="max-width:220px;">เพิ่มผู้ขนส่ง</button>
+    </form>
+    <div id="carrierListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อผู้ขนส่ง…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">📦 การจัดส่ง</div>
+    <form id="shipmentForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="shipmentCarrierSelect">ผู้ขนส่ง</label>
+          <select id="shipmentCarrierSelect" required>
+            <option value="">-- เลือกผู้ขนส่ง --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="shipmentVehicleSelect">ยานพาหนะ (ถ้ามี)</label>
+          <select id="shipmentVehicleSelect">
+            <option value="">-- ไม่ระบุ --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="shipmentDestinationInput">ปลายทาง</label>
+          <input type="text" id="shipmentDestinationInput" placeholder="เช่น โรงสีกลาง / ร้านค้าชุมชน" required />
+        </div>
+        <div class="field">
+          <label for="shipmentDriverInput">ชื่อคนขับ (ถ้ามี)</label>
+          <input type="text" id="shipmentDriverInput" placeholder="เช่น สมชาย ใจดี" />
+        </div>
+        <div class="field">
+          <label for="shipmentCreatedByInput">ชื่อผู้วางแผนจัดส่ง</label>
+          <input type="text" id="shipmentCreatedByInput" placeholder="เช่น เจ้าหน้าที่คลัง ก." required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="shipmentSubmitBtn" style="max-width:220px;">วางแผนการจัดส่งใหม่</button>
+    </form>
+    <div id="shipmentsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการจัดส่ง…</div>
     </div>
 
     <div class="section-title">📋 ประวัติการรับซื้อทั้งหมด</div>

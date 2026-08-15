@@ -694,9 +694,17 @@ router.get('/warehouse/facilities', async (req, res, next) => {
   }
 });
 
+// 'ProcessingPlant' added by grant_cooperative_processing.sql (M11) —
+// widening warehouse.facility.facility_type's CHECK constraint rather than
+// creating a parallel "plant" table, so a cooperative's own mill can be
+// registered through this same form/route. Kept here (not inline below) so
+// this array and the DB CHECK constraint's allowed list can't drift apart
+// silently — this list IS the source of truth for the route-level check.
+const FACILITY_TYPES = ['Warehouse', 'DryingYard', 'Silo', 'ProcessingPlant'];
+
 /**
  * POST /coop/warehouse/facilities — open a new facility.
- * Body: { facility_name, facility_type: Warehouse|DryingYard|Silo, capacity_ton? }
+ * Body: { facility_name, facility_type: Warehouse|DryingYard|Silo|ProcessingPlant, capacity_ton? }
  */
 router.post('/warehouse/facilities', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -705,8 +713,8 @@ router.post('/warehouse/facilities', async (req, res, next) => {
   if (!facilityName || !facilityType) {
     return res.status(400).json({ error: 'missing_required_fields', required: ['facility_name', 'facility_type'] });
   }
-  if (!['Warehouse', 'DryingYard', 'Silo'].includes(facilityType)) {
-    return res.status(400).json({ error: 'invalid_facility_type', valid: ['Warehouse', 'DryingYard', 'Silo'] });
+  if (!FACILITY_TYPES.includes(facilityType)) {
+    return res.status(400).json({ error: 'invalid_facility_type', valid: FACILITY_TYPES });
   }
 
   try {
@@ -1030,6 +1038,983 @@ router.post('/warehouse/drying-readings', async (req, res, next) => {
     if (result.lotNotFound) return res.status(404).json({ error: 'lot_not_found' });
     if (result.binNotFound) return res.status(404).json({ error: 'bin_not_found' });
     return res.status(201).json({ reading_id: result.readingId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * ============================================================================
+ * M11 Processing — turns collected/warehoused lots into finished goods
+ * (milling, drying, sorting, packaging), tracking yield and the input->
+ * output traceability chain back to contributing farmers. See
+ * grant_cooperative_processing.sql for the full design rationale, in
+ * particular why finished goods are free-text product names rather than a
+ * commodity_code FK, and why this doesn't (yet) mint a
+ * traceability.certificate row.
+ *
+ * Same ownership-gating discipline as every other module here: processing.*
+ * has no row-level security, so every route below explicitly scopes batches
+ * by `org_id = $subject` and any facility/lot/finished_good it touches
+ * through their owning batch — this is the entire security boundary.
+ * ============================================================================
+ */
+
+/** Resolves a batch_id iff it belongs to this cooperative, else null. */
+async function assertBatchOwned(client, subjectId, batchId) {
+  const { rows } = await client.query(
+    'SELECT batch_id FROM processing.batch WHERE batch_id = $1 AND org_id = $2',
+    [batchId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/** Resolves a finished_good_id iff its batch belongs to this cooperative, else null. */
+async function assertFinishedGoodOwned(client, subjectId, finishedGoodId) {
+  const { rows } = await client.query(
+    `SELECT fg.finished_good_id FROM processing.finished_good fg
+       JOIN processing.batch b ON b.batch_id = fg.batch_id
+      WHERE fg.finished_good_id = $1 AND b.org_id = $2`,
+    [finishedGoodId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+const PROCESS_TYPES = ['Milling', 'Drying', 'Sorting', 'Packaging', 'Other'];
+
+/**
+ * GET /coop/processing/batches — every processing run this cooperative has
+ * started, most recent first, with live input/output/yield figures from
+ * processing.v_batch_summary.
+ */
+router.get('/processing/batches', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT batch_id, facility_id, facility_name, source_commodity_code, source_commodity_name,
+                process_type, output_product_name, status, started_by, started_at,
+                completed_by, completed_at, cancelled_by, cancelled_at, cancel_reason, batch_note,
+                input_quantity_ton, output_quantity_ton, yield_pct
+           FROM processing.v_batch_summary
+          WHERE org_id = $1
+          ORDER BY started_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/processing/batches — start a new processing run.
+ * Body: { facility_id?, source_commodity_code, process_type, output_product_name, started_by, batch_note? }
+ */
+router.post('/processing/batches', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    facility_id: facilityId, source_commodity_code: sourceCommodityCode, process_type: processType,
+    output_product_name: outputProductName, started_by: startedBy, batch_note: batchNote,
+  } = req.body || {};
+
+  if (!sourceCommodityCode || !processType || !outputProductName || !startedBy) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['source_commodity_code', 'process_type', 'output_product_name', 'started_by'],
+    });
+  }
+  if (!PROCESS_TYPES.includes(processType)) {
+    return res.status(400).json({ error: 'invalid_process_type', valid: PROCESS_TYPES });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (facilityId && !(await assertFacilityOwned(client, subjectId, facilityId))) return { facilityNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT processing.create_batch($1, $2, $3, $4, $5, $6, $7) AS batch_id',
+          [subjectId, facilityId || null, sourceCommodityCode, processType, outputProductName, startedBy, batchNote || null],
+        );
+        await logAccess(client, 'write', 'processing.batch', rows[0].batch_id);
+        return { batchId: rows[0].batch_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.facilityNotFound) return res.status(404).json({ error: 'facility_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_create_batch', detail: result.businessError });
+    return res.status(201).json({ batch_id: result.batchId, status: 'InProgress' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/processing/batches/:id — batch detail: the summary row, every
+ * lot committed as input, every finished-good line item recorded so far,
+ * and the distinct list of farmers whose produce fed into it (the
+ * practical meaning of "batch traceability" — see the migration's design
+ * note on why this isn't a traceability.certificate row).
+ */
+router.get('/processing/batches/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const batch = await client.query(
+        `SELECT batch_id, facility_id, facility_name, source_commodity_code, source_commodity_name,
+                process_type, output_product_name, status, started_by, started_at,
+                completed_by, completed_at, cancelled_by, cancelled_at, cancel_reason, batch_note,
+                input_quantity_ton, output_quantity_ton, yield_pct
+           FROM processing.v_batch_summary WHERE batch_id = $1 AND org_id = $2`,
+        [id, subjectId],
+      );
+      if (batch.rows.length === 0) return null;
+
+      const inputs = await client.query(
+        `SELECT bi.batch_input_id, bi.lot_id, bi.quantity_ton, bi.recorded_at, l.lot_note, l.quality_grade
+           FROM processing.batch_input bi
+           JOIN produce.lot l ON l.lot_id = bi.lot_id
+          WHERE bi.batch_id = $1
+          ORDER BY bi.recorded_at`,
+        [id],
+      );
+
+      const finishedGoods = await client.query(
+        `SELECT fg.finished_good_id, fg.product_name, fg.quantity_ton, fg.is_primary_product, fg.recorded_at,
+                s.dispatched_quantity_ton, s.quantity_on_hand_ton
+           FROM processing.finished_good fg
+           JOIN processing.v_finished_good_stock s ON s.finished_good_id = fg.finished_good_id
+          WHERE fg.batch_id = $1
+          ORDER BY fg.is_primary_product DESC, fg.recorded_at`,
+        [id],
+      );
+
+      const farmers = await client.query(
+        `SELECT DISTINCT f.farmer_id, f.full_name AS farmer_name
+           FROM processing.batch_input bi
+           JOIN produce.delivery d ON d.lot_id = bi.lot_id
+           LEFT JOIN registry.production_unit pu ON pu.unit_id = d.unit_id
+           LEFT JOIN identity.farmer f ON f.farmer_id = pu.owner_farmer_id
+          WHERE bi.batch_id = $1 AND f.farmer_id IS NOT NULL
+          ORDER BY f.full_name`,
+        [id],
+      );
+
+      return { batch: batch.rows[0], inputs: inputs.rows, finished_goods: finishedGoods.rows, contributing_farmers: farmers.rows };
+    });
+
+    if (!result) return res.status(404).json({ error: 'batch_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/processing/lots-available?commodity_code=... — lots this
+ * cooperative can still commit to a batch (available_quantity_ton > 0),
+ * optionally filtered to one commodity — the UI's picker for "which lot(s)
+ * go into this batch."
+ */
+router.get('/processing/lots-available', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { commodity_code: commodityCode } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT a.lot_id, a.commodity_code, a.lot_status, a.total_quantity_ton, a.committed_quantity_ton, a.available_quantity_ton,
+                l.lot_note, l.quality_grade
+           FROM processing.v_lot_processing_availability a
+           JOIN produce.lot l ON l.lot_id = a.lot_id
+          WHERE a.org_id = $1 AND a.available_quantity_ton > 0
+                AND ($2::text IS NULL OR a.commodity_code = $2)
+          ORDER BY l.created_at DESC`,
+        [subjectId, commodityCode || null],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/processing/batches/:id/commit-lot
+ * Body: { lot_id, quantity_ton }
+ */
+router.post('/processing/batches/:id/commit-lot', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { lot_id: lotId, quantity_ton: quantityTon } = req.body || {};
+
+  if (!lotId || !quantityTon) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['lot_id', 'quantity_ton'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertBatchOwned(client, subjectId, id))) return { batchNotFound: true };
+      if (!(await assertLotOwned(client, subjectId, lotId))) return { lotNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT processing.commit_lot_to_batch($1, $2, $3) AS batch_input_id',
+          [id, lotId, quantityTon],
+        );
+        await logAccess(client, 'write', 'processing.batch_input', rows[0].batch_input_id);
+        return { batchInputId: rows[0].batch_input_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.batchNotFound) return res.status(404).json({ error: 'batch_not_found' });
+    if (result.lotNotFound) return res.status(404).json({ error: 'lot_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_commit_lot', detail: result.businessError });
+    return res.status(201).json({ batch_input_id: result.batchInputId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/processing/batches/:id/finished-goods — record one output
+ * line item (call again for by-products, e.g. รำข้าว/ปลายข้าว alongside
+ * the primary ข้าวสาร).
+ * Body: { product_name, quantity_ton, is_primary_product? }
+ */
+router.post('/processing/batches/:id/finished-goods', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { product_name: productName, quantity_ton: quantityTon, is_primary_product: isPrimaryProduct } = req.body || {};
+
+  if (!productName || !quantityTon) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['product_name', 'quantity_ton'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertBatchOwned(client, subjectId, id))) return { batchNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT processing.add_finished_good($1, $2, $3, $4) AS finished_good_id',
+          [id, productName, quantityTon, isPrimaryProduct === undefined ? true : !!isPrimaryProduct],
+        );
+        await logAccess(client, 'write', 'processing.finished_good', rows[0].finished_good_id);
+        return { finishedGoodId: rows[0].finished_good_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.batchNotFound) return res.status(404).json({ error: 'batch_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_add_finished_good', detail: result.businessError });
+    return res.status(201).json({ finished_good_id: result.finishedGoodId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/processing/batches/:id/complete
+ * Body: { completed_by }
+ */
+router.post('/processing/batches/:id/complete', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { completed_by: completedBy } = req.body || {};
+
+  if (!completedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['completed_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertBatchOwned(client, subjectId, id))) return { batchNotFound: true };
+
+      try {
+        await client.query('SELECT processing.complete_batch($1, $2)', [id, completedBy]);
+        await logAccess(client, 'write', 'processing.batch', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.batchNotFound) return res.status(404).json({ error: 'batch_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_complete_batch', detail: result.businessError });
+    return res.json({ status: 'Completed' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/processing/batches/:id/cancel
+ * Body: { cancelled_by, reason }
+ */
+router.post('/processing/batches/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { cancelled_by: cancelledBy, reason } = req.body || {};
+
+  if (!cancelledBy || !reason) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['cancelled_by', 'reason'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertBatchOwned(client, subjectId, id))) return { batchNotFound: true };
+
+      try {
+        await client.query('SELECT processing.cancel_batch($1, $2, $3)', [id, cancelledBy, reason]);
+        await logAccess(client, 'write', 'processing.batch', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.batchNotFound) return res.status(404).json({ error: 'batch_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_cancel_batch', detail: result.businessError });
+    return res.json({ status: 'Cancelled' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/processing/finished-goods — this cooperative's finished-goods
+ * stock across all batches, from processing.v_finished_good_stock.
+ */
+router.get('/processing/finished-goods', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT s.finished_good_id, s.batch_id, s.product_name, s.is_primary_product,
+                s.produced_quantity_ton, s.dispatched_quantity_ton, s.quantity_on_hand_ton, s.recorded_at,
+                b.output_product_name AS batch_output_product_name, b.status AS batch_status
+           FROM processing.v_finished_good_stock s
+           JOIN processing.batch b ON b.batch_id = s.batch_id
+          WHERE s.org_id = $1
+          ORDER BY s.recorded_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/processing/finished-goods/:id/dispatch — record finished
+ * goods leaving inventory (sold/distributed/sent onward). See the
+ * migration's Follow-up note: this is inventory drawdown only, not yet
+ * wired to a real buyer/order.
+ * Body: { quantity_ton, recorded_by, note? }
+ */
+router.post('/processing/finished-goods/:id/dispatch', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { quantity_ton: quantityTon, recorded_by: recordedBy, note } = req.body || {};
+
+  if (!quantityTon || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['quantity_ton', 'recorded_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertFinishedGoodOwned(client, subjectId, id))) return { finishedGoodNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT processing.record_dispatch($1, $2, $3, $4) AS dispatch_id',
+          [id, quantityTon, recordedBy, note || null],
+        );
+        await logAccess(client, 'write', 'processing.finished_good_dispatch', rows[0].dispatch_id);
+        return { dispatchId: rows[0].dispatch_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.finishedGoodNotFound) return res.status(404).json({ error: 'finished_good_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_dispatch', detail: result.businessError });
+    return res.status(201).json({ dispatch_id: result.dispatchId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * ============================================================================
+ * M13 Logistics — moving cargo (a raw produce.lot or a processing.
+ * finished_good) out to a destination on a tracked shipment, with a single
+ * proof-of-delivery and an append-only exception log. See
+ * grant_cooperative_logistics.sql for the full design rationale, in
+ * particular why adding a FinishedGood item calls processing.
+ * record_dispatch() immediately, why cancellation only works on an empty
+ * shipment, and why processing.v_lot_processing_availability was widened
+ * alongside this migration.
+ *
+ * Same ownership-gating discipline as every other module here: logistics.*
+ * has no row-level security, so every route below explicitly scopes
+ * carriers/shipments by `org_id = $subject` and anything they touch
+ * (vehicles via their carrier, lots/finished_goods via assertLotOwned /
+ * assertFinishedGoodOwned already defined in the M09/M11 sections above)
+ * — this is the entire security boundary.
+ * ============================================================================
+ */
+
+/** Resolves a carrier_id iff it belongs to this cooperative, else null. */
+async function assertCarrierOwned(client, subjectId, carrierId) {
+  const { rows } = await client.query(
+    'SELECT carrier_id FROM logistics.carrier WHERE carrier_id = $1 AND org_id = $2',
+    [carrierId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/** Resolves a vehicle_id iff its carrier belongs to this cooperative, else null. */
+async function assertVehicleOwned(client, subjectId, vehicleId) {
+  const { rows } = await client.query(
+    `SELECT v.vehicle_id FROM logistics.vehicle v
+       JOIN logistics.carrier c ON c.carrier_id = v.carrier_id
+      WHERE v.vehicle_id = $1 AND c.org_id = $2`,
+    [vehicleId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/** Resolves a shipment_id iff it belongs to this cooperative, else null. */
+async function assertShipmentOwned(client, subjectId, shipmentId) {
+  const { rows } = await client.query(
+    'SELECT shipment_id FROM logistics.shipment WHERE shipment_id = $1 AND org_id = $2',
+    [shipmentId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+const CARRIER_TYPES = ['Internal', 'ThirdParty'];
+const VEHICLE_TYPES = ['Truck', 'Pickup', 'Trailer', 'Other'];
+const EXCEPTION_TYPES = ['Damage', 'Shortage', 'Delay', 'Rejected', 'Other'];
+
+/**
+ * GET /coop/logistics/carriers — this cooperative's transport providers,
+ * each with its vehicle count.
+ */
+router.get('/logistics/carriers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT c.carrier_id, c.carrier_name, c.carrier_type, c.contact_phone, c.status, c.created_at,
+                COUNT(v.vehicle_id)::int AS vehicle_count
+           FROM logistics.carrier c
+           LEFT JOIN logistics.vehicle v ON v.carrier_id = c.carrier_id
+          WHERE c.org_id = $1
+          GROUP BY c.carrier_id
+          ORDER BY c.created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/carriers — register a new transport provider.
+ * Body: { carrier_name, carrier_type: Internal|ThirdParty, contact_phone? }
+ */
+router.post('/logistics/carriers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { carrier_name: carrierName, carrier_type: carrierType, contact_phone: contactPhone } = req.body || {};
+
+  if (!carrierName || !carrierType) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['carrier_name', 'carrier_type'] });
+  }
+  if (!CARRIER_TYPES.includes(carrierType)) {
+    return res.status(400).json({ error: 'invalid_carrier_type', valid: CARRIER_TYPES });
+  }
+
+  try {
+    const carrierId = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'SELECT logistics.create_carrier($1, $2, $3, $4) AS carrier_id',
+        [subjectId, carrierName, carrierType, contactPhone || null],
+      );
+      await logAccess(client, 'write', 'logistics.carrier', rows[0].carrier_id);
+      return rows[0].carrier_id;
+    });
+    return res.status(201).json({ carrier_id: carrierId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/logistics/carriers/:id — carrier detail with its vehicles.
+ */
+router.get('/logistics/carriers/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const carrier = await client.query(
+        'SELECT carrier_id, carrier_name, carrier_type, contact_phone, status, created_at FROM logistics.carrier WHERE carrier_id = $1 AND org_id = $2',
+        [id, subjectId],
+      );
+      if (carrier.rows.length === 0) return null;
+
+      const vehicles = await client.query(
+        'SELECT vehicle_id, vehicle_type, license_plate, capacity_ton, status, created_at FROM logistics.vehicle WHERE carrier_id = $1 ORDER BY created_at',
+        [id],
+      );
+
+      return { carrier: carrier.rows[0], vehicles: vehicles.rows };
+    });
+
+    if (!result) return res.status(404).json({ error: 'carrier_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/carriers/:id/vehicles
+ * Body: { vehicle_type: Truck|Pickup|Trailer|Other, license_plate, capacity_ton? }
+ */
+router.post('/logistics/carriers/:id/vehicles', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { vehicle_type: vehicleType, license_plate: licensePlate, capacity_ton: capacityTon } = req.body || {};
+
+  if (!vehicleType || !licensePlate) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['vehicle_type', 'license_plate'] });
+  }
+  if (!VEHICLE_TYPES.includes(vehicleType)) {
+    return res.status(400).json({ error: 'invalid_vehicle_type', valid: VEHICLE_TYPES });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertCarrierOwned(client, subjectId, id))) return { carrierNotFound: true };
+
+      const { rows } = await client.query(
+        'SELECT logistics.create_vehicle($1, $2, $3, $4) AS vehicle_id',
+        [id, vehicleType, licensePlate, capacityTon || null],
+      );
+      await logAccess(client, 'write', 'logistics.vehicle', rows[0].vehicle_id);
+      return { vehicleId: rows[0].vehicle_id };
+    });
+
+    if (result.carrierNotFound) return res.status(404).json({ error: 'carrier_not_found' });
+    return res.status(201).json({ vehicle_id: result.vehicleId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/logistics/shipments — this cooperative's shipments, most
+ * recent first, from logistics.v_shipment_summary.
+ */
+router.get('/logistics/shipments', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT shipment_id, carrier_id, carrier_name, vehicle_id, license_plate,
+                destination_name, destination_org_id, driver_name, status,
+                scheduled_at, dispatched_at, delivered_at, cancelled_at, cancelled_by, cancel_reason,
+                created_by, created_at, item_count, total_quantity_ton,
+                pod_received_by, pod_received_quantity_ton, pod_recorded_at, exception_count
+           FROM logistics.v_shipment_summary
+          WHERE org_id = $1
+          ORDER BY created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/shipments — plan a new shipment.
+ * Body: { carrier_id, vehicle_id?, destination_name, destination_org_id?, driver_name?, scheduled_at?, created_by }
+ */
+router.post('/logistics/shipments', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    carrier_id: carrierId, vehicle_id: vehicleId, destination_name: destinationName, destination_org_id: destinationOrgId,
+    driver_name: driverName, scheduled_at: scheduledAt, created_by: createdBy,
+  } = req.body || {};
+
+  if (!carrierId || !destinationName || !createdBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['carrier_id', 'destination_name', 'created_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertCarrierOwned(client, subjectId, carrierId))) return { carrierNotFound: true };
+      if (vehicleId && !(await assertVehicleOwned(client, subjectId, vehicleId))) return { vehicleNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT logistics.create_shipment($1, $2, $3, $4, $5, $6, $7, $8) AS shipment_id',
+          [subjectId, carrierId, vehicleId || null, destinationName, destinationOrgId || null, driverName || null, scheduledAt || null, createdBy],
+        );
+        await logAccess(client, 'write', 'logistics.shipment', rows[0].shipment_id);
+        return { shipmentId: rows[0].shipment_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.carrierNotFound) return res.status(404).json({ error: 'carrier_not_found' });
+    if (result.vehicleNotFound) return res.status(404).json({ error: 'vehicle_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_create_shipment', detail: result.businessError });
+    return res.status(201).json({ shipment_id: result.shipmentId, status: 'Pending' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/logistics/shipments/:id — shipment detail: the summary row,
+ * every cargo item (with lot/finished-good labels resolved), and the
+ * exception log.
+ */
+router.get('/logistics/shipments/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const shipment = await client.query(
+        `SELECT shipment_id, carrier_id, carrier_name, vehicle_id, license_plate,
+                destination_name, destination_org_id, driver_name, status,
+                scheduled_at, dispatched_at, delivered_at, cancelled_at, cancelled_by, cancel_reason,
+                created_by, created_at, item_count, total_quantity_ton,
+                pod_received_by, pod_received_quantity_ton, pod_recorded_at, exception_count
+           FROM logistics.v_shipment_summary WHERE shipment_id = $1 AND org_id = $2`,
+        [id, subjectId],
+      );
+      if (shipment.rows.length === 0) return null;
+
+      const items = await client.query(
+        `SELECT si.shipment_item_id, si.item_type, si.quantity_ton, si.recorded_by, si.recorded_at,
+                l.lot_note, l.commodity_code AS lot_commodity_code,
+                fg.product_name AS finished_good_product_name
+           FROM logistics.shipment_item si
+           LEFT JOIN produce.lot l ON l.lot_id = si.lot_id
+           LEFT JOIN processing.finished_good fg ON fg.finished_good_id = si.finished_good_id
+          WHERE si.shipment_id = $1
+          ORDER BY si.recorded_at`,
+        [id],
+      );
+
+      const pod = await client.query(
+        'SELECT pod_id, received_by, received_quantity_ton, signature_name, note, recorded_by, recorded_at FROM logistics.proof_of_delivery WHERE shipment_id = $1',
+        [id],
+      );
+
+      const exceptions = await client.query(
+        `SELECT exception_id, exception_type, description, reported_by, reported_at, resolved, resolved_at, resolution_note
+           FROM logistics.shipment_exception WHERE shipment_id = $1 ORDER BY reported_at DESC`,
+        [id],
+      );
+
+      return {
+        shipment: shipment.rows[0],
+        items: items.rows,
+        proof_of_delivery: pod.rows[0] || null,
+        exceptions: exceptions.rows,
+      };
+    });
+
+    if (!result) return res.status(404).json({ error: 'shipment_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/logistics/lots-available?commodity_code=... — lots this
+ * cooperative can still put on a shipment (available_quantity_ton > 0,
+ * already netting out both processing commitments AND other shipments —
+ * see logistics.v_lot_shipping_availability).
+ */
+router.get('/logistics/lots-available', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { commodity_code: commodityCode } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT a.lot_id, a.commodity_code, a.lot_status, a.total_quantity_ton,
+                a.processing_committed_quantity_ton, a.shipment_committed_quantity_ton, a.available_quantity_ton,
+                l.lot_note, l.quality_grade
+           FROM logistics.v_lot_shipping_availability a
+           JOIN produce.lot l ON l.lot_id = a.lot_id
+          WHERE a.org_id = $1 AND a.available_quantity_ton > 0
+                AND ($2::text IS NULL OR a.commodity_code = $2)
+          ORDER BY l.created_at DESC`,
+        [subjectId, commodityCode || null],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/shipments/:id/items
+ * Body: { item_type: Lot|FinishedGood, lot_id?, finished_good_id?, quantity_ton }
+ */
+router.post('/logistics/shipments/:id/items', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { item_type: itemType, lot_id: lotId, finished_good_id: finishedGoodId, quantity_ton: quantityTon } = req.body || {};
+
+  if (!itemType || !quantityTon) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['item_type', 'quantity_ton'] });
+  }
+  if (!['Lot', 'FinishedGood'].includes(itemType)) {
+    return res.status(400).json({ error: 'invalid_item_type', valid: ['Lot', 'FinishedGood'] });
+  }
+  if (itemType === 'Lot' && !lotId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['lot_id'] });
+  }
+  if (itemType === 'FinishedGood' && !finishedGoodId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['finished_good_id'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertShipmentOwned(client, subjectId, id))) return { shipmentNotFound: true };
+      if (itemType === 'Lot' && !(await assertLotOwned(client, subjectId, lotId))) return { cargoNotFound: true };
+      if (itemType === 'FinishedGood' && !(await assertFinishedGoodOwned(client, subjectId, finishedGoodId))) return { cargoNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT logistics.add_shipment_item($1, $2, $3, $4, $5, $6) AS shipment_item_id',
+          [id, itemType, lotId || null, finishedGoodId || null, quantityTon, req.body.recorded_by || req.body.created_by || 'ไม่ระบุ'],
+        );
+        await logAccess(client, 'write', 'logistics.shipment_item', rows[0].shipment_item_id);
+        return { shipmentItemId: rows[0].shipment_item_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.shipmentNotFound) return res.status(404).json({ error: 'shipment_not_found' });
+    if (result.cargoNotFound) return res.status(404).json({ error: 'cargo_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_add_shipment_item', detail: result.businessError });
+    return res.status(201).json({ shipment_item_id: result.shipmentItemId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/shipments/:id/dispatch
+ * Body: { dispatched_by }
+ */
+router.post('/logistics/shipments/:id/dispatch', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { dispatched_by: dispatchedBy } = req.body || {};
+
+  if (!dispatchedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['dispatched_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertShipmentOwned(client, subjectId, id))) return { shipmentNotFound: true };
+
+      try {
+        await client.query('SELECT logistics.dispatch_shipment($1, $2)', [id, dispatchedBy]);
+        await logAccess(client, 'write', 'logistics.shipment', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.shipmentNotFound) return res.status(404).json({ error: 'shipment_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_dispatch_shipment', detail: result.businessError });
+    return res.json({ status: 'InTransit' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/shipments/:id/pod
+ * Body: { received_by, received_quantity_ton, recorded_by, signature_name?, note? }
+ */
+router.post('/logistics/shipments/:id/pod', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const {
+    received_by: receivedBy, received_quantity_ton: receivedQuantityTon, recorded_by: recordedBy,
+    signature_name: signatureName, note,
+  } = req.body || {};
+
+  if (!receivedBy || receivedQuantityTon === undefined || receivedQuantityTon === null || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['received_by', 'received_quantity_ton', 'recorded_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertShipmentOwned(client, subjectId, id))) return { shipmentNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT logistics.record_pod($1, $2, $3, $4, $5, $6) AS pod_id',
+          [id, receivedBy, receivedQuantityTon, recordedBy, signatureName || null, note || null],
+        );
+        await logAccess(client, 'write', 'logistics.proof_of_delivery', rows[0].pod_id);
+        return { podId: rows[0].pod_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.shipmentNotFound) return res.status(404).json({ error: 'shipment_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_record_pod', detail: result.businessError });
+    return res.status(201).json({ pod_id: result.podId, status: 'Delivered' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/shipments/:id/exceptions
+ * Body: { exception_type: Damage|Shortage|Delay|Rejected|Other, description, reported_by }
+ */
+router.post('/logistics/shipments/:id/exceptions', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { exception_type: exceptionType, description, reported_by: reportedBy } = req.body || {};
+
+  if (!exceptionType || !description || !reportedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['exception_type', 'description', 'reported_by'] });
+  }
+  if (!EXCEPTION_TYPES.includes(exceptionType)) {
+    return res.status(400).json({ error: 'invalid_exception_type', valid: EXCEPTION_TYPES });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertShipmentOwned(client, subjectId, id))) return { shipmentNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT logistics.report_exception($1, $2, $3, $4) AS exception_id',
+          [id, exceptionType, description, reportedBy],
+        );
+        await logAccess(client, 'write', 'logistics.shipment_exception', rows[0].exception_id);
+        return { exceptionId: rows[0].exception_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.shipmentNotFound) return res.status(404).json({ error: 'shipment_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_report_exception', detail: result.businessError });
+    return res.status(201).json({ exception_id: result.exceptionId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/exceptions/:id/resolve
+ * Body: { resolution_note }
+ */
+router.post('/logistics/exceptions/:id/resolve', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { resolution_note: resolutionNote } = req.body || {};
+
+  if (!resolutionNote) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['resolution_note'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT e.exception_id FROM logistics.shipment_exception e
+           JOIN logistics.shipment s ON s.shipment_id = e.shipment_id
+          WHERE e.exception_id = $1 AND s.org_id = $2`,
+        [id, subjectId],
+      );
+      if (rows.length === 0) return { exceptionNotFound: true };
+
+      await client.query('SELECT logistics.resolve_exception($1, $2)', [id, resolutionNote]);
+      await logAccess(client, 'write', 'logistics.shipment_exception', id);
+      return { ok: true };
+    });
+
+    if (result.exceptionNotFound) return res.status(404).json({ error: 'exception_not_found' });
+    return res.json({ resolved: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/shipments/:id/cancel — only works while the
+ * shipment has zero items (see the migration's design note on why).
+ * Body: { cancelled_by, reason }
+ */
+router.post('/logistics/shipments/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { cancelled_by: cancelledBy, reason } = req.body || {};
+
+  if (!cancelledBy || !reason) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['cancelled_by', 'reason'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertShipmentOwned(client, subjectId, id))) return { shipmentNotFound: true };
+
+      try {
+        await client.query('SELECT logistics.cancel_shipment($1, $2, $3)', [id, cancelledBy, reason]);
+        await logAccess(client, 'write', 'logistics.shipment', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.shipmentNotFound) return res.status(404).json({ error: 'shipment_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_cancel_shipment', detail: result.businessError });
+    return res.json({ status: 'Cancelled' });
   } catch (err) {
     return next(err);
   }

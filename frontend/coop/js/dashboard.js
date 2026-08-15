@@ -289,7 +289,14 @@ async function refreshDeliveriesAndSummary() {
   // refreshFinance() (M04) is included because confirm-quality/settle/
   // assign-lot can all change payables, cash balance, or inventory tons —
   // the finance dashboard above must not go stale after any of them.
-  await Promise.all([loadOpenLots(), loadLotList(), loadDeliveryReviewQueue(), loadDeliveryHistory(), refreshSummary(), refreshWarehouse(), refreshFinance()]);
+  // refreshProcessing() (M11) is included because assign-lot changes how
+  // much of a lot is available to commit to a processing batch (see
+  // processing.v_lot_processing_availability) — the "เลือกล็อตที่จะนำเข้า"
+  // dropdowns below must reflect that immediately.
+  // refreshLogistics() (M13) is included for the same reason one level
+  // further down the chain — a lot's shipping availability
+  // (logistics.v_lot_shipping_availability) also depends on assign-lot.
+  await Promise.all([loadOpenLots(), loadLotList(), loadDeliveryReviewQueue(), loadDeliveryHistory(), refreshSummary(), refreshWarehouse(), refreshFinance(), refreshProcessing(), refreshLogistics()]);
 }
 
 document.getElementById("deliveryStatusFilter").addEventListener("change", () => loadDeliveryHistory());
@@ -399,15 +406,18 @@ let commodityCache = [];
 async function loadCommodities() {
   const el = document.getElementById("commoditySelect");
   const lotEl = document.getElementById("lotCommoditySelect");
+  const batchEl = document.getElementById("batchCommoditySelect");
   try {
     commodityCache = await AgroLinkCoopAPI.get("/coop/commodities");
     const options = `<option value="">-- เลือกชนิดผลผลิต --</option>` +
       commodityCache.map((c) => `<option value="${c.commodity_code}">${escapeHtml(c.name_th)}</option>`).join("");
     el.innerHTML = options;
     lotEl.innerHTML = options;
+    batchEl.innerHTML = options;
   } catch (err) {
     el.innerHTML = `<option value="">โหลดชนิดผลผลิตไม่สำเร็จ</option>`;
     lotEl.innerHTML = el.innerHTML;
+    batchEl.innerHTML = el.innerHTML;
   }
 }
 
@@ -572,7 +582,7 @@ function facilityCard(f, bins) {
     <div class="item-card" data-facility-id="${f.facility_id}">
       <div class="row">
         <span class="title">${escapeHtml(f.facility_name)}</span>
-        <span class="badge status-active">${escapeHtml({ Warehouse: "คลังสินค้า", DryingYard: "ลานตาก", Silo: "ไซโล" }[f.facility_type] || f.facility_type)}</span>
+        <span class="badge status-active">${escapeHtml({ Warehouse: "คลังสินค้า", DryingYard: "ลานตาก", Silo: "ไซโล", ProcessingPlant: "โรงสี/โรงงานแปรรูป" }[f.facility_type] || f.facility_type)}</span>
       </div>
       ${f.capacity_ton ? `<div class="detail-line muted">ความจุรวม ${Number(f.capacity_ton).toLocaleString("th-TH")} ตัน</div>` : ""}
       ${binsHtml}
@@ -585,6 +595,15 @@ function facilityCard(f, bins) {
   `;
 }
 
+let facilitiesCache = []; // flat list of facility records (all types), for the M11 batch-form facility picker
+
+function renderBatchFacilityOptions() {
+  const el = document.getElementById("batchFacilitySelect");
+  if (!el) return;
+  el.innerHTML = `<option value="">-- ไม่ระบุ --</option>` +
+    facilitiesCache.filter((f) => f.status === "active").map((f) => `<option value="${f.facility_id}">${escapeHtml(f.facility_name)}</option>`).join("");
+}
+
 async function loadFacilities() {
   const el = document.getElementById("facilityListSection");
   try {
@@ -592,10 +611,14 @@ async function loadFacilities() {
     if (facilities.length === 0) {
       el.innerHTML = `<div class="empty-state">ยังไม่มีคลัง/ลานตาก — ใช้ฟอร์มด้านบนเพื่อเปิดแห่งแรก</div>`;
       binsCache = [];
+      facilitiesCache = [];
+      renderBatchFacilityOptions();
       return;
     }
     const details = await Promise.all(facilities.map((f) => AgroLinkCoopAPI.get(`/coop/warehouse/facilities/${f.facility_id}`)));
     binsCache = details.flatMap((d) => d.bins.map((b) => ({ ...b, facility_id: d.facility.facility_id, facility_name: d.facility.facility_name })));
+    facilitiesCache = details.map((d) => d.facility);
+    renderBatchFacilityOptions();
     el.innerHTML = details.map((d) => facilityCard(d.facility, d.bins)).join("");
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดรายชื่อคลัง/ลานตากไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
@@ -866,6 +889,773 @@ document.getElementById("warehouseLotsSection").addEventListener("click", async 
   }
 });
 
+// ---------- การแปรรูปผลผลิต (M11) ----------
+let lotsAvailableCache = []; // from GET /coop/processing/lots-available, filtered client-side per batch's source commodity
+
+function lotAvailableOptions(commodityCode) {
+  return lotsAvailableCache
+    .filter((l) => l.commodity_code === commodityCode)
+    .map((l) => `<option value="${l.lot_id}">${escapeHtml(l.lot_note || l.lot_id.slice(0, 8))} (เหลือ ${Number(l.available_quantity_ton).toLocaleString("th-TH")} ตัน)</option>`)
+    .join("");
+}
+
+async function loadLotsAvailable() {
+  try {
+    lotsAvailableCache = await AgroLinkCoopAPI.get("/coop/processing/lots-available");
+  } catch (err) {
+    lotsAvailableCache = [];
+  }
+}
+
+const BATCH_STATUS_LABEL_TH = { InProgress: "กำลังดำเนินการ", Completed: "เสร็จสิ้น", Cancelled: "ยกเลิกแล้ว" };
+const BATCH_STATUS_BADGE_CLASS = { InProgress: "status-pending", Completed: "status-completed", Cancelled: "status-declined" };
+const PROCESS_TYPE_LABEL_TH = { Milling: "สี/โม่", Drying: "อบแห้ง", Sorting: "คัดแยก", Packaging: "บรรจุภัณฑ์", Other: "อื่นๆ" };
+
+/**
+ * d is one full batch-detail object ({ batch, inputs, finished_goods,
+ * contributing_farmers }) from GET /coop/processing/batches/:id — the list
+ * view is loaded once, then every batch's detail is fetched in parallel
+ * (same "list -> Promise.all(detail)" shape as M10's loadFacilities()) so
+ * this card can show inputs/outputs/traceability without extra clicks.
+ */
+function processingBatchCard(d) {
+  const b = d.batch;
+  const badge = `<span class="badge ${BATCH_STATUS_BADGE_CLASS[b.status] || "status-pending"}">${escapeHtml(BATCH_STATUS_LABEL_TH[b.status] || b.status)}</span>`;
+
+  const inputsHtml = d.inputs.length === 0
+    ? `<div class="detail-line muted">ยังไม่มีวัตถุดิบนำเข้า</div>`
+    : d.inputs.map((i) => `<div class="detail-line">นำเข้า: ${escapeHtml(i.lot_note || i.lot_id.slice(0, 8))} — ${Number(i.quantity_ton).toLocaleString("th-TH")} ตัน</div>`).join("");
+
+  const outputsHtml = d.finished_goods.length === 0
+    ? `<div class="detail-line muted">ยังไม่มีผลผลิตที่บันทึก</div>`
+    : d.finished_goods.map((fg) => `<div class="detail-line">${fg.is_primary_product ? "🌾" : "•"} ${escapeHtml(fg.product_name)}: ${Number(fg.quantity_ton).toLocaleString("th-TH")} ตัน (คงเหลือ ${Number(fg.quantity_on_hand_ton).toLocaleString("th-TH")} ตัน)</div>`).join("");
+
+  const farmersHtml = d.contributing_farmers.length === 0 ? "" :
+    `<div class="detail-line muted">แหล่งที่มา: ${d.contributing_farmers.map((f) => escapeHtml(f.farmer_name)).join(", ")}</div>`;
+
+  let actions = "";
+  if (b.status === "InProgress") {
+    actions = `
+      <div class="action-row">
+        <select class="reject-reason-input" data-commit-lot-select-for="${b.batch_id}">
+          <option value="">-- เลือกล็อตที่จะนำเข้า --</option>
+          ${lotAvailableOptions(b.source_commodity_code)}
+        </select>
+        <input type="number" min="0.001" step="0.001" class="reject-reason-input" data-commit-qty-for="${b.batch_id}" placeholder="ปริมาณ (ตัน)" />
+        <button type="button" class="btn btn-ghost btn-sm" data-commit-lot="${b.batch_id}">นำเข้าวัตถุดิบ</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-fg-name-for="${b.batch_id}" placeholder="ชื่อผลผลิต เช่น ข้าวสารหอมมะลิ 5%" />
+        <input type="number" min="0.001" step="0.001" class="reject-reason-input" data-fg-qty-for="${b.batch_id}" placeholder="ปริมาณ (ตัน)" />
+        <label style="display:flex; align-items:center; gap:4px; font-size:13px; white-space:nowrap;">
+          <input type="checkbox" data-fg-primary-for="${b.batch_id}" checked /> ผลผลิตหลัก
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm" data-add-fg="${b.batch_id}">บันทึกผลผลิต</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-complete-by-for="${b.batch_id}" placeholder="ชื่อผู้ปิดชุด" />
+        <button type="button" class="btn btn-approve btn-sm" data-complete-batch="${b.batch_id}">ปิดชุด (เสร็จสิ้น)</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-cancel-by-for="${b.batch_id}" placeholder="ชื่อผู้ยกเลิก" />
+        <input type="text" class="reject-reason-input" data-cancel-reason-for="${b.batch_id}" placeholder="เหตุผลที่ยกเลิก" />
+        <button type="button" class="btn btn-decline btn-sm" data-cancel-batch="${b.batch_id}">ยกเลิกชุด</button>
+      </div>
+    `;
+  } else if (b.status === "Cancelled") {
+    actions = `<div class="detail-line muted">เหตุผลที่ยกเลิก: ${escapeHtml(b.cancel_reason || "-")} · โดย ${escapeHtml(b.cancelled_by || "-")}</div>`;
+  }
+
+  return `
+    <div class="item-card" data-batch-id="${b.batch_id}">
+      <div class="row"><span class="title">${escapeHtml(b.output_product_name)} — ${escapeHtml(PROCESS_TYPE_LABEL_TH[b.process_type] || b.process_type)}</span>${badge}</div>
+      <div class="detail-line muted">วัตถุดิบ: ${escapeHtml(b.source_commodity_name || b.source_commodity_code)}${b.facility_name ? " · ที่: " + escapeHtml(b.facility_name) : ""}</div>
+      <div class="detail-line">นำเข้ารวม ${Number(b.input_quantity_ton).toLocaleString("th-TH")} ตัน · ผลผลิตรวม ${Number(b.output_quantity_ton).toLocaleString("th-TH")} ตัน${b.yield_pct !== null && b.yield_pct !== undefined ? ` · yield ${b.yield_pct}%` : ""}</div>
+      ${inputsHtml}
+      ${outputsHtml}
+      ${farmersHtml}
+      <div class="detail-line muted">เริ่มเมื่อ ${thaiDate(b.started_at)} โดย ${escapeHtml(b.started_by)}${b.completed_at ? " · เสร็จสิ้นเมื่อ " + thaiDate(b.completed_at) : ""}</div>
+      ${b.batch_note ? `<div class="detail-line muted">หมายเหตุ: ${escapeHtml(b.batch_note)}</div>` : ""}
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadProcessingBatches() {
+  const el = document.getElementById("processingBatchesSection");
+  try {
+    const batches = await AgroLinkCoopAPI.get("/coop/processing/batches");
+    if (batches.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีชุดการแปรรูป — ใช้ฟอร์มด้านบนเพื่อเริ่มชุดแรก</div>`;
+      return;
+    }
+    const details = await Promise.all(batches.map((b) => AgroLinkCoopAPI.get(`/coop/processing/batches/${b.batch_id}`)));
+    el.innerHTML = details.map(processingBatchCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการชุดแปรรูปไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function finishedGoodCard(fg) {
+  return `
+    <div class="item-card" data-finished-good-id="${fg.finished_good_id}">
+      <div class="row">
+        <span class="title">${fg.is_primary_product ? "🌾" : "•"} ${escapeHtml(fg.product_name)}</span>
+        <span class="badge status-active">คงเหลือ ${Number(fg.quantity_on_hand_ton).toLocaleString("th-TH")} ตัน</span>
+      </div>
+      <div class="detail-line muted">จากชุด: ${escapeHtml(fg.batch_output_product_name)}${fg.batch_status !== "Completed" ? " (" + escapeHtml(BATCH_STATUS_LABEL_TH[fg.batch_status] || fg.batch_status) + ")" : ""}</div>
+      <div class="detail-line">ผลิตแล้ว ${Number(fg.produced_quantity_ton).toLocaleString("th-TH")} ตัน · นำออกแล้ว ${Number(fg.dispatched_quantity_ton).toLocaleString("th-TH")} ตัน</div>
+      ${fg.quantity_on_hand_ton > 0 ? `
+        <div class="action-row">
+          <input type="number" min="0.001" step="0.001" class="reject-reason-input" data-dispatch-qty-for="${fg.finished_good_id}" placeholder="ปริมาณที่นำออก (ตัน)" />
+          <input type="text" class="reject-reason-input" data-dispatch-by-for="${fg.finished_good_id}" placeholder="ชื่อผู้บันทึก" />
+          <input type="text" class="reject-reason-input" data-dispatch-note-for="${fg.finished_good_id}" placeholder="หมายเหตุ (ไม่บังคับ)" />
+          <button type="button" class="btn btn-ghost btn-sm" data-dispatch-fg="${fg.finished_good_id}">นำออกจากสต็อก</button>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+async function loadFinishedGoods() {
+  const el = document.getElementById("finishedGoodsSection");
+  try {
+    const rows = await AgroLinkCoopAPI.get("/coop/processing/finished-goods");
+    if (rows.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีสินค้าสำเร็จรูป — ปิดชุดการแปรรูปด้านบนเพื่อบันทึกผลผลิต</div>`;
+      return;
+    }
+    el.innerHTML = rows.map(finishedGoodCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดสินค้าสำเร็จรูปไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshProcessing() {
+  await loadLotsAvailable();
+  await loadProcessingBatches();
+  await loadFinishedGoods();
+}
+
+document.getElementById("batchForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const facilityId = document.getElementById("batchFacilitySelect").value;
+  const sourceCommodityCode = document.getElementById("batchCommoditySelect").value;
+  const processType = document.getElementById("batchProcessTypeSelect").value;
+  const outputProductName = document.getElementById("batchOutputNameInput").value.trim();
+  const startedBy = document.getElementById("batchStartedByInput").value.trim();
+  const batchNote = document.getElementById("batchNoteInput").value.trim();
+
+  if (!sourceCommodityCode || !outputProductName || !startedBy) {
+    toast("กรุณากรอกชนิดผลผลิต ชื่อผลผลิตที่คาดว่าจะได้ และชื่อผู้เริ่มดำเนินการ", true);
+    return;
+  }
+
+  const btn = document.getElementById("batchSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/processing/batches", {
+      facility_id: facilityId || undefined,
+      source_commodity_code: sourceCommodityCode,
+      process_type: processType,
+      output_product_name: outputProductName,
+      started_by: startedBy,
+      batch_note: batchNote || undefined,
+    });
+    toast("เริ่มชุดการแปรรูปใหม่เรียบร้อยแล้ว");
+    document.getElementById("batchForm").reset();
+    await refreshProcessing();
+  } catch (err) {
+    toast("เริ่มชุดการแปรรูปไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("processingBatchesSection").addEventListener("click", async (e) => {
+  const commitBtn = e.target.closest("[data-commit-lot]");
+  const addFgBtn = e.target.closest("[data-add-fg]");
+  const completeBtn = e.target.closest("[data-complete-batch]");
+  const cancelBtn = e.target.closest("[data-cancel-batch]");
+
+  if (commitBtn) {
+    const batchId = commitBtn.dataset.commitLot;
+    const lotId = document.querySelector(`[data-commit-lot-select-for="${batchId}"]`).value;
+    const qty = document.querySelector(`[data-commit-qty-for="${batchId}"]`).value;
+    if (!lotId || !qty) {
+      toast("กรุณาเลือกล็อตและกรอกปริมาณ", true);
+      return;
+    }
+    commitBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/processing/batches/${batchId}/commit-lot`, { lot_id: lotId, quantity_ton: Number(qty) });
+      toast("นำเข้าวัตถุดิบเรียบร้อยแล้ว");
+      await refreshProcessing();
+    } catch (err) {
+      toast("นำเข้าวัตถุดิบไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      commitBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (addFgBtn) {
+    const batchId = addFgBtn.dataset.addFg;
+    const nameInput = document.querySelector(`[data-fg-name-for="${batchId}"]`);
+    const qtyInput = document.querySelector(`[data-fg-qty-for="${batchId}"]`);
+    const primaryInput = document.querySelector(`[data-fg-primary-for="${batchId}"]`);
+    const productName = nameInput.value.trim();
+    const qty = qtyInput.value;
+    if (!productName || !qty) {
+      toast("กรุณากรอกชื่อผลผลิตและปริมาณ", true);
+      return;
+    }
+    addFgBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/processing/batches/${batchId}/finished-goods`, {
+        product_name: productName, quantity_ton: Number(qty), is_primary_product: primaryInput.checked,
+      });
+      toast("บันทึกผลผลิตเรียบร้อยแล้ว");
+      await refreshProcessing();
+    } catch (err) {
+      toast("บันทึกผลผลิตไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      addFgBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (completeBtn) {
+    const batchId = completeBtn.dataset.completeBatch;
+    const completedBy = document.querySelector(`[data-complete-by-for="${batchId}"]`).value.trim();
+    if (!completedBy) {
+      toast("กรุณากรอกชื่อผู้ปิดชุด", true);
+      return;
+    }
+    completeBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/processing/batches/${batchId}/complete`, { completed_by: completedBy });
+      toast("ปิดชุดการแปรรูปเรียบร้อยแล้ว");
+      await refreshProcessing();
+    } catch (err) {
+      toast("ปิดชุดไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      completeBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (cancelBtn) {
+    const batchId = cancelBtn.dataset.cancelBatch;
+    const cancelledBy = document.querySelector(`[data-cancel-by-for="${batchId}"]`).value.trim();
+    const reason = document.querySelector(`[data-cancel-reason-for="${batchId}"]`).value.trim();
+    if (!cancelledBy || !reason) {
+      toast("กรุณากรอกชื่อผู้ยกเลิกและเหตุผล", true);
+      return;
+    }
+    cancelBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/processing/batches/${batchId}/cancel`, { cancelled_by: cancelledBy, reason });
+      toast("ยกเลิกชุดการแปรรูปเรียบร้อยแล้ว");
+      await refreshProcessing();
+    } catch (err) {
+      toast("ยกเลิกชุดไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      cancelBtn.disabled = false;
+    }
+  }
+});
+
+document.getElementById("finishedGoodsSection").addEventListener("click", async (e) => {
+  const dispatchBtn = e.target.closest("[data-dispatch-fg]");
+  if (!dispatchBtn) return;
+  const fgId = dispatchBtn.dataset.dispatchFg;
+  const qty = document.querySelector(`[data-dispatch-qty-for="${fgId}"]`).value;
+  const recordedBy = document.querySelector(`[data-dispatch-by-for="${fgId}"]`).value.trim();
+  const note = document.querySelector(`[data-dispatch-note-for="${fgId}"]`).value.trim();
+  if (!qty || !recordedBy) {
+    toast("กรุณากรอกปริมาณและชื่อผู้บันทึก", true);
+    return;
+  }
+  dispatchBtn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/processing/finished-goods/${fgId}/dispatch`, {
+      quantity_ton: Number(qty), recorded_by: recordedBy, note: note || undefined,
+    });
+    toast("บันทึกการนำออกจากสต็อกเรียบร้อยแล้ว");
+    await refreshProcessing();
+  } catch (err) {
+    toast("บันทึกการนำออกไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+    dispatchBtn.disabled = false;
+  }
+});
+
+// ---------- การขนส่ง (M13) ----------
+let carriersCache = []; // flat carrier list (active + inactive), for the shipment form's carrier picker
+let vehiclesCache = []; // flat vehicle list across all carriers, for the shipment form's vehicle picker
+let shipLotsAvailableCache = []; // from GET /coop/logistics/lots-available — already nets out processing AND other shipments
+let shipFinishedGoodsCache = []; // GET /coop/processing/finished-goods, filtered client-side to quantity_on_hand_ton > 0
+
+const CARRIER_TYPE_LABEL_TH = { Internal: "รถของสหกรณ์เอง", ThirdParty: "ผู้รับจ้างขนส่ง" };
+const VEHICLE_TYPE_LABEL_TH = { Truck: "รถบรรทุก", Pickup: "รถกระบะ", Trailer: "รถพ่วง", Other: "อื่นๆ" };
+const SHIPMENT_STATUS_LABEL_TH = { Pending: "รอดำเนินการ", InTransit: "กำลังเดินทาง", Delivered: "ส่งมอบแล้ว", Cancelled: "ยกเลิกแล้ว" };
+const SHIPMENT_STATUS_BADGE_CLASS = { Pending: "status-pending", InTransit: "status-active", Delivered: "status-completed", Cancelled: "status-declined" };
+const EXCEPTION_TYPE_LABEL_TH = { Damage: "สินค้าเสียหาย", Shortage: "ขาดหาย", Delay: "ล่าช้า", Rejected: "ถูกปฏิเสธรับสินค้า", Other: "อื่นๆ" };
+
+function carrierCard(c) {
+  const badge = `<span class="badge status-active">${escapeHtml(CARRIER_TYPE_LABEL_TH[c.carrier_type] || c.carrier_type)}</span>`;
+  const vehiclesHtml = c.vehicles.length === 0
+    ? `<div class="detail-line muted">ยังไม่มียานพาหนะ</div>`
+    : c.vehicles.map((v) => `<div class="detail-line">${escapeHtml(VEHICLE_TYPE_LABEL_TH[v.vehicle_type] || v.vehicle_type)} — ทะเบียน ${escapeHtml(v.license_plate)}${v.capacity_ton ? ` (${Number(v.capacity_ton).toLocaleString("th-TH")} ตัน)` : ""}</div>`).join("");
+
+  return `
+    <div class="item-card" data-carrier-id="${c.carrier_id}">
+      <div class="row"><span class="title">${escapeHtml(c.carrier_name)}</span>${badge}</div>
+      ${c.contact_phone ? `<div class="detail-line muted">เบอร์ติดต่อ: ${escapeHtml(c.contact_phone)}</div>` : ""}
+      ${vehiclesHtml}
+      <div class="action-row">
+        <select class="reject-reason-input" data-vehicle-type-for="${c.carrier_id}">
+          <option value="Truck">รถบรรทุก</option>
+          <option value="Pickup">รถกระบะ</option>
+          <option value="Trailer">รถพ่วง</option>
+          <option value="Other">อื่นๆ</option>
+        </select>
+        <input type="text" class="reject-reason-input" data-vehicle-plate-for="${c.carrier_id}" placeholder="ทะเบียนรถ เช่น กท-1234" />
+        <input type="number" min="0.01" step="0.01" class="reject-reason-input" data-vehicle-capacity-for="${c.carrier_id}" placeholder="ความจุ (ตัน) ไม่บังคับ" />
+        <button type="button" class="btn btn-ghost btn-sm" data-add-vehicle="${c.carrier_id}">เพิ่มยานพาหนะ</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadCarriers() {
+  const el = document.getElementById("carrierListSection");
+  try {
+    const carriers = await AgroLinkCoopAPI.get("/coop/logistics/carriers");
+    if (carriers.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีผู้ขนส่ง — ใช้ฟอร์มด้านบนเพื่อเพิ่มรายแรก</div>`;
+      carriersCache = [];
+      vehiclesCache = [];
+    } else {
+      const details = await Promise.all(carriers.map((c) => AgroLinkCoopAPI.get(`/coop/logistics/carriers/${c.carrier_id}`)));
+      carriersCache = details.map((d) => d.carrier);
+      vehiclesCache = details.flatMap((d) => d.vehicles.map((v) => ({ ...v, carrier_id: d.carrier.carrier_id })));
+      el.innerHTML = details.map((d) => carrierCard({ ...d.carrier, vehicles: d.vehicles })).join("");
+    }
+
+    const carrierSelect = document.getElementById("shipmentCarrierSelect");
+    carrierSelect.innerHTML = `<option value="">-- เลือกผู้ขนส่ง --</option>` +
+      carriersCache.filter((c) => c.status === "active").map((c) => `<option value="${c.carrier_id}">${escapeHtml(c.carrier_name)}</option>`).join("");
+    updateShipmentVehicleOptions();
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายชื่อผู้ขนส่งไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function updateShipmentVehicleOptions() {
+  const carrierId = document.getElementById("shipmentCarrierSelect").value;
+  const vehicleSelect = document.getElementById("shipmentVehicleSelect");
+  vehicleSelect.innerHTML = `<option value="">-- ไม่ระบุ --</option>` +
+    vehiclesCache.filter((v) => v.status === "active" && v.carrier_id === carrierId)
+      .map((v) => `<option value="${v.vehicle_id}">${escapeHtml(v.license_plate)}</option>`).join("");
+}
+document.getElementById("shipmentCarrierSelect").addEventListener("change", updateShipmentVehicleOptions);
+
+document.getElementById("carrierForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const carrierName = document.getElementById("carrierNameInput").value.trim();
+  const carrierType = document.getElementById("carrierTypeSelect").value;
+  const contactPhone = document.getElementById("carrierPhoneInput").value.trim();
+
+  if (!carrierName) {
+    toast("กรุณากรอกชื่อผู้ขนส่ง", true);
+    return;
+  }
+
+  const btn = document.getElementById("carrierSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/logistics/carriers", {
+      carrier_name: carrierName, carrier_type: carrierType, contact_phone: contactPhone || undefined,
+    });
+    toast("เพิ่มผู้ขนส่งเรียบร้อยแล้ว");
+    document.getElementById("carrierForm").reset();
+    await loadCarriers();
+  } catch (err) {
+    toast("เพิ่มผู้ขนส่งไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("carrierListSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-add-vehicle]");
+  if (!btn) return;
+  const carrierId = btn.dataset.addVehicle;
+  const vehicleType = document.querySelector(`[data-vehicle-type-for="${carrierId}"]`).value;
+  const licensePlate = document.querySelector(`[data-vehicle-plate-for="${carrierId}"]`).value.trim();
+  const capacityTon = document.querySelector(`[data-vehicle-capacity-for="${carrierId}"]`).value;
+
+  if (!licensePlate) {
+    toast("กรุณากรอกทะเบียนรถ", true);
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/logistics/carriers/${carrierId}/vehicles`, {
+      vehicle_type: vehicleType, license_plate: licensePlate, capacity_ton: capacityTon ? Number(capacityTon) : undefined,
+    });
+    toast("เพิ่มยานพาหนะเรียบร้อยแล้ว");
+    await loadCarriers();
+  } catch (err) {
+    toast("เพิ่มยานพาหนะไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+    btn.disabled = false;
+  }
+});
+
+async function loadShipLotsAvailable() {
+  try {
+    shipLotsAvailableCache = await AgroLinkCoopAPI.get("/coop/logistics/lots-available");
+  } catch (err) {
+    shipLotsAvailableCache = [];
+  }
+}
+
+async function loadShipFinishedGoods() {
+  try {
+    const rows = await AgroLinkCoopAPI.get("/coop/processing/finished-goods");
+    shipFinishedGoodsCache = rows.filter((fg) => Number(fg.quantity_on_hand_ton) > 0);
+  } catch (err) {
+    shipFinishedGoodsCache = [];
+  }
+}
+
+function exceptionRow(exc) {
+  const badge = exc.resolved
+    ? `<span class="badge status-completed">แก้ไขแล้ว</span>`
+    : `<span class="badge status-pending">ยังไม่ได้แก้ไข</span>`;
+  return `
+    <div class="detail-line">
+      ⚠️ ${escapeHtml(EXCEPTION_TYPE_LABEL_TH[exc.exception_type] || exc.exception_type)}: ${escapeHtml(exc.description)} ${badge}
+      <span class="muted"> — โดย ${escapeHtml(exc.reported_by)} เมื่อ ${thaiDate(exc.reported_at)}</span>
+      ${exc.resolved ? ` — <span class="muted">แก้ไข: ${escapeHtml(exc.resolution_note || "-")}</span>` : ""}
+    </div>
+    ${!exc.resolved ? `
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-resolve-note-for="${exc.exception_id}" placeholder="บันทึกการแก้ไข" />
+        <button type="button" class="btn btn-ghost btn-sm" data-resolve-exception="${exc.exception_id}">บันทึกว่าแก้ไขแล้ว</button>
+      </div>
+    ` : ""}
+  `;
+}
+
+/** d is { shipment, items, proof_of_delivery, exceptions } from GET /coop/logistics/shipments/:id. */
+function shipmentCard(d) {
+  const s = d.shipment;
+  const badge = `<span class="badge ${SHIPMENT_STATUS_BADGE_CLASS[s.status] || "status-pending"}">${escapeHtml(SHIPMENT_STATUS_LABEL_TH[s.status] || s.status)}</span>`;
+
+  const itemsHtml = d.items.length === 0
+    ? `<div class="detail-line muted">ยังไม่มีสินค้าในรถ</div>`
+    : d.items.map((i) => i.item_type === "Lot"
+        ? `<div class="detail-line">📦 ล็อต: ${escapeHtml(i.lot_note || "-")} (${escapeHtml(i.lot_commodity_code)}) — ${Number(i.quantity_ton).toLocaleString("th-TH")} ตัน</div>`
+        : `<div class="detail-line">🏭 ${escapeHtml(i.finished_good_product_name || "-")} — ${Number(i.quantity_ton).toLocaleString("th-TH")} ตัน</div>`
+      ).join("");
+
+  const podHtml = d.proof_of_delivery
+    ? `<div class="detail-line">✅ หลักฐานการส่งมอบ: รับโดย ${escapeHtml(d.proof_of_delivery.received_by)} — ได้รับจริง ${Number(d.proof_of_delivery.received_quantity_ton).toLocaleString("th-TH")} ตัน${d.proof_of_delivery.note ? " (" + escapeHtml(d.proof_of_delivery.note) + ")" : ""}</div>`
+    : "";
+
+  const exceptionsHtml = d.exceptions.length === 0 ? "" : d.exceptions.map(exceptionRow).join("");
+
+  const lotOptions = shipLotsAvailableCache
+    .map((l) => `<option value="${l.lot_id}">${escapeHtml(l.lot_note || l.lot_id.slice(0, 8))} — ${escapeHtml(l.commodity_code)} (เหลือ ${Number(l.available_quantity_ton).toLocaleString("th-TH")} ตัน)</option>`).join("");
+  const fgOptions = shipFinishedGoodsCache
+    .map((fg) => `<option value="${fg.finished_good_id}">${escapeHtml(fg.product_name)} (เหลือ ${Number(fg.quantity_on_hand_ton).toLocaleString("th-TH")} ตัน)</option>`).join("");
+
+  let actions = "";
+  if (s.status === "Pending") {
+    actions = `
+      <div class="action-row">
+        <select class="reject-reason-input" data-add-lot-select-for="${s.shipment_id}">
+          <option value="">-- เพิ่มล็อตดิบ --</option>
+          ${lotOptions}
+        </select>
+        <input type="number" min="0.001" step="0.001" class="reject-reason-input" data-add-lot-qty-for="${s.shipment_id}" placeholder="ปริมาณ (ตัน)" />
+        <button type="button" class="btn btn-ghost btn-sm" data-add-lot-item="${s.shipment_id}">เพิ่มล็อต</button>
+      </div>
+      <div class="action-row">
+        <select class="reject-reason-input" data-add-fg-select-for="${s.shipment_id}">
+          <option value="">-- เพิ่มสินค้าสำเร็จรูป --</option>
+          ${fgOptions}
+        </select>
+        <input type="number" min="0.001" step="0.001" class="reject-reason-input" data-add-fg-qty-for="${s.shipment_id}" placeholder="ปริมาณ (ตัน)" />
+        <button type="button" class="btn btn-ghost btn-sm" data-add-fg-item="${s.shipment_id}">เพิ่มสินค้าสำเร็จรูป</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-dispatch-by-for="${s.shipment_id}" placeholder="ชื่อผู้ให้ออกเดินทาง" />
+        <button type="button" class="btn btn-approve btn-sm" data-dispatch-shipment="${s.shipment_id}">ออกเดินทาง</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-cancel-ship-by-for="${s.shipment_id}" placeholder="ชื่อผู้ยกเลิก" />
+        <input type="text" class="reject-reason-input" data-cancel-ship-reason-for="${s.shipment_id}" placeholder="เหตุผลที่ยกเลิก" />
+        <button type="button" class="btn btn-decline btn-sm" data-cancel-shipment="${s.shipment_id}">ยกเลิกการจัดส่ง</button>
+      </div>
+    `;
+  } else if (s.status === "InTransit" || s.status === "Delivered") {
+    if (s.status === "InTransit") {
+      actions += `
+        <div class="action-row">
+          <input type="text" class="reject-reason-input" data-pod-received-by-for="${s.shipment_id}" placeholder="ชื่อผู้รับสินค้า" />
+          <input type="number" min="0" step="0.001" class="reject-reason-input" data-pod-qty-for="${s.shipment_id}" placeholder="ปริมาณที่ได้รับจริง (ตัน)" />
+          <input type="text" class="reject-reason-input" data-pod-recorded-by-for="${s.shipment_id}" placeholder="ชื่อผู้บันทึก" />
+          <button type="button" class="btn btn-approve btn-sm" data-record-pod="${s.shipment_id}">บันทึกหลักฐานการส่งมอบ</button>
+        </div>
+      `;
+    }
+    actions += `
+      <div class="action-row">
+        <select class="reject-reason-input" data-exc-type-for="${s.shipment_id}">
+          <option value="Damage">สินค้าเสียหาย</option>
+          <option value="Shortage">ขาดหาย</option>
+          <option value="Delay">ล่าช้า</option>
+          <option value="Rejected">ถูกปฏิเสธรับสินค้า</option>
+          <option value="Other">อื่นๆ</option>
+        </select>
+        <input type="text" class="reject-reason-input" data-exc-desc-for="${s.shipment_id}" placeholder="รายละเอียด" />
+        <input type="text" class="reject-reason-input" data-exc-by-for="${s.shipment_id}" placeholder="ชื่อผู้รายงาน" />
+        <button type="button" class="btn btn-ghost btn-sm" data-report-exception="${s.shipment_id}">รายงานข้อยกเว้น</button>
+      </div>
+    `;
+  } else if (s.status === "Cancelled") {
+    actions = `<div class="detail-line muted">เหตุผลที่ยกเลิก: ${escapeHtml(s.cancel_reason || "-")} · โดย ${escapeHtml(s.cancelled_by || "-")}</div>`;
+  }
+
+  return `
+    <div class="item-card" data-shipment-id="${s.shipment_id}">
+      <div class="row"><span class="title">${escapeHtml(s.destination_name)}</span>${badge}</div>
+      <div class="detail-line muted">ผู้ขนส่ง: ${escapeHtml(s.carrier_name || "-")}${s.license_plate ? " · ทะเบียน " + escapeHtml(s.license_plate) : ""}${s.driver_name ? " · คนขับ " + escapeHtml(s.driver_name) : ""}</div>
+      <div class="detail-line">สินค้ารวม ${s.item_count} รายการ — ${Number(s.total_quantity_ton).toLocaleString("th-TH")} ตัน</div>
+      ${itemsHtml}
+      ${podHtml}
+      ${exceptionsHtml}
+      <div class="detail-line muted">วางแผนโดย ${escapeHtml(s.created_by)} เมื่อ ${thaiDate(s.created_at)}${s.dispatched_at ? " · ออกเดินทางเมื่อ " + thaiDate(s.dispatched_at) : ""}${s.delivered_at ? " · ส่งมอบเมื่อ " + thaiDate(s.delivered_at) : ""}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadShipments() {
+  const el = document.getElementById("shipmentsSection");
+  try {
+    const shipments = await AgroLinkCoopAPI.get("/coop/logistics/shipments");
+    if (shipments.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีการจัดส่ง — ใช้ฟอร์มด้านบนเพื่อวางแผนรายการแรก</div>`;
+      return;
+    }
+    const details = await Promise.all(shipments.map((s) => AgroLinkCoopAPI.get(`/coop/logistics/shipments/${s.shipment_id}`)));
+    el.innerHTML = details.map(shipmentCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการจัดส่งไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshLogistics() {
+  await loadShipLotsAvailable();
+  await loadShipFinishedGoods();
+  await loadCarriers();
+  await loadShipments();
+  // A shipment mutation can change a lot's/finished-good's availability for
+  // PROCESSING too (adding a raw Lot item competes with
+  // processing.v_lot_processing_availability; adding a FinishedGood item
+  // calls processing.record_dispatch() directly) — refresh M11's own
+  // sections so they never show stale numbers after a logistics action.
+  await refreshProcessing();
+}
+
+document.getElementById("shipmentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const carrierId = document.getElementById("shipmentCarrierSelect").value;
+  const vehicleId = document.getElementById("shipmentVehicleSelect").value;
+  const destinationName = document.getElementById("shipmentDestinationInput").value.trim();
+  const driverName = document.getElementById("shipmentDriverInput").value.trim();
+  const createdBy = document.getElementById("shipmentCreatedByInput").value.trim();
+
+  if (!carrierId || !destinationName || !createdBy) {
+    toast("กรุณาเลือกผู้ขนส่ง กรอกปลายทาง และชื่อผู้วางแผนจัดส่ง", true);
+    return;
+  }
+
+  const btn = document.getElementById("shipmentSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/logistics/shipments", {
+      carrier_id: carrierId, vehicle_id: vehicleId || undefined, destination_name: destinationName,
+      driver_name: driverName || undefined, created_by: createdBy,
+    });
+    toast("วางแผนการจัดส่งใหม่เรียบร้อยแล้ว");
+    document.getElementById("shipmentForm").reset();
+    await loadShipments();
+  } catch (err) {
+    toast("วางแผนการจัดส่งไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("shipmentsSection").addEventListener("click", async (e) => {
+  const addLotBtn = e.target.closest("[data-add-lot-item]");
+  const addFgBtn = e.target.closest("[data-add-fg-item]");
+  const dispatchBtn = e.target.closest("[data-dispatch-shipment]");
+  const cancelBtn = e.target.closest("[data-cancel-shipment]");
+  const podBtn = e.target.closest("[data-record-pod]");
+  const excBtn = e.target.closest("[data-report-exception]");
+  const resolveBtn = e.target.closest("[data-resolve-exception]");
+
+  if (addLotBtn) {
+    const shipmentId = addLotBtn.dataset.addLotItem;
+    const lotId = document.querySelector(`[data-add-lot-select-for="${shipmentId}"]`).value;
+    const qty = document.querySelector(`[data-add-lot-qty-for="${shipmentId}"]`).value;
+    if (!lotId || !qty) {
+      toast("กรุณาเลือกล็อตและกรอกปริมาณ", true);
+      return;
+    }
+    addLotBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/logistics/shipments/${shipmentId}/items`, {
+        item_type: "Lot", lot_id: lotId, quantity_ton: Number(qty), recorded_by: "เจ้าหน้าที่คลัง",
+      });
+      toast("เพิ่มล็อตเข้ารถขนส่งเรียบร้อยแล้ว");
+      await refreshLogistics();
+    } catch (err) {
+      toast("เพิ่มล็อตไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      addLotBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (addFgBtn) {
+    const shipmentId = addFgBtn.dataset.addFgItem;
+    const fgId = document.querySelector(`[data-add-fg-select-for="${shipmentId}"]`).value;
+    const qty = document.querySelector(`[data-add-fg-qty-for="${shipmentId}"]`).value;
+    if (!fgId || !qty) {
+      toast("กรุณาเลือกสินค้าสำเร็จรูปและกรอกปริมาณ", true);
+      return;
+    }
+    addFgBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/logistics/shipments/${shipmentId}/items`, {
+        item_type: "FinishedGood", finished_good_id: fgId, quantity_ton: Number(qty), recorded_by: "เจ้าหน้าที่คลัง",
+      });
+      toast("เพิ่มสินค้าสำเร็จรูปเข้ารถขนส่งเรียบร้อยแล้ว");
+      await refreshLogistics();
+    } catch (err) {
+      toast("เพิ่มสินค้าไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      addFgBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (dispatchBtn) {
+    const shipmentId = dispatchBtn.dataset.dispatchShipment;
+    const dispatchedBy = document.querySelector(`[data-dispatch-by-for="${shipmentId}"]`).value.trim();
+    if (!dispatchedBy) {
+      toast("กรุณากรอกชื่อผู้ให้ออกเดินทาง", true);
+      return;
+    }
+    dispatchBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/logistics/shipments/${shipmentId}/dispatch`, { dispatched_by: dispatchedBy });
+      toast("บันทึกออกเดินทางเรียบร้อยแล้ว");
+      await refreshLogistics();
+    } catch (err) {
+      toast("บันทึกออกเดินทางไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      dispatchBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (cancelBtn) {
+    const shipmentId = cancelBtn.dataset.cancelShipment;
+    const cancelledBy = document.querySelector(`[data-cancel-ship-by-for="${shipmentId}"]`).value.trim();
+    const reason = document.querySelector(`[data-cancel-ship-reason-for="${shipmentId}"]`).value.trim();
+    if (!cancelledBy || !reason) {
+      toast("กรุณากรอกชื่อผู้ยกเลิกและเหตุผล", true);
+      return;
+    }
+    cancelBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/logistics/shipments/${shipmentId}/cancel`, { cancelled_by: cancelledBy, reason });
+      toast("ยกเลิกการจัดส่งเรียบร้อยแล้ว");
+      await refreshLogistics();
+    } catch (err) {
+      toast("ยกเลิกไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      cancelBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (podBtn) {
+    const shipmentId = podBtn.dataset.recordPod;
+    const receivedBy = document.querySelector(`[data-pod-received-by-for="${shipmentId}"]`).value.trim();
+    const qty = document.querySelector(`[data-pod-qty-for="${shipmentId}"]`).value;
+    const recordedBy = document.querySelector(`[data-pod-recorded-by-for="${shipmentId}"]`).value.trim();
+    if (!receivedBy || qty === "" || !recordedBy) {
+      toast("กรุณากรอกชื่อผู้รับสินค้า ปริมาณที่ได้รับจริง และชื่อผู้บันทึก", true);
+      return;
+    }
+    podBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/logistics/shipments/${shipmentId}/pod`, {
+        received_by: receivedBy, received_quantity_ton: Number(qty), recorded_by: recordedBy,
+      });
+      toast("บันทึกหลักฐานการส่งมอบเรียบร้อยแล้ว");
+      await refreshLogistics();
+    } catch (err) {
+      toast("บันทึกหลักฐานการส่งมอบไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      podBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (excBtn) {
+    const shipmentId = excBtn.dataset.reportException;
+    const excType = document.querySelector(`[data-exc-type-for="${shipmentId}"]`).value;
+    const desc = document.querySelector(`[data-exc-desc-for="${shipmentId}"]`).value.trim();
+    const reportedBy = document.querySelector(`[data-exc-by-for="${shipmentId}"]`).value.trim();
+    if (!desc || !reportedBy) {
+      toast("กรุณากรอกรายละเอียดและชื่อผู้รายงาน", true);
+      return;
+    }
+    excBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/logistics/shipments/${shipmentId}/exceptions`, {
+        exception_type: excType, description: desc, reported_by: reportedBy,
+      });
+      toast("รายงานข้อยกเว้นเรียบร้อยแล้ว");
+      await refreshLogistics();
+    } catch (err) {
+      toast("รายงานข้อยกเว้นไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      excBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (resolveBtn) {
+    const exceptionId = resolveBtn.dataset.resolveException;
+    const note = document.querySelector(`[data-resolve-note-for="${exceptionId}"]`).value.trim();
+    if (!note) {
+      toast("กรุณากรอกบันทึกการแก้ไข", true);
+      return;
+    }
+    resolveBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/logistics/exceptions/${exceptionId}/resolve`, { resolution_note: note });
+      toast("บันทึกการแก้ไขเรียบร้อยแล้ว");
+      await refreshLogistics();
+    } catch (err) {
+      toast("บันทึกการแก้ไขไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      resolveBtn.disabled = false;
+    }
+  }
+});
+
 // NOTE: unlike buyer.js, this M09 slice does NOT expose GET /coop/contracts
 // — a cooperative's collection flow is spot-sale-first (see the scope note
 // in the dashboard's own HTML). contractSelect therefore always stays at
@@ -906,6 +1696,8 @@ async function init() {
   loadLotList();
   refreshWarehouse();
   refreshFinance();
+  refreshProcessing();
+  refreshLogistics();
 }
 
 init();
