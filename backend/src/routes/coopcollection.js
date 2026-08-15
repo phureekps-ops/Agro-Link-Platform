@@ -616,4 +616,423 @@ router.post('/lots/:id/close', async (req, res, next) => {
   }
 });
 
+/**
+ * ============================================================================
+ * M10 Warehouse / Drying — a cooperative's own storage sites (bins/
+ * facilities), inventory movements for produce.lot batches, and moisture
+ * readings taken over time while a lot dries. See
+ * grant_cooperative_warehouse.sql for the full schema/design rationale —
+ * in particular why this is a NEW `warehouse` schema, not the same thing
+ * as the pre-existing M08 machinery/drying-yard BOOKING system
+ * (src/routes/machinery.js), and how a lot's current location/utilization
+ * is derived (warehouse.v_lot_current_location / v_bin_utilization) rather
+ * than stored redundantly.
+ *
+ * Same ownership-gating discipline as the M09 routes above: warehouse.*
+ * has no row-level security, so every route below explicitly scopes
+ * facilities by `org_id = $subject` and bins/lots through their owning
+ * facility/lot — this is the entire security boundary, not
+ * defense-in-depth.
+ * ============================================================================
+ */
+
+/** Resolves a facility_id iff it belongs to this cooperative, else null. */
+async function assertFacilityOwned(client, subjectId, facilityId) {
+  const { rows } = await client.query(
+    'SELECT facility_id FROM warehouse.facility WHERE facility_id = $1 AND org_id = $2',
+    [facilityId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/** Resolves a bin_id iff its facility belongs to this cooperative, else null. */
+async function assertBinOwned(client, subjectId, binId) {
+  const { rows } = await client.query(
+    `SELECT b.bin_id FROM warehouse.bin b
+       JOIN warehouse.facility f ON f.facility_id = b.facility_id
+      WHERE b.bin_id = $1 AND f.org_id = $2`,
+    [binId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/** Resolves a lot_id iff it belongs to this cooperative, else null — same check as M09's assign-lot/close-lot routes. */
+async function assertLotOwned(client, subjectId, lotId) {
+  const { rows } = await client.query(
+    'SELECT lot_id FROM produce.lot WHERE lot_id = $1 AND buyer_org_id = $2',
+    [lotId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/**
+ * GET /coop/warehouse/facilities — this cooperative's storage sites, each
+ * with its bins rolled up into a simple occupied/capacity summary (per-bin
+ * detail is GET /coop/warehouse/facilities/:id below).
+ */
+router.get('/warehouse/facilities', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT f.facility_id, f.facility_name, f.facility_type, f.capacity_ton, f.status, f.created_at,
+                COUNT(b.bin_id)::int AS bin_count,
+                COALESCE(SUM(u.current_quantity_ton), 0)::numeric AS total_stored_ton
+           FROM warehouse.facility f
+           LEFT JOIN warehouse.bin b ON b.facility_id = f.facility_id
+           LEFT JOIN warehouse.v_bin_utilization u ON u.bin_id = b.bin_id
+          WHERE f.org_id = $1
+          GROUP BY f.facility_id
+          ORDER BY f.created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/warehouse/facilities — open a new facility.
+ * Body: { facility_name, facility_type: Warehouse|DryingYard|Silo, capacity_ton? }
+ */
+router.post('/warehouse/facilities', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { facility_name: facilityName, facility_type: facilityType, capacity_ton: capacityTon } = req.body || {};
+
+  if (!facilityName || !facilityType) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['facility_name', 'facility_type'] });
+  }
+  if (!['Warehouse', 'DryingYard', 'Silo'].includes(facilityType)) {
+    return res.status(400).json({ error: 'invalid_facility_type', valid: ['Warehouse', 'DryingYard', 'Silo'] });
+  }
+
+  try {
+    const facilityId = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO warehouse.facility (org_id, facility_name, facility_type, capacity_ton)
+         VALUES ($1, $2, $3, $4) RETURNING facility_id`,
+        [subjectId, facilityName, facilityType, capacityTon || null],
+      );
+      await logAccess(client, 'write', 'warehouse.facility', rows[0].facility_id);
+      return rows[0].facility_id;
+    });
+    return res.status(201).json({ facility_id: facilityId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/warehouse/facilities/:id — facility detail with per-bin
+ * utilization (from warehouse.v_bin_utilization).
+ */
+router.get('/warehouse/facilities/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const facility = await client.query(
+        'SELECT facility_id, facility_name, facility_type, capacity_ton, status, created_at FROM warehouse.facility WHERE facility_id = $1 AND org_id = $2',
+        [id, subjectId],
+      );
+      if (facility.rows.length === 0) return null;
+
+      const bins = await client.query(
+        `SELECT u.bin_id, b.bin_code, u.capacity_ton, u.current_quantity_ton, u.utilization_pct, b.status
+           FROM warehouse.v_bin_utilization u
+           JOIN warehouse.bin b ON b.bin_id = u.bin_id
+          WHERE u.facility_id = $1
+          ORDER BY b.bin_code`,
+        [id],
+      );
+
+      return { facility: facility.rows[0], bins: bins.rows };
+    });
+
+    if (!result) return res.status(404).json({ error: 'facility_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/warehouse/facilities/:id/bins — open a new bin within a
+ * facility this cooperative owns.
+ * Body: { bin_code, capacity_ton? }
+ */
+router.post('/warehouse/facilities/:id/bins', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { bin_code: binCode, capacity_ton: capacityTon } = req.body || {};
+
+  if (!binCode) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['bin_code'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertFacilityOwned(client, subjectId, id))) return { facilityNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'INSERT INTO warehouse.bin (facility_id, bin_code, capacity_ton) VALUES ($1, $2, $3) RETURNING bin_id',
+          [id, binCode, capacityTon || null],
+        );
+        await logAccess(client, 'write', 'warehouse.bin', rows[0].bin_id);
+        return { binId: rows[0].bin_id };
+      } catch (dbErr) {
+        if (dbErr.code === '23505') return { duplicateBinCode: true };
+        throw dbErr;
+      }
+    });
+
+    if (result.facilityNotFound) return res.status(404).json({ error: 'facility_not_found' });
+    if (result.duplicateBinCode) return res.status(409).json({ error: 'bin_code_already_used_in_facility' });
+    return res.status(201).json({ bin_id: result.binId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/warehouse/lots — this cooperative's lots with their current
+ * warehouse status (in_storage / released / not_in_warehouse) and age —
+ * the entry point for "which lots are sitting in my warehouse right now."
+ */
+router.get('/warehouse/lots', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT l.lot_id, l.commodity_code, l.quality_grade, l.status AS lot_status, l.lot_note,
+                loc.current_bin_id, b.bin_code, f.facility_name,
+                loc.warehouse_status, loc.first_received_at, loc.age_days
+           FROM produce.lot l
+           LEFT JOIN warehouse.v_lot_current_location loc ON loc.lot_id = l.lot_id
+           LEFT JOIN warehouse.bin b ON b.bin_id = loc.current_bin_id
+           LEFT JOIN warehouse.facility f ON f.facility_id = b.facility_id
+          WHERE l.buyer_org_id = $1
+          ORDER BY l.created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/warehouse/lots/:lotId/history — full movement + drying-reading
+ * history for one lot (traceability/aging detail view).
+ */
+router.get('/warehouse/lots/:lotId/history', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { lotId } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertLotOwned(client, subjectId, lotId))) return null;
+
+      const movements = await client.query(
+        `SELECT m.movement_id, m.movement_type, m.quantity_ton, m.moisture_pct, m.recorded_by, m.recorded_at, m.note,
+                fb.bin_code AS from_bin_code, tb.bin_code AS to_bin_code
+           FROM warehouse.movement m
+           LEFT JOIN warehouse.bin fb ON fb.bin_id = m.from_bin_id
+           LEFT JOIN warehouse.bin tb ON tb.bin_id = m.to_bin_id
+          WHERE m.lot_id = $1
+          ORDER BY m.recorded_at`,
+        [lotId],
+      );
+      const readings = await client.query(
+        `SELECT r.reading_id, r.moisture_pct, r.recorded_by, r.recorded_at, b.bin_code
+           FROM warehouse.drying_reading r
+           JOIN warehouse.bin b ON b.bin_id = r.bin_id
+          WHERE r.lot_id = $1
+          ORDER BY r.recorded_at`,
+        [lotId],
+      );
+      return { movements: movements.rows, drying_readings: readings.rows };
+    });
+
+    if (!result) return res.status(404).json({ error: 'lot_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/warehouse/receive
+ * Body: { lot_id, bin_id, quantity_ton, recorded_by, moisture_pct? }
+ * Brings a lot into warehouse tracking for the first time (or again, if it
+ * was previously released — warehouse.receive_lot() doesn't forbid that).
+ */
+router.post('/warehouse/receive', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    lot_id: lotId, bin_id: binId, quantity_ton: quantityTon, recorded_by: recordedBy, moisture_pct: moisturePct,
+  } = req.body || {};
+
+  if (!lotId || !binId || !quantityTon || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['lot_id', 'bin_id', 'quantity_ton', 'recorded_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertLotOwned(client, subjectId, lotId))) return { lotNotFound: true };
+      if (!(await assertBinOwned(client, subjectId, binId))) return { binNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT warehouse.receive_lot($1, $2, $3, $4, $5) AS movement_id',
+          [lotId, binId, quantityTon, recordedBy, moisturePct === undefined ? null : moisturePct],
+        );
+        await logAccess(client, 'write', 'warehouse.movement', rows[0].movement_id);
+        return { movementId: rows[0].movement_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.lotNotFound) return res.status(404).json({ error: 'lot_not_found' });
+    if (result.binNotFound) return res.status(404).json({ error: 'bin_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_receive_lot', detail: result.businessError });
+    return res.status(201).json({ movement_id: result.movementId, status: 'received' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/warehouse/transfer
+ * Body: { lot_id, from_bin_id, to_bin_id, quantity_ton, recorded_by }
+ */
+router.post('/warehouse/transfer', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    lot_id: lotId, from_bin_id: fromBinId, to_bin_id: toBinId, quantity_ton: quantityTon, recorded_by: recordedBy,
+  } = req.body || {};
+
+  if (!lotId || !fromBinId || !toBinId || !quantityTon || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['lot_id', 'from_bin_id', 'to_bin_id', 'quantity_ton', 'recorded_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertLotOwned(client, subjectId, lotId))) return { lotNotFound: true };
+      if (!(await assertBinOwned(client, subjectId, fromBinId)) || !(await assertBinOwned(client, subjectId, toBinId))) {
+        return { binNotFound: true };
+      }
+
+      try {
+        const { rows } = await client.query(
+          'SELECT warehouse.transfer_lot($1, $2, $3, $4, $5) AS movement_id',
+          [lotId, fromBinId, toBinId, quantityTon, recordedBy],
+        );
+        await logAccess(client, 'write', 'warehouse.movement', rows[0].movement_id);
+        return { movementId: rows[0].movement_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.lotNotFound) return res.status(404).json({ error: 'lot_not_found' });
+    if (result.binNotFound) return res.status(404).json({ error: 'bin_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_transfer_lot', detail: result.businessError });
+    return res.status(201).json({ movement_id: result.movementId, status: 'transferred' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/warehouse/release
+ * Body: { lot_id, from_bin_id, quantity_ton, recorded_by, note? }
+ * Marks a lot as having left warehouse tracking (sold, sent onward, etc.)
+ * — see the migration's Follow-up note on why this doesn't yet link to
+ * what the lot became.
+ */
+router.post('/warehouse/release', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    lot_id: lotId, from_bin_id: fromBinId, quantity_ton: quantityTon, recorded_by: recordedBy, note,
+  } = req.body || {};
+
+  if (!lotId || !fromBinId || !quantityTon || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['lot_id', 'from_bin_id', 'quantity_ton', 'recorded_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertLotOwned(client, subjectId, lotId))) return { lotNotFound: true };
+      if (!(await assertBinOwned(client, subjectId, fromBinId))) return { binNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT warehouse.release_lot($1, $2, $3, $4, $5) AS movement_id',
+          [lotId, fromBinId, quantityTon, recordedBy, note || null],
+        );
+        await logAccess(client, 'write', 'warehouse.movement', rows[0].movement_id);
+        return { movementId: rows[0].movement_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.lotNotFound) return res.status(404).json({ error: 'lot_not_found' });
+    if (result.binNotFound) return res.status(404).json({ error: 'bin_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_release_lot', detail: result.businessError });
+    return res.status(201).json({ movement_id: result.movementId, status: 'released' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/warehouse/drying-readings
+ * Body: { lot_id, bin_id, moisture_pct, recorded_by }
+ * A standalone reading, independent of any movement — lets a cooperative
+ * log ความชื้น daily while a lot sits drying without needing to also
+ * transfer it.
+ */
+router.post('/warehouse/drying-readings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    lot_id: lotId, bin_id: binId, moisture_pct: moisturePct, recorded_by: recordedBy,
+  } = req.body || {};
+
+  if (!lotId || !binId || moisturePct === undefined || moisturePct === null || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['lot_id', 'bin_id', 'moisture_pct', 'recorded_by'] });
+  }
+  const m = Number(moisturePct);
+  if (!Number.isFinite(m) || m < 0 || m > 100) {
+    return res.status(400).json({ error: 'invalid_moisture_pct' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertLotOwned(client, subjectId, lotId))) return { lotNotFound: true };
+      if (!(await assertBinOwned(client, subjectId, binId))) return { binNotFound: true };
+
+      const { rows } = await client.query(
+        'SELECT warehouse.record_drying_reading($1, $2, $3, $4) AS reading_id',
+        [lotId, binId, m, recordedBy],
+      );
+      await logAccess(client, 'write', 'warehouse.drying_reading', rows[0].reading_id);
+      return { readingId: rows[0].reading_id };
+    });
+
+    if (result.lotNotFound) return res.status(404).json({ error: 'lot_not_found' });
+    if (result.binNotFound) return res.status(404).json({ error: 'bin_not_found' });
+    return res.status(201).json({ reading_id: result.readingId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

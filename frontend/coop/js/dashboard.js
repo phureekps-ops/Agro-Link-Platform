@@ -190,8 +190,10 @@ async function refreshDeliveriesAndSummary() {
   // assign-lot changes a lot's delivery_count/total_quantity_ton — without
   // this, the "ล็อตรวบรวมผลผลิต" list below would keep showing stale
   // counts after a delivery is assigned to (or, once that exists,
-  // eventually removed from) a lot.
-  await Promise.all([loadOpenLots(), loadLotList(), loadDeliveryReviewQueue(), loadDeliveryHistory(), refreshSummary()]);
+  // eventually removed from) a lot. refreshWarehouse() is included for the
+  // same reason: opening a new lot here should immediately appear in the
+  // M10 "ล็อตในคลัง" list below (as "ยังไม่เข้าคลัง", ready to receive).
+  await Promise.all([loadOpenLots(), loadLotList(), loadDeliveryReviewQueue(), loadDeliveryHistory(), refreshSummary(), refreshWarehouse()]);
 }
 
 document.getElementById("deliveryStatusFilter").addEventListener("change", () => loadDeliveryHistory());
@@ -436,6 +438,338 @@ document.getElementById("lotListSection").addEventListener("click", async (e) =>
   }
 });
 
+// ---------- คลังสินค้า/ลานตาก (M10) ----------
+let binsCache = []; // flat list across all facilities, for the receive/transfer bin dropdowns
+
+function staffName() {
+  return document.getElementById("warehouseStaffInput").value.trim();
+}
+function requireStaffName() {
+  const name = staffName();
+  if (!name) toast("กรุณากรอกชื่อเจ้าหน้าที่คลังผู้บันทึกก่อน", true);
+  return name;
+}
+
+function utilizationBar(pct) {
+  if (pct === null || pct === undefined) return "";
+  const clamped = Math.max(0, Math.min(100, Number(pct)));
+  const color = clamped >= 90 ? "#c0392b" : clamped >= 70 ? "#d68910" : "#1B5E20";
+  return `
+    <div style="background:#e8e8e0; border-radius:6px; height:8px; overflow:hidden; margin:4px 0;">
+      <div style="background:${color}; width:${clamped}%; height:100%;"></div>
+    </div>
+  `;
+}
+
+function facilityCard(f, bins) {
+  const binsHtml = bins.length === 0
+    ? `<div class="detail-line muted">ยังไม่มีตำแหน่งจัดเก็บ</div>`
+    : bins.map((b) => `
+        <div class="detail-line">
+          ${escapeHtml(b.bin_code)}: ${Number(b.current_quantity_ton).toLocaleString("th-TH")}${b.capacity_ton ? " / " + Number(b.capacity_ton).toLocaleString("th-TH") : ""} ตัน
+          ${b.capacity_ton ? " (" + b.utilization_pct + "%)" : ""}
+          ${utilizationBar(b.utilization_pct)}
+        </div>
+      `).join("");
+
+  return `
+    <div class="item-card" data-facility-id="${f.facility_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(f.facility_name)}</span>
+        <span class="badge status-active">${escapeHtml({ Warehouse: "คลังสินค้า", DryingYard: "ลานตาก", Silo: "ไซโล" }[f.facility_type] || f.facility_type)}</span>
+      </div>
+      ${f.capacity_ton ? `<div class="detail-line muted">ความจุรวม ${Number(f.capacity_ton).toLocaleString("th-TH")} ตัน</div>` : ""}
+      ${binsHtml}
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-bin-code-for="${f.facility_id}" placeholder="รหัสตำแหน่งใหม่ เช่น A1" />
+        <input type="number" min="0.01" step="0.01" class="reject-reason-input" data-bin-capacity-for="${f.facility_id}" placeholder="ความจุ (ตัน) ไม่บังคับ" />
+        <button type="button" class="btn btn-ghost btn-sm" data-add-bin="${f.facility_id}">เพิ่มตำแหน่งจัดเก็บ</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadFacilities() {
+  const el = document.getElementById("facilityListSection");
+  try {
+    const facilities = await AgroLinkCoopAPI.get("/coop/warehouse/facilities");
+    if (facilities.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคลัง/ลานตาก — ใช้ฟอร์มด้านบนเพื่อเปิดแห่งแรก</div>`;
+      binsCache = [];
+      return;
+    }
+    const details = await Promise.all(facilities.map((f) => AgroLinkCoopAPI.get(`/coop/warehouse/facilities/${f.facility_id}`)));
+    binsCache = details.flatMap((d) => d.bins.map((b) => ({ ...b, facility_id: d.facility.facility_id, facility_name: d.facility.facility_name })));
+    el.innerHTML = details.map((d) => facilityCard(d.facility, d.bins)).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายชื่อคลัง/ลานตากไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("facilityForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const facilityName = document.getElementById("facilityNameInput").value.trim();
+  const facilityType = document.getElementById("facilityTypeSelect").value;
+  const capacityRaw = document.getElementById("facilityCapacityInput").value;
+
+  if (!facilityName) {
+    toast("กรุณากรอกชื่อคลัง/ลานตาก", true);
+    return;
+  }
+
+  const btn = document.getElementById("facilitySubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/warehouse/facilities", {
+      facility_name: facilityName,
+      facility_type: facilityType,
+      capacity_ton: capacityRaw ? Number(capacityRaw) : undefined,
+    });
+    toast("เปิดคลัง/ลานตากใหม่เรียบร้อยแล้ว");
+    document.getElementById("facilityForm").reset();
+    await refreshWarehouse();
+  } catch (err) {
+    toast("เปิดคลัง/ลานตากไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("facilityListSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-add-bin]");
+  if (!btn) return;
+  const facilityId = btn.dataset.addBin;
+  const codeInput = document.querySelector(`[data-bin-code-for="${facilityId}"]`);
+  const capacityInput = document.querySelector(`[data-bin-capacity-for="${facilityId}"]`);
+  const binCode = codeInput.value.trim();
+  const capacityRaw = capacityInput.value;
+
+  if (!binCode) {
+    toast("กรุณากรอกรหัสตำแหน่งจัดเก็บ", true);
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/warehouse/facilities/${facilityId}/bins`, {
+      bin_code: binCode,
+      capacity_ton: capacityRaw ? Number(capacityRaw) : undefined,
+    });
+    toast("เพิ่มตำแหน่งจัดเก็บเรียบร้อยแล้ว");
+    // refreshWarehouse() (not just loadFacilities()) — the "ล็อตในคลัง"
+    // list's receive/transfer bin dropdowns are rendered from binsCache at
+    // the time loadWarehouseLots() last ran, so a newly added bin wouldn't
+    // show up there until this also re-renders that list.
+    await refreshWarehouse();
+  } catch (err) {
+    toast("เพิ่มตำแหน่งจัดเก็บไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/**
+ * opts.onlyFacilityId — restrict to bins in one facility (used for the
+ * transfer dropdown: warehouse.transfer_lot() rejects cross-facility moves,
+ * see grant_cooperative_warehouse.sql, so the UI only offers valid targets
+ * in the first place rather than letting the user hit that 409).
+ * opts.excludeBinId — drop one bin (the lot's current bin, so "transfer to
+ * itself" isn't offered).
+ */
+function binOptions(opts = {}) {
+  return binsCache
+    .filter((b) => b.status === "active")
+    .filter((b) => !opts.onlyFacilityId || b.facility_id === opts.onlyFacilityId)
+    .filter((b) => !opts.excludeBinId || b.bin_id !== opts.excludeBinId)
+    .map((b) => `<option value="${b.bin_id}">${escapeHtml(b.facility_name)} — ${escapeHtml(b.bin_code)}</option>`)
+    .join("");
+}
+
+const WAREHOUSE_STATUS_LABEL_TH = {
+  in_storage: "อยู่ในคลัง", released: "นำออกจากคลังแล้ว", not_in_warehouse: "ยังไม่เข้าคลัง",
+};
+
+function warehouseLotCard(l) {
+  const badgeClass = l.warehouse_status === "in_storage" ? "status-active" : l.warehouse_status === "released" ? "status-completed" : "status-pending";
+  const badge = `<span class="badge ${badgeClass}">${escapeHtml(WAREHOUSE_STATUS_LABEL_TH[l.warehouse_status] || l.warehouse_status)}</span>`;
+
+  let locationLine = "";
+  if (l.warehouse_status === "in_storage") {
+    locationLine = `<div class="detail-line">ตำแหน่งปัจจุบัน: ${escapeHtml(l.facility_name)} — ${escapeHtml(l.bin_code)}${l.age_days !== null ? ` · เก็บมาแล้ว ${l.age_days} วัน` : ""}</div>`;
+  } else if (l.warehouse_status === "released" && l.age_days !== null) {
+    locationLine = `<div class="detail-line muted">เคยเก็บในคลังมาแล้ว ${l.age_days} วัน ก่อนนำออก</div>`;
+  }
+
+  let actions = "";
+  if (l.warehouse_status === "not_in_warehouse" || l.warehouse_status === "released") {
+    actions = `
+      <div class="action-row">
+        <select class="reject-reason-input" data-receive-bin-for="${l.lot_id}">
+          <option value="">-- เลือกตำแหน่งจัดเก็บที่จะรับเข้า --</option>
+          ${binOptions()}
+        </select>
+        <input type="number" min="0.01" step="0.01" class="reject-reason-input" data-receive-qty-for="${l.lot_id}" placeholder="น้ำหนัก (ตัน)" />
+        <input type="number" min="0" max="100" step="0.1" class="reject-reason-input" data-receive-moisture-for="${l.lot_id}" placeholder="ความชื้น % (ไม่บังคับ)" />
+      </div>
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-receive-lot="${l.lot_id}">รับเข้าคลัง</button>
+      </div>
+    `;
+  } else if (l.warehouse_status === "in_storage") {
+    actions = `
+      <div class="action-row">
+        <input type="number" min="0" max="100" step="0.1" class="reject-reason-input" data-moisture-reading-for="${l.lot_id}" placeholder="ความชื้นล่าสุด %" />
+        <button type="button" class="btn btn-ghost btn-sm" data-record-moisture="${l.lot_id}" data-bin-id="${l.current_bin_id}">บันทึกความชื้น</button>
+      </div>
+      <div class="action-row">
+        <select class="reject-reason-input" data-transfer-bin-for="${l.lot_id}">
+          <option value="">-- ย้ายไปตำแหน่ง (คลังเดียวกันเท่านั้น) --</option>
+          ${binOptions({ onlyFacilityId: (binsCache.find((b) => b.bin_id === l.current_bin_id) || {}).facility_id, excludeBinId: l.current_bin_id })}
+        </select>
+        <input type="number" min="0.01" step="0.01" class="reject-reason-input" data-transfer-qty-for="${l.lot_id}" placeholder="น้ำหนัก (ตัน)" />
+        <button type="button" class="btn btn-ghost btn-sm" data-transfer-lot="${l.lot_id}" data-from-bin-id="${l.current_bin_id}">ย้าย</button>
+      </div>
+      <div class="action-row">
+        <input type="number" min="0.01" step="0.01" class="reject-reason-input" data-release-qty-for="${l.lot_id}" placeholder="น้ำหนักที่นำออก (ตัน)" />
+        <button type="button" class="btn btn-decline btn-sm" data-release-lot="${l.lot_id}" data-from-bin-id="${l.current_bin_id}">นำออกจากคลัง</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card" data-warehouse-lot-id="${l.lot_id}">
+      <div class="row"><span class="title">${escapeHtml(l.lot_note || ("ล็อต " + l.lot_id.slice(0, 8)))} — ${escapeHtml(l.commodity_code)}</span>${badge}</div>
+      <div class="detail-line muted">สถานะล็อต: ${l.lot_status === "Open" ? "เปิดอยู่" : "ปิดแล้ว"}${l.quality_grade ? " · เกรด " + escapeHtml(l.quality_grade) : ""}</div>
+      ${locationLine}
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadWarehouseLots() {
+  const el = document.getElementById("warehouseLotsSection");
+  try {
+    const lots = await AgroLinkCoopAPI.get("/coop/warehouse/lots");
+    if (lots.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีล็อต — เปิดล็อตในส่วน "ล็อตรวบรวมผลผลิต" ด้านบนก่อน</div>`;
+      return;
+    }
+    el.innerHTML = lots.map(warehouseLotCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดล็อตในคลังไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshWarehouse() {
+  await loadFacilities();
+  await loadWarehouseLots();
+}
+
+document.getElementById("warehouseLotsSection").addEventListener("click", async (e) => {
+  const receiveBtn = e.target.closest("[data-receive-lot]");
+  const transferBtn = e.target.closest("[data-transfer-lot]");
+  const releaseBtn = e.target.closest("[data-release-lot]");
+  const moistureBtn = e.target.closest("[data-record-moisture]");
+
+  if (receiveBtn) {
+    const lotId = receiveBtn.dataset.receiveLot;
+    const binId = document.querySelector(`[data-receive-bin-for="${lotId}"]`).value;
+    const qty = document.querySelector(`[data-receive-qty-for="${lotId}"]`).value;
+    const moisture = document.querySelector(`[data-receive-moisture-for="${lotId}"]`).value;
+    const recordedBy = requireStaffName();
+    if (!recordedBy) return;
+    if (!binId || !qty) {
+      toast("กรุณาเลือกตำแหน่งจัดเก็บและกรอกน้ำหนัก", true);
+      return;
+    }
+    receiveBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post("/coop/warehouse/receive", {
+        lot_id: lotId, bin_id: binId, quantity_ton: Number(qty), recorded_by: recordedBy,
+        moisture_pct: moisture === "" ? undefined : Number(moisture),
+      });
+      toast("รับเข้าคลังเรียบร้อยแล้ว");
+      await refreshWarehouse();
+    } catch (err) {
+      toast("รับเข้าคลังไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      receiveBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (transferBtn) {
+    const lotId = transferBtn.dataset.transferLot;
+    const fromBinId = transferBtn.dataset.fromBinId;
+    const toBinId = document.querySelector(`[data-transfer-bin-for="${lotId}"]`).value;
+    const qty = document.querySelector(`[data-transfer-qty-for="${lotId}"]`).value;
+    const recordedBy = requireStaffName();
+    if (!recordedBy) return;
+    if (!toBinId || !qty) {
+      toast("กรุณาเลือกตำแหน่งปลายทางและกรอกน้ำหนัก", true);
+      return;
+    }
+    transferBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post("/coop/warehouse/transfer", {
+        lot_id: lotId, from_bin_id: fromBinId, to_bin_id: toBinId, quantity_ton: Number(qty), recorded_by: recordedBy,
+      });
+      toast("ย้ายตำแหน่งเรียบร้อยแล้ว");
+      await refreshWarehouse();
+    } catch (err) {
+      toast("ย้ายตำแหน่งไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      transferBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (releaseBtn) {
+    const lotId = releaseBtn.dataset.releaseLot;
+    const fromBinId = releaseBtn.dataset.fromBinId;
+    const qty = document.querySelector(`[data-release-qty-for="${lotId}"]`).value;
+    const recordedBy = requireStaffName();
+    if (!recordedBy) return;
+    if (!qty) {
+      toast("กรุณากรอกน้ำหนักที่นำออก", true);
+      return;
+    }
+    releaseBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post("/coop/warehouse/release", {
+        lot_id: lotId, from_bin_id: fromBinId, quantity_ton: Number(qty), recorded_by: recordedBy,
+      });
+      toast("นำออกจากคลังเรียบร้อยแล้ว");
+      await refreshWarehouse();
+    } catch (err) {
+      toast("นำออกจากคลังไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      releaseBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (moistureBtn) {
+    const lotId = moistureBtn.dataset.recordMoisture;
+    const binId = moistureBtn.dataset.binId;
+    const moisture = document.querySelector(`[data-moisture-reading-for="${lotId}"]`).value;
+    const recordedBy = requireStaffName();
+    if (!recordedBy) return;
+    if (moisture === "") {
+      toast("กรุณากรอกค่าความชื้น", true);
+      return;
+    }
+    moistureBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post("/coop/warehouse/drying-readings", {
+        lot_id: lotId, bin_id: binId, moisture_pct: Number(moisture), recorded_by: recordedBy,
+      });
+      toast("บันทึกความชื้นเรียบร้อยแล้ว");
+      await refreshWarehouse();
+    } catch (err) {
+      toast("บันทึกความชื้นไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+      moistureBtn.disabled = false;
+    }
+  }
+});
+
 // NOTE: unlike buyer.js, this M09 slice does NOT expose GET /coop/contracts
 // — a cooperative's collection flow is spot-sale-first (see the scope note
 // in the dashboard's own HTML). contractSelect therefore always stays at
@@ -474,6 +808,7 @@ async function init() {
   loadProductionUnits();
   loadCommodities();
   loadLotList();
+  refreshWarehouse();
 }
 
 init();

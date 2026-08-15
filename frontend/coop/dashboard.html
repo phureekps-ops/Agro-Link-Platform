@@ -94,6 +94,45 @@
       <div class="loading-line">กำลังโหลดล็อต…</div>
     </div>
 
+    <div class="section-title">🏬 คลังสินค้า/ลานตาก (Warehouse)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ติดตามว่าล็อตแต่ละล็อตอยู่ที่ตำแหน่งจัดเก็บใด ความชื้นเปลี่ยนแปลงอย่างไรระหว่างตาก และคลัง/ตำแหน่งจัดเก็บแต่ละแห่งใช้พื้นที่ไปเท่าไร —
+      ตัวเลขน้ำหนัก/ความชื้นทุกจุดกรอกโดยเจ้าหน้าที่คลัง (ยังไม่เชื่อมเครื่องชั่ง/เซนเซอร์อัตโนมัติ)
+    </p>
+    <form id="facilityForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="facilityNameInput">ชื่อคลัง/ลานตาก</label>
+          <input type="text" id="facilityNameInput" placeholder="เช่น ลานตากข้าวสหกรณ์ 1" required />
+        </div>
+        <div class="field">
+          <label for="facilityTypeSelect">ประเภท</label>
+          <select id="facilityTypeSelect" required>
+            <option value="Warehouse">คลังสินค้า (Warehouse)</option>
+            <option value="DryingYard">ลานตาก (Drying Yard)</option>
+            <option value="Silo">ไซโล (Silo)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="facilityCapacityInput">ความจุรวม (ตัน) — ไม่บังคับ</label>
+          <input type="number" id="facilityCapacityInput" min="0.01" step="0.01" placeholder="เช่น 50" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="facilitySubmitBtn" style="max-width:220px;">เปิดคลัง/ลานตากใหม่</button>
+    </form>
+    <div id="facilityListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อคลัง/ลานตาก…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">📦 ล็อตในคลัง</div>
+    <div class="field" style="max-width:320px; margin-bottom:14px;">
+      <label for="warehouseStaffInput">ชื่อเจ้าหน้าที่คลังผู้บันทึก (ใช้กับทุกรายการด้านล่าง)</label>
+      <input type="text" id="warehouseStaffInput" placeholder="เช่น เจ้าหน้าที่คลัง ก." />
+    </div>
+    <div id="warehouseLotsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดล็อตในคลัง…</div>
+    </div>
+
     <div class="section-title">📋 ประวัติการรับซื้อทั้งหมด</div>
     <div class="filter-bar">
       <div class="field">
