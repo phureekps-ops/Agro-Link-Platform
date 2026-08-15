@@ -1035,4 +1035,98 @@ router.post('/warehouse/drying-readings', async (req, res, next) => {
   }
 });
 
+/**
+ * ============================================================================
+ * M04 Cooperative Finance — a read-only KPI dashboard for cooperative
+ * executives (Coop Manager/Accountant), built entirely on top of the
+ * existing ledger/produce/warehouse data — no new money-movement logic
+ * lives here. See grant_cooperative_finance_dashboard.sql for the full
+ * design rationale, in particular why there is NO receivables figure (no
+ * onward-sale/invoicing model exists yet for cooperatives — reporting a
+ * number with nothing behind it would be fabricated data).
+ * ============================================================================
+ */
+
+/**
+ * GET /coop/finance/summary — headline KPI row via
+ * reporting.coop_finance_summary(). A cooperative that was never activated
+ * for settlement (see POST /admin/cooperatives/:id/activate-settlement)
+ * gets cash_balance/cash_account_status = null — the frontend renders that
+ * as "ยังไม่เปิดใช้งานบัญชีชำระเงิน" rather than treating it as a zero
+ * balance (those are different situations).
+ */
+router.get('/finance/summary', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const row = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query('SELECT * FROM reporting.coop_finance_summary($1)', [subjectId]);
+      await logAccess(client, 'read', 'reporting.coop_finance_summary', subjectId);
+      return rows[0];
+    });
+    return res.json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/finance/monthly — last 6 calendar months of collection/
+ * settlement value, for a simple trend view. A one-off time-series query
+ * kept out of the summary function since it returns multiple rows, not one.
+ */
+router.get('/finance/monthly', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT date_trunc('month', delivered_at) AS month,
+                COUNT(*)::int AS delivery_count,
+                COALESCE(SUM(total_amount), 0)::numeric AS collected_value,
+                COALESCE(SUM(total_amount) FILTER (WHERE status = 'settled'), 0)::numeric AS settled_value
+           FROM produce.delivery
+          WHERE buyer_org_id = $1 AND delivered_at >= date_trunc('month', now()) - interval '5 months'
+          GROUP BY 1
+          ORDER BY 1`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/finance/transactions — the cooperative's own recent ledger
+ * activity (most recent 50 lines across all of its ledger.account rows —
+ * currently just vendor_settlement, but this stays correct if a
+ * cooperative ever gets a second account type). Read-only, same
+ * `WHERE ... owner_id = $1` scoping discipline as everywhere else — a
+ * cooperative's ledger.account rows have no RLS either.
+ */
+router.get('/finance/transactions', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT jl.line_id, jl.direction, jl.amount, jl.currency,
+                je.entry_type, je.description, je.reference_type, je.reference_id, je.posted_at
+           FROM ledger.journal_line jl
+           JOIN ledger.journal_entry je ON je.entry_id = jl.entry_id
+           JOIN ledger.account a ON a.account_id = jl.account_id
+          WHERE a.owner_id = $1
+          ORDER BY je.posted_at DESC
+          LIMIT 50`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'ledger.journal_line', subjectId);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

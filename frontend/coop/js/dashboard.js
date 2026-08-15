@@ -83,6 +83,99 @@ async function refreshSummary() {
   }
 }
 
+// ---------- แดชบอร์ดการเงิน (M04) ----------
+/**
+ * cash_account_status arrives as NULL when the cooperative has never had
+ * POST /admin/cooperatives/:id/activate-settlement called on it (see
+ * grant_cooperative_finance_dashboard.sql's COMMENT ON FUNCTION) — shown
+ * as an explicit "not yet activated" state rather than a misleading ฿0.00,
+ * since those two things mean very different things to a coop manager.
+ */
+function renderFinanceSummary(s) {
+  const el = document.getElementById("financeSummarySection");
+  const cashValue = s.cash_account_status
+    ? `${thb(s.cash_balance)} บาท`
+    : "ยังไม่เปิดใช้งานบัญชีชำระเงิน";
+  el.innerHTML = `
+    <div class="stat-card"><div class="label">เงินสดคงเหลือ (บัญชีชำระเงิน)</div><div class="value" style="font-size:${s.cash_account_status ? "20px" : "14px"};">${escapeHtml(cashValue)}</div></div>
+    <div class="stat-card"><div class="label">ค้างชำระสมาชิก</div><div class="value" style="font-size:20px;">${thb(s.accounts_payable_to_members)}</div><div class="sub">${s.deliveries_pending_settlement_count} รายการรอชำระ</div></div>
+    <div class="stat-card"><div class="label">ชำระให้สมาชิกสะสม</div><div class="value" style="font-size:20px;">${thb(s.total_paid_to_members_alltime)}</div><div class="sub">${s.deliveries_settled_count} รายการชำระแล้ว</div></div>
+    <div class="stat-card"><div class="label">ยอดรับซื้อสะสม</div><div class="value" style="font-size:20px;">${thb(s.total_collected_value_alltime)}</div></div>
+    <div class="stat-card"><div class="label">สต็อกในคลัง</div><div class="value">${Number(s.inventory_tons_in_storage || 0).toLocaleString("th-TH")} ตัน</div></div>
+    <div class="stat-card"><div class="label">ล็อตที่เปิดอยู่</div><div class="value">${s.open_lots_count || 0}</div></div>
+  `;
+}
+
+async function loadFinanceSummary() {
+  const el = document.getElementById("financeSummarySection");
+  try {
+    const s = await AgroLinkCoopAPI.get("/coop/finance/summary");
+    renderFinanceSummary(s);
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลการเงินไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+const MONTH_LABEL_TH = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+function monthLabel(iso) {
+  const d = new Date(iso);
+  return `${MONTH_LABEL_TH[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
+async function loadFinanceMonthly() {
+  const el = document.getElementById("financeMonthlySection");
+  try {
+    const rows = await AgroLinkCoopAPI.get("/coop/finance/monthly");
+    if (rows.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูลการรับซื้อ</div>`;
+      return;
+    }
+    el.innerHTML = rows.map((r) => `
+      <div class="item-card">
+        <div class="row"><span class="title">${escapeHtml(monthLabel(r.month))}</span></div>
+        <div class="detail-line">รับซื้อ ${r.delivery_count} รายการ · มูลค่ารวม ${thb(r.collected_value)} บาท</div>
+        <div class="detail-line muted">ชำระแล้ว ${thb(r.settled_value)} บาท</div>
+      </div>
+    `).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดแนวโน้มไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+const TXN_DIRECTION_LABEL_TH = { credit: "เข้า (Credit)", debit: "ออก (Debit)" };
+function transactionCard(t) {
+  const isCredit = t.direction === "credit";
+  return `
+    <div class="item-card">
+      <div class="row">
+        <span class="title">${escapeHtml(t.entry_type)}</span>
+        <span class="badge ${isCredit ? "status-active" : "status-declined"}">${escapeHtml(TXN_DIRECTION_LABEL_TH[t.direction] || t.direction)}</span>
+      </div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">${thb(t.amount)} ${escapeHtml(t.currency)}</div>
+      ${t.description ? `<div class="detail-line">${escapeHtml(t.description)}</div>` : ""}
+      <div class="detail-line muted">${thaiDate(t.posted_at)}</div>
+    </div>
+  `;
+}
+
+async function loadFinanceTransactions() {
+  const el = document.getElementById("financeTransactionsSection");
+  try {
+    const rows = await AgroLinkCoopAPI.get("/coop/finance/transactions");
+    if (rows.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีรายการเดินบัญชี</div>`;
+      return;
+    }
+    el.innerHTML = rows.map(transactionCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการเดินบัญชีไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshFinance() {
+  await Promise.all([loadFinanceSummary(), loadFinanceMonthly(), loadFinanceTransactions()]);
+}
+
 // ---------- การรับซื้อ ----------
 const DELIVERY_STATUS_LABEL_TH = {
   delivered: "รับซื้อแล้ว (รอตรวจคุณภาพ)",
@@ -193,7 +286,10 @@ async function refreshDeliveriesAndSummary() {
   // eventually removed from) a lot. refreshWarehouse() is included for the
   // same reason: opening a new lot here should immediately appear in the
   // M10 "ล็อตในคลัง" list below (as "ยังไม่เข้าคลัง", ready to receive).
-  await Promise.all([loadOpenLots(), loadLotList(), loadDeliveryReviewQueue(), loadDeliveryHistory(), refreshSummary(), refreshWarehouse()]);
+  // refreshFinance() (M04) is included because confirm-quality/settle/
+  // assign-lot can all change payables, cash balance, or inventory tons —
+  // the finance dashboard above must not go stale after any of them.
+  await Promise.all([loadOpenLots(), loadLotList(), loadDeliveryReviewQueue(), loadDeliveryHistory(), refreshSummary(), refreshWarehouse(), refreshFinance()]);
 }
 
 document.getElementById("deliveryStatusFilter").addEventListener("change", () => loadDeliveryHistory());
@@ -809,6 +905,7 @@ async function init() {
   loadCommodities();
   loadLotList();
   refreshWarehouse();
+  refreshFinance();
 }
 
 init();
