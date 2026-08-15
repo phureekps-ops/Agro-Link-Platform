@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — จัดการสหกรณ์ (Cooperative Tenants)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🏢</span><span>AgroLink Platform — จัดการสหกรณ์ (Cooperative Tenants)</span></div>
+    <div class="who">
+      <span class="name">ผู้ดูแลระบบ</span>
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับแดชบอร์ดผู้ดูแลระบบ</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="section-title">➕ จัดตั้งสหกรณ์ใหม่ (Tenant Provisioning)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      สหกรณ์ไม่สามารถสมัครสมาชิกด้วยตนเองผ่านหน้าเว็บสาธารณะได้ (ต่างจากผู้ให้กู้/ผู้รับซื้อ/ผู้ให้บริการเครื่องจักรกล)
+      — ผู้ดูแลระบบเป็นผู้จัดตั้งบัญชีสหกรณ์โดยตรงเท่านั้น ระบบจะยืนยันตัวตน (KYB) และมอบสิทธิ์ผู้ดูแลสหกรณ์ (coop.admin) ให้ทันที
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="createCoopForm" class="form-grid">
+        <div class="field full">
+          <label for="orgName">ชื่อสหกรณ์ (เต็ม)</label>
+          <input type="text" id="orgName" placeholder="เช่น สหกรณ์การเกษตรเมืองลับแล จำกัด" required />
+        </div>
+        <div class="field">
+          <label for="taxId">เลขทะเบียนนิติบุคคล/เลขผู้เสียภาษี</label>
+          <input type="text" id="taxId" required />
+        </div>
+        <div class="field">
+          <label for="provinceSelect">จังหวัด</label>
+          <select id="provinceSelect" required></select>
+        </div>
+        <div class="field">
+          <label for="coopRegNo">เลขทะเบียนสหกรณ์ (ถ้ามี)</label>
+          <input type="text" id="coopRegNo" />
+        </div>
+        <div class="field">
+          <label for="establishedYear">ปีที่จัดตั้ง (ค.ศ.)</label>
+          <input type="number" id="establishedYear" min="1900" max="2100" step="1" />
+        </div>
+        <div class="field">
+          <label for="memberCountReported">จำนวนสมาชิกที่แจ้ง (โดยประมาณ)</label>
+          <input type="number" id="memberCountReported" min="0" step="1" />
+        </div>
+        <div class="field full">
+          <label for="notes">หมายเหตุ (เช่น อ้างอิง Lighthouse Shortlist)</label>
+          <textarea id="notes" rows="2"></textarea>
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="createCoopBtn" style="max-width:260px;">จัดตั้งสหกรณ์</button>
+    </div>
+
+    <div class="section-title">🏢 สหกรณ์ทั้งหมดในระบบ</div>
+    <div id="cooperativesSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อสหกรณ์…</div>
+    </div>
+
+    <div class="section-title" id="detailSectionTitle" style="display:none;">🔍 รายละเอียดสหกรณ์</div>
+    <div id="cooperativeDetailSection" style="display:none;"></div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/cooperatives.js"></script>
+</body>
+</html>

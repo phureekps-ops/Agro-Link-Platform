@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requirePlatform } = require('../middleware/auth');
@@ -12,6 +13,16 @@ router.use(requireAuth, requirePlatform);
 
 const FARMER_STATUSES = ['pending_kyc', 'active', 'suspended', 'closed'];
 const ORG_KYB_STATUSES = ['Pending', 'Verified', 'Rejected'];
+
+// Same "23505" constant + constraint-name-to-error-code mapping idiom as
+// src/routes/auth.js's REGISTER_CONSTRAINT_ERRORS / ORG_REGISTER_CONSTRAINT_
+// ERRORS — this file never needed it before because nothing here INSERTed
+// into identity.organization until POST /admin/cooperatives below.
+const UNIQUE_VIOLATION = '23505';
+const COOPERATIVE_CONSTRAINT_ERRORS = {
+  uq_organization_tax_id: 'tax_id_already_registered',
+  organization_auth_subject_id_key: 'subject_claim_collision',
+};
 
 /**
  * GET /admin/dashboard — a small at-a-glance summary: how many farmers are
@@ -863,6 +874,310 @@ router.post('/carbon/satellite-observations', async (req, res, next) => {
       return res.status(404).json({ error: 'production_unit_not_found' });
     }
     return res.status(201).json(result.observation);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ===========================================================================
+// Cooperative SaaS — M01 Tenant Foundation
+// (see backend/db/grant_cooperative_tenant_foundation.sql for the schema
+// this section depends on, and its header comment for what is/isn't in
+// scope yet — most importantly: every role below is granted at the
+// ORGANIZATION level, since per-staff-member login doesn't exist in this
+// codebase yet.)
+// ===========================================================================
+
+/**
+ * GET /admin/provinces — reference list for the "create cooperative" form's
+ * province dropdown. Read-only, no filtering needed yet (only 16 rows).
+ */
+router.get('/provinces', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT province_code, province_name_th, region_th
+           FROM registry.province
+          ORDER BY region_th, province_name_th`,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/roles — the full identity.role catalog. Exists mainly so the
+ * cooperative detail screen can show a human-readable description next to
+ * each role_code a cooperative holds, without hardcoding the label list a
+ * second time in the frontend.
+ */
+router.get('/roles', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query('SELECT role_code, description FROM identity.role ORDER BY role_code');
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/cooperatives — every Cooperative-typed organization, joined
+ * with its registry.cooperative_profile + province. This is deliberately
+ * the FIRST thing in the codebase that lists cooperatives as their own
+ * concept (rather than as one row among every org_type on GET
+ * /admin/organizations) — the seed of the future Government Dashboard
+ * (M15), standing in for a real CPD National login until one exists.
+ */
+router.get('/cooperatives', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT o.org_id, o.org_name, o.tax_id, o.kyb_status, o.verified_badge, o.created_at,
+                cp.province_code, p.province_name_th, p.region_th,
+                cp.cooperative_registration_no, cp.established_year, cp.member_count_reported
+           FROM identity.organization o
+           JOIN registry.cooperative_profile cp ON cp.org_id = o.org_id
+           JOIN registry.province p ON p.province_code = cp.province_code
+          WHERE o.org_type = 'Cooperative'
+          ORDER BY o.created_at DESC`,
+      );
+      await logAccess(client, 'read', 'identity.organization', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/cooperatives/:id — single cooperative detail, including every
+ * role currently granted to it (identity.subject_role joined to
+ * identity.role for the description).
+ */
+router.get('/cooperatives/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const coopOrgId = req.params.id;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const orgRes = await client.query(
+        `SELECT o.org_id, o.org_name, o.tax_id, o.kyb_status, o.verified_badge, o.auth_subject_id, o.created_at,
+                cp.province_code, p.province_name_th, p.region_th,
+                cp.cooperative_registration_no, cp.established_year, cp.member_count_reported, cp.notes
+           FROM identity.organization o
+           JOIN registry.cooperative_profile cp ON cp.org_id = o.org_id
+           JOIN registry.province p ON p.province_code = cp.province_code
+          WHERE o.org_id = $1 AND o.org_type = 'Cooperative'`,
+        [coopOrgId],
+      );
+      if (orgRes.rows.length === 0) return { notFound: true };
+
+      const rolesRes = await client.query(
+        `SELECT sr.role_code, r.description, sr.granted_at
+           FROM identity.subject_role sr
+           JOIN identity.role r ON r.role_code = sr.role_code
+          WHERE sr.subject_type = 'organization' AND sr.subject_id = $1
+          ORDER BY sr.granted_at ASC`,
+        [coopOrgId],
+      );
+      await logAccess(client, 'read', 'identity.organization', coopOrgId);
+      return { cooperative: orgRes.rows[0], roles: rolesRes.rows };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'cooperative_not_found' });
+    }
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/cooperatives
+ * Body: { org_name, tax_id, province_code, cooperative_registration_no?,
+ *         established_year?, member_count_reported?, notes? }
+ *
+ * The tenant-provisioning endpoint the product decision to remove
+ * 'Cooperative' from public self-registration (2026-07-24, see auth.js)
+ * always implied would need to exist somewhere — this is it. Unlike
+ * POST /auth/org-register, this:
+ *   - lands the org at kyb_status = 'Verified' immediately (Platform Ops
+ *     creating it directly IS the verification — there is no separate
+ *     applicant submitting evidence to review, unlike a self-registered
+ *     service provider);
+ *   - grants BOTH 'org.admin' (so every existing piece of code that only
+ *     knows about that role keeps working unchanged) AND the new
+ *     'coop.admin' role from the reconciled Master Blueprint role model;
+ *   - writes the matching registry.cooperative_profile row in the SAME
+ *     transaction, so a cooperative organization can never exist without
+ *     its province/profile data (the profile's own trigger would reject a
+ *     non-Cooperative org_id anyway, but this also means the reverse can
+ *     never happen: no Cooperative org left with no profile row);
+ *   - does NOT create a partner.vendor_profile row — that table backs the
+ *     commercial marketplace/settlement machinery used by service
+ *     providers (Lender/Buyer/Machinery/etc.), which is out of scope for
+ *     M01 Tenant Foundation. A future module that needs it (e.g. M04
+ *     Cooperative Finance) can add that row itself when it lands.
+ */
+router.post('/cooperatives', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    org_name: orgName,
+    tax_id: taxId,
+    province_code: provinceCode,
+    cooperative_registration_no: coopRegNo,
+    established_year: establishedYear,
+    member_count_reported: memberCountReported,
+    notes,
+  } = req.body || {};
+
+  if (!orgName || !taxId || !provinceCode) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['org_name', 'tax_id', 'province_code'],
+    });
+  }
+
+  // Same mock-OIDC-claim convention as generateOrgAuthSubjectId() in
+  // auth.js (kept local here rather than exported/imported — it's a
+  // one-line generator, not worth coupling this file to auth.js for).
+  const authSubjectId = `oidc|coop-${crypto.randomUUID()}`;
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const province = await client.query(
+        'SELECT province_code FROM registry.province WHERE province_code = $1',
+        [provinceCode],
+      );
+      if (province.rows.length === 0) return { provinceNotFound: true };
+
+      const orgRes = await client.query(
+        `INSERT INTO identity.organization (org_type, org_name, tax_id, kyb_status, verified_badge, auth_subject_id)
+         VALUES ('Cooperative', $1, $2, 'Verified', true, $3)
+         RETURNING org_id, org_name, org_type, kyb_status, verified_badge, auth_subject_id, created_at`,
+        [orgName, taxId, authSubjectId],
+      );
+      const newOrgId = orgRes.rows[0].org_id;
+
+      await client.query(
+        `INSERT INTO identity.subject_role (subject_type, subject_id, role_code)
+         VALUES ('organization', $1, 'org.admin'), ('organization', $1, 'coop.admin')`,
+        [newOrgId],
+      );
+
+      await client.query(
+        `INSERT INTO identity.organization_role (org_id, role_type, status, decided_at, decided_reason)
+         VALUES ($1, 'Cooperative', 'Verified', now(), 'จัดตั้งโดย Platform Ops โดยตรง (Tenant Provisioning ตาม M01)')`,
+        [newOrgId],
+      );
+
+      const profileRes = await client.query(
+        `INSERT INTO registry.cooperative_profile
+           (org_id, province_code, cooperative_registration_no, established_year, member_count_reported, notes)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING org_id, province_code, cooperative_registration_no, established_year, member_count_reported, notes, created_at`,
+        [newOrgId, provinceCode, coopRegNo || null, establishedYear || null, memberCountReported || null, notes || null],
+      );
+
+      await logAccess(client, 'write', 'identity.organization', newOrgId);
+      return { organization: orgRes.rows[0], profile: profileRes.rows[0] };
+    });
+
+    if (result.provinceNotFound) {
+      return res.status(400).json({ error: 'invalid_province_code' });
+    }
+    return res.status(201).json(result);
+  } catch (err) {
+    if (err.code === UNIQUE_VIOLATION) {
+      const mapped = COOPERATIVE_CONSTRAINT_ERRORS[err.constraint];
+      if (mapped) {
+        return res.status(409).json({ error: mapped });
+      }
+    }
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/cooperatives/:id/activate-settlement
+ *
+ * M01→M09 bridge. POST /admin/cooperatives (above) deliberately does NOT
+ * create a partner.vendor_profile row for a newly-provisioned cooperative
+ * — that table backs the commercial marketplace/settlement machinery, out
+ * of scope for Tenant Foundation. But M09's collection-station settle step
+ * (coopcollection.js's POST /coop/deliveries/:id/settle, calling the same
+ * produce.settle_delivery() the Buyer Portal uses) requires the buyer
+ * organization to already be an ACTIVE vendor with a settlement_account_id
+ * — partner.activate_vendor_role() raises 'ยังไม่มีข้อมูล vendor_profile'
+ * otherwise. This endpoint is that missing step for cooperatives: create a
+ * vendor_profile row if one doesn't exist yet (idempotent — reuses an
+ * existing one instead of erroring), then call partner.activate_vendor(),
+ * which itself is idempotent (COALESCE(activated_at, now())) and already
+ * requires this org's identity.organization_role row for role_type =
+ * 'Cooperative' to be 'Verified' — which POST /admin/cooperatives always
+ * sets it to immediately, so this will never fail for a cooperative
+ * provisioned through that endpoint. No new Postgres GRANTs were needed
+ * for this route (verified: agrolink_app already holds SELECT/INSERT/
+ * UPDATE on partner.vendor_profile and SELECT/INSERT on ledger.account,
+ * all from grant_platform_ops.sql / grant_provider_registration.sql).
+ */
+router.post('/cooperatives/:id/activate-settlement', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const org = await client.query(
+        `SELECT org_id, org_name, org_type, tax_id FROM identity.organization WHERE org_id = $1`,
+        [id],
+      );
+      if (org.rows.length === 0 || org.rows[0].org_type !== 'Cooperative') {
+        return { notFound: true };
+      }
+
+      const existingProfile = await client.query(
+        `SELECT org_id FROM partner.vendor_profile WHERE org_id = $1`,
+        [id],
+      );
+      if (existingProfile.rows.length === 0) {
+        await client.query(
+          `INSERT INTO partner.vendor_profile (org_id, business_registration_no)
+           VALUES ($1, $2)`,
+          [id, org.rows[0].tax_id],
+        );
+      }
+
+      try {
+        await client.query('SELECT partner.activate_vendor($1)', [id]);
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+
+      const profile = await client.query(
+        `SELECT org_id, commercial_status, settlement_account_id, activated_at FROM partner.vendor_profile WHERE org_id = $1`,
+        [id],
+      );
+      await logAccess(client, 'write', 'partner.vendor_profile', id);
+      return { profile: profile.rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'cooperative_not_found' });
+    }
+    if (result.businessError) {
+      return res.status(409).json({ error: 'cannot_activate_settlement', detail: result.businessError });
+    }
+    return res.json(result.profile);
   } catch (err) {
     return next(err);
   }

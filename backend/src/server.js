@@ -18,6 +18,7 @@ const fertilizerRouter = require('./routes/fertilizer');
 const fertilizerMixingRouter = require('./routes/fertilizermixing');
 const carbonRouter = require('./routes/carbon');
 const farmerMachineryRouter = require('./routes/farmermachinery');
+const coopCollectionRouter = require('./routes/coopcollection');
 
 const app = express();
 
@@ -65,6 +66,13 @@ app.use('/farmer', carbonRouter);
 app.use('/farmer', farmerMachineryRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
+// coopcollection.js — M09 Collection & Quality station for cooperatives
+// (identity.organization_role.role_type = 'Cooperative'). Mounted at its
+// own '/coop' prefix rather than sharing '/buyer' — a cooperative's
+// portal is conceptually distinct even though it reuses the same
+// produce.delivery machinery under the hood (see the route file's own
+// doc comment).
+app.use('/coop', coopCollectionRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/marketvenue', marketVenueRouter);

@@ -1,3 +1,18 @@
+/**
+ * Platform Ops (Admin) login — passcode-based, not claim-based (see the
+ * hint text in index.html / the comment on AgroLinkAdminAPI.login() in
+ * admin/js/api.js for why: no per-admin identity table in this sandbox,
+ * just one shared ADMIN_PASSCODE).
+ *
+ * This file was missing entirely until now even though index.html has
+ * always referenced it (<script src="js/login.js">) — the same class of
+ * gap found and fixed for the Farmer Portal earlier in this project
+ * (frontend/js/login.js / dashboard.js): a page that referenced a script
+ * that was designed/wired in HTML but never actually written, leaving the
+ * whole Platform Ops portal unreachable through the browser (the backend
+ * endpoint POST /auth/admin-login worked fine — nothing could ever call
+ * it from this page).
+ */
 const errorBox = document.getElementById("errorBox");
 const loginForm = document.getElementById("loginForm");
 const passcodeInput = document.getElementById("passcodeInput");
@@ -11,7 +26,11 @@ function hideError() {
   errorBox.classList.remove("show");
 }
 
-async function doLogin(passcode) {
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const passcode = passcodeInput.value;
+  if (!passcode) return;
+
   hideError();
   loginBtn.disabled = true;
   try {
@@ -19,20 +38,13 @@ async function doLogin(passcode) {
     window.location.href = "dashboard.html";
   } catch (err) {
     const messages = {
+      invalid_passcode: "รหัสผ่านผู้ดูแลระบบไม่ถูกต้อง",
       passcode_required: "กรุณากรอกรหัสผ่านผู้ดูแลระบบ",
-      invalid_passcode: "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง",
     };
     showError(messages[err.message] || "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
   } finally {
     loginBtn.disabled = false;
   }
-}
-
-loginForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const passcode = passcodeInput.value.trim();
-  if (!passcode) return;
-  doLogin(passcode);
 });
 
 const params = new URLSearchParams(window.location.search);

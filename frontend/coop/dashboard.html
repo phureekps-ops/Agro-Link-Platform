@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลสหกรณ์ (จุดรับซื้อผลผลิต)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🏢</span><span>AgroLink Platform — พอร์ทัลสหกรณ์ (จุดรับซื้อผลผลิต)</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">🚚 การรับซื้อที่ต้องดำเนินการ</div>
+    <div id="deliveryReviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการรับซื้อ…</div>
+    </div>
+
+    <div class="section-title">➕ บันทึกการรับซื้อจากสมาชิก</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมายเหตุขอบเขต: ระบบยังไม่มีข้อมูล "สมาชิกสหกรณ์" แยกจากเกษตรกรทั่วไป (จะเพิ่มในโมดูลถัดไป) —
+      รายการแปลง/หน่วยผลิตด้านล่างจึงแสดงแปลงที่ใช้งานอยู่ทั้งหมดในระบบ เช่นเดียวกับพอร์ทัลผู้รับซื้อผลผลิตเอกชน
+    </p>
+    <form id="deliveryForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="unitSelect">แปลง/หน่วยผลิตของเกษตรกร</label>
+          <select id="unitSelect" required>
+            <option value="">-- เลือกแปลง --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="commoditySelect">ชนิดผลผลิต</label>
+          <select id="commoditySelect" required>
+            <option value="">-- เลือกชนิดผลผลิต --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="quantityInput">น้ำหนัก (ตัน)</label>
+          <input type="number" id="quantityInput" min="0.01" step="0.01" placeholder="เช่น 2.5" required />
+        </div>
+        <div class="field">
+          <label for="contractSelect">สัญญาที่เกี่ยวข้อง (ถ้ามี)</label>
+          <select id="contractSelect">
+            <option value="">-- ไม่มีสัญญา (ซื้อขายทันที/Spot Sale) --</option>
+          </select>
+        </div>
+        <div class="field" id="unitPriceField">
+          <label for="unitPriceInput">ราคาต่อหน่วย (บาท/ตัน) — บังคับกรอกถ้าไม่มีสัญญา</label>
+          <input type="number" id="unitPriceInput" min="0.01" step="0.01" placeholder="เช่น 12000" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="deliverySubmitBtn" style="max-width:220px;">บันทึกการรับซื้อ</button>
+    </form>
+
+    <div class="section-title">📦 ล็อตรวบรวมผลผลิต (Lots)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      จัดกลุ่มการรับซื้อหลายรายการ (สินค้าชนิดเดียวกัน) เข้าเป็นล็อตเดียว เพื่อส่งต่อให้ลานตาก/คลังสินค้าในโมดูลถัดไป —
+      การชำระเงินยังคงทำเป็นรายการต่อรายการตามเดิม ล็อตเป็นเพียงการจัดกลุ่มเพื่อการตรวจสอบย้อนกลับ
+    </p>
+    <form id="lotForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="lotCommoditySelect">ชนิดผลผลิต</label>
+          <select id="lotCommoditySelect" required>
+            <option value="">-- เลือกชนิดผลผลิต --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="lotGradeInput">เกรดคุณภาพ (ถ้ามี)</label>
+          <input type="text" id="lotGradeInput" placeholder="เช่น A" />
+        </div>
+        <div class="field full">
+          <label for="lotNoteInput">หมายเหตุล็อต</label>
+          <input type="text" id="lotNoteInput" placeholder="เช่น ล็อตรอบเช้าวันที่ ..." />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="lotSubmitBtn" style="max-width:220px;">เปิดล็อตใหม่</button>
+    </form>
+    <div id="lotListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดล็อต…</div>
+    </div>
+
+    <div class="section-title">📋 ประวัติการรับซื้อทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="deliveryStatusFilter">กรองตามสถานะ</label>
+        <select id="deliveryStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="delivered">รับซื้อแล้ว (รอตรวจคุณภาพ)</option>
+          <option value="accepted">ตรวจคุณภาพผ่านแล้ว (รอชำระเงิน)</option>
+          <option value="rejected">ไม่ผ่านการตรวจคุณภาพ</option>
+          <option value="settled">ชำระเงินแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="deliveryHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติการรับซื้อ…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
