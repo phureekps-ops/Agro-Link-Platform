@@ -48,18 +48,6 @@
       <div class="loading-line">กำลังโหลดประวัติคำสั่งซื้อ…</div>
     </div>
 
-    <div class="section-title">🗺️ พื้นที่ให้บริการ (จังหวัด)</div>
-    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      เลือกจังหวัดที่ท่านสามารถจัดส่ง/ให้บริการได้ — เกษตรกรจะกรองหาผู้จำหน่ายตามจังหวัดได้จากหน้า "ตลาดปัจจัยการผลิต"
-      หากท่านไม่เลือกจังหวัดใดเลย ร้านของท่านจะไม่ปรากฏเมื่อเกษตรกรกรองตามจังหวัด (แต่ยังปรากฏตามปกติเมื่อเกษตรกรดูแบบ "ทั้งหมด")
-    </p>
-    <form id="serviceRegionsForm" class="panel">
-      <div id="serviceRegionsFields" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:8px 16px; margin-bottom:14px;">
-        <div class="loading-line">กำลังโหลดจังหวัด…</div>
-      </div>
-      <button type="submit" class="btn btn-primary" id="serviceRegionsSubmitBtn" style="max-width:260px;">บันทึกพื้นที่ให้บริการ</button>
-    </form>
-
     <div class="section-title">➕ เพิ่ม/แก้ไขสินค้าในแค็ตตาล็อก</div>
     <form id="productForm" class="panel">
       <input type="hidden" id="editingListingId" value="" />
@@ -89,14 +77,6 @@
           <label for="priceUnitInput">หน่วยราคา</label>
           <input type="text" id="priceUnitInput" placeholder="เช่น บาท/กระสอบ, บาท/ขวด, บาท/ชิ้น" value="บาท/หน่วย" />
         </div>
-        <div class="field" id="fertilizerNpkGradeField">
-          <label for="fertilizerNpkGradeInput">เกรดปุ๋ย N-P-K (สำหรับสินค้าปุ๋ยเท่านั้น ไม่บังคับ)</label>
-          <input type="text" id="fertilizerNpkGradeInput" placeholder="เช่น 46-0-0 (ยูเรีย), 18-46-0 (DAP), 0-0-60 (โพแทสเซียมคลอไรด์/MOP)" />
-        </div>
-        <div class="field" id="fertilizerKgPerUnitField">
-          <label for="fertilizerKgPerUnitInput">น้ำหนักจริงต่อหน่วยราคา (กก., ไม่บังคับ)</label>
-          <input type="number" id="fertilizerKgPerUnitInput" min="0.01" step="0.01" placeholder="เช่น 50 ถ้าราคาข้างต้นคือราคาต่อกระสอบ 50 กก." />
-        </div>
         <div class="field full">
           <label for="descriptionInput">รายละเอียดสินค้า (ถ้ามี)</label>
           <input type="text" id="descriptionInput" placeholder="เช่น กระสอบ 50 กก., ขวดละ 1 ลิตร" />
@@ -123,11 +103,102 @@
       <div class="loading-line">กำลังโหลดแค็ตตาล็อกสินค้า…</div>
     </div>
 
+    <div class="section-title" style="margin-top:22px;">📢 ตลาดขอใบเสนอราคา (RFP/RFQ)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ประกาศความต้องการซื้อสินค้า/บริการให้สมาชิกทุกพอร์ทัลในระบบ AgroLink แข่งขันเสนอราคาเข้ามา
+      หรือค้นหาประกาศจากสมาชิกรายอื่นเพื่อเสนอราคาขาย (เฉพาะองค์กรเท่านั้นที่เสนอราคาได้) —
+      หมายเหตุขอบเขต: การ "ยอมรับใบเสนอราคา" เป็นเพียงการบันทึกความตั้งใจ ยังไม่เชื่อมต่อสร้างคำสั่งซื้อ/สัญญาให้อัตโนมัติ
+    </p>
+
+    <div class="section-title" style="margin-top:18px; font-size:16px;">➕ ประกาศความต้องการใหม่</div>
+    <form id="rfqPostForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="rfqCategorySelect">หมวดหมู่</label>
+          <select id="rfqCategorySelect" required>
+            <option value="input_product">ปัจจัยการผลิต</option>
+            <option value="produce">ผลผลิตทางการเกษตร</option>
+            <option value="processed_good">สินค้าแปรรูป</option>
+            <option value="machinery_service">บริการเครื่องจักรกล</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="rfqTitleInput">หัวข้อ</label>
+          <input type="text" id="rfqTitleInput" placeholder="เช่น ต้องการปุ๋ยยูเรีย 100 กระสอบ" required />
+        </div>
+        <div class="field">
+          <label for="rfqQuantityInput">จำนวน</label>
+          <input type="number" id="rfqQuantityInput" min="0.01" step="0.01" placeholder="เช่น 100" />
+        </div>
+        <div class="field">
+          <label for="rfqQuantityUnitInput">หน่วยนับ</label>
+          <input type="text" id="rfqQuantityUnitInput" placeholder="เช่น กระสอบ, ตัน, คัน" />
+        </div>
+        <div class="field">
+          <label for="rfqTargetPriceInput">ราคาเป้าหมาย (ถ้ามี)</label>
+          <input type="number" id="rfqTargetPriceInput" min="0.01" step="0.01" placeholder="บาท" />
+        </div>
+        <div class="field">
+          <label for="rfqDeliveryLocationInput">สถานที่ส่งมอบ</label>
+          <input type="text" id="rfqDeliveryLocationInput" />
+        </div>
+        <div class="field">
+          <label for="rfqNeededByInput">ต้องการภายในวันที่</label>
+          <input type="date" id="rfqNeededByInput" />
+        </div>
+        <div class="field full">
+          <label for="rfqDescriptionInput">รายละเอียดเพิ่มเติม</label>
+          <textarea id="rfqDescriptionInput" rows="2"></textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="rfqPostSubmitBtn">ประกาศความต้องการ</button>
+    </form>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📋 ประกาศของฉัน</div>
+    <div id="rfqMineSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">🔍 ค้นหาประกาศที่เปิดอยู่</div>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="rfqBrowseCategoryFilter">กรองตามหมวดหมู่</label>
+        <select id="rfqBrowseCategoryFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="input_product">ปัจจัยการผลิต</option>
+          <option value="produce">ผลผลิตทางการเกษตร</option>
+          <option value="processed_good">สินค้าแปรรูป</option>
+          <option value="machinery_service">บริการเครื่องจักรกล</option>
+          <option value="other">อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+    <div id="rfqBrowseSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;" id="rfqMyQuotesTitle">💬 ใบเสนอราคาที่ฉันเสนอ</div>
+    <div class="form-grid" style="margin-bottom:14px;" id="rfqMyQuotesFilterRow">
+      <div class="field">
+        <label for="rfqMyQuotesStatusFilter">สถานะ</label>
+        <select id="rfqMyQuotesStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="submitted">รอผลพิจารณา</option>
+          <option value="accepted">ได้รับเลือก</option>
+          <option value="rejected">ไม่ได้รับเลือก</option>
+          <option value="withdrawn">ถอนแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="rfqMyQuotesSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <script src="../js/provinces.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>

@@ -21,6 +21,12 @@ const farmerMachineryRouter = require('./routes/farmermachinery');
 const coopCollectionRouter = require('./routes/coopcollection');
 const governmentRouter = require('./routes/government');
 const storageRouter = require('./routes/storage');
+// procurement.js — RFQ/RFP (Request for Proposal / Request for Quote)
+// cross-portal marketplace (see backend/db/grant_rfq_marketplace.sql).
+// Subject-type agnostic (both farmer and organization JWTs are accepted
+// on the same endpoints, gated per-handler), so its own prefix rather
+// than sharing any one portal's mount.
+const procurementRouter = require('./routes/procurement');
 
 const app = express();
 
@@ -85,6 +91,7 @@ app.use('/gov', governmentRouter);
 // backend/db/grant_object_storage.sql). Its own prefix since it is
 // subject-type agnostic and not owned by any one portal.
 app.use('/storage', storageRouter);
+app.use('/procurement', procurementRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/marketvenue', marketVenueRouter);

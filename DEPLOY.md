@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (40 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (41 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -161,6 +161,7 @@ grant_object_storage.sql
 grant_analytics_warehouse.sql
 grant_satellite_observation.sql
 grant_cooperative_product_catalog.sql
+grant_rfq_marketplace.sql
 ```
 
 **เพิ่มเมื่อ 2026-08-16 (บ่าย):** `grant_cooperative_product_catalog.sql` —
@@ -171,6 +172,13 @@ grant_cooperative_product_catalog.sql
 ต้องรันไฟล์นี้**หลังสุด** (หลัง `grant_input_supplier_and_buy_prices.sql`,
 `grant_farmer_product_orders.sql` และ `grant_cooperative_tenant_foundation.sql`
 ซึ่งสร้างตาราง/บัญชีที่ไฟล์นี้ต้องใช้ต่อ)
+
+**เพิ่มเมื่อ 2026-08-16 (เย็น):** `grant_rfq_marketplace.sql` — สร้างระบบตลาด
+"ประกาศความต้องการ ให้ผู้ขายแข่งราคา" (RFP/RFQ) แบบใหม่ทั้งหมด (schema
+`procurement` ใหม่ แยกจากแค็ตตาล็อกเดิม) ให้สมาชิกทุกประเภทในระบบ (ทั้งเกษตรกร
+และองค์กรทุกพอร์ทัล) ประกาศความต้องการซื้อได้ และให้องค์กร (รวมถึงสหกรณ์) เสนอราคา
+แข่งขันกันได้ — ไม่ต้องรันหลังไฟล์ไหนเป็นพิเศษ นอกจาก `03_grant_schema_usage.sql`
+(ต้องมี role `agrolink_app` อยู่ก่อน) รันเป็นไฟล์สุดท้ายในลำดับนี้ก็เพียงพอ
 
 **เพิ่มเมื่อ 2026-08-16 (เช้า):** 11 ไฟล์ (`grant_cooperative_tenant_foundation.sql`
 ถึง `grant_satellite_observation.sql`) — โมดูลสหกรณ์ทั้งหมด (M01 รากฐานสหกรณ์,

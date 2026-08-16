@@ -894,6 +894,98 @@ nullable `buyer_org_id`, with a CHECK requiring exactly one of the two set.
   `frontend/buyer/dashboard.html`/`js/dashboard.js` (browse + order +
   cancel + order history).
 
+## RFP/RFQ — cross-portal "post what you need, sellers compete" marketplace
+
+A NEW mechanism, deliberately separate from the direct catalogs above
+(`marketplace.product_listing`/`service_listing`, "browse a fixed price and
+buy now"): a member posts a need (an RFQ/RFP), and any organization in the
+system can respond with a competing price quote — a reverse marketplace /
+competitive-bidding shape a fixed-price catalog can't express. Built at an
+explicit user request to be usable by every AgroLink member ("สำหรับให้
+สมาชิกในระบบ Agrolink ใช้งาน") and to also live inside the cooperative's own
+SaaS ("และให้อยู่ใน SaaS ของสหกรณ์ด้วย").
+
+Schema: `backend/db/grant_rfq_marketplace.sql` adds a new `procurement`
+schema with two tables — `procurement.rfq` and `procurement.rfq_quote`.
+Design decisions (see that file's own doc comment for the full rationale):
+
+- A **requester** can be either a farmer or an organization (polymorphic
+  `requester_subject_type`/`requester_subject_id`, the same convention as
+  `identity.subject_role`/`storage.file_object`'s owner columns elsewhere
+  in this schema) — any member can post a need.
+- A **responder** (quote submitter) is always an **organization** —
+  farmers don't submit quotes in this pass. Real AgroLink sellers
+  (cooperatives, input suppliers, buyers, machinery/logistics providers)
+  are all organizations; farmer-to-farmer quoting is a possible future
+  widening, not built now.
+- `category` is intentionally broad and shared across every portal
+  (`input_product`, `produce`, `processed_good`, `machinery_service`,
+  `other`) rather than one enum per org type, so any member can browse by
+  category regardless of which portal will respond.
+- Accepting a quote (`rfq.awarded_quote_id`) only records **intent** — it
+  does NOT auto-create a `produce.delivery` / `marketplace.product_order` /
+  `contract.contract` row. Wiring an awarded RFQ into the real fulfillment
+  record for its category is a follow-up integration, not built in this
+  pass (see "What's mocked" below) — same "manual today, real integration
+  later" honesty pattern used throughout this project.
+- A responder submitting/editing a quote upserts via
+  `ON CONFLICT (rfq_id, responder_org_id)` rather than creating duplicate
+  rows — the same pattern `marketplace.buy_price_quote` already uses.
+
+Backend: `src/routes/procurement.js`, mounted at `/procurement`. This is
+the **first route file in the project accepting both farmer and
+organization JWTs on the same endpoints** — rather than gating the whole
+router with `requireFarmer`/`requireOrganization`, it only requires
+`requireAuth` and checks `req.subject.subjectType` per handler.
+Organization requesters/responders must additionally be
+`kyb_status = 'Verified'` (checked inline, no specific `role_type`
+required — RFQ spans every portal).
+
+- `POST /procurement/rfqs` — post a new RFQ (farmer or verified org).
+- `GET /procurement/rfqs?category=&status=` — browse (defaults to
+  `status=open`), open to any eligible subject.
+- `GET /procurement/rfqs/mine` — the caller's own RFQs, all statuses.
+- `GET /procurement/rfqs/:id` — detail, including `quote_count` and (for
+  an organization caller) `my_quote`.
+- `POST /procurement/rfqs/:id/cancel` — requester-only, only while `open`.
+- `GET /procurement/rfqs/:id/quotes` — requester-only, full quote list.
+- `POST /procurement/rfqs/:id/quotes/:quoteId/accept` — requester-only;
+  sets the chosen quote `accepted`, every other `submitted` quote on that
+  RFQ `rejected`, and the RFQ `awarded` — all in one transaction.
+- `POST /procurement/rfqs/:id/quotes` — organization-only, upserts.
+- `GET /procurement/quotes/mine?status=` — organization-only, the
+  caller's own submitted quotes.
+- `POST /procurement/quotes/:quoteId/withdraw` — organization-only
+  (responder), only while `submitted`.
+
+Frontend: a full RFQ section (post / my RFQs / browse open RFQs / accept /
+cancel, plus submit-quote / my quotes / withdraw for organizations) was
+added to four portals — the ones reachable with a working login in this
+sandbox and the one the user explicitly named:
+
+- **Cooperative** (`frontend/coop/dashboard.html`/`js/dashboard.js`) —
+  explicit user requirement ("ให้อยู่ใน SaaS ของสหกรณ์ด้วย").
+- **Buyer** (`frontend/buyer/dashboard.html`/`js/dashboard.js`).
+- **InputSupplier**
+  (`frontend/inputsupplier/dashboard.html`/`js/dashboard.js`).
+- **Farmer** — a new standalone page, `frontend/rfq.html`/`js/rfq.js`
+  (linked from the farmer dashboard's top nav as "ตลาดขอใบเสนอราคา
+  (RFQ)"), mirroring `marketplace.html`'s existing standalone-page
+  pattern. The quote-submission UI is hidden here — farmers post/browse/
+  cancel/accept, they don't quote (see the design decision above).
+
+All four share the same `refreshRfq()`/card-rendering JS shape (only the
+API client variable and DOM-id prefix differ), and every one hides the
+"my quotes" section automatically when the logged-in subject isn't an
+organization, so the exact same markup works for both the always-org
+portals and the farmer page.
+
+Not yet wired to a UI: **Lender, Machinery, MarketVenue,
+FertilizerMixingService, Admin, and Gov** portals. The backend endpoints
+already accept any verified-organization JWT regardless of role type, so
+those portals could add the identical section later with no backend
+changes — this is a UI coverage gap, not a backend limitation.
+
 ## What's mocked / simplified (be aware of this before relying on it)
 
 - **OIDC verification is stubbed.** `POST /auth/login` trusts whatever
@@ -1053,6 +1145,23 @@ nullable `buyer_org_id`, with a CHECK requiring exactly one of the two set.
   per grade (upserted in place) — there is no day-by-day history table, so
   neither buyers nor farmers can see how a price has moved over time, only
   today's live number and its `updated_at` timestamp.
+- **Accepting an RFQ quote does not create any fulfillment record.**
+  `POST /procurement/rfqs/:id/quotes/:quoteId/accept` only sets
+  `rfq.status = 'awarded'` and `rfq.awarded_quote_id` — it does **not**
+  auto-create a `produce.delivery`, `marketplace.product_order`, or
+  `contract.contract` row for the awarded deal. The requester and the
+  winning responder still need to arrange fulfillment themselves (e.g. the
+  requester manually places a normal catalog order, or the cooperative
+  manually records a delivery) — wiring RFQ award into one of those
+  existing fulfillment paths automatically is a real follow-up integration,
+  not built in this pass. See "RFP/RFQ" above for the full design.
+- **RFQ quoting UI exists on four portals only.** Cooperative, Buyer,
+  InputSupplier, and the Farmer top-level nav all have the full RFQ
+  section; Lender, Machinery, MarketVenue, FertilizerMixingService, Admin,
+  and Gov do not yet, even though `src/routes/procurement.js` already
+  accepts a verified-organization JWT of any role type. Purely a UI
+  coverage gap — adding the section to another portal needs no backend
+  change.
 
 ## End-to-end verification performed
 
@@ -1341,6 +1450,42 @@ and the live `agrolink_test` database — not unit tests against mocks:
   return real data unaffected by this change. All test organizations and
   their orders/listings/photos were deleted afterward via a single FK-safe
   transaction, not left in seed data.
+- **RFP/RFQ** (`procurement.rfq`/`rfq_quote`), backend via `curl` against
+  the running server: posted an RFQ as a real seeded farmer
+  (`oidc|farmer-001`) and confirmed it appeared in both `GET
+  /procurement/rfqs` (public browse) and `GET /procurement/rfqs/mine`;
+  confirmed a farmer correctly gets `403 organization_subject_required`
+  attempting to submit a quote; submitted a real quote as a seeded Buyer
+  org (`oidc|org-002`) and confirmed it appeared in both the requester's
+  `GET /procurement/rfqs/:id/quotes` and the responder's `GET
+  /procurement/quotes/mine`; accepted that quote as the requester and
+  confirmed the RFQ flipped to `awarded` with the correct
+  `awarded_quote_id`, and that a non-requester (the responding org) got
+  `404` attempting to accept it themselves. Posted a second RFQ as an
+  organization requester and confirmed cancel-then-quote correctly `409`s
+  (`rfq_not_open`) and that a non-owner gets `404` on cancel. Posted a
+  third RFQ and confirmed the upsert-on-conflict quote path: submitting a
+  second quote from the same responder org updated the existing row
+  (`quote_id` unchanged, price/message updated, still exactly one row for
+  that `(rfq_id, responder_org_id)` pair) rather than creating a duplicate;
+  withdrew that quote and confirmed accepting a `withdrawn` quote correctly
+  `409`s (`quote_not_submitted`). **Frontend** (Playwright, headless),
+  across all four wired-up portals with real accounts (a seeded farmer,
+  a freshly admin-provisioned Cooperative, a freshly self-registered-then-
+  admin-KYB-approved InputSupplier org, and the seeded Buyer org): posted
+  a real RFQ through each portal's on-page form and confirmed it appeared
+  in "ประกาศของฉัน"; confirmed the "ใบเสนอราคาที่ฉันเสนอ" section is hidden
+  (`display: none`) on the farmer's standalone `rfq.html` and visible on
+  all three organization dashboards; browsed open RFQs and submitted real
+  quotes through the inline quote form on the Buyer and Cooperative
+  dashboards, confirming each appeared in that org's own "ใบเสนอราคาที่ฉัน
+  เสนอ" list. No page errors on any of the four pages, including a mobile
+  (390×844) viewport check of the farmer page. All RFQ/quote test rows
+  (the `procurement` schema was entirely new, so this meant clearing all
+  of it) and the two ad-hoc test organizations (with their
+  `organization_role`/`subject_role`/`vendor_profile`/
+  `cooperative_profile` rows) were deleted afterward, not left in seed
+  data.
 
 ## Next steps (not yet built)
 
