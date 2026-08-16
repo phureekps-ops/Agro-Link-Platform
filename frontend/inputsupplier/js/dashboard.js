@@ -518,6 +518,73 @@ const RFQ_QUOTE_STATUS_BADGE_CLASS = {
   withdrawn: "status-declined",
 };
 
+const AUCTION_STATUS_LABEL_TH = {
+  open: "เปิดประมูล",
+  closed: "ปิดแล้ว (ไม่มีผู้เสนอราคา)",
+  awarded: "ปิดประมูล — มีผู้ชนะ",
+  cancelled: "ยกเลิกแล้ว",
+};
+const AUCTION_STATUS_BADGE_CLASS = {
+  open: "status-active",
+  closed: "status-pending",
+  awarded: "status-approved",
+  cancelled: "status-declined",
+};
+const CONTRACT_TYPE_LABEL_TH = {
+  forward_purchase: "สัญญาซื้อขายล่วงหน้า",
+  service_agreement: "สัญญาจ้างบริการ",
+  input_supply_agreement: "สัญญาจัดหาปัจจัยการผลิต",
+  loan_agreement: "สัญญาสินเชื่อ",
+};
+const CONTRACT_ROLE_LABEL_TH = {
+  buyer: "ผู้ซื้อ",
+  farmer: "เกษตรกร",
+  seller: "ผู้ขาย",
+  input_supplier: "ผู้จัดหาปัจจัยการผลิต",
+  service_provider: "ผู้ให้บริการ",
+  lender: "ผู้ให้สินเชื่อ",
+  platform: "แพลตฟอร์ม",
+};
+const PO_STATUS_LABEL_TH = {
+  issued: "ออกแล้ว รอตอบรับ",
+  acknowledged: "ผู้ขายตอบรับแล้ว",
+  in_fulfillment: "อยู่ระหว่างส่งมอบ",
+  completed: "เสร็จสมบูรณ์",
+  cancelled: "ยกเลิกแล้ว",
+};
+const PO_STATUS_BADGE_CLASS = {
+  issued: "status-pending",
+  acknowledged: "status-approved",
+  in_fulfillment: "status-active",
+  completed: "status-approved",
+  cancelled: "status-declined",
+};
+const INVOICE_STATUS_LABEL_TH = {
+  issued: "ออกแล้ว รอชำระ",
+  paid: "ชำระแล้ว",
+  disputed: "มีข้อโต้แย้ง",
+  cancelled: "ยกเลิกแล้ว",
+};
+const INVOICE_STATUS_BADGE_CLASS = {
+  issued: "status-pending",
+  paid: "status-approved",
+  disputed: "status-declined",
+  cancelled: "status-declined",
+};
+// Mirrors backend PO_ISSUER_ROLES (procurement.js) — only the "wants the
+// goods" side of a contract may issue a PO against it.
+const PO_ISSUER_ROLES_CLIENT = ["farmer", "buyer"];
+
+let auctionMineCache = [];
+let auctionMineByRfqId = new Map();
+let contractsMineCache = [];
+// Keyed by po_id — populated by loadPurchaseOrdersMine() alongside the PO
+// list itself, so poCard() can render each PO's GRN and Invoice state
+// inline without a per-card round trip. No revenue-share section on this
+// portal — that's cooperative-only.
+let grnByPoCache = {};
+let invoiceByPoCache = {};
+
 let rfqMineCache = [];
 let rfqIsOrganization = false;
 
@@ -564,6 +631,16 @@ function rfqQuoteRow(q, rfqId, rfqStatus) {
 
 function rfqMineCard(r) {
   const badgeClass = RFQ_STATUS_BADGE_CLASS[r.status] || "status-pending";
+  const auction = auctionMineByRfqId.get(r.rfq_id);
+  let auctionBadgeOrButton = "";
+  if (r.status === "open") {
+    if (auction) {
+      const aBadgeClass = AUCTION_STATUS_BADGE_CLASS[auction.status] || "status-pending";
+      auctionBadgeOrButton = `<span class="badge ${aBadgeClass}">🏆 ประมูล: ${escapeHtml(AUCTION_STATUS_LABEL_TH[auction.status] || auction.status)}</span>`;
+    } else {
+      auctionBadgeOrButton = `<button type="button" class="btn btn-ghost btn-sm" data-rfq-toggle-auction-form="${r.rfq_id}">🏆 เปิดประมูล (e-Auction)</button>`;
+    }
+  }
   return `
     <div class="item-card" data-rfq-id="${r.rfq_id}">
       <div class="row">
@@ -577,7 +654,21 @@ function rfqMineCard(r) {
       <div class="action-row">
         <button type="button" class="btn btn-ghost btn-sm" data-rfq-toggle-quotes="${r.rfq_id}">ดูใบเสนอราคา</button>
         ${r.status === "open" ? `<button type="button" class="btn btn-decline btn-sm" data-rfq-cancel="${r.rfq_id}">ยกเลิกประกาศ</button>` : ""}
+        ${auctionBadgeOrButton}
       </div>
+      ${(!auction && r.status === "open") ? `
+        <div data-rfq-auction-form-container="${r.rfq_id}" style="display:none; margin-top:8px;">
+          <div class="form-grid">
+            <div class="field full">
+              <label>ปิดรับราคาเมื่อ (วัน-เวลา)</label>
+              <input type="datetime-local" data-rfq-auction-closes-at="${r.rfq_id}" />
+            </div>
+          </div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-rfq-submit-auction="${r.rfq_id}">เริ่มการประมูล</button>
+          </div>
+        </div>
+      ` : ""}
       <div data-rfq-quotes-container="${r.rfq_id}" style="display:none;"></div>
     </div>
   `;
@@ -600,6 +691,47 @@ document.getElementById("rfqMineSection").addEventListener("click", async (e) =>
   const toggleBtn = e.target.closest("[data-rfq-toggle-quotes]");
   const cancelBtn = e.target.closest("[data-rfq-cancel]");
   const acceptBtn = e.target.closest("[data-rfq-accept-quote]");
+  const toggleAuctionBtn = e.target.closest("[data-rfq-toggle-auction-form]");
+  const submitAuctionBtn = e.target.closest("[data-rfq-submit-auction]");
+
+  if (toggleAuctionBtn) {
+    const rfqId = toggleAuctionBtn.dataset.rfqToggleAuctionForm;
+    const container = document.querySelector(`[data-rfq-auction-form-container="${rfqId}"]`);
+    if (!container) return;
+    const isHidden = container.style.display === "none";
+    container.style.display = isHidden ? "block" : "none";
+    toggleAuctionBtn.textContent = isHidden ? "ยกเลิก" : "🏆 เปิดประมูล (e-Auction)";
+    return;
+  }
+
+  if (submitAuctionBtn) {
+    const rfqId = submitAuctionBtn.dataset.rfqSubmitAuction;
+    const closesAtInput = document.querySelector(`[data-rfq-auction-closes-at="${rfqId}"]`);
+    const closesAtValue = closesAtInput ? closesAtInput.value : "";
+    if (!closesAtValue) {
+      toast("กรุณาเลือกวัน-เวลาปิดรับราคา", true);
+      return;
+    }
+    const closesAtDate = new Date(closesAtValue);
+    if (Number.isNaN(closesAtDate.getTime()) || closesAtDate.getTime() <= Date.now()) {
+      toast("วัน-เวลาปิดรับราคาต้องเป็นเวลาในอนาคต", true);
+      return;
+    }
+    submitAuctionBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post("/procurement/auctions", {
+        rfq_id: rfqId,
+        closes_at: closesAtDate.toISOString(),
+      });
+      toast("เปิดการประมูลเรียบร้อยแล้ว");
+      await loadAuctionsMine();
+      await loadRfqMine();
+    } catch (err) {
+      toast("เปิดประมูลไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      submitAuctionBtn.disabled = false;
+    }
+    return;
+  }
 
   if (toggleBtn) {
     const rfqId = toggleBtn.dataset.rfqToggleQuotes;
@@ -649,8 +781,9 @@ document.getElementById("rfqMineSection").addEventListener("click", async (e) =>
     acceptBtn.disabled = true;
     try {
       await AgroLinkInputSupplierAPI.post(`/procurement/rfqs/${rfqId}/quotes/${quoteId}/accept`, {});
-      toast("ยอมรับใบเสนอราคาเรียบร้อยแล้ว");
+      toast("ยอมรับใบเสนอราคาเรียบร้อยแล้ว — สร้างสัญญาอัตโนมัติแล้ว");
       await loadRfqMine();
+      await loadContractsMine();
     } catch (err) {
       toast("ยอมรับไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
       acceptBtn.disabled = false;
@@ -843,6 +976,596 @@ document.getElementById("rfqMyQuotesSection").addEventListener("click", async (e
   }
 });
 
+// ============================================================
+// e-Auction — reverse auction layered on top of an RFQ. See coop/buyer
+// dashboard.js for the original implementation this mirrors.
+// ============================================================
+
+function auctionBidRow(b, isWinner) {
+  return `
+    <div class="item-card" style="margin-top:8px;${isWinner ? " border-color:var(--green-700);" : ""}">
+      <div class="row">
+        <span class="title">${escapeHtml(b.bidder_org_name)}${isWinner ? " 🏆 ผู้ชนะ" : ""}</span>
+        <span style="font-weight:700; color:var(--green-900);">${rfqMoney(b.bid_price)} บาท</span>
+      </div>
+      ${b.bid_quantity ? `<div class="detail-line muted">จำนวนที่เสนอ ${rfqMoney(b.bid_quantity)}</div>` : ""}
+      ${b.message ? `<div class="detail-line muted">${escapeHtml(b.message)}</div>` : ""}
+      <div class="detail-line muted">เสนอเมื่อ ${thaiDate(b.submitted_at)}</div>
+    </div>
+  `;
+}
+
+function auctionMineCard(a) {
+  const badgeClass = AUCTION_STATUS_BADGE_CLASS[a.status] || "status-pending";
+  const lowestText = a.current_lowest_bid
+    ? `ราคาต่ำสุดขณะนี้ ${rfqMoney(a.current_lowest_bid)} บาท (มีผู้เสนอราคา ${a.bid_count} ราย)`
+    : "ยังไม่มีผู้เสนอราคา";
+  return `
+    <div class="item-card" data-auction-id="${a.auction_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(a.title)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(AUCTION_STATUS_LABEL_TH[a.status] || a.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(RFQ_CATEGORY_LABEL_TH[a.category] || a.category)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">${lowestText}</div>
+      <div class="detail-line muted">${a.status === "open" ? "ปิดรับราคาภายใน" : "ปิดเมื่อ"} ${thaiDate(a.status === "open" ? a.closes_at : a.closed_at)}</div>
+      <div class="action-row">
+        <button type="button" class="btn btn-ghost btn-sm" data-auction-toggle-bids="${a.auction_id}">ดูผู้เสนอราคาทั้งหมด</button>
+        ${a.status === "open" ? `<button type="button" class="btn btn-decline btn-sm" data-auction-close="${a.auction_id}">ปิดประมูลตอนนี้</button>` : ""}
+      </div>
+      <div data-auction-bids-container="${a.auction_id}" style="display:none;"></div>
+    </div>
+  `;
+}
+
+async function loadAuctionsMine() {
+  const el = document.getElementById("auctionMineSection");
+  try {
+    const list = await AgroLinkInputSupplierAPI.get("/procurement/auctions/mine");
+    auctionMineCache = list;
+    auctionMineByRfqId = new Map(list.map((a) => [a.rfq_id, a]));
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ท่านยังไม่เคยเปิดประมูล — เปิดได้จากปุ่ม "เปิดประมูล (e-Auction)" บนประกาศ RFQ ของท่านด้านบน (ต้องมีสถานะ "เปิดรับใบเสนอราคา")</div>`
+      : list.map(auctionMineCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการประมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("auctionMineSection").addEventListener("click", async (e) => {
+  const toggleBtn = e.target.closest("[data-auction-toggle-bids]");
+  const closeBtn = e.target.closest("[data-auction-close]");
+
+  if (toggleBtn) {
+    const auctionId = toggleBtn.dataset.auctionToggleBids;
+    const container = document.querySelector(`[data-auction-bids-container="${auctionId}"]`);
+    if (!container) return;
+    const isHidden = container.style.display === "none";
+    if (!isHidden) {
+      container.style.display = "none";
+      toggleBtn.textContent = "ดูผู้เสนอราคาทั้งหมด";
+      return;
+    }
+    container.style.display = "block";
+    toggleBtn.textContent = "ซ่อนผู้เสนอราคา";
+    container.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+    try {
+      const bids = await AgroLinkInputSupplierAPI.get(`/procurement/auctions/${auctionId}/bids`);
+      const auction = auctionMineCache.find((a) => a.auction_id === auctionId);
+      const winningBidId = auction ? auction.winning_bid_id : null;
+      container.innerHTML = bids.length === 0
+        ? `<div class="muted" style="font-size:12px; padding:8px 0;">ยังไม่มีผู้เสนอราคา</div>`
+        : bids.map((b) => auctionBidRow(b, b.bid_id === winningBidId)).join("");
+    } catch (err) {
+      container.innerHTML = `<div class="muted" style="font-size:12px;">โหลดผู้เสนอราคาไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    }
+    return;
+  }
+
+  if (closeBtn) {
+    const auctionId = closeBtn.dataset.auctionClose;
+    if (!confirm("ยืนยันปิดประมูลตอนนี้? ผู้เสนอราคาต่ำสุด ณ ขณะนี้จะได้รับเลือกทันทีและระบบจะสร้างสัญญาอัตโนมัติ")) return;
+    closeBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post(`/procurement/auctions/${auctionId}/close`, {});
+      toast("ปิดประมูลเรียบร้อยแล้ว");
+      await loadAuctionsMine();
+      await loadRfqMine();
+      await loadContractsMine();
+    } catch (err) {
+      toast("ปิดประมูลไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      closeBtn.disabled = false;
+    }
+  }
+});
+
+function auctionBrowseCard(a) {
+  const badgeClass = AUCTION_STATUS_BADGE_CLASS[a.status] || "status-pending";
+  const lowestText = a.current_lowest_bid
+    ? `ราคาต่ำสุดขณะนี้ ${rfqMoney(a.current_lowest_bid)} บาท (มีผู้เสนอราคา ${a.bid_count} ราย) — ต้องเสนอราคาต่ำกว่านี้`
+    : "ยังไม่มีผู้เสนอราคา — เสนอราคาใดก็ได้ที่มากกว่า 0";
+  const showBidForm = rfqIsOrganization && a.status === "open";
+  return `
+    <div class="item-card" data-auction-id="${a.auction_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(a.title)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(AUCTION_STATUS_LABEL_TH[a.status] || a.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(RFQ_CATEGORY_LABEL_TH[a.category] || a.category)} · โดย ${escapeHtml(a.requester_name || "-")}</div>
+      ${a.quantity ? `<div class="detail-line muted">จำนวน ${rfqMoney(a.quantity)} ${escapeHtml(a.quantity_unit || "")}</div>` : ""}
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">${lowestText}</div>
+      <div class="detail-line muted">ปิดรับราคาภายใน ${thaiDate(a.closes_at)}</div>
+      ${showBidForm ? `
+        <div class="action-row">
+          <button type="button" class="btn btn-ghost btn-sm" data-toggle-bid-form="${a.auction_id}">เสนอราคาแข่งขัน</button>
+        </div>
+        <div data-bid-form-container="${a.auction_id}" style="display:none; margin-top:8px;">
+          <div class="form-grid">
+            <div class="field">
+              <label>ราคาที่เสนอ (บาท) — ต้องต่ำกว่าราคาต่ำสุดปัจจุบัน</label>
+              <input type="number" min="0.01" step="0.01" data-bid-price="${a.auction_id}" />
+            </div>
+            <div class="field">
+              <label>จำนวนที่เสนอ (ถ้ามี)</label>
+              <input type="number" min="0.01" step="0.01" data-bid-qty="${a.auction_id}" />
+            </div>
+            <div class="field full">
+              <label>ข้อความเพิ่มเติม</label>
+              <input type="text" data-bid-message="${a.auction_id}" />
+            </div>
+          </div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-submit-bid="${a.auction_id}">ส่งราคาเสนอ</button>
+          </div>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+async function loadAuctionsBrowse() {
+  const el = document.getElementById("auctionBrowseSection");
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const list = await AgroLinkInputSupplierAPI.get("/procurement/auctions?status=open");
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ไม่มีการประมูลที่เปิดอยู่ในขณะนี้</div>`
+      : list.map(auctionBrowseCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการประมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("auctionBrowseSection").addEventListener("click", async (e) => {
+  const toggleBtn = e.target.closest("[data-toggle-bid-form]");
+  const submitBtn = e.target.closest("[data-submit-bid]");
+
+  if (toggleBtn) {
+    const auctionId = toggleBtn.dataset.toggleBidForm;
+    const container = document.querySelector(`[data-bid-form-container="${auctionId}"]`);
+    if (!container) return;
+    const isHidden = container.style.display === "none";
+    container.style.display = isHidden ? "block" : "none";
+    toggleBtn.textContent = isHidden ? "ยกเลิก" : "เสนอราคาแข่งขัน";
+    return;
+  }
+
+  if (submitBtn) {
+    const auctionId = submitBtn.dataset.submitBid;
+    const priceInput = document.querySelector(`[data-bid-price="${auctionId}"]`);
+    const qtyInput = document.querySelector(`[data-bid-qty="${auctionId}"]`);
+    const messageInput = document.querySelector(`[data-bid-message="${auctionId}"]`);
+    const price = priceInput ? Number(priceInput.value) : NaN;
+    if (!Number.isFinite(price) || price <= 0) {
+      toast("กรุณากรอกราคาที่เสนอให้ถูกต้อง", true);
+      return;
+    }
+    submitBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post(`/procurement/auctions/${auctionId}/bids`, {
+        bid_price: price,
+        bid_quantity: qtyInput && qtyInput.value ? Number(qtyInput.value) : null,
+        message: messageInput && messageInput.value.trim() ? messageInput.value.trim() : null,
+      });
+      toast("ส่งราคาเสนอเรียบร้อยแล้ว");
+      await loadAuctionsBrowse();
+    } catch (err) {
+      const errCode = (err.body && err.body.error) || err.message;
+      let msg = errCode;
+      if (errCode === "bid_not_competitive") {
+        msg = `ราคาที่เสนอต้องต่ำกว่า ${rfqMoney(err.body.current_lowest_bid)} บาท`;
+      } else if (errCode === "kyb_not_verified") {
+        msg = "องค์กรของท่านยังไม่ผ่านการยืนยัน KYB จึงยังเสนอราคาไม่ได้";
+      } else if (errCode === "auction_not_open") {
+        msg = "การประมูลนี้ปิดรับราคาแล้ว";
+      }
+      toast("เสนอราคาไม่สำเร็จ: " + msg, true);
+      submitBtn.disabled = false;
+    }
+  }
+});
+
+// -- Contract + Purchase Order (issued against an active contract — see
+// procurement.create_contract_from_award) --
+
+function contractPoCard(c) {
+  const canIssue = c.status === "active" && PO_ISSUER_ROLES_CLIENT.includes(c.party_role);
+  return `
+    <div class="item-card" data-contract-id="${c.contract_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(c.rfq_title || CONTRACT_TYPE_LABEL_TH[c.contract_type] || c.contract_type)}</span>
+        <span class="badge ${c.status === "active" ? "status-approved" : "status-pending"}">${escapeHtml(c.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(CONTRACT_TYPE_LABEL_TH[c.contract_type] || c.contract_type)} · บทบาทของท่าน: ${escapeHtml(CONTRACT_ROLE_LABEL_TH[c.party_role] || c.party_role)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">
+        จำนวน ${rfqMoney(c.agreed_quantity)} ${escapeHtml(c.quantity_unit || "")} · ราคาต่อหน่วย ${rfqMoney(c.agreed_unit_price)} บาท
+      </div>
+      ${c.terms_summary ? `<div class="detail-line muted">${escapeHtml(c.terms_summary)}</div>` : ""}
+      <div class="detail-line muted">เริ่มมีผลเมื่อ ${rfqThaiDateOnly(c.effective_date)}</div>
+      ${canIssue ? `
+        <div class="action-row">
+          <button type="button" class="btn btn-primary btn-sm" data-toggle-po-form="${c.contract_id}">ออกใบสั่งซื้อ (PO)</button>
+        </div>
+        <div data-po-form-container="${c.contract_id}" style="display:none; margin-top:8px;">
+          <div class="form-grid">
+            <div class="field">
+              <label>จำนวน</label>
+              <input type="number" min="0.01" step="0.01" data-po-quantity="${c.contract_id}" value="${c.agreed_quantity || ""}" />
+            </div>
+            <div class="field">
+              <label>หน่วยนับ</label>
+              <input type="text" data-po-qty-unit="${c.contract_id}" value="${escapeHtml(c.quantity_unit || "")}" />
+            </div>
+            <div class="field">
+              <label>ราคาต่อหน่วย (บาท)</label>
+              <input type="number" min="0.01" step="0.01" data-po-unit-price="${c.contract_id}" value="${c.agreed_unit_price || ""}" />
+            </div>
+            <div class="field">
+              <label>สถานที่ส่งมอบ</label>
+              <input type="text" data-po-delivery="${c.contract_id}" />
+            </div>
+            <div class="field">
+              <label>ต้องการภายในวันที่</label>
+              <input type="date" data-po-needed-by="${c.contract_id}" />
+            </div>
+            <div class="field full">
+              <label>หมายเหตุ</label>
+              <input type="text" data-po-notes="${c.contract_id}" />
+            </div>
+          </div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-submit-po="${c.contract_id}">ยืนยันออกใบสั่งซื้อ</button>
+          </div>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+async function loadContractsMine() {
+  const el = document.getElementById("contractsMineSection");
+  try {
+    const list = await AgroLinkInputSupplierAPI.get("/procurement/contracts/mine");
+    contractsMineCache = list;
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ยังไม่มีสัญญา — สัญญาจะถูกสร้างอัตโนมัติเมื่อประกาศ RFQ ของท่านได้รับการตกลง (ยอมรับใบเสนอราคา หรือ ปิดประมูล e-Auction) หรือเมื่อท่านชนะการประมูล/ได้รับเลือกจาก RFQ ของผู้อื่น</div>`
+      : list.map(contractPoCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการสัญญาไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("contractsMineSection").addEventListener("click", async (e) => {
+  const toggleBtn = e.target.closest("[data-toggle-po-form]");
+  const submitBtn = e.target.closest("[data-submit-po]");
+
+  if (toggleBtn) {
+    const contractId = toggleBtn.dataset.togglePoForm;
+    const container = document.querySelector(`[data-po-form-container="${contractId}"]`);
+    if (!container) return;
+    const isHidden = container.style.display === "none";
+    container.style.display = isHidden ? "block" : "none";
+    toggleBtn.textContent = isHidden ? "ยกเลิก" : "ออกใบสั่งซื้อ (PO)";
+    return;
+  }
+
+  if (submitBtn) {
+    const contractId = submitBtn.dataset.submitPo;
+    const qty = Number(document.querySelector(`[data-po-quantity="${contractId}"]`).value);
+    const unitPrice = Number(document.querySelector(`[data-po-unit-price="${contractId}"]`).value);
+    const qtyUnit = document.querySelector(`[data-po-qty-unit="${contractId}"]`).value.trim();
+    const delivery = document.querySelector(`[data-po-delivery="${contractId}"]`).value.trim();
+    const neededBy = document.querySelector(`[data-po-needed-by="${contractId}"]`).value;
+    const notes = document.querySelector(`[data-po-notes="${contractId}"]`).value.trim();
+    if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+      toast("กรุณากรอกจำนวนและราคาต่อหน่วยให้ถูกต้อง", true);
+      return;
+    }
+    submitBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post("/procurement/purchase-orders", {
+        contract_id: contractId,
+        quantity: qty,
+        quantity_unit: qtyUnit || null,
+        unit_price: unitPrice,
+        delivery_location: delivery || null,
+        needed_by_date: neededBy || null,
+        notes: notes || null,
+      });
+      toast("ออกใบสั่งซื้อเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ออกใบสั่งซื้อไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+});
+
+// -- GRN + Invoice, tied to each PO --
+
+function grnAndInvoiceSectionHtml(p, isIssuer) {
+  const grn = grnByPoCache[p.po_id];
+  const invoice = invoiceByPoCache[p.po_id];
+  const parts = [];
+
+  if (!grn) {
+    if (isIssuer && p.status === "acknowledged") {
+      parts.push(`
+        <div class="sub-panel" style="margin-top:8px; padding:10px; border:1px dashed var(--gray-300); border-radius:8px;">
+          <div class="detail-line" style="font-weight:700;">บันทึกการรับสินค้า (GRN)</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>จำนวนที่ได้รับจริง</label>
+              <input type="number" min="0.01" step="0.01" data-grn-received="${p.po_id}" value="${p.quantity}" />
+            </div>
+            <div class="field">
+              <label>จำนวนที่ยอมรับ</label>
+              <input type="number" min="0" step="0.01" data-grn-accepted="${p.po_id}" value="${p.quantity}" />
+            </div>
+            <div class="field">
+              <label>จำนวนที่ปฏิเสธ (ถ้ามี)</label>
+              <input type="number" min="0" step="0.01" data-grn-rejected="${p.po_id}" value="0" />
+            </div>
+            <div class="field full">
+              <label>เหตุผลที่ปฏิเสธ (ถ้ามี)</label>
+              <input type="text" data-grn-rejection-reason="${p.po_id}" />
+            </div>
+          </div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-grn-submit="${p.po_id}">บันทึกการรับสินค้า</button>
+          </div>
+        </div>
+      `);
+    }
+    return parts.join("");
+  }
+
+  parts.push(`
+    <div class="detail-line" style="margin-top:6px;">
+      📥 รับสินค้าแล้ว: ยอมรับ ${rfqMoney(grn.accepted_quantity)}${grn.rejected_quantity > 0 ? ` · ปฏิเสธ ${rfqMoney(grn.rejected_quantity)}` : ""}
+      จากที่ส่งมอบ ${rfqMoney(grn.received_quantity)} (${thaiDate(grn.received_at)})
+      ${grn.rejection_reason ? `<br/><span class="muted">เหตุผล: ${escapeHtml(grn.rejection_reason)}</span>` : ""}
+    </div>
+  `);
+
+  if (!invoice) {
+    if (!isIssuer && Number(grn.accepted_quantity) > 0) {
+      const previewAmount = Number(grn.accepted_quantity) * Number(p.unit_price);
+      parts.push(`
+        <div class="sub-panel" style="margin-top:8px; padding:10px; border:1px dashed var(--gray-300); border-radius:8px;">
+          <div class="detail-line">ยอดใบแจ้งหนี้โดยประมาณ: <strong>${rfqMoney(previewAmount)} บาท</strong> (${rfqMoney(grn.accepted_quantity)} × ${rfqMoney(p.unit_price)})</div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-invoice-issue="${p.po_id}">ออกใบแจ้งหนี้</button>
+          </div>
+        </div>
+      `);
+    }
+    return parts.join("");
+  }
+
+  const invBadge = INVOICE_STATUS_BADGE_CLASS[invoice.status] || "status-pending";
+  parts.push(`
+    <div class="detail-line" style="margin-top:6px; font-weight:700;">
+      🧾 ${escapeHtml(invoice.invoice_no)}
+      <span class="badge ${invBadge}">${escapeHtml(INVOICE_STATUS_LABEL_TH[invoice.status] || invoice.status)}</span>
+      — ${rfqMoney(invoice.amount)} บาท
+    </div>
+    ${invoice.dispute_reason ? `<div class="detail-line muted">ข้อโต้แย้ง: ${escapeHtml(invoice.dispute_reason)}</div>` : ""}
+  `);
+
+  if (invoice.status === "issued") {
+    if (isIssuer) {
+      parts.push(`
+        <div class="action-row">
+          <button type="button" class="btn btn-approve btn-sm" data-invoice-pay="${invoice.invoice_id}">ชำระเงิน</button>
+          <button type="button" class="btn btn-decline btn-sm" data-invoice-dispute="${invoice.invoice_id}">โต้แย้งใบแจ้งหนี้</button>
+        </div>
+      `);
+    } else {
+      parts.push(`
+        <div class="action-row">
+          <button type="button" class="btn btn-decline btn-sm" data-invoice-cancel="${invoice.invoice_id}">ยกเลิกใบแจ้งหนี้</button>
+        </div>
+      `);
+    }
+  }
+
+  return parts.join("");
+}
+
+function poCard(p) {
+  const badgeClass = PO_STATUS_BADGE_CLASS[p.status] || "status-pending";
+  const session = AgroLinkInputSupplierAPI.getSession();
+  const isIssuer = !!(session && p.issued_by_subject_type === session.subject_type && p.issued_by_subject_id === session.subject_id);
+  const canAcknowledge = !isIssuer && p.status === "issued";
+  const canCancel = ["issued", "acknowledged"].includes(p.status);
+  return `
+    <div class="item-card" data-po-id="${p.po_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(p.po_number)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(PO_STATUS_LABEL_TH[p.status] || p.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(CONTRACT_TYPE_LABEL_TH[p.contract_type] || p.contract_type)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">
+        ${rfqMoney(p.quantity)} ${escapeHtml(p.quantity_unit || "")} × ${rfqMoney(p.unit_price)} บาท = ${rfqMoney(p.total_amount)} บาท
+      </div>
+      ${p.delivery_location ? `<div class="detail-line muted">ส่งที่ ${escapeHtml(p.delivery_location)}</div>` : ""}
+      ${p.needed_by_date ? `<div class="detail-line muted">ต้องการภายใน ${rfqThaiDateOnly(p.needed_by_date)}</div>` : ""}
+      ${p.notes ? `<div class="detail-line muted">${escapeHtml(p.notes)}</div>` : ""}
+      <div class="detail-line muted">ออกเมื่อ ${thaiDate(p.issued_at)}${p.acknowledged_at ? ` · ตอบรับเมื่อ ${thaiDate(p.acknowledged_at)}` : ""}</div>
+      ${(canAcknowledge || canCancel) ? `
+        <div class="action-row">
+          ${canAcknowledge ? `<button type="button" class="btn btn-approve btn-sm" data-po-acknowledge="${p.po_id}">รับทราบใบสั่งซื้อ</button>` : ""}
+          ${canCancel ? `<button type="button" class="btn btn-decline btn-sm" data-po-cancel="${p.po_id}">ยกเลิกใบสั่งซื้อ</button>` : ""}
+        </div>
+      ` : ""}
+      ${["acknowledged", "in_fulfillment", "completed"].includes(p.status) ? grnAndInvoiceSectionHtml(p, isIssuer) : ""}
+    </div>
+  `;
+}
+
+async function loadPurchaseOrdersMine() {
+  const el = document.getElementById("purchaseOrdersMineSection");
+  try {
+    const [list, grns, invoices] = await Promise.all([
+      AgroLinkInputSupplierAPI.get("/procurement/purchase-orders/mine"),
+      AgroLinkInputSupplierAPI.get("/procurement/goods-receipts/mine"),
+      AgroLinkInputSupplierAPI.get("/procurement/invoices/mine"),
+    ]);
+    grnByPoCache = Object.fromEntries(grns.map((g) => [g.po_id, g]));
+    invoiceByPoCache = Object.fromEntries(invoices.map((i) => [i.po_id, i]));
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ยังไม่มีใบสั่งซื้อ</div>`
+      : list.map(poCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดใบสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("purchaseOrdersMineSection").addEventListener("click", async (e) => {
+  const ackBtn = e.target.closest("[data-po-acknowledge]");
+  const cancelBtn = e.target.closest("[data-po-cancel]");
+  const grnSubmitBtn = e.target.closest("[data-grn-submit]");
+  const invoiceIssueBtn = e.target.closest("[data-invoice-issue]");
+  const invoicePayBtn = e.target.closest("[data-invoice-pay]");
+  const invoiceDisputeBtn = e.target.closest("[data-invoice-dispute]");
+  const invoiceCancelBtn = e.target.closest("[data-invoice-cancel]");
+
+  if (ackBtn) {
+    const poId = ackBtn.dataset.poAcknowledge;
+    if (!confirm("ยืนยันรับทราบใบสั่งซื้อนี้?")) return;
+    ackBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post(`/procurement/purchase-orders/${poId}/acknowledge`, {});
+      toast("รับทราบใบสั่งซื้อเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("รับทราบไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      ackBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (cancelBtn) {
+    const poId = cancelBtn.dataset.poCancel;
+    if (!confirm("ยืนยันยกเลิกใบสั่งซื้อนี้?")) return;
+    cancelBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post(`/procurement/purchase-orders/${poId}/cancel`, {});
+      toast("ยกเลิกใบสั่งซื้อเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      cancelBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (grnSubmitBtn) {
+    const poId = grnSubmitBtn.dataset.grnSubmit;
+    const received = Number(document.querySelector(`[data-grn-received="${poId}"]`).value);
+    const accepted = Number(document.querySelector(`[data-grn-accepted="${poId}"]`).value);
+    const rejected = Number(document.querySelector(`[data-grn-rejected="${poId}"]`).value || 0);
+    const reason = document.querySelector(`[data-grn-rejection-reason="${poId}"]`).value.trim();
+    if (!Number.isFinite(received) || received <= 0 || !Number.isFinite(accepted) || accepted < 0) {
+      toast("กรุณากรอกจำนวนที่รับและยอมรับให้ถูกต้อง", true);
+      return;
+    }
+    grnSubmitBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post("/procurement/goods-receipts", {
+        po_id: poId, received_quantity: received, accepted_quantity: accepted,
+        rejected_quantity: rejected, rejection_reason: reason || null,
+      });
+      toast("บันทึกการรับสินค้าเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      grnSubmitBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceIssueBtn) {
+    const poId = invoiceIssueBtn.dataset.invoiceIssue;
+    invoiceIssueBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post("/procurement/invoices", { po_id: poId });
+      toast("ออกใบแจ้งหนี้เรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ออกใบแจ้งหนี้ไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceIssueBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoicePayBtn) {
+    const invoiceId = invoicePayBtn.dataset.invoicePay;
+    if (!confirm("ยืนยันชำระเงินใบแจ้งหนี้นี้?")) return;
+    invoicePayBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post(`/procurement/invoices/${invoiceId}/pay`, {});
+      toast("ชำระเงินเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ชำระเงินไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoicePayBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceDisputeBtn) {
+    const invoiceId = invoiceDisputeBtn.dataset.invoiceDispute;
+    const reason = prompt("เหตุผลในการโต้แย้งใบแจ้งหนี้นี้ (ถ้ามี):") || "";
+    invoiceDisputeBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post(`/procurement/invoices/${invoiceId}/dispute`, { reason: reason.trim() || null });
+      toast("บันทึกข้อโต้แย้งเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceDisputeBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceCancelBtn) {
+    const invoiceId = invoiceCancelBtn.dataset.invoiceCancel;
+    if (!confirm("ยืนยันยกเลิกใบแจ้งหนี้นี้?")) return;
+    invoiceCancelBtn.disabled = true;
+    try {
+      await AgroLinkInputSupplierAPI.post(`/procurement/invoices/${invoiceId}/cancel`, {});
+      toast("ยกเลิกใบแจ้งหนี้เรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceCancelBtn.disabled = false;
+    }
+  }
+});
+
 async function refreshRfq() {
   const session = AgroLinkInputSupplierAPI.getSession();
   rfqIsOrganization = !!(session && session.subject_type === "organization");
@@ -851,7 +1574,16 @@ async function refreshRfq() {
     document.getElementById("rfqMyQuotesFilterRow").style.display = "none";
     document.getElementById("rfqMyQuotesSection").style.display = "none";
   }
-  await Promise.all([loadRfqMine(), loadRfqBrowse()]);
+  // auctionMineByRfqId must be populated BEFORE rfqMineCard() renders, so
+  // load it first rather than folding it into the Promise.all below.
+  await loadAuctionsMine();
+  await Promise.all([
+    loadRfqMine(),
+    loadRfqBrowse(),
+    loadAuctionsBrowse(),
+    loadContractsMine(),
+    loadPurchaseOrdersMine(),
+  ]);
   if (rfqIsOrganization) await loadRfqMyQuotes();
 }
 

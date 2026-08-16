@@ -163,7 +163,23 @@ grant_satellite_observation.sql
 grant_cooperative_product_catalog.sql
 grant_rfq_marketplace.sql
 grant_b2b_commerce_engine.sql
+grant_b2b_commerce_engine_phase3.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-16 (ดึก):** `grant_b2b_commerce_engine_phase3.sql` —
+ต่อยอดจาก `grant_b2b_commerce_engine.sql` ด้านบน เพิ่มใบรับสินค้า (Goods
+Receipt Note / GRN), ใบแจ้งหนี้ (Invoice), การชำระเงินจริงผ่านระบบ Ledger
+เดิม (`ledger.transfer_funds()`) และการกระจายรายได้คืนสมาชิกสหกรณ์
+(Revenue Sharing) ตามสัดส่วนที่แต่ละหน่วยผลิตส่งมอบเข้าล็อตที่ขายได้ —
+ทำให้วงจร RFQ/e-Auction → สัญญา → PO ที่มีอยู่แล้วสมบูรณ์ครบวงจรตั้งแต่
+"ตกลงซื้อขาย" ไปจนถึง "รับของ → ออกใบแจ้งหนี้ → จ่ายเงินจริง → กระจายเงิน
+คืนเกษตรกรสมาชิก" และเพิ่ม UI ของทั้งหมดนี้ (รวมทั้ง e-Auction/PO ที่เดิมมีแค่
+ฝั่งสหกรณ์และผู้รับซื้อ) ให้ฝั่งผู้จำหน่ายปัจจัยการผลิต (InputSupplier) ด้วย —
+ดูรายละเอียดเต็มที่ `backend/README.md` หัวข้อ "AgroLink B2B Commerce Engine
+— Phase 3" และ `B2B_COMMERCE_ENGINE_ARCHITECTURE.md` ที่ root ของโปรเจกต์
+**ต้องรันหลัง** `grant_b2b_commerce_engine.sql` เท่านั้น (ต้องมีตาราง
+`contract.contract` และ `procurement.purchase_order` อยู่ก่อน) รันเป็นไฟล์
+สุดท้ายในลำดับนี้ก็เพียงพอ
 
 **เพิ่มเมื่อ 2026-08-16 (ค่ำ):** `grant_b2b_commerce_engine.sql` — ต่อยอดจาก
 `grant_rfq_marketplace.sql` ด้านบน เพิ่ม e-Auction (ประมูลราคาแบบย้อนกลับ),

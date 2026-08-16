@@ -649,6 +649,18 @@ const PO_STATUS_BADGE_CLASS = {
   completed: "status-approved",
   cancelled: "status-declined",
 };
+const INVOICE_STATUS_LABEL_TH = {
+  issued: "ออกแล้ว รอชำระ",
+  paid: "ชำระแล้ว",
+  disputed: "มีข้อโต้แย้ง",
+  cancelled: "ยกเลิกแล้ว",
+};
+const INVOICE_STATUS_BADGE_CLASS = {
+  issued: "status-pending",
+  paid: "status-approved",
+  disputed: "status-declined",
+  cancelled: "status-declined",
+};
 // Mirrors backend PO_ISSUER_ROLES (procurement.js) — only the "wants the
 // goods" contract party may issue a PO; used here purely to decide
 // whether to show the "ออกใบสั่งซื้อ" button, never as a security check
@@ -1368,6 +1380,107 @@ document.getElementById("contractsMineSection").addEventListener("click", async 
   }
 });
 
+// Keyed by po_id — populated by loadPurchaseOrdersMine() alongside the PO
+// list itself, so poCard() can render each PO's GRN and Invoice state
+// inline without a per-card round trip. No revenue-share section on this
+// portal — that's cooperative-only (only a coop has member farmers to
+// split sale proceeds back to); a Buyer org just pays invoices.
+let grnByPoCache = {};
+let invoiceByPoCache = {};
+
+function grnAndInvoiceSectionHtml(p, isIssuer) {
+  const grn = grnByPoCache[p.po_id];
+  const invoice = invoiceByPoCache[p.po_id];
+  const parts = [];
+
+  // GRN: recorded by whoever ISSUED the PO, once it's been acknowledged.
+  if (!grn) {
+    if (isIssuer && p.status === "acknowledged") {
+      parts.push(`
+        <div class="sub-panel" style="margin-top:8px; padding:10px; border:1px dashed var(--gray-300); border-radius:8px;">
+          <div class="detail-line" style="font-weight:700;">บันทึกการรับสินค้า (GRN)</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>จำนวนที่ได้รับจริง</label>
+              <input type="number" min="0.01" step="0.01" data-grn-received="${p.po_id}" value="${p.quantity}" />
+            </div>
+            <div class="field">
+              <label>จำนวนที่ยอมรับ</label>
+              <input type="number" min="0" step="0.01" data-grn-accepted="${p.po_id}" value="${p.quantity}" />
+            </div>
+            <div class="field">
+              <label>จำนวนที่ปฏิเสธ (ถ้ามี)</label>
+              <input type="number" min="0" step="0.01" data-grn-rejected="${p.po_id}" value="0" />
+            </div>
+            <div class="field full">
+              <label>เหตุผลที่ปฏิเสธ (ถ้ามี)</label>
+              <input type="text" data-grn-rejection-reason="${p.po_id}" />
+            </div>
+          </div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-grn-submit="${p.po_id}">บันทึกการรับสินค้า</button>
+          </div>
+        </div>
+      `);
+    }
+    return parts.join("");
+  }
+
+  parts.push(`
+    <div class="detail-line" style="margin-top:6px;">
+      📥 รับสินค้าแล้ว: ยอมรับ ${rfqMoney(grn.accepted_quantity)}${grn.rejected_quantity > 0 ? ` · ปฏิเสธ ${rfqMoney(grn.rejected_quantity)}` : ""}
+      จากที่ส่งมอบ ${rfqMoney(grn.received_quantity)} (${thaiDate(grn.received_at)})
+      ${grn.rejection_reason ? `<br/><span class="muted">เหตุผล: ${escapeHtml(grn.rejection_reason)}</span>` : ""}
+    </div>
+  `);
+
+  // Invoice: issued by the SELLER side (the non-issuer party), once a GRN
+  // with some accepted quantity exists.
+  if (!invoice) {
+    if (!isIssuer && Number(grn.accepted_quantity) > 0) {
+      const previewAmount = Number(grn.accepted_quantity) * Number(p.unit_price);
+      parts.push(`
+        <div class="sub-panel" style="margin-top:8px; padding:10px; border:1px dashed var(--gray-300); border-radius:8px;">
+          <div class="detail-line">ยอดใบแจ้งหนี้โดยประมาณ: <strong>${rfqMoney(previewAmount)} บาท</strong> (${rfqMoney(grn.accepted_quantity)} × ${rfqMoney(p.unit_price)})</div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-invoice-issue="${p.po_id}">ออกใบแจ้งหนี้</button>
+          </div>
+        </div>
+      `);
+    }
+    return parts.join("");
+  }
+
+  const invBadge = INVOICE_STATUS_BADGE_CLASS[invoice.status] || "status-pending";
+  parts.push(`
+    <div class="detail-line" style="margin-top:6px; font-weight:700;">
+      🧾 ${escapeHtml(invoice.invoice_no)}
+      <span class="badge ${invBadge}">${escapeHtml(INVOICE_STATUS_LABEL_TH[invoice.status] || invoice.status)}</span>
+      — ${rfqMoney(invoice.amount)} บาท
+    </div>
+    ${invoice.dispute_reason ? `<div class="detail-line muted">ข้อโต้แย้ง: ${escapeHtml(invoice.dispute_reason)}</div>` : ""}
+  `);
+
+  if (invoice.status === "issued") {
+    if (isIssuer) {
+      parts.push(`
+        <div class="action-row">
+          <button type="button" class="btn btn-approve btn-sm" data-invoice-pay="${invoice.invoice_id}">ชำระเงิน</button>
+          <button type="button" class="btn btn-decline btn-sm" data-invoice-dispute="${invoice.invoice_id}">โต้แย้งใบแจ้งหนี้</button>
+        </div>
+      `);
+    } else {
+      parts.push(`
+        <div class="action-row">
+          <button type="button" class="btn btn-decline btn-sm" data-invoice-cancel="${invoice.invoice_id}">ยกเลิกใบแจ้งหนี้</button>
+        </div>
+      `);
+    }
+  }
+
+  return parts.join("");
+}
+
 function poCard(p) {
   const badgeClass = PO_STATUS_BADGE_CLASS[p.status] || "status-pending";
   const session = AgroLinkBuyerAPI.getSession();
@@ -1394,6 +1507,7 @@ function poCard(p) {
           ${canCancel ? `<button type="button" class="btn btn-decline btn-sm" data-po-cancel="${p.po_id}">ยกเลิกใบสั่งซื้อ</button>` : ""}
         </div>
       ` : ""}
+      ${["acknowledged", "in_fulfillment", "completed"].includes(p.status) ? grnAndInvoiceSectionHtml(p, isIssuer) : ""}
     </div>
   `;
 }
@@ -1401,7 +1515,13 @@ function poCard(p) {
 async function loadPurchaseOrdersMine() {
   const el = document.getElementById("purchaseOrdersMineSection");
   try {
-    const list = await AgroLinkBuyerAPI.get("/procurement/purchase-orders/mine");
+    const [list, grns, invoices] = await Promise.all([
+      AgroLinkBuyerAPI.get("/procurement/purchase-orders/mine"),
+      AgroLinkBuyerAPI.get("/procurement/goods-receipts/mine"),
+      AgroLinkBuyerAPI.get("/procurement/invoices/mine"),
+    ]);
+    grnByPoCache = Object.fromEntries(grns.map((g) => [g.po_id, g]));
+    invoiceByPoCache = Object.fromEntries(invoices.map((i) => [i.po_id, i]));
     el.innerHTML = list.length === 0
       ? `<div class="empty-state">ยังไม่มีใบสั่งซื้อ</div>`
       : list.map(poCard).join("");
@@ -1413,6 +1533,11 @@ async function loadPurchaseOrdersMine() {
 document.getElementById("purchaseOrdersMineSection").addEventListener("click", async (e) => {
   const ackBtn = e.target.closest("[data-po-acknowledge]");
   const cancelBtn = e.target.closest("[data-po-cancel]");
+  const grnSubmitBtn = e.target.closest("[data-grn-submit]");
+  const invoiceIssueBtn = e.target.closest("[data-invoice-issue]");
+  const invoicePayBtn = e.target.closest("[data-invoice-pay]");
+  const invoiceDisputeBtn = e.target.closest("[data-invoice-dispute]");
+  const invoiceCancelBtn = e.target.closest("[data-invoice-cancel]");
 
   if (ackBtn) {
     const poId = ackBtn.dataset.poAcknowledge;
@@ -1440,6 +1565,90 @@ document.getElementById("purchaseOrdersMineSection").addEventListener("click", a
     } catch (err) {
       toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
       cancelBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (grnSubmitBtn) {
+    const poId = grnSubmitBtn.dataset.grnSubmit;
+    const received = Number(document.querySelector(`[data-grn-received="${poId}"]`).value);
+    const accepted = Number(document.querySelector(`[data-grn-accepted="${poId}"]`).value);
+    const rejected = Number(document.querySelector(`[data-grn-rejected="${poId}"]`).value || 0);
+    const reason = document.querySelector(`[data-grn-rejection-reason="${poId}"]`).value.trim();
+    if (!Number.isFinite(received) || received <= 0 || !Number.isFinite(accepted) || accepted < 0) {
+      toast("กรุณากรอกจำนวนที่รับและยอมรับให้ถูกต้อง", true);
+      return;
+    }
+    grnSubmitBtn.disabled = true;
+    try {
+      await AgroLinkBuyerAPI.post("/procurement/goods-receipts", {
+        po_id: poId, received_quantity: received, accepted_quantity: accepted,
+        rejected_quantity: rejected, rejection_reason: reason || null,
+      });
+      toast("บันทึกการรับสินค้าเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      grnSubmitBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceIssueBtn) {
+    const poId = invoiceIssueBtn.dataset.invoiceIssue;
+    invoiceIssueBtn.disabled = true;
+    try {
+      await AgroLinkBuyerAPI.post("/procurement/invoices", { po_id: poId });
+      toast("ออกใบแจ้งหนี้เรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ออกใบแจ้งหนี้ไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceIssueBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoicePayBtn) {
+    const invoiceId = invoicePayBtn.dataset.invoicePay;
+    if (!confirm("ยืนยันชำระเงินใบแจ้งหนี้นี้?")) return;
+    invoicePayBtn.disabled = true;
+    try {
+      await AgroLinkBuyerAPI.post(`/procurement/invoices/${invoiceId}/pay`, {});
+      toast("ชำระเงินเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ชำระเงินไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoicePayBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceDisputeBtn) {
+    const invoiceId = invoiceDisputeBtn.dataset.invoiceDispute;
+    const reason = prompt("เหตุผลในการโต้แย้งใบแจ้งหนี้นี้ (ถ้ามี):") || "";
+    invoiceDisputeBtn.disabled = true;
+    try {
+      await AgroLinkBuyerAPI.post(`/procurement/invoices/${invoiceId}/dispute`, { reason: reason.trim() || null });
+      toast("บันทึกข้อโต้แย้งเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceDisputeBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceCancelBtn) {
+    const invoiceId = invoiceCancelBtn.dataset.invoiceCancel;
+    if (!confirm("ยืนยันยกเลิกใบแจ้งหนี้นี้?")) return;
+    invoiceCancelBtn.disabled = true;
+    try {
+      await AgroLinkBuyerAPI.post(`/procurement/invoices/${invoiceId}/cancel`, {});
+      toast("ยกเลิกใบแจ้งหนี้เรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceCancelBtn.disabled = false;
     }
   }
 });

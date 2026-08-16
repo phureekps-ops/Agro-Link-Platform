@@ -991,10 +991,13 @@ Phase 2 of the RFQ marketplace above, evolving it from a single "post a
 need, accept a quote" step into a real B2B transaction chain: **RFQ →
 e-Auction (optional) → Contract (auto-generated) → Purchase Order**. Full
 design rationale, the whole 11-stage target pipeline (through Logistics,
-GRN, Invoice, Payment, Revenue Sharing — those later stages are roadmap,
-not built), and the reuse-before-rebuild analysis of every existing table
-this reuses live in `B2B_COMMERCE_ENGINE_ARCHITECTURE.md` at the repo
-root. This section covers only what's actually built and running.
+GRN, Invoice, Payment, Revenue Sharing), and the reuse-before-rebuild
+analysis of every existing table this reuses live in
+`B2B_COMMERCE_ENGINE_ARCHITECTURE.md` at the repo root. This section
+covers only what's actually built and running as of Phase 2 — **see "AgroLink
+B2B Commerce Engine — Phase 3" below for GRN, Invoice, Payment, and Revenue
+Sharing**, all of which are now built too (the "roadmap, not built" line
+above described this Phase-2-era state, not the current one).
 
 Schema: `backend/db/grant_b2b_commerce_engine.sql` — three additions to
 the existing `procurement`/`contract` schemas, no new top-level schema:
@@ -1063,19 +1066,140 @@ subject-type branching convention):
   `POST /procurement/purchase-orders/:id/acknowledge`,
   `POST /procurement/purchase-orders/:id/cancel`.
 
-Frontend: added to the **Cooperative** and **Buyer** dashboards only
+Frontend: added to the **Cooperative** and **Buyer** dashboards at first
 (same two portals as the RFQ section, minus InputSupplier/Farmer for this
-pass — see the architecture doc's roadmap for extending it). Each RFQ
-card the caller owns shows either a "🏆 เปิดประมูล (e-Auction)" button
-(if still `open` with no auction yet) or a live auction-status badge —
-`auctionMineByRfqId` is loaded before the RFQ cards render so this never
-offers to open a duplicate auction. Three new sections sit below the
+pass — extended to **InputSupplier** in Phase 3 below, see that section).
+Each RFQ card the caller owns shows either a "🏆 เปิดประมูล (e-Auction)"
+button (if still `open` with no auction yet) or a live auction-status
+badge — `auctionMineByRfqId` is loaded before the RFQ cards render so this
+never offers to open a duplicate auction. Three new sections sit below the
 existing RFQ UI: "การประมูลของฉัน" (my auctions, with a bid-history
 toggle and manual-close button), "ประมูลที่เปิดอยู่" (browse + bid on
 others' open auctions), "สัญญา" (every contract the caller is a party
 to, with an "ออกใบสั่งซื้อ" button on the ones they can issue a PO
 against), and "ใบสั่งซื้อ" (every PO, with acknowledge/cancel actions
 shown only to the side actually eligible for them).
+
+## AgroLink B2B Commerce Engine — Phase 3: GRN, Invoice, Payment, Revenue Sharing
+
+Phase 3 of the same pipeline, closing the loop from "we have a Purchase
+Order" all the way to "money actually moved and, if the seller is a
+cooperative, got redistributed to the member farmers who supplied the
+goods": **Purchase Order → Goods Receipt Note (GRN) → Invoice → Payment
+(via the existing ledger) → Revenue Sharing (cooperative sellers only)**.
+Design rationale and the full draft-vs-built comparison live in
+`B2B_COMMERCE_ENGINE_ARCHITECTURE.md` §4.8–4.11. This section covers what's
+actually built, running, and verified end-to-end against the live database.
+
+Schema: `backend/db/grant_b2b_commerce_engine_phase3.sql` — three new
+tables plus one column addition to two Phase-2 tables, no new top-level
+schema:
+
+- **`procurement.goods_receipt`** — recorded by whichever party **issued**
+  the PO (`PO_ISSUER_ROLES = ['farmer', 'buyer']`), confirming what was
+  actually received against it: `received_quantity` /
+  `accepted_quantity` / `rejected_quantity` (+ `rejection_reason`),
+  constrained so accepted+rejected never exceeds received. One GRN per PO
+  (`uq_grn_po`); recording it flips the PO to `in_fulfillment`
+  immediately, so a second attempt is rejected at the status-guard layer
+  (`409 po_not_acknowledged`) before it can ever reach the DB's unique
+  constraint — a real race (two concurrent inserts) is still caught by
+  the constraint itself.
+- **`procurement.invoice`** — issued by the **other** contract party (the
+  seller) once a GRN with `accepted_quantity > 0` exists; `amount` is
+  computed server-side as `grn.accepted_quantity * po.unit_price`, never
+  taken from client input. `procurement.pay_invoice(p_invoice_id,
+  p_payer_subject_type, p_payer_subject_id, p_payer_unit_id)` mirrors
+  `produce.settle_delivery()` / `marketplace.complete_service_request()`
+  exactly: lock the row, call `ledger.transfer_funds()`, flip to `paid`.
+  `p_payer_unit_id` is **required** when the payer is a farmer (a clear
+  `409` if omitted) — a farmer pays from their own
+  `unit_wallet` ledger account, not a generic personal balance. Paying
+  the invoice also checks whether every PO on the parent contract now has
+  `accepted_quantity` summing to the full `agreed_quantity`; if so the
+  contract auto-completes (`status = 'completed'`) — verified against
+  both a partial-acceptance case (stays `active`) and a full-acceptance
+  case (flips to `completed`). `POST /invoices/:id/dispute` exists
+  (moves to `disputed`) but there's no further resolution workflow yet —
+  see "Next steps" below. `POST /invoices/:id/cancel` works pre-payment
+  only. A genuine duplicate `POST /invoices` against the same `po_id`
+  (unlike GRN, issuing an invoice doesn't change PO status, so a second
+  attempt really does reach the insert) correctly hits `uq_invoice_po` →
+  `409 invoice_already_exists`.
+- **`procurement.rfq_quote.lot_id`** / **`procurement.auction_bid.lot_id`**
+  — the seller's own quote/bid now optionally links to one of their
+  `produce.lot` rows (only when `rfq.category = 'produce'`, and only a
+  lot the responding org actually owns — `403 lot_not_owned` otherwise).
+  **This lives on the seller's offer, not the RFQ itself** — an
+  architecture correction made during design, before any code was
+  written: `create_contract_from_award()` always assigns the RFQ
+  requester the `'buyer'` party role and the award winner the `'seller'`
+  role, and both `pay_invoice()` and `create_revenue_share_plan()` below
+  resolve the payee cooperative from the `'seller'` party. Tagging
+  `lot_id` on the RFQ (the requester's side) would have sent revenue-share
+  money to whoever won the bid — an unrelated org — instead of to the
+  cooperative that actually owns the sold lot.
+- **`procurement.revenue_share_plan`** / **`procurement.revenue_share_line`**
+  — for produce sales where the seller is a Cooperative:
+  `create_revenue_share_plan(invoice_id)` (callable once `invoice.status
+  = 'paid'`) resolves the sold lot via `rfq.awarded_quote_id →
+  rfq_quote.lot_id`, then computes each contributing production unit's
+  share from `SUM(quantity_ton) GROUP BY unit_id FROM produce.delivery
+  WHERE lot_id = X AND status = 'settled'` — no manual percentage entry.
+  `distribute_revenue_share(plan_id)` transfers each line's amount from
+  the cooperative's `vendor_settlement` account to the unit's
+  `unit_wallet`, **one `BEGIN...EXCEPTION WHEN OTHERS...END` block per
+  line** (a PL/pgSQL implicit savepoint) so one farmer's failed transfer
+  (e.g. no `unit_wallet` yet) doesn't roll back the others — that line is
+  marked `failed` with a `failure_reason` and the rest proceed.
+
+Backend: all of this lives in `src/routes/procurement.js` alongside the
+RFQ/auction/PO routes above (same file, same conventions):
+
+- `POST /procurement/goods-receipts`, `GET /procurement/goods-receipts/mine`.
+- `POST /procurement/invoices`, `GET /procurement/invoices/mine`,
+  `POST /procurement/invoices/:id/pay`,
+  `POST /procurement/invoices/:id/dispute`,
+  `POST /procurement/invoices/:id/cancel`.
+- `POST /procurement/revenue-share-plans`,
+  `GET /procurement/revenue-share-plans/mine`,
+  `POST /procurement/revenue-share-plans/:id/distribute`.
+- `POST /procurement/auctions/:id/close` now also returns `contract_id` in
+  its response (a small Phase-2 gap — the direct-quote-accept path already
+  surfaced it, the auction-close path didn't).
+
+Frontend: GRN + Invoice UI added to **Cooperative**, **Buyer**, and
+**InputSupplier** dashboards, folded into each PO card (expand a PO to see
+its GRN summary/form and invoice summary/issue/pay/dispute/cancel
+actions, gated to whichever side is actually eligible for each action).
+Revenue Sharing UI ("💰 กระจายรายได้คืนสมาชิก") added to the
+**Cooperative** dashboard only, since it's the only portal that can be
+the seller-side cooperative in this flow. The e-Auction + Contract + PO
+UI from Phase 2 (previously Cooperative/Buyer only) was also extended to
+the **InputSupplier** dashboard in this pass, closing that Phase-2 gap —
+InputSupplier is typically the input_product *seller*, so this mainly
+surfaces auctions to bid on, awarded contracts, and POs/invoices from the
+seller's side.
+
+**End-to-end verification performed:** three complete chains run as real
+HTTP requests against the running server and the live database (not
+mocks) — (1) an organization Buyer accepts a Cooperative's produce quote
+directly → PO → GRN → Invoice → real payment → revenue-share plan → real
+payout split across 2 production units by delivered tonnage; (2) the same
+chain via e-Auction close instead of direct quote-accept; (3) a farmer
+issues their own PO for input_product, pays the resulting invoice from
+their `unit_wallet` (no revenue sharing on this path — the seller is an
+InputSupplier, not a cooperative). All three inspected the resulting
+`ledger.journal_entry`/`journal_line` rows directly to confirm correct,
+balanced debit/credit amounts — not just that the API returned 200.
+Contract auto-completion was checked against both a partial-acceptance
+(stays `active`) and full-acceptance (`completed`) case. The InputSupplier
+UI addition was verified with a headless-browser pass (no page errors,
+correct rendering of real contract/PO/GRN/invoice data through the new
+sections). All test data created for this (one throwaway Cooperative org,
+4 produce lots, 8 settled deliveries, 9 RFQs and everything auto-created
+from them, and 15 ledger entries) was deleted afterward — nothing test-only
+was left in the database.
 
 ## What's mocked / simplified (be aware of this before relying on it)
 
@@ -1237,27 +1361,34 @@ shown only to the side actually eligible for them).
   neither buyers nor farmers can see how a price has moved over time, only
   today's live number and its `updated_at` timestamp.
 - **Awarding an RFQ (direct accept or auction close) creates a contract,
-  not yet a fulfillment record.** As of the B2B Commerce Engine phase,
-  award now auto-creates a real `contract.contract` row and the requester
-  can issue a Purchase Order against it — but a PO still does not
-  auto-create a `produce.delivery` or `marketplace.product_order` row.
-  GRN (goods-receipt), Invoice, and wiring Payment/Revenue-Sharing onto
-  this chain are designed in `B2B_COMMERCE_ENGINE_ARCHITECTURE.md` but
-  not built — see that doc's roadmap section.
+  not yet a fulfillment record.** Award auto-creates a real
+  `contract.contract` row and the requester can issue a Purchase Order
+  against it — but a PO still does not auto-create a `produce.delivery`
+  or `marketplace.product_order` row (GRN is the org↔org equivalent of
+  `produce.delivery` and IS built now, see the Phase 3 section above —
+  this bullet is about the two staying separate concepts, not GRN being
+  missing).
 - **A PO does not track cumulative quantity against its contract.**
   `POST /procurement/purchase-orders` lets the same active contract have
   multiple POs issued against it without checking their combined quantity
   against `contract.agreed_quantity` — same "no stock/quantity
   enforcement" gap `marketplace.product_order` already has elsewhere in
-  this codebase.
-- **RFQ/e-Auction/PO UI exists on four (RFQ) / two (e-Auction+PO) portals
-  only.** RFQ: Cooperative, Buyer, InputSupplier, and the Farmer
-  top-level nav. e-Auction + Contract + Purchase Order: Cooperative and
-  Buyer only. Lender, Machinery, MarketVenue, FertilizerMixingService,
-  Admin, and Gov have neither, even though the backend already accepts a
-  verified-organization JWT of any role type for all of it. Purely a UI
-  coverage gap — adding either section to another portal needs no backend
-  change.
+  this codebase. (Contract *completion* does check cumulative GRN
+  acceptance across all the contract's POs, see Phase 3 above — this
+  bullet is specifically about PO *issuance* not checking against it.)
+- **Invoice disputes have no resolution workflow.** `POST
+  /invoices/:id/dispute` moves an invoice to `disputed` and that's the
+  end of it — no renegotiate/re-issue/admin-arbitration path exists yet.
+- **RFQ/e-Auction/PO/GRN/Invoice UI exists on four (RFQ) / three
+  (e-Auction+PO+GRN+Invoice) portals only.** RFQ: Cooperative, Buyer,
+  InputSupplier, and the Farmer top-level nav. e-Auction + Contract +
+  Purchase Order + GRN + Invoice: Cooperative, Buyer, and InputSupplier.
+  Revenue Sharing: Cooperative only (by design — it's the only portal
+  that can be the seller-side cooperative). Lender, Machinery,
+  MarketVenue, FertilizerMixingService, Admin, and Gov have none of it,
+  even though the backend already accepts a verified-organization JWT of
+  any role type for all of it. Purely a UI coverage gap — adding any of
+  these sections to another portal needs no backend change.
 
 ## End-to-end verification performed
 

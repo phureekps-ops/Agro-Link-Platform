@@ -5,6 +5,11 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Postgres error code for a unique-constraint violation — used by the
+// GRN/Invoice creation routes below to turn a duplicate insert into a
+// clean 409 instead of a raw 500 (mirrors auth.js's convention).
+const UNIQUE_VIOLATION = '23505';
+
 /**
  * RFP/RFQ marketplace — "post what you need, receive competing quotes."
  * See grant_rfq_marketplace.sql for the full design rationale. Unlike
@@ -72,6 +77,18 @@ const RFQ_SELECT_WITH_REQUESTER_NAME = `
  * every other org-authenticated write); farmers have no equivalent gate
  * here, matching every other farmer-authenticated write in farmer.js
  * (none of which check identity.farmer.status either).
+ *
+ * NOTE on revenue-share sourcing (B2B Commerce Engine Phase 3, see
+ * grant_b2b_commerce_engine_phase3.sql): a `lot_id` is NOT collected here.
+ * It belongs on the SELLER's response — POST /rfqs/:id/quotes or POST
+ * /auctions/:id/bids — not on the RFQ itself. Reasoning: for a 'produce'
+ * category RFQ, the RFQ requester becomes the contract's 'buyer' party
+ * (see procurement.create_contract_from_award()) and the responder who
+ * wins becomes the 'seller' — and it's the seller (e.g. a cooperative
+ * reselling a collected lot) whose settlement account receives the
+ * invoice payment and who later runs revenue-share distribution. Tagging
+ * lot_id on the RFQ would associate it with the wrong party (the buyer,
+ * who never receives sale proceeds to redistribute).
  */
 router.post('/rfqs', async (req, res, next) => {
   const subject = req.subject;
@@ -352,22 +369,30 @@ router.get('/rfqs/:id/quotes', async (req, res, next) => {
  */
 async function awardRfqToResponder(client, {
   rfqId, category, requesterSubjectType, requesterSubjectId,
-  responderOrgId, price, priceUnit, quantity, quantityUnit, message,
+  responderOrgId, price, priceUnit, quantity, quantityUnit, message, lotId,
 }) {
+  // lotId (Phase 3): the responder's own lot_id, already recorded on their
+  // rfq_quote/auction_bid row when they submitted it — re-asserted here
+  // (rather than looked up) so the direct-quote-accept path and the
+  // auction-close path can both pass through whatever was already
+  // validated at submission time without a second lookup. See the
+  // grant_b2b_commerce_engine_phase3.sql design note on why this lives on
+  // the seller's offer, not the RFQ.
   const quoteRes = await client.query(
     `INSERT INTO procurement.rfq_quote
-       (rfq_id, responder_org_id, quoted_price, price_unit, quoted_quantity, message, status, decided_at)
-     VALUES ($1, $2, $3, COALESCE($4, 'บาท/หน่วย'), $5, $6, 'accepted', now())
+       (rfq_id, responder_org_id, quoted_price, price_unit, quoted_quantity, message, lot_id, status, decided_at)
+     VALUES ($1, $2, $3, COALESCE($4, 'บาท/หน่วย'), $5, $6, $7, 'accepted', now())
      ON CONFLICT (rfq_id, responder_org_id) DO UPDATE SET
        quoted_price = EXCLUDED.quoted_price,
        price_unit = EXCLUDED.price_unit,
        quoted_quantity = EXCLUDED.quoted_quantity,
        message = EXCLUDED.message,
+       lot_id = EXCLUDED.lot_id,
        status = 'accepted',
        decided_at = now(),
        updated_at = now()
      RETURNING quote_id`,
-    [rfqId, responderOrgId, price, priceUnit || null, quantity || null, message || null],
+    [rfqId, responderOrgId, price, priceUnit || null, quantity || null, message || null, lotId || null],
   );
   const quoteId = quoteRes.rows[0].quote_id;
 
@@ -435,7 +460,7 @@ router.post('/rfqs/:id/quotes/:quoteId/accept', async (req, res, next) => {
       const rfq = rfqRes.rows[0];
 
       const quoteRes = await client.query(
-        `SELECT quote_id, status, responder_org_id, quoted_price, price_unit, quoted_quantity, message
+        `SELECT quote_id, status, responder_org_id, quoted_price, price_unit, quoted_quantity, message, lot_id
            FROM procurement.rfq_quote WHERE rfq_id = $1 AND quote_id = $2`,
         [id, quoteId],
       );
@@ -454,6 +479,7 @@ router.post('/rfqs/:id/quotes/:quoteId/accept', async (req, res, next) => {
         quantity: quote.quoted_quantity || rfq.quantity,
         quantityUnit: rfq.quantity_unit,
         message: quote.message,
+        lotId: quote.lot_id,
       });
       return { rfq: award.rfq };
     });
@@ -470,13 +496,23 @@ router.post('/rfqs/:id/quotes/:quoteId/accept', async (req, res, next) => {
 
 /**
  * POST /procurement/rfqs/:id/quotes
- * Body: { quoted_price, price_unit?, quoted_quantity?, message? }
+ * Body: { quoted_price, price_unit?, quoted_quantity?, message?, lot_id? }
  * Organization-only (see grant_rfq_marketplace.sql's design note — farmers
  * never respond to RFQs in this pass). Upserts on (rfq_id, responder_org_id)
  * — a responder editing their price re-submits to the same row rather than
  * creating a duplicate, and this is also how "withdraw then re-quote"
  * works (status flips back to 'submitted'). Blocked once the RFQ is no
  * longer `open`.
+ *
+ * `lot_id` (B2B Commerce Engine Phase 3): only meaningful on a 'produce'
+ * category RFQ, and only a lot this responder org itself owns
+ * (`produce.lot.buyer_org_id`) — e.g. a cooperative offering to fulfill
+ * this RFQ by reselling a specific collected lot. If this quote is later
+ * accepted, lot_id carries onto the resulting contract's award (see
+ * awardRfqToResponder), which is what makes
+ * procurement.create_revenue_share_plan() reachable afterward. Not
+ * required — a quote with no lot_id just can't have revenue-share run on
+ * its resulting invoice.
  */
 router.post('/rfqs/:id/quotes', async (req, res, next) => {
   const subject = req.subject;
@@ -486,7 +522,7 @@ router.post('/rfqs/:id/quotes', async (req, res, next) => {
   const { id } = req.params;
   const {
     quoted_price: quotedPrice, price_unit: priceUnit,
-    quoted_quantity: quotedQuantity, message,
+    quoted_quantity: quotedQuantity, message, lot_id: lotId,
   } = req.body || {};
 
   const price = Number(quotedPrice);
@@ -503,7 +539,7 @@ router.post('/rfqs/:id/quotes', async (req, res, next) => {
       const gate = await requireVerifiedOrgIfOrganization(client, subject);
       if (!gate.ok) return { gate };
 
-      const rfqRes = await client.query('SELECT status FROM procurement.rfq WHERE rfq_id = $1', [id]);
+      const rfqRes = await client.query('SELECT status, category FROM procurement.rfq WHERE rfq_id = $1', [id]);
       if (rfqRes.rows.length === 0) return { rfqNotFound: true };
       if (rfqRes.rows[0].status !== 'open') return { wrongStatus: rfqRes.rows[0].status };
 
@@ -515,20 +551,30 @@ router.post('/rfqs/:id/quotes', async (req, res, next) => {
       const auctionRes = await client.query('SELECT auction_id FROM procurement.auction WHERE rfq_id = $1', [id]);
       if (auctionRes.rows.length > 0) return { hasAuction: true };
 
+      if (lotId) {
+        if (rfqRes.rows[0].category !== 'produce') return { lotRequiresProduce: true };
+        const lotCheck = await client.query(
+          'SELECT lot_id FROM produce.lot WHERE lot_id = $1 AND buyer_org_id = $2',
+          [lotId, subject.subjectId],
+        );
+        if (lotCheck.rows.length === 0) return { lotNotOwned: true };
+      }
+
       const { rows } = await client.query(
-        `INSERT INTO procurement.rfq_quote (rfq_id, responder_org_id, quoted_price, price_unit, quoted_quantity, message)
-         VALUES ($1, $2, $3, COALESCE($4, 'บาท/หน่วย'), $5, $6)
+        `INSERT INTO procurement.rfq_quote (rfq_id, responder_org_id, quoted_price, price_unit, quoted_quantity, message, lot_id)
+         VALUES ($1, $2, $3, COALESCE($4, 'บาท/หน่วย'), $5, $6, $7)
          ON CONFLICT (rfq_id, responder_org_id) DO UPDATE SET
            quoted_price = EXCLUDED.quoted_price,
            price_unit = EXCLUDED.price_unit,
            quoted_quantity = EXCLUDED.quoted_quantity,
            message = EXCLUDED.message,
+           lot_id = EXCLUDED.lot_id,
            status = 'submitted',
            submitted_at = now(),
            decided_at = NULL,
            updated_at = now()
-         RETURNING quote_id, rfq_id, quoted_price, price_unit, quoted_quantity, message, status, submitted_at`,
-        [id, subject.subjectId, price, priceUnit || null, quotedQuantity || null, message || null],
+         RETURNING quote_id, rfq_id, quoted_price, price_unit, quoted_quantity, message, lot_id, status, submitted_at`,
+        [id, subject.subjectId, price, priceUnit || null, quotedQuantity || null, message || null, lotId || null],
       );
       await logAccess(client, 'write', 'procurement.rfq_quote', rows[0].quote_id);
       return { quote: rows[0] };
@@ -543,6 +589,8 @@ router.post('/rfqs/:id/quotes', async (req, res, next) => {
     if (result.rfqNotFound) return res.status(404).json({ error: 'rfq_not_found' });
     if (result.wrongStatus) return res.status(409).json({ error: 'rfq_not_open', current_status: result.wrongStatus });
     if (result.hasAuction) return res.status(409).json({ error: 'rfq_has_auction' });
+    if (result.lotRequiresProduce) return res.status(400).json({ error: 'lot_id_requires_produce_category' });
+    if (result.lotNotOwned) return res.status(403).json({ error: 'lot_not_owned' });
     return res.status(201).json(result.quote);
   } catch (err) {
     return next(err);
@@ -650,7 +698,7 @@ router.post('/quotes/:quoteId/withdraw', async (req, res, next) => {
  */
 async function closeAndAwardAuction(client, auction) {
   const winnerRes = await client.query(
-    `SELECT bid_id, bidder_org_id, bid_price, bid_quantity, message
+    `SELECT bid_id, bidder_org_id, bid_price, bid_quantity, message, lot_id
        FROM procurement.auction_bid
       WHERE auction_id = $1
       ORDER BY bid_price ASC, submitted_at ASC
@@ -691,6 +739,7 @@ async function closeAndAwardAuction(client, auction) {
     quantity: winner.bid_quantity || rfq.quantity,
     quantityUnit: rfq.quantity_unit,
     message: winner.message,
+    lotId: winner.lot_id,
   });
 
   const { rows } = await client.query(
@@ -917,12 +966,16 @@ router.get('/auctions/:id', async (req, res, next) => {
 
 /**
  * POST /procurement/auctions/:id/bids
- * Body: { bid_price, bid_quantity?, message? }
+ * Body: { bid_price, bid_quantity?, message?, lot_id? }
  * Organization-only. A new bid must be strictly LOWER than the current
  * global lowest bid (if any exist) — this is what makes it a live
  * descending-price auction rather than an independent-quote list; enforced
  * here at the application layer (needs a MIN() query, not expressible as a
  * plain CHECK constraint).
+ *
+ * `lot_id` (B2B Commerce Engine Phase 3): same rule as POST /rfqs/:id/
+ * quotes — only on a 'produce' category RFQ's auction, and only a lot this
+ * bidder org owns. Carries onto the contract award if this bid wins.
  */
 router.post('/auctions/:id/bids', async (req, res, next) => {
   const subject = req.subject;
@@ -930,7 +983,7 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
     return res.status(403).json({ error: 'organization_subject_required' });
   }
   const { id } = req.params;
-  const { bid_price: bidPriceRaw, bid_quantity: bidQuantityRaw, message } = req.body || {};
+  const { bid_price: bidPriceRaw, bid_quantity: bidQuantityRaw, message, lot_id: lotId } = req.body || {};
   const bidPrice = Number(bidPriceRaw);
   if (!Number.isFinite(bidPrice) || bidPrice <= 0) {
     return res.status(400).json({ error: 'invalid_bid_price' });
@@ -946,7 +999,10 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
       if (!gate.ok) return { gate };
 
       const auctionRes = await client.query(
-        'SELECT auction_id, rfq_id, status, closes_at FROM procurement.auction WHERE auction_id = $1',
+        `SELECT a.auction_id, a.rfq_id, a.status, a.closes_at, r.category
+           FROM procurement.auction a
+           JOIN procurement.rfq r ON r.rfq_id = a.rfq_id
+          WHERE a.auction_id = $1`,
         [id],
       );
       if (auctionRes.rows.length === 0) return { notFound: true };
@@ -967,11 +1023,20 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
         return { notCompetitive: true, currentLowest: Number(currentLowest) };
       }
 
+      if (lotId) {
+        if (auction.category !== 'produce') return { lotRequiresProduce: true };
+        const lotCheck = await client.query(
+          'SELECT lot_id FROM produce.lot WHERE lot_id = $1 AND buyer_org_id = $2',
+          [lotId, subject.subjectId],
+        );
+        if (lotCheck.rows.length === 0) return { lotNotOwned: true };
+      }
+
       const { rows } = await client.query(
-        `INSERT INTO procurement.auction_bid (auction_id, bidder_org_id, bid_price, bid_quantity, message)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING bid_id, auction_id, bid_price, bid_quantity, message, submitted_at`,
-        [id, subject.subjectId, bidPrice, bidQuantityRaw || null, message || null],
+        `INSERT INTO procurement.auction_bid (auction_id, bidder_org_id, bid_price, bid_quantity, message, lot_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING bid_id, auction_id, bid_price, bid_quantity, message, lot_id, submitted_at`,
+        [id, subject.subjectId, bidPrice, bidQuantityRaw || null, message || null, lotId || null],
       );
       await logAccess(client, 'write', 'procurement.auction_bid', rows[0].bid_id);
       return { bid: rows[0] };
@@ -988,6 +1053,8 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
     if (result.notCompetitive) {
       return res.status(409).json({ error: 'bid_not_competitive', current_lowest_bid: result.currentLowest });
     }
+    if (result.lotRequiresProduce) return res.status(400).json({ error: 'lot_id_requires_produce_category' });
+    if (result.lotNotOwned) return res.status(403).json({ error: 'lot_not_owned' });
     return res.status(201).json(result.bid);
   } catch (err) {
     return next(err);
@@ -1066,7 +1133,11 @@ router.post('/auctions/:id/close', async (req, res, next) => {
 
     if (result.notFound) return res.status(404).json({ error: 'auction_not_found' });
     if (result.wrongStatus) return res.status(409).json({ error: 'auction_not_open', current_status: result.wrongStatus });
-    return res.json(result.closeResult.auction);
+    // Include contract_id when the close produced an award — mirrors POST
+    // /rfqs/:id/quotes/:quoteId/accept's response shape (which returns the
+    // RFQ row, contract_id included) so a caller never has to make a
+    // second round trip just to find the contract a won auction produced.
+    return res.json({ ...result.closeResult.auction, contract_id: result.closeResult.contractId || null });
   } catch (err) {
     return next(err);
   }
@@ -1312,6 +1383,486 @@ router.post('/purchase-orders/:id/cancel', async (req, res, next) => {
     if (result.notFound) return res.status(404).json({ error: 'purchase_order_not_found' });
     if (result.wrongStatus) return res.status(409).json({ error: 'po_not_cancellable', current_status: result.wrongStatus });
     return res.json(result.po);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ============================================================
+// Goods Receipt (GRN) — buyer confirms what physically arrived against an
+// acknowledged PO. One GRN per PO (see grant_b2b_commerce_engine_phase3.sql
+// design note 1). Recorded by the SAME subject who issued the PO — mirrors
+// how produce.delivery is recorded by the buyer, not the seller.
+// ============================================================
+
+/**
+ * POST /procurement/goods-receipts
+ * Body: { po_id, received_quantity, accepted_quantity, rejected_quantity?, rejection_reason? }
+ * PO must be 'acknowledged'. Moves the PO to 'in_fulfillment' regardless of
+ * whether anything was rejected — see the phase3 SQL file's design note 3
+ * for why 'completed' is reserved for after payment instead.
+ */
+router.post('/goods-receipts', async (req, res, next) => {
+  const subject = req.subject;
+  if (!isRequesterEligible(subject.subjectType)) {
+    return res.status(403).json({ error: 'farmer_or_organization_subject_required' });
+  }
+  const {
+    po_id: poId, received_quantity: receivedQtyRaw,
+    accepted_quantity: acceptedQtyRaw, rejected_quantity: rejectedQtyRaw,
+    rejection_reason: rejectionReason,
+  } = req.body || {};
+
+  const receivedQty = Number(receivedQtyRaw);
+  const acceptedQty = Number(acceptedQtyRaw);
+  const rejectedQty = rejectedQtyRaw !== undefined && rejectedQtyRaw !== null ? Number(rejectedQtyRaw) : 0;
+
+  if (!poId) return res.status(400).json({ error: 'po_id_required' });
+  if (!Number.isFinite(receivedQty) || receivedQty <= 0) return res.status(400).json({ error: 'invalid_received_quantity' });
+  if (!Number.isFinite(acceptedQty) || acceptedQty < 0) return res.status(400).json({ error: 'invalid_accepted_quantity' });
+  if (!Number.isFinite(rejectedQty) || rejectedQty < 0) return res.status(400).json({ error: 'invalid_rejected_quantity' });
+  if (acceptedQty + rejectedQty > receivedQty) return res.status(400).json({ error: 'accepted_plus_rejected_exceeds_received' });
+
+  try {
+    const result = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
+      const poRes = await client.query(
+        `SELECT po_id, status FROM procurement.purchase_order
+          WHERE po_id = $1 AND issued_by_subject_type = $2 AND issued_by_subject_id = $3`,
+        [poId, subject.subjectType, subject.subjectId],
+      );
+      if (poRes.rows.length === 0) return { poNotFound: true };
+      if (poRes.rows[0].status !== 'acknowledged') return { wrongStatus: poRes.rows[0].status };
+
+      const { rows } = await client.query(
+        `INSERT INTO procurement.goods_receipt
+           (po_id, received_quantity, accepted_quantity, rejected_quantity, rejection_reason,
+            received_by_subject_type, received_by_subject_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING grn_id, po_id, received_quantity, accepted_quantity, rejected_quantity,
+                   rejection_reason, received_at`,
+        [poId, receivedQty, acceptedQty, rejectedQty, rejectionReason || null, subject.subjectType, subject.subjectId],
+      );
+      await client.query(
+        `UPDATE procurement.purchase_order SET status = 'in_fulfillment', updated_at = now() WHERE po_id = $1`,
+        [poId],
+      );
+      await logAccess(client, 'write', 'procurement.goods_receipt', rows[0].grn_id);
+      return { grn: rows[0] };
+    });
+
+    if (result.poNotFound) return res.status(404).json({ error: 'purchase_order_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'po_not_acknowledged', current_status: result.wrongStatus });
+    return res.status(201).json(result.grn);
+  } catch (err) {
+    if (err.code === UNIQUE_VIOLATION) return res.status(409).json({ error: 'grn_already_exists' });
+    return next(err);
+  }
+});
+
+/**
+ * GET /procurement/goods-receipts/mine — every GRN on a PO the caller is a
+ * party to (issuer or recipient side), newest first.
+ */
+router.get('/goods-receipts/mine', async (req, res, next) => {
+  const subject = req.subject;
+  if (!isRequesterEligible(subject.subjectType)) {
+    return res.status(403).json({ error: 'farmer_or_organization_subject_required' });
+  }
+  try {
+    const rows = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT DISTINCT gr.grn_id, gr.po_id, gr.received_quantity, gr.accepted_quantity, gr.rejected_quantity,
+                gr.rejection_reason, gr.received_at, po.po_number
+           FROM procurement.goods_receipt gr
+           JOIN procurement.purchase_order po ON po.po_id = gr.po_id
+           JOIN contract.contract_party cp ON cp.contract_id = po.contract_id
+          WHERE cp.party_type = $1 AND cp.party_id = $2
+          ORDER BY gr.received_at DESC`,
+        [subject.subjectType, subject.subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ============================================================
+// Invoice — issued by the seller side once a GRN exists, billed on
+// ACCEPTED quantity (not the original PO quantity). Payment goes through
+// the real ledger (procurement.pay_invoice(), see grant_b2b_commerce_
+// engine_phase3.sql) — the same double-entry engine produce.settle_
+// delivery() and marketplace.complete_service_request() already use.
+// ============================================================
+
+function generateInvoiceNumber() {
+  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `INV-${datePart}-${randomPart}`;
+}
+
+/**
+ * POST /procurement/invoices
+ * Body: { po_id, due_date? }
+ * Organization-only (the seller party on a contract is always an
+ * organization — same invariant Phase 2 established). Caller must hold
+ * the non-issuer contract_party role on the PO's contract, and a GRN must
+ * already exist for this PO. amount = grn.accepted_quantity * po.unit_price.
+ */
+router.post('/invoices', async (req, res, next) => {
+  const subject = req.subject;
+  if (subject.subjectType !== 'organization') {
+    return res.status(403).json({ error: 'organization_subject_required' });
+  }
+  const { po_id: poId, due_date: dueDate } = req.body || {};
+  if (!poId) return res.status(400).json({ error: 'po_id_required' });
+
+  try {
+    const result = await withSessionContext('organization', subject.subjectId, async (client) => {
+      const poRes = await client.query(
+        `SELECT po.po_id, po.unit_price
+           FROM procurement.purchase_order po
+           JOIN contract.contract_party cp ON cp.contract_id = po.contract_id
+          WHERE po.po_id = $1 AND cp.party_type = 'organization' AND cp.party_id = $2
+            AND NOT (cp.party_role = ANY($3))`,
+        [poId, subject.subjectId, PO_ISSUER_ROLES],
+      );
+      if (poRes.rows.length === 0) return { poNotFound: true };
+      const po = poRes.rows[0];
+
+      const grnRes = await client.query(
+        'SELECT grn_id, accepted_quantity FROM procurement.goods_receipt WHERE po_id = $1',
+        [poId],
+      );
+      if (grnRes.rows.length === 0) return { grnMissing: true };
+      const grn = grnRes.rows[0];
+      if (Number(grn.accepted_quantity) <= 0) return { nothingAccepted: true };
+
+      const amount = Number(grn.accepted_quantity) * Number(po.unit_price);
+      const invoiceNo = generateInvoiceNumber();
+
+      const { rows } = await client.query(
+        `INSERT INTO procurement.invoice
+           (invoice_no, po_id, grn_id, issued_by_subject_type, issued_by_subject_id, amount, due_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING invoice_id, invoice_no, po_id, grn_id, amount, status, due_date, issued_at`,
+        [invoiceNo, poId, grn.grn_id, 'organization', subject.subjectId, amount, dueDate || null],
+      );
+      await logAccess(client, 'write', 'procurement.invoice', rows[0].invoice_id);
+      return { invoice: rows[0] };
+    });
+
+    if (result.poNotFound) return res.status(404).json({ error: 'purchase_order_not_found' });
+    if (result.grnMissing) return res.status(409).json({ error: 'grn_required_before_invoice' });
+    if (result.nothingAccepted) return res.status(409).json({ error: 'nothing_accepted_on_grn' });
+    return res.status(201).json(result.invoice);
+  } catch (err) {
+    if (err.code === UNIQUE_VIOLATION) return res.status(409).json({ error: 'invoice_already_exists' });
+    return next(err);
+  }
+});
+
+/**
+ * GET /procurement/invoices/mine — every invoice on a PO the caller is a
+ * party to (issuer or recipient side), newest first.
+ */
+router.get('/invoices/mine', async (req, res, next) => {
+  const subject = req.subject;
+  if (!isRequesterEligible(subject.subjectType)) {
+    return res.status(403).json({ error: 'farmer_or_organization_subject_required' });
+  }
+  try {
+    const rows = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT DISTINCT inv.invoice_id, inv.invoice_no, inv.po_id, inv.grn_id, inv.amount, inv.status,
+                inv.due_date, inv.dispute_reason, inv.issued_by_subject_type, inv.issued_by_subject_id,
+                inv.issued_at, inv.paid_at, po.po_number
+           FROM procurement.invoice inv
+           JOIN procurement.purchase_order po ON po.po_id = inv.po_id
+           JOIN contract.contract_party cp ON cp.contract_id = po.contract_id
+          WHERE cp.party_type = $1 AND cp.party_id = $2
+          ORDER BY inv.issued_at DESC`,
+        [subject.subjectType, subject.subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /procurement/invoices/:id/pay
+ * Body: { payer_unit_id? } — required only when the caller is a farmer
+ * (see grant_b2b_commerce_engine_phase3.sql design note 6 for why: a
+ * farmer's payment source is unit-level, and procurement.rfq/contract has
+ * no unit_id of its own to infer it from).
+ */
+router.post('/invoices/:id/pay', async (req, res, next) => {
+  const subject = req.subject;
+  if (!isRequesterEligible(subject.subjectType)) {
+    return res.status(403).json({ error: 'farmer_or_organization_subject_required' });
+  }
+  const { id } = req.params;
+  const { payer_unit_id: payerUnitId } = req.body || {};
+
+  try {
+    const result = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT procurement.pay_invoice($1, $2, $3, $4) AS entry_id',
+          [id, subject.subjectType, subject.subjectId, payerUnitId || null],
+        );
+        await logAccess(client, 'write', 'procurement.invoice', id);
+        return { entryId: rows[0].entry_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) {
+      return res.status(409).json({ error: 'cannot_pay_invoice', detail: result.businessError });
+    }
+    return res.json({ status: 'paid', payment_entry_id: result.entryId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /procurement/invoices/:id/dispute — buyer (PO-issuer) side only,
+ * only while 'issued'. Records intent to dispute; resolving a dispute back
+ * to payable is not built in this pass (no endpoint reaches 'issued' from
+ * 'disputed' — a platform operator would need to intervene manually today,
+ * same "not everything has a UI yet" honesty as elsewhere in this project).
+ */
+router.post('/invoices/:id/dispute', async (req, res, next) => {
+  const subject = req.subject;
+  if (!isRequesterEligible(subject.subjectType)) {
+    return res.status(403).json({ error: 'farmer_or_organization_subject_required' });
+  }
+  const { id } = req.params;
+  const { reason } = req.body || {};
+
+  try {
+    const result = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
+      const invRes = await client.query(
+        `SELECT inv.invoice_id, inv.status
+           FROM procurement.invoice inv
+           JOIN procurement.purchase_order po ON po.po_id = inv.po_id
+          WHERE inv.invoice_id = $1 AND po.issued_by_subject_type = $2 AND po.issued_by_subject_id = $3`,
+        [id, subject.subjectType, subject.subjectId],
+      );
+      if (invRes.rows.length === 0) return { notFound: true };
+      if (invRes.rows[0].status !== 'issued') return { wrongStatus: invRes.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE procurement.invoice SET status = 'disputed', dispute_reason = $2, updated_at = now()
+          WHERE invoice_id = $1
+          RETURNING invoice_id, status, dispute_reason`,
+        [id, reason || null],
+      );
+      await logAccess(client, 'write', 'procurement.invoice', id);
+      return { invoice: rows[0] };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'invoice_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'invoice_not_issued', current_status: result.wrongStatus });
+    return res.json(result.invoice);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /procurement/invoices/:id/cancel — issuer (seller) side only, only
+ * while still 'issued' (a paid invoice cannot be cancelled — that's a
+ * refund, not built in this pass).
+ */
+router.post('/invoices/:id/cancel', async (req, res, next) => {
+  const subject = req.subject;
+  if (subject.subjectType !== 'organization') {
+    return res.status(403).json({ error: 'organization_subject_required' });
+  }
+  const { id } = req.params;
+
+  try {
+    const result = await withSessionContext('organization', subject.subjectId, async (client) => {
+      const invRes = await client.query(
+        `SELECT invoice_id, status FROM procurement.invoice
+          WHERE invoice_id = $1 AND issued_by_subject_type = 'organization' AND issued_by_subject_id = $2`,
+        [id, subject.subjectId],
+      );
+      if (invRes.rows.length === 0) return { notFound: true };
+      if (invRes.rows[0].status !== 'issued') return { wrongStatus: invRes.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE procurement.invoice SET status = 'cancelled', updated_at = now()
+          WHERE invoice_id = $1
+          RETURNING invoice_id, status`,
+        [id],
+      );
+      await logAccess(client, 'write', 'procurement.invoice', id);
+      return { invoice: rows[0] };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'invoice_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'invoice_not_issued', current_status: result.wrongStatus });
+    return res.json(result.invoice);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ============================================================
+// Revenue Sharing — cooperative-seller only. Splits the money a
+// cooperative just received (a paid invoice) among the member farmers
+// whose produce.delivery rows fed the produce.lot the coop's WINNING
+// quote/bid was tagged as fulfilling from (procurement.rfq_quote.lot_id /
+// procurement.auction_bid.lot_id — not on the RFQ itself). See
+// grant_b2b_commerce_
+// engine_phase3.sql design notes 7–10 for the full rationale.
+// ============================================================
+
+/**
+ * POST /procurement/revenue-share-plans
+ * Body: { invoice_id }
+ * Organization-only. Computes the plan from real produce.delivery rows —
+ * see procurement.create_revenue_share_plan()'s own doc comment. Fails
+ * loudly (409 with the DB's own message) if the invoice isn't paid yet, a
+ * plan already exists, or the underlying RFQ has no lot_id.
+ */
+router.post('/revenue-share-plans', async (req, res, next) => {
+  const subject = req.subject;
+  if (subject.subjectType !== 'organization') {
+    return res.status(403).json({ error: 'organization_subject_required' });
+  }
+  const { invoice_id: invoiceId } = req.body || {};
+  if (!invoiceId) return res.status(400).json({ error: 'invoice_id_required' });
+
+  try {
+    const result = await withSessionContext('organization', subject.subjectId, async (client) => {
+      // Ownership check: caller must be the seller party (the org that
+      // actually gets paid) on this invoice's underlying contract — same
+      // shape as every other seller-only check above.
+      const ownedRes = await client.query(
+        `SELECT inv.invoice_id
+           FROM procurement.invoice inv
+           JOIN procurement.purchase_order po ON po.po_id = inv.po_id
+           JOIN contract.contract_party cp ON cp.contract_id = po.contract_id
+          WHERE inv.invoice_id = $1 AND cp.party_type = 'organization' AND cp.party_id = $2
+            AND NOT (cp.party_role = ANY($3))`,
+        [invoiceId, subject.subjectId, PO_ISSUER_ROLES],
+      );
+      if (ownedRes.rows.length === 0) return { notFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT procurement.create_revenue_share_plan($1) AS plan_id',
+          [invoiceId],
+        );
+        await logAccess(client, 'write', 'procurement.revenue_share_plan', rows[0].plan_id);
+        return { planId: rows[0].plan_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'invoice_not_found' });
+    if (result.businessError) {
+      return res.status(409).json({ error: 'cannot_create_revenue_share_plan', detail: result.businessError });
+    }
+    return res.status(201).json({ plan_id: result.planId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /procurement/revenue-share-plans/mine — every plan the caller's
+ * organization created (coop_org_id = caller), with its lines, newest
+ * first. Organization-only (only a coop_org_id owner can ever have one).
+ */
+router.get('/revenue-share-plans/mine', async (req, res, next) => {
+  const subject = req.subject;
+  if (subject.subjectType !== 'organization') {
+    return res.status(403).json({ error: 'organization_subject_required' });
+  }
+  try {
+    const rows = await withSessionContext('organization', subject.subjectId, async (client) => {
+      const plansRes = await client.query(
+        `SELECT plan_id, invoice_id, lot_id, total_amount, status, created_at, distributed_at
+           FROM procurement.revenue_share_plan
+          WHERE coop_org_id = $1
+          ORDER BY created_at DESC`,
+        [subject.subjectId],
+      );
+      const plans = plansRes.rows;
+      if (plans.length === 0) return [];
+
+      const linesRes = await client.query(
+        `SELECT rsl.plan_id, rsl.line_id, rsl.unit_id, rsl.farmer_id, f.full_name AS farmer_name,
+                rsl.contributed_quantity_ton, rsl.share_percent, rsl.amount, rsl.status, rsl.failure_reason
+           FROM procurement.revenue_share_line rsl
+           JOIN identity.farmer f ON f.farmer_id = rsl.farmer_id
+          WHERE rsl.plan_id = ANY($1)
+          ORDER BY rsl.share_percent DESC`,
+        [plans.map((p) => p.plan_id)],
+      );
+      const linesByPlan = new Map();
+      for (const line of linesRes.rows) {
+        if (!linesByPlan.has(line.plan_id)) linesByPlan.set(line.plan_id, []);
+        linesByPlan.get(line.plan_id).push(line);
+      }
+      return plans.map((p) => ({ ...p, lines: linesByPlan.get(p.plan_id) || [] }));
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /procurement/revenue-share-plans/:id/distribute — actually moves
+ * the money, one farmer at a time. Returns per-line outcome (paid/failed)
+ * so the UI can show a partial-failure result honestly instead of a flat
+ * success/error — see procurement.distribute_revenue_share()'s own doc
+ * comment for why failures are isolated per line rather than all-or-nothing.
+ */
+router.post('/revenue-share-plans/:id/distribute', async (req, res, next) => {
+  const subject = req.subject;
+  if (subject.subjectType !== 'organization') {
+    return res.status(403).json({ error: 'organization_subject_required' });
+  }
+  const { id } = req.params;
+
+  try {
+    const result = await withSessionContext('organization', subject.subjectId, async (client) => {
+      const ownedRes = await client.query(
+        'SELECT plan_id FROM procurement.revenue_share_plan WHERE plan_id = $1 AND coop_org_id = $2',
+        [id, subject.subjectId],
+      );
+      if (ownedRes.rows.length === 0) return { notFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT * FROM procurement.distribute_revenue_share($1)',
+          [id],
+        );
+        await logAccess(client, 'write', 'procurement.revenue_share_plan', id);
+        return { lines: rows };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'revenue_share_plan_not_found' });
+    if (result.businessError) {
+      return res.status(409).json({ error: 'cannot_distribute', detail: result.businessError });
+    }
+    return res.json({ lines: result.lines });
   } catch (err) {
     return next(err);
   }

@@ -1,6 +1,14 @@
 # AgroLink B2B Commerce Engine — Architecture
 
-**สถานะเอกสาร:** ฉบับที่ 1 — ออกแบบ 2026-08-16 ต่อยอดจากฟีเจอร์ RFP/RFQ ที่สร้างเสร็จแล้ว
+**สถานะเอกสาร:** ฉบับที่ 2 — แก้ไข 2026-08-16 (ดึก): ขั้น GRN/Invoice/Payment/Revenue
+Sharing (ข้อ 4.8–4.11 ด้านล่าง, เดิมเป็นแค่ draft schema) **สร้างและทดสอบจริงแล้ว**
+ในรอบนี้ (เรียกรวมว่า "Phase 3" ใน `backend/README.md` — ครอบคลุมทั้ง Phase 4
+"GRN+Invoice+Payment" และ Phase 5 "Revenue Sharing" ในตาราง Roadmap ข้อ 7 เดิม
+พร้อมกันในรอบเดียว) schema จริงต่างจาก draft เดิมเล็กน้อย โดยเฉพาะที่มาของ `lot_id`
+สำหรับ Revenue Sharing (ดูหมายเหตุแก้ไขในข้อ 4.11) — ดูสถานะล่าสุดที่ตาราง Roadmap
+ข้อ 7 และ `backend/README.md` หัวข้อ "AgroLink B2B Commerce Engine — Phase 3"
+สำหรับรายละเอียดที่ทดสอบจริงทั้งหมด. ฉบับที่ 1 (2026-08-16 เช้า) คือเนื้อหาเดิมด้านล่างนี้
+ที่ยังไม่แก้ไข
 **ผู้ร้องขอ:** วิสัยทัศน์ "AgroLink ไม่ควรหยุดอยู่ที่ Procurement Software แต่ควรเป็น Agri B2B Commerce & Transaction Infrastructure"
 
 ## 1. หลักการออกแบบ
@@ -106,11 +114,16 @@ flowchart LR
 ### 4.7 Logistics — ✅ มี schema อยู่แล้ว เชื่อมต่อในรอบถัดไป
 `logistics.carrier`/`vehicle`/`shipment`/`shipment_item`/`proof_of_delivery`/`shipment_exception` (จาก `grant_cooperative_logistics.sql`) — ปัจจุบันผูกกับล็อตของสหกรณ์เท่านั้น (`grant_cooperative_logistics.sql`) **สิ่งที่ต้องทำในรอบถัดไป:** เพิ่ม `shipment.reference_type/reference_id` ให้ผูกกับ `purchase_order_id` ได้ด้วย (ไม่ใช่แค่ล็อตสหกรณ์) — เป็นการขยาย ไม่ใช่สร้างใหม่
 
-### 4.8 GRN (ใบรับสินค้า/ตรวจรับ) — 🆕 ออกแบบไว้ ยังไม่สร้าง (roadmap)
-**ตารางใหม่ที่ออกแบบไว้:** `procurement.goods_receipt` — ผู้ซื้อยืนยันว่าได้รับสินค้าตาม PO จริง พร้อมบันทึกปริมาณ/คุณภาพที่ยอมรับ vs ปฏิเสธ (คล้าย `produce.delivery` ที่มีอยู่แล้วสำหรับกรณีเกษตรกร→สหกรณ์เท่านั้น — GRN คือเวอร์ชันทั่วไปสำหรับ organization↔organization)
+### 4.8 GRN (ใบรับสินค้า/ตรวจรับ) — ✅ สร้างและทดสอบจริงแล้ว (2026-08-16 ดึก)
+**ตารางจริง:** `procurement.goods_receipt` (schema จริงตรงกับ draft เดิมทุกคอลัมน์
+ที่ระบุไว้ด้านล่าง) — ผู้ที่ **ออก PO เอง** (`PO_ISSUER_ROLES = ['farmer','buyer']`)
+เป็นผู้บันทึก GRN ยืนยันว่าได้รับสินค้าจริง พร้อมปริมาณ/เหตุผลที่ปฏิเสธ (ถ้ามี) —
+หนึ่ง PO บันทึก GRN ได้ครั้งเดียวเท่านั้น (`uq_grn_po`, บังคับด้วยทั้ง DB constraint
+และ status guard ที่ backend: บันทึก GRN สำเร็จจะเปลี่ยนสถานะ PO เป็น
+`in_fulfillment` ทันที ทำให้ความพยายามบันทึกซ้ำถูกบล็อกด้วย `409
+po_not_acknowledged` ตั้งแต่ก่อนถึง DB constraint)
 
 ```sql
--- ร่างไว้สำหรับรอบถัดไป (ไม่ได้รันในรอบนี้)
 CREATE TABLE procurement.goods_receipt (
   grn_id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   po_id                uuid NOT NULL REFERENCES procurement.purchase_order(po_id),
@@ -125,31 +138,47 @@ CREATE TABLE procurement.goods_receipt (
 );
 ```
 
-### 4.9 Invoice — 🆕 ออกแบบไว้ ยังไม่สร้าง (roadmap)
+**API:** `POST /procurement/goods-receipts`, `GET /procurement/goods-receipts/mine`
+
+### 4.9 Invoice — ✅ สร้างและทดสอบจริงแล้ว (2026-08-16 ดึก)
 ```sql
--- ร่างไว้สำหรับรอบถัดไป
 CREATE TABLE procurement.invoice (
   invoice_id      uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   po_id            uuid NOT NULL REFERENCES procurement.purchase_order(po_id),
   grn_id            uuid REFERENCES procurement.goods_receipt(grn_id),
   invoice_no        text NOT NULL UNIQUE,
   amount            numeric(18,2) NOT NULL,
-  status            text NOT NULL DEFAULT 'issued', -- issued|approved|paid|disputed|cancelled
+  status            text NOT NULL DEFAULT 'issued', -- issued|paid|disputed|cancelled
   due_date          date,
   issued_at         timestamptz NOT NULL DEFAULT now(),
   paid_entry_id     uuid -- ledger.journal_entry.entry_id หลังชำระ
 );
 ```
-เชื่อมกับขั้น Payment ผ่านฟังก์ชันใหม่ `procurement.pay_invoice(p_invoice_id)` ที่เขียนตามแพทเทิร์นเดียวกับ `produce.settle_delivery()` ที่มีอยู่แล้วทุกประการ (lock แถว → เรียก `ledger.transfer_funds()` จากบัญชี `vendor_settlement` ของผู้ซื้อ ไปบัญชี `vendor_settlement`/`unit_wallet` ของผู้ขาย → อัปเดตสถานะเป็น `paid`)
+ฝั่ง**ผู้ขาย** (คู่สัญญาที่ไม่ใช่ผู้ออก PO) เป็นผู้ออกใบแจ้งหนี้ได้ ก็ต่อเมื่อมี GRN ที่
+`accepted_quantity > 0` แล้วเท่านั้น — จำนวนเงินคำนวณอัตโนมัติจาก
+`grn.accepted_quantity * po.unit_price` ไม่ให้กรอกมือ เชื่อมกับขั้น Payment ผ่าน
+ฟังก์ชันจริง `procurement.pay_invoice(p_invoice_id, p_payer_subject_type,
+p_payer_subject_id, p_payer_unit_id)` ที่เขียนตามแพทเทิร์นเดียวกับ
+`produce.settle_delivery()`/`marketplace.complete_service_request()` ทุกประการ
+(lock แถว → เรียก `ledger.transfer_funds()` → อัปเดตสถานะเป็น `paid` → ถ้า PO
+ทั้งหมดของสัญญาถูกรับครบ 100% ของ `agreed_quantity` แล้ว เปลี่ยนสถานะสัญญาเป็น
+`completed` อัตโนมัติด้วย) — `p_payer_unit_id` **บังคับ** เมื่อผู้จ่ายเป็นเกษตรกร
+(หักจาก `ledger.account` ประเภท `unit_wallet` ของหน่วยผลิตนั้น ไม่ใช่บัญชีกลางของ
+เกษตรกร) มิฉะนั้น `409` พร้อมข้อความอธิบายชัดเจน. รองรับ `POST
+/invoices/:id/dispute` (ค้างในสถานะ `disputed`, ยังไม่มี workflow แก้ข้อพิพาทต่อ —
+ดู "ยังไม่ทำ" ด้านล่าง) และ `POST /invoices/:id/cancel` (ก่อนชำระเท่านั้น)
 
-### 4.10 Payment — ✅ engine มีอยู่แล้ว (`ledger.*`) ต้องต่อสายกับ Invoice
-ไม่ต้องสร้างอะไรใหม่ในฝั่งบัญชี — `ledger.account`/`journal_entry`/`journal_line`/`transfer_funds()` คือ double-entry accounting engine ที่ใช้งานจริงอยู่แล้วกับ Lender/Buyer/Cooperative — งานที่เหลือคือเขียนฟังก์ชัน `pay_invoice()` (ข้อ 4.9) ให้เรียกมันแบบเดียวกับ `settle_delivery()`
+**API:** `POST /procurement/invoices`, `GET /procurement/invoices/mine`,
+`POST /procurement/invoices/:id/pay`, `POST /procurement/invoices/:id/dispute`,
+`POST /procurement/invoices/:id/cancel`
 
-### 4.11 Revenue Sharing — 🆕 ออกแบบไว้ ยังไม่สร้าง (roadmap, เป็นส่วนใหม่ที่สุดในระบบ)
+### 4.10 Payment — ✅ engine มีอยู่แล้ว (`ledger.*`) — ต่อสายกับ Invoice เสร็จแล้ว
+ไม่ต้องสร้างอะไรใหม่ในฝั่งบัญชี — `ledger.account`/`journal_entry`/`journal_line`/`transfer_funds()` คือ double-entry accounting engine ที่ใช้งานจริงอยู่แล้วกับ Lender/Buyer/Cooperative — `pay_invoice()` (ข้อ 4.9) เรียกมันแบบเดียวกับ `settle_delivery()` และผ่านการทดสอบจริงแล้วทั้ง 3 เส้นทาง (ผู้ซื้อองค์กรจ่ายตรงจากใบเสนอราคา, ผ่านการประมูล e-Auction, และเกษตรกรจ่ายจาก `unit_wallet`)
+
+### 4.11 Revenue Sharing — ✅ สร้างและทดสอบจริงแล้ว (2026-08-16 ดึก)
 กรณีผู้ขายที่ได้รับเงินคือ **สหกรณ์/กองทุนหมู่บ้าน** (ไม่ใช่บริษัทเอกชน) เงินที่เข้าบัญชี `vendor_settlement` ของสหกรณ์ต้องถูกกระจายต่อให้สมาชิกเกษตรกรตามสัดส่วนที่ตกลงกัน (เช่น ตามปริมาณผลผลิตที่แต่ละคนส่งมอบเข้าล็อตที่ขาย)
 
 ```sql
--- ร่างไว้สำหรับรอบถัดไป
 CREATE TABLE procurement.revenue_share_plan (
   plan_id       uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   invoice_id     uuid NOT NULL REFERENCES procurement.invoice(invoice_id),
@@ -161,29 +190,71 @@ CREATE TABLE procurement.revenue_share_plan (
 CREATE TABLE procurement.revenue_share_line (
   line_id        uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   plan_id         uuid NOT NULL REFERENCES procurement.revenue_share_plan(plan_id) ON DELETE CASCADE,
-  farmer_id        uuid NOT NULL REFERENCES identity.farmer(farmer_id),
+  unit_id          uuid NOT NULL REFERENCES production.production_unit(unit_id),
   share_percent     numeric(5,2) NOT NULL, -- ผลรวมต้อง = 100 ต่อ plan (ตรวจใน application)
   amount             numeric(18,2) NOT NULL,
-  transfer_entry_id   uuid -- ledger.journal_entry.entry_id หลังโอน
+  status              text NOT NULL DEFAULT 'pending', -- pending|paid|failed
+  transfer_entry_id   uuid, -- ledger.journal_entry.entry_id หลังโอนสำเร็จ
+  failure_reason      text  -- เหตุผลถ้าโอนล้มเหลว (เช่น ไม่มี unit_wallet)
 );
 ```
 
-**สัดส่วนคำนวณจากอะไร:** แนะนำอิงจาก `produce.delivery` ที่มีอยู่แล้ว — ผลรวมปริมาณ (`quantity_ton`) ที่แต่ละเกษตรกรส่งเข้า "ล็อต" (`grant_cooperative_processing.sql` มีแนวคิดล็อตอยู่แล้ว) ที่ผูกกับสัญญาที่ขายออกไป หาร ด้วยปริมาณรวมทั้งล็อต — ไม่ต้องให้เจ้าหน้าที่สหกรณ์กรอกสัดส่วนมือ ระบบคำนวณให้จากข้อมูลที่มีอยู่แล้วจริงในฐานข้อมูล
+**แก้ไขจาก draft เดิม (สำคัญ, พบระหว่างออกแบบก่อนเริ่มพัฒนา):** draft ฉบับที่ 1 ผูก
+`lot_id` ไว้กับตัว `procurement.rfq` โดยตรง (ฝั่งผู้ประกาศความต้องการ/requester) —
+พบว่าเป็นจุดบกพร่องเชิงสถาปัตยกรรมก่อนเขียนโค้ดจริง เพราะ
+`create_contract_from_award()` กำหนด role `'buyer'` ให้ผู้ประกาศ RFQ เสมอ และ
+กำหนด role `'seller'` ให้ **ผู้ชนะการเสนอราคา/ประมูล** (สำหรับ category='produce')
+ส่วน `pay_invoice()`/`create_revenue_share_plan()` ก็ resolve ผู้รับเงิน
+(coop_org_id) จากฝ่าย `'seller'` เท่านั้น — ถ้าผูก `lot_id` ไว้ที่ RFQ (ฝั่งผู้ซื้อ)
+เงินจะไหลไปหาใครก็ตามที่ชนะประมูล/ได้รับเลือก ไม่ใช่สหกรณ์เจ้าของล็อตที่ขายจริง
+(เจ้าของล็อตตัวจริงอาจไม่ใช่ผู้ชนะเลยด้วยซ้ำถ้ามีคนอื่นมาเสนอราคาแข่ง) **แก้แล้ว:**
+`lot_id` ย้ายไปอยู่ที่ `procurement.rfq_quote.lot_id` และ
+`procurement.auction_bid.lot_id` แทน — คือฝั่ง**ผู้ขาย/ผู้เสนอราคาเอง**เลือกล็อต
+ของตัวเองตอนเสนอราคา (บังคับว่า RFQ ต้องเป็น category='produce' และล็อตต้องเป็น
+ของ org ที่เสนอราคาเท่านั้น มิฉะนั้น `403 lot_not_owned`) รับประกันว่าเงินไหลไปหา
+เจ้าของล็อตตัวจริงเสมอไม่ว่าจะชนะผ่านเส้นทางไหน
 
-**ฟังก์ชันกระจายเงิน** `procurement.distribute_revenue_share(p_plan_id)` — วน loop ทุกแถวใน `revenue_share_line` เรียก `ledger.transfer_funds()` จากบัญชี `vendor_settlement` ของสหกรณ์ ไปบัญชี `unit_wallet` ของหน่วยผลิตแต่ละราย ทีละรายการ (หลาย transaction ไม่ใช่ 1 transaction ก้อนใหญ่ — ถ้ารายการหนึ่งล้มเหลว เช่น เกษตรกรรายนั้นไม่มี `unit_wallet` ยัง ให้ข้ามและบันทึก error ไว้ ไม่ทำให้รายอื่นล้มไปด้วย)
+**สัดส่วนคำนวณจากอะไร:** `create_revenue_share_plan(invoice_id)` resolve
+`lot_id` จาก `rfq.awarded_quote_id → rfq_quote.lot_id` แล้วคำนวณสัดส่วนจาก
+`produce.delivery` ที่มีอยู่แล้ว — `SUM(quantity_ton) GROUP BY unit_id FROM
+produce.delivery WHERE lot_id = X AND status = 'settled'` หารด้วยปริมาณรวมทั้งล็อต
+— ไม่ต้องให้เจ้าหน้าที่สหกรณ์กรอกสัดส่วนมือ ระบบคำนวณให้จากข้อมูลที่มีอยู่แล้วจริงในฐานข้อมูล
+เรียกได้ก็ต่อเมื่อ `invoice.status = 'paid'` แล้วเท่านั้น
+
+**ฟังก์ชันกระจายเงิน** `procurement.distribute_revenue_share(p_plan_id)` — วน loop
+ทุกแถวสถานะ `pending` ใน `revenue_share_line` เรียก `ledger.transfer_funds()` จาก
+บัญชี `vendor_settlement` ของสหกรณ์ ไปบัญชี `unit_wallet` ของหน่วยผลิตแต่ละราย
+ทีละรายการ **ภายใน `BEGIN...EXCEPTION WHEN OTHERS...END` block ของตัวเอง**
+(PL/pgSQL implicit savepoint) — ถ้ารายการหนึ่งล้มเหลว (เช่น เกษตรกรรายนั้นไม่มี
+`unit_wallet` ยัง) จะถูกบันทึกเป็น `status='failed'` พร้อม `failure_reason` โดย
+ไม่ทำให้รายการอื่นถูก rollback ไปด้วย
+
+**API:** `POST /procurement/revenue-share-plans`, `GET
+/procurement/revenue-share-plans/mine`, `POST
+/procurement/revenue-share-plans/:id/distribute`
+
+**ทดสอบจริงแล้ว 3 เส้นทาง E2E** (HTTP จริง + DB จริง, ไม่ใช่ unit test): (1)
+ผู้ซื้อองค์กรยอมรับใบเสนอราคาสหกรณ์โดยตรง → PO → GRN → Invoice → จ่ายเงินจริง →
+สร้างแผนกระจายรายได้ → กระจายเงินจริงให้ 2 หน่วยผลิตตามสัดส่วน 6/10 และ 4/10 ตัน;
+(2) เส้นทางเดียวกันแต่ผ่าน e-Auction แทนการรับใบเสนอราคาตรง; (3) เกษตรกรเป็น
+ผู้ออก PO ซื้อปัจจัยการผลิตเอง แล้วจ่ายเงินจาก `unit_wallet` ของตัวเอง (เส้นทางนี้ไม่มี
+Revenue Sharing เพราะผู้ขายเป็น InputSupplier ไม่ใช่สหกรณ์) — ทุกเส้นทางตรวจสอบ
+`ledger.journal_entry`/`journal_line` จริงว่ายอด debit/credit ถูกต้องครบถ้วน
 
 ## 5. ไฟล์ที่เกี่ยวข้อง (แผนที่)
 
 | ไฟล์ | สถานะ |
 |---|---|
 | `backend/db/grant_rfq_marketplace.sql` | ✅ มีอยู่แล้ว |
-| `backend/db/grant_b2b_commerce_engine.sql` | 🆕 สร้างรอบนี้ — auction, PO, contract-hook function |
-| `backend/src/routes/procurement.js` | 🔧 ขยายรอบนี้ — เพิ่ม auction + PO endpoints + contract auto-create |
-| `frontend/coop/`, `frontend/buyer/` | 🔧 ขยายรอบนี้ — UI auction + PO |
-| GRN/Invoice/Payment-hook/Revenue-Sharing SQL+API+UI | 📋 ออกแบบในเอกสารนี้ (ข้อ 4.8–4.11) — รอบถัดไป |
+| `backend/db/grant_b2b_commerce_engine.sql` | ✅ สร้างแล้ว (รอบก่อน) — auction, PO, contract-hook function |
+| `backend/db/grant_b2b_commerce_engine_phase3.sql` | ✅ สร้างและรันจริงแล้ว (รอบนี้, 2026-08-16 ดึก) — GRN, Invoice, `pay_invoice()`, Revenue Sharing (ข้อ 4.8–4.11) |
+| `backend/src/routes/procurement.js` | ✅ ขยายแล้ว — auction + PO + GRN + Invoice + Revenue Share endpoints ครบ + contract auto-create |
+| `frontend/coop/`, `frontend/buyer/`, `frontend/inputsupplier/` | ✅ ขยายแล้ว — UI auction + PO + GRN + Invoice ทั้ง 3 พอร์ทัล (Revenue Sharing UI มีเฉพาะ `frontend/coop/` เพราะมีแต่สหกรณ์ที่ต้องกระจายเงินคืนสมาชิก) |
 | Logistics↔PO linking | 📋 ออกแบบในเอกสารนี้ (ข้อ 4.7) — รอบถัดไป |
 | RFI เป็น request_type ของ RFQ | 📋 ออกแบบในเอกสารนี้ (ข้อ 4.3) — รอบถัดไป |
 | พอร์ทัล Mill / VillageFund / Logistics | 📋 org_type มีอยู่แล้วในฐานข้อมูล ยังไม่มี frontend — รอบถัดไป |
+| Auction+PO+GRN+Invoice UI บน Lender/Machinery/MarketVenue/FertilizerMixingService/Admin/Gov | 📋 backend รองรับ JWT องค์กรทุกประเภทอยู่แล้ว เหลือแค่ UI — รอบถัดไป |
+| Dispute-resolution workflow สำหรับ Invoice `disputed` | 📋 `POST /invoices/:id/dispute` มีแล้ว แต่ยังไม่มีขั้นตอนแก้ไขข้อพิพาทต่อ (เช่น เจรจาใหม่/ยกเลิก/แก้จำนวนเงิน) — ค้างในสถานะ `disputed` เฉยๆ — รอบถัดไป |
 
 ## 6. Credit Score / Fintech / Data-AI (ที่ผู้ใช้กล่าวถึงว่าควรเชื่อมต่อ)
 
@@ -194,10 +265,11 @@ CREATE TABLE procurement.revenue_share_line (
 | Phase | ขอบเขต | สถานะ |
 |---|---|---|
 | 0 | Marketplace (ราคาคงที่) | ✅ เสร็จแล้ว (ก่อนหน้านี้) |
-| 1 | RFI/RFP/RFQ | ✅ เสร็จแล้ว (รอบที่แล้ว) |
-| 2 | e-Auction + Contract auto-gen + PO | 🔨 **กำลังสร้างในรอบนี้** |
+| 1 | RFI/RFP/RFQ | ✅ เสร็จแล้ว |
+| 2 | e-Auction + Contract auto-gen + PO | ✅ เสร็จแล้ว |
 | 3 | Logistics↔PO linking (ต่อของเดิม) | 📋 ถัดไป |
-| 4 | GRN + Invoice + Payment-hook | 📋 ถัดไป |
-| 5 | Revenue Sharing (สหกรณ์/กองทุนหมู่บ้าน) | 📋 ถัดไป |
+| 4 | GRN + Invoice + Payment-hook | ✅ เสร็จแล้ว (2026-08-16 ดึก, เรียกรวมกับ Phase 5 ว่า "Phase 3" ใน `backend/README.md`) |
+| 5 | Revenue Sharing (สหกรณ์/กองทุนหมู่บ้าน) | ✅ เสร็จแล้ว (2026-08-16 ดึก, พร้อม Phase 4 ในรอบเดียวกัน) |
 | 6 | พอร์ทัล Mill / VillageFund / Logistics (ปัจจุบันมีแต่ backend รองรับ org_type ยังไม่มีหน้าจอ) | 📋 ถัดไป |
 | 7 | RFI แยกจาก RFQ, Credit Score integration | 📋 ถัดไป |
+| 8 | Auction+PO+GRN+Invoice UI บนพอร์ทัลที่เหลือ (Lender/Machinery/MarketVenue/FertilizerMixingService/Admin/Gov) + dispute-resolution workflow | 📋 ถัดไป |

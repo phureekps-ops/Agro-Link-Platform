@@ -191,6 +191,17 @@ const DELIVERY_STATUS_BADGE_CLASS = {
 };
 
 let openLotsCache = [];
+// All lots (any status), refreshed by loadLotList() — reused by the
+// "submit a quote" / "place a bid" forms on RFQ Browse / Auction Browse
+// below, so a cooperative offering to fulfill someone else's produce RFQ
+// can tag its offer as fulfilling from a specific collected lot (see
+// procurement.rfq_quote.lot_id / procurement.auction_bid.lot_id, B2B
+// Commerce Engine Phase 3 — deliberately NOT on the RFQ itself; see that
+// migration's design note 8 for why). Kept separate from openLotsCache
+// above (which is status=Open only, used elsewhere for assigning NEW
+// deliveries) since reselling makes just as much sense for an
+// already-Closed lot.
+let allLotsCache = [];
 
 function lotAssignControl(d) {
   if (d.lot_id) {
@@ -490,6 +501,7 @@ async function loadLotList() {
   const el = document.getElementById("lotListSection");
   try {
     const lots = await AgroLinkCoopAPI.get("/coop/lots");
+    allLotsCache = lots;
     if (lots.length === 0) {
       el.innerHTML = `<div class="empty-state">ยังไม่มีล็อต — ใช้ฟอร์มด้านบนเพื่อเปิดล็อตแรก</div>`;
       return;
@@ -498,6 +510,29 @@ async function loadLotList() {
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดรายการล็อตไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+// Renders the optional lot-selection <select> for a produce-category
+// quote/bid form (see allLotsCache's doc comment above). formType/id form
+// the data-attribute the submit handler reads back
+// (data-rfq-quote-lot="<rfqId>" or data-bid-lot="<auctionId>").
+function lotSelectFieldHtml(attrName, id) {
+  const options = allLotsCache
+    .map((l) => `<option value="${l.lot_id}">${escapeHtml(l.commodity_code)} · ${escapeHtml(l.status)} · ${rfqMoney(l.total_quantity_ton)} ตัน (${l.delivery_count} รายการ)</option>`)
+    .join("");
+  return `
+    <div class="field full">
+      <label>ล็อตที่จะขาย (ถ้าข้อเสนอนี้คือการขายผลผลิตจากล็อตของสหกรณ์)</label>
+      <select ${attrName}="${id}">
+        <option value="">— ไม่ระบุ (ไม่ใช่การขายจากล็อต) —</option>
+        ${options}
+      </select>
+      <p style="font-size:12px; color:var(--gray-500); margin:4px 0 0;">
+        เลือกล็อตเพื่อให้ระบบคำนวณสัดส่วนกระจายรายได้คืนสมาชิกอัตโนมัติหลังขายสำเร็จและได้รับเงินแล้ว
+        (ดูหัวข้อ "กระจายรายได้คืนสมาชิก")
+      </p>
+    </div>
+  `;
 }
 
 document.getElementById("lotForm").addEventListener("submit", async (e) => {
@@ -2769,6 +2804,20 @@ const PO_STATUS_BADGE_CLASS = {
   completed: "status-approved",
   cancelled: "status-declined",
 };
+const INVOICE_STATUS_LABEL_TH = {
+  issued: "ออกแล้ว รอชำระ",
+  paid: "ชำระแล้ว",
+  disputed: "มีข้อโต้แย้ง",
+  cancelled: "ยกเลิกแล้ว",
+};
+const INVOICE_STATUS_BADGE_CLASS = {
+  issued: "status-pending",
+  paid: "status-approved",
+  disputed: "status-declined",
+  cancelled: "status-declined",
+};
+const REVSHARE_PLAN_STATUS_LABEL_TH = { pending: "รอกระจายเงิน", distributed: "กระจายเงินแล้ว" };
+const REVSHARE_LINE_STATUS_LABEL_TH = { pending: "รอโอน", paid: "โอนแล้ว", failed: "โอนไม่สำเร็จ" };
 // Mirrors backend PO_ISSUER_ROLES (procurement.js) — only the "wants the
 // goods" contract party may issue a PO; used here purely to decide
 // whether to show the "ออกใบสั่งซื้อ" button, never as a security check
@@ -3042,6 +3091,7 @@ function rfqBrowseCard(r) {
               <label>ข้อความเพิ่มเติม</label>
               <input type="text" data-rfq-quote-message="${r.rfq_id}" />
             </div>
+            ${r.category === "produce" ? lotSelectFieldHtml("data-rfq-quote-lot", r.rfq_id) : ""}
           </div>
           <div class="action-row">
             <button type="button" class="btn btn-primary btn-sm" data-rfq-submit-quote="${r.rfq_id}">ส่งใบเสนอราคา</button>
@@ -3088,6 +3138,7 @@ document.getElementById("rfqBrowseSection").addEventListener("click", async (e) 
     const priceInput = document.querySelector(`[data-rfq-quote-price="${rfqId}"]`);
     const qtyInput = document.querySelector(`[data-rfq-quote-qty="${rfqId}"]`);
     const messageInput = document.querySelector(`[data-rfq-quote-message="${rfqId}"]`);
+    const lotInput = document.querySelector(`[data-rfq-quote-lot="${rfqId}"]`);
     const price = priceInput ? Number(priceInput.value) : NaN;
     if (!Number.isFinite(price) || price <= 0) {
       toast("กรุณากรอกราคาที่เสนอให้ถูกต้อง", true);
@@ -3099,6 +3150,7 @@ document.getElementById("rfqBrowseSection").addEventListener("click", async (e) 
         quoted_price: price,
         quoted_quantity: qtyInput && qtyInput.value ? Number(qtyInput.value) : null,
         message: messageInput && messageInput.value.trim() ? messageInput.value.trim() : null,
+        lot_id: lotInput && lotInput.value ? lotInput.value : null,
       });
       toast("ส่งใบเสนอราคาเรียบร้อยแล้ว");
       await loadRfqBrowse();
@@ -3299,6 +3351,7 @@ function auctionBrowseCard(a) {
               <label>ข้อความเพิ่มเติม</label>
               <input type="text" data-bid-message="${a.auction_id}" />
             </div>
+            ${a.category === "produce" ? lotSelectFieldHtml("data-bid-lot", a.auction_id) : ""}
           </div>
           <div class="action-row">
             <button type="button" class="btn btn-primary btn-sm" data-submit-bid="${a.auction_id}">ส่งราคาเสนอ</button>
@@ -3341,6 +3394,7 @@ document.getElementById("auctionBrowseSection").addEventListener("click", async 
     const priceInput = document.querySelector(`[data-bid-price="${auctionId}"]`);
     const qtyInput = document.querySelector(`[data-bid-qty="${auctionId}"]`);
     const messageInput = document.querySelector(`[data-bid-message="${auctionId}"]`);
+    const lotInput = document.querySelector(`[data-bid-lot="${auctionId}"]`);
     const price = priceInput ? Number(priceInput.value) : NaN;
     if (!Number.isFinite(price) || price <= 0) {
       toast("กรุณากรอกราคาที่เสนอให้ถูกต้อง", true);
@@ -3352,6 +3406,7 @@ document.getElementById("auctionBrowseSection").addEventListener("click", async 
         bid_price: price,
         bid_quantity: qtyInput && qtyInput.value ? Number(qtyInput.value) : null,
         message: messageInput && messageInput.value.trim() ? messageInput.value.trim() : null,
+        lot_id: lotInput && lotInput.value ? lotInput.value : null,
       });
       toast("ส่งราคาเสนอเรียบร้อยแล้ว");
       await loadAuctionsBrowse();
@@ -3488,6 +3543,116 @@ document.getElementById("contractsMineSection").addEventListener("click", async 
   }
 });
 
+// Keyed by po_id / invoice_id — populated by loadPurchaseOrdersMine()
+// alongside the PO list itself, so poCard() can render each PO's GRN and
+// Invoice state inline without a per-card round trip.
+let grnByPoCache = {};
+let invoiceByPoCache = {};
+
+function grnAndInvoiceSectionHtml(p, isIssuer, session) {
+  const grn = grnByPoCache[p.po_id];
+  const invoice = invoiceByPoCache[p.po_id];
+  const parts = [];
+
+  // GRN: recorded by whoever ISSUED the PO, once it's been acknowledged.
+  if (!grn) {
+    if (isIssuer && p.status === "acknowledged") {
+      parts.push(`
+        <div class="sub-panel" style="margin-top:8px; padding:10px; border:1px dashed var(--gray-300); border-radius:8px;">
+          <div class="detail-line" style="font-weight:700;">บันทึกการรับสินค้า (GRN)</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>จำนวนที่ได้รับจริง</label>
+              <input type="number" min="0.01" step="0.01" data-grn-received="${p.po_id}" value="${p.quantity}" />
+            </div>
+            <div class="field">
+              <label>จำนวนที่ยอมรับ</label>
+              <input type="number" min="0" step="0.01" data-grn-accepted="${p.po_id}" value="${p.quantity}" />
+            </div>
+            <div class="field">
+              <label>จำนวนที่ปฏิเสธ (ถ้ามี)</label>
+              <input type="number" min="0" step="0.01" data-grn-rejected="${p.po_id}" value="0" />
+            </div>
+            <div class="field full">
+              <label>เหตุผลที่ปฏิเสธ (ถ้ามี)</label>
+              <input type="text" data-grn-rejection-reason="${p.po_id}" />
+            </div>
+          </div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-grn-submit="${p.po_id}">บันทึกการรับสินค้า</button>
+          </div>
+        </div>
+      `);
+    }
+    return parts.join("");
+  }
+
+  parts.push(`
+    <div class="detail-line" style="margin-top:6px;">
+      📥 รับสินค้าแล้ว: ยอมรับ ${rfqMoney(grn.accepted_quantity)}${grn.rejected_quantity > 0 ? ` · ปฏิเสธ ${rfqMoney(grn.rejected_quantity)}` : ""}
+      จากที่ส่งมอบ ${rfqMoney(grn.received_quantity)} (${thaiDate(grn.received_at)})
+      ${grn.rejection_reason ? `<br/><span class="muted">เหตุผล: ${escapeHtml(grn.rejection_reason)}</span>` : ""}
+    </div>
+  `);
+
+  // Invoice: issued by the SELLER side (the non-issuer party), once a GRN
+  // with some accepted quantity exists.
+  if (!invoice) {
+    if (!isIssuer && Number(grn.accepted_quantity) > 0) {
+      const previewAmount = Number(grn.accepted_quantity) * Number(p.unit_price);
+      parts.push(`
+        <div class="sub-panel" style="margin-top:8px; padding:10px; border:1px dashed var(--gray-300); border-radius:8px;">
+          <div class="detail-line">ยอดใบแจ้งหนี้โดยประมาณ: <strong>${rfqMoney(previewAmount)} บาท</strong> (${rfqMoney(grn.accepted_quantity)} × ${rfqMoney(p.unit_price)})</div>
+          <div class="action-row">
+            <button type="button" class="btn btn-primary btn-sm" data-invoice-issue="${p.po_id}">ออกใบแจ้งหนี้</button>
+          </div>
+        </div>
+      `);
+    }
+    return parts.join("");
+  }
+
+  const invBadge = INVOICE_STATUS_BADGE_CLASS[invoice.status] || "status-pending";
+  parts.push(`
+    <div class="detail-line" style="margin-top:6px; font-weight:700;">
+      🧾 ${escapeHtml(invoice.invoice_no)}
+      <span class="badge ${invBadge}">${escapeHtml(INVOICE_STATUS_LABEL_TH[invoice.status] || invoice.status)}</span>
+      — ${rfqMoney(invoice.amount)} บาท
+    </div>
+    ${invoice.dispute_reason ? `<div class="detail-line muted">ข้อโต้แย้ง: ${escapeHtml(invoice.dispute_reason)}</div>` : ""}
+  `);
+
+  if (invoice.status === "issued") {
+    if (isIssuer) {
+      const needsUnit = session && session.subject_type === "farmer";
+      parts.push(`
+        <div class="action-row">
+          ${needsUnit ? `<select data-invoice-payer-unit="${invoice.invoice_id}" style="margin-right:6px;"><option value="">— เลือกแปลง/หน่วยผลิตที่จะใช้ชำระ —</option></select>` : ""}
+          <button type="button" class="btn btn-approve btn-sm" data-invoice-pay="${invoice.invoice_id}">ชำระเงิน</button>
+          <button type="button" class="btn btn-decline btn-sm" data-invoice-dispute="${invoice.invoice_id}">โต้แย้งใบแจ้งหนี้</button>
+        </div>
+      `);
+    } else {
+      parts.push(`
+        <div class="action-row">
+          <button type="button" class="btn btn-decline btn-sm" data-invoice-cancel="${invoice.invoice_id}">ยกเลิกใบแจ้งหนี้</button>
+        </div>
+      `);
+    }
+  } else if (invoice.status === "paid" && !isIssuer) {
+    parts.push(`
+      <div class="action-row">
+        <button type="button" class="btn btn-primary btn-sm" data-revshare-create="${invoice.invoice_id}">สร้างแผนกระจายรายได้คืนสมาชิก</button>
+      </div>
+      <p style="font-size:12px; color:var(--gray-500); margin:4px 0 0;">
+        ใช้ได้เฉพาะเมื่อข้อเสนอ/ราคาประมูลที่ชนะของ PO นี้ระบุล็อตผลผลิตไว้ — ถ้าไม่ได้ระบุไว้ ระบบจะแจ้งเหตุผลให้ทราบ
+      </p>
+    `);
+  }
+
+  return parts.join("");
+}
+
 function poCard(p) {
   const badgeClass = PO_STATUS_BADGE_CLASS[p.status] || "status-pending";
   const session = AgroLinkCoopAPI.getSession();
@@ -3514,6 +3679,7 @@ function poCard(p) {
           ${canCancel ? `<button type="button" class="btn btn-decline btn-sm" data-po-cancel="${p.po_id}">ยกเลิกใบสั่งซื้อ</button>` : ""}
         </div>
       ` : ""}
+      ${["acknowledged", "in_fulfillment", "completed"].includes(p.status) ? grnAndInvoiceSectionHtml(p, isIssuer, session) : ""}
     </div>
   `;
 }
@@ -3521,18 +3687,45 @@ function poCard(p) {
 async function loadPurchaseOrdersMine() {
   const el = document.getElementById("purchaseOrdersMineSection");
   try {
-    const list = await AgroLinkCoopAPI.get("/procurement/purchase-orders/mine");
+    const [list, grns, invoices] = await Promise.all([
+      AgroLinkCoopAPI.get("/procurement/purchase-orders/mine"),
+      AgroLinkCoopAPI.get("/procurement/goods-receipts/mine"),
+      AgroLinkCoopAPI.get("/procurement/invoices/mine"),
+    ]);
+    grnByPoCache = Object.fromEntries(grns.map((g) => [g.po_id, g]));
+    invoiceByPoCache = Object.fromEntries(invoices.map((i) => [i.po_id, i]));
     el.innerHTML = list.length === 0
       ? `<div class="empty-state">ยังไม่มีใบสั่งซื้อ</div>`
       : list.map(poCard).join("");
+    // Fill in the farmer-payer unit selects that grnAndInvoiceSectionHtml
+    // left as placeholders — populated here rather than baked into the
+    // HTML string since it needs the caller's own production units.
+    if (session_isFarmer()) await populateInvoicePayerUnitSelects();
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดใบสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
 }
 
+function session_isFarmer() {
+  const session = AgroLinkCoopAPI.getSession();
+  return !!(session && session.subject_type === "farmer");
+}
+
+// Cooperative dashboard sessions are organization-only in practice (the
+// login flow never issues a farmer session here), so this stays a no-op
+// today — kept for shape-parity with the same helper on the Buyer/
+// InputSupplier dashboards, where a farmer session IS reachable.
+async function populateInvoicePayerUnitSelects() {}
+
 document.getElementById("purchaseOrdersMineSection").addEventListener("click", async (e) => {
   const ackBtn = e.target.closest("[data-po-acknowledge]");
   const cancelBtn = e.target.closest("[data-po-cancel]");
+  const grnSubmitBtn = e.target.closest("[data-grn-submit]");
+  const invoiceIssueBtn = e.target.closest("[data-invoice-issue]");
+  const invoicePayBtn = e.target.closest("[data-invoice-pay]");
+  const invoiceDisputeBtn = e.target.closest("[data-invoice-dispute]");
+  const invoiceCancelBtn = e.target.closest("[data-invoice-cancel]");
+  const revshareCreateBtn = e.target.closest("[data-revshare-create]");
 
   if (ackBtn) {
     const poId = ackBtn.dataset.poAcknowledge;
@@ -3561,6 +3754,174 @@ document.getElementById("purchaseOrdersMineSection").addEventListener("click", a
       toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
       cancelBtn.disabled = false;
     }
+    return;
+  }
+
+  if (grnSubmitBtn) {
+    const poId = grnSubmitBtn.dataset.grnSubmit;
+    const received = Number(document.querySelector(`[data-grn-received="${poId}"]`).value);
+    const accepted = Number(document.querySelector(`[data-grn-accepted="${poId}"]`).value);
+    const rejected = Number(document.querySelector(`[data-grn-rejected="${poId}"]`).value || 0);
+    const reason = document.querySelector(`[data-grn-rejection-reason="${poId}"]`).value.trim();
+    if (!Number.isFinite(received) || received <= 0 || !Number.isFinite(accepted) || accepted < 0) {
+      toast("กรุณากรอกจำนวนที่รับและยอมรับให้ถูกต้อง", true);
+      return;
+    }
+    grnSubmitBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post("/procurement/goods-receipts", {
+        po_id: poId, received_quantity: received, accepted_quantity: accepted,
+        rejected_quantity: rejected, rejection_reason: reason || null,
+      });
+      toast("บันทึกการรับสินค้าเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      grnSubmitBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceIssueBtn) {
+    const poId = invoiceIssueBtn.dataset.invoiceIssue;
+    invoiceIssueBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post("/procurement/invoices", { po_id: poId });
+      toast("ออกใบแจ้งหนี้เรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ออกใบแจ้งหนี้ไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceIssueBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoicePayBtn) {
+    const invoiceId = invoicePayBtn.dataset.invoicePay;
+    const unitSelect = document.querySelector(`[data-invoice-payer-unit="${invoiceId}"]`);
+    if (!confirm("ยืนยันชำระเงินใบแจ้งหนี้นี้?")) return;
+    invoicePayBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/procurement/invoices/${invoiceId}/pay`, {
+        payer_unit_id: unitSelect && unitSelect.value ? unitSelect.value : null,
+      });
+      toast("ชำระเงินเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ชำระเงินไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoicePayBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceDisputeBtn) {
+    const invoiceId = invoiceDisputeBtn.dataset.invoiceDispute;
+    const reason = prompt("เหตุผลในการโต้แย้งใบแจ้งหนี้นี้ (ถ้ามี):") || "";
+    invoiceDisputeBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/procurement/invoices/${invoiceId}/dispute`, { reason: reason.trim() || null });
+      toast("บันทึกข้อโต้แย้งเรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceDisputeBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (invoiceCancelBtn) {
+    const invoiceId = invoiceCancelBtn.dataset.invoiceCancel;
+    if (!confirm("ยืนยันยกเลิกใบแจ้งหนี้นี้?")) return;
+    invoiceCancelBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/procurement/invoices/${invoiceId}/cancel`, {});
+      toast("ยกเลิกใบแจ้งหนี้เรียบร้อยแล้ว");
+      await loadPurchaseOrdersMine();
+    } catch (err) {
+      toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      invoiceCancelBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (revshareCreateBtn) {
+    const invoiceId = revshareCreateBtn.dataset.revshareCreate;
+    revshareCreateBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post("/procurement/revenue-share-plans", { invoice_id: invoiceId });
+      toast("สร้างแผนกระจายรายได้เรียบร้อยแล้ว");
+      await loadRevenueSharePlansMine();
+    } catch (err) {
+      toast("สร้างแผนไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    } finally {
+      revshareCreateBtn.disabled = false;
+    }
+  }
+});
+
+function revshareLineRow(l) {
+  const badgeClass = l.status === "paid" ? "status-approved" : l.status === "failed" ? "status-declined" : "status-pending";
+  return `
+    <div class="item-card" style="margin-top:6px;">
+      <div class="row">
+        <span class="title">${escapeHtml(l.farmer_name || l.farmer_id.slice(0, 8))}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(REVSHARE_LINE_STATUS_LABEL_TH[l.status] || l.status)}</span>
+      </div>
+      <div class="detail-line muted">ส่งมอบ ${rfqMoney(l.contributed_quantity_ton)} ตัน (${rfqMoney(l.share_percent)}%)</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">${rfqMoney(l.amount)} บาท</div>
+      ${l.failure_reason ? `<div class="detail-line muted">เหตุผลที่ไม่สำเร็จ: ${escapeHtml(l.failure_reason)}</div>` : ""}
+    </div>
+  `;
+}
+
+function revshareplanCard(p) {
+  const badgeClass = p.status === "distributed" ? "status-approved" : "status-pending";
+  return `
+    <div class="item-card" data-plan-id="${p.plan_id}">
+      <div class="row">
+        <span class="title">แผนกระจายรายได้ — ${rfqMoney(p.total_amount)} บาท</span>
+        <span class="badge ${badgeClass}">${escapeHtml(REVSHARE_PLAN_STATUS_LABEL_TH[p.status] || p.status)}</span>
+      </div>
+      <div class="detail-line muted">สร้างเมื่อ ${thaiDate(p.created_at)}${p.distributed_at ? ` · กระจายเงินเมื่อ ${thaiDate(p.distributed_at)}` : ""}</div>
+      ${p.status === "pending" ? `
+        <div class="action-row">
+          <button type="button" class="btn btn-primary btn-sm" data-revshare-distribute="${p.plan_id}">กระจายเงินให้สมาชิก</button>
+        </div>
+      ` : ""}
+      <div style="margin-top:8px;">
+        ${(p.lines || []).map(revshareLineRow).join("")}
+      </div>
+    </div>
+  `;
+}
+
+async function loadRevenueSharePlansMine() {
+  const el = document.getElementById("revenueSharePlansMineSection");
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const list = await AgroLinkCoopAPI.get("/procurement/revenue-share-plans/mine");
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ยังไม่มีแผนกระจายรายได้</div>`
+      : list.map(revshareplanCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดแผนกระจายรายได้ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("revenueSharePlansMineSection").addEventListener("click", async (e) => {
+  const distributeBtn = e.target.closest("[data-revshare-distribute]");
+  if (!distributeBtn) return;
+  const planId = distributeBtn.dataset.revshareDistribute;
+  if (!confirm("ยืนยันกระจายเงินให้สมาชิกตามแผนนี้? การโอนเงินแต่ละรายจะดำเนินการทันทีและไม่สามารถย้อนกลับได้")) return;
+  distributeBtn.disabled = true;
+  try {
+    const result = await AgroLinkCoopAPI.post(`/procurement/revenue-share-plans/${planId}/distribute`, {});
+    const failedCount = (result.lines || []).filter((l) => l.status === "failed").length;
+    toast(failedCount > 0 ? `กระจายเงินเสร็จสิ้น แต่มี ${failedCount} รายการที่โอนไม่สำเร็จ` : "กระจายเงินให้สมาชิกเรียบร้อยแล้ว", failedCount > 0);
+    await loadRevenueSharePlansMine();
+  } catch (err) {
+    toast("กระจายเงินไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    distributeBtn.disabled = false;
   }
 });
 
@@ -3581,6 +3942,7 @@ async function refreshRfq() {
     loadAuctionsBrowse(),
     loadContractsMine(),
     loadPurchaseOrdersMine(),
+    loadRevenueSharePlansMine(),
   ]);
   if (rfqIsOrganization) await loadRfqMyQuotes();
 }
