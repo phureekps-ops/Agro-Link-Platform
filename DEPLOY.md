@@ -162,7 +162,16 @@ grant_analytics_warehouse.sql
 grant_satellite_observation.sql
 grant_cooperative_product_catalog.sql
 grant_rfq_marketplace.sql
+grant_b2b_commerce_engine.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-16 (ค่ำ):** `grant_b2b_commerce_engine.sql` — ต่อยอดจาก
+`grant_rfq_marketplace.sql` ด้านบน เพิ่ม e-Auction (ประมูลราคาแบบย้อนกลับ),
+การสร้างสัญญา (`contract.contract`) อัตโนมัติเมื่อ RFQ/การประมูลถูกตกลง, และใบสั่งซื้อ
+(Purchase Order) — ดูรายละเอียดเต็มที่ `backend/README.md` หัวข้อ "AgroLink B2B
+Commerce Engine" และ `B2B_COMMERCE_ENGINE_ARCHITECTURE.md` ที่ root ของโปรเจกต์
+**ต้องรันหลัง** `grant_rfq_marketplace.sql` เท่านั้น (ต้องมี schema `procurement`
+อยู่ก่อน) รันเป็นไฟล์สุดท้ายในลำดับนี้ก็เพียงพอ
 
 **เพิ่มเมื่อ 2026-08-16 (บ่าย):** `grant_cooperative_product_catalog.sql` —
 เปิดให้สหกรณ์ประกาศขายผลผลิต/สินค้าแปรรูปให้ผู้รับซื้อผ่านระบบแค็ตตาล็อกเดียวกับที่

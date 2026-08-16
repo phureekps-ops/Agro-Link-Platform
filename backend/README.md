@@ -922,12 +922,11 @@ Design decisions (see that file's own doc comment for the full rationale):
   (`input_product`, `produce`, `processed_good`, `machinery_service`,
   `other`) rather than one enum per org type, so any member can browse by
   category regardless of which portal will respond.
-- Accepting a quote (`rfq.awarded_quote_id`) only records **intent** — it
-  does NOT auto-create a `produce.delivery` / `marketplace.product_order` /
-  `contract.contract` row. Wiring an awarded RFQ into the real fulfillment
-  record for its category is a follow-up integration, not built in this
-  pass (see "What's mocked" below) — same "manual today, real integration
-  later" honesty pattern used throughout this project.
+- Accepting a quote (`rfq.awarded_quote_id`) records intent AND, as of the
+  B2B Commerce Engine phase below, auto-creates a real `contract.contract`
+  row — it still does NOT auto-create a `produce.delivery` /
+  `marketplace.product_order` row, only the contract. See "AgroLink B2B
+  Commerce Engine" below for the full award → contract → PO chain.
 - A responder submitting/editing a quote upserts via
   `ON CONFLICT (rfq_id, responder_org_id)` rather than creating duplicate
   rows — the same pattern `marketplace.buy_price_quote` already uses.
@@ -985,6 +984,98 @@ FertilizerMixingService, Admin, and Gov** portals. The backend endpoints
 already accept any verified-organization JWT regardless of role type, so
 those portals could add the identical section later with no backend
 changes — this is a UI coverage gap, not a backend limitation.
+
+## AgroLink B2B Commerce Engine — e-Auction + Contract + Purchase Order
+
+Phase 2 of the RFQ marketplace above, evolving it from a single "post a
+need, accept a quote" step into a real B2B transaction chain: **RFQ →
+e-Auction (optional) → Contract (auto-generated) → Purchase Order**. Full
+design rationale, the whole 11-stage target pipeline (through Logistics,
+GRN, Invoice, Payment, Revenue Sharing — those later stages are roadmap,
+not built), and the reuse-before-rebuild analysis of every existing table
+this reuses live in `B2B_COMMERCE_ENGINE_ARCHITECTURE.md` at the repo
+root. This section covers only what's actually built and running.
+
+Schema: `backend/db/grant_b2b_commerce_engine.sql` — three additions to
+the existing `procurement`/`contract` schemas, no new top-level schema:
+
+- **`procurement.auction` / `procurement.auction_bid`** — a reverse
+  (descending-price) auction opened on top of one of the caller's own
+  open RFQs (`POST /procurement/auctions`, one auction per RFQ). Bidding
+  orgs see the current lowest bid and how many bids exist, but never each
+  other's identity (sealed-bidder design) until the requester closes the
+  auction — only then does `GET /procurement/auctions/:id/bids`
+  (requester-only) reveal every bidder. A new bid must be **strictly
+  lower** than the current lowest (enforced at the application layer via
+  a `MIN()` query — not expressible as a plain `CHECK` constraint).
+  Closing has no cron job: `ensureAuctionSettled()` runs a lazy-expiry
+  check at the top of every auction read/write, so an auction past its
+  `closes_at` self-settles the moment anyone next touches it (or the
+  requester can close early via `POST /procurement/auctions/:id/close`).
+  Once an auction exists for an RFQ, direct quoting on that RFQ
+  (`POST /procurement/rfqs/:id/quotes`) is blocked (`409
+  rfq_has_auction`) — the two award mechanisms don't run concurrently on
+  the same RFQ.
+- **`procurement.create_contract_from_award()`** — a `SECURITY DEFINER`
+  function (same pattern as the pre-existing
+  `underwriting.approve_application()`) called by BOTH award paths
+  (direct quote-accept and auction-close, via a shared
+  `awardRfqToResponder()` helper) that writes a real
+  `contract.contract` + `contract.contract_party` pair, reusing the
+  contract machinery originally built for loans — `forward_purchase`/
+  `service_agreement`/`input_supply_agreement` were already valid
+  `contract_type` values, just never had a non-loan caller until now.
+  `contract_party.party_role` was widened to add `'seller'` (for a
+  produce/processed_good/other responder — the one case no existing role
+  fit). These contracts are created directly at `status = 'active'`, not
+  `'draft'` — deliberate: no signature/activation endpoint exists
+  anywhere in this codebase for ANY contract type (loan contracts
+  included), and an RFQ/auction award already represents a completed
+  mutual agreement (price and quantity settled through competition), so
+  skipping an unreachable draft phase is what makes the next stage
+  actually usable. The awarding auction bid is also written back as an
+  `rfq_quote` row (`status = 'accepted'`) so `rfq.awarded_quote_id` — an
+  FK that can only point at `rfq_quote`, not `auction_bid` — stays
+  meaningful regardless of which mechanism produced the win.
+- **`procurement.purchase_order`** — issued against an `active` contract
+  by whichever party is on the "wants the goods" side
+  (`PO_ISSUER_ROLES = ['farmer', 'buyer']`; a contract can be drawn down
+  over several POs, this endpoint does not track cumulative quantity
+  against `agreed_quantity`). The other party acknowledges it
+  (`POST /procurement/purchase-orders/:id/acknowledge`); either party can
+  cancel while `issued`/`acknowledged`.
+
+Backend: all of this lives in `src/routes/procurement.js` alongside the
+RFQ routes above (same file, same `requireAuth`-only + per-handler
+subject-type branching convention):
+
+- `POST /procurement/auctions`, `GET /procurement/auctions?status=`,
+  `GET /procurement/auctions/mine`, `GET /procurement/auctions/:id`,
+  `POST /procurement/auctions/:id/bids`,
+  `GET /procurement/auctions/:id/bids`,
+  `POST /procurement/auctions/:id/close`.
+- `GET /procurement/contracts/mine` — every contract the caller is a
+  party to via an RFQ/auction award, any role (unlike `GET
+  /buyer/contracts`/`GET /farmer/contracts`, which only return the
+  `'buyer'`/`'farmer'` rows) — backs the frontend's PO screen.
+- `POST /procurement/purchase-orders`,
+  `GET /procurement/purchase-orders/mine`,
+  `POST /procurement/purchase-orders/:id/acknowledge`,
+  `POST /procurement/purchase-orders/:id/cancel`.
+
+Frontend: added to the **Cooperative** and **Buyer** dashboards only
+(same two portals as the RFQ section, minus InputSupplier/Farmer for this
+pass — see the architecture doc's roadmap for extending it). Each RFQ
+card the caller owns shows either a "🏆 เปิดประมูล (e-Auction)" button
+(if still `open` with no auction yet) or a live auction-status badge —
+`auctionMineByRfqId` is loaded before the RFQ cards render so this never
+offers to open a duplicate auction. Three new sections sit below the
+existing RFQ UI: "การประมูลของฉัน" (my auctions, with a bid-history
+toggle and manual-close button), "ประมูลที่เปิดอยู่" (browse + bid on
+others' open auctions), "สัญญา" (every contract the caller is a party
+to, with an "ออกใบสั่งซื้อ" button on the ones they can issue a PO
+against), and "ใบสั่งซื้อ" (every PO, with acknowledge/cancel actions
+shown only to the side actually eligible for them).
 
 ## What's mocked / simplified (be aware of this before relying on it)
 
@@ -1145,22 +1236,27 @@ changes — this is a UI coverage gap, not a backend limitation.
   per grade (upserted in place) — there is no day-by-day history table, so
   neither buyers nor farmers can see how a price has moved over time, only
   today's live number and its `updated_at` timestamp.
-- **Accepting an RFQ quote does not create any fulfillment record.**
-  `POST /procurement/rfqs/:id/quotes/:quoteId/accept` only sets
-  `rfq.status = 'awarded'` and `rfq.awarded_quote_id` — it does **not**
-  auto-create a `produce.delivery`, `marketplace.product_order`, or
-  `contract.contract` row for the awarded deal. The requester and the
-  winning responder still need to arrange fulfillment themselves (e.g. the
-  requester manually places a normal catalog order, or the cooperative
-  manually records a delivery) — wiring RFQ award into one of those
-  existing fulfillment paths automatically is a real follow-up integration,
-  not built in this pass. See "RFP/RFQ" above for the full design.
-- **RFQ quoting UI exists on four portals only.** Cooperative, Buyer,
-  InputSupplier, and the Farmer top-level nav all have the full RFQ
-  section; Lender, Machinery, MarketVenue, FertilizerMixingService, Admin,
-  and Gov do not yet, even though `src/routes/procurement.js` already
-  accepts a verified-organization JWT of any role type. Purely a UI
-  coverage gap — adding the section to another portal needs no backend
+- **Awarding an RFQ (direct accept or auction close) creates a contract,
+  not yet a fulfillment record.** As of the B2B Commerce Engine phase,
+  award now auto-creates a real `contract.contract` row and the requester
+  can issue a Purchase Order against it — but a PO still does not
+  auto-create a `produce.delivery` or `marketplace.product_order` row.
+  GRN (goods-receipt), Invoice, and wiring Payment/Revenue-Sharing onto
+  this chain are designed in `B2B_COMMERCE_ENGINE_ARCHITECTURE.md` but
+  not built — see that doc's roadmap section.
+- **A PO does not track cumulative quantity against its contract.**
+  `POST /procurement/purchase-orders` lets the same active contract have
+  multiple POs issued against it without checking their combined quantity
+  against `contract.agreed_quantity` — same "no stock/quantity
+  enforcement" gap `marketplace.product_order` already has elsewhere in
+  this codebase.
+- **RFQ/e-Auction/PO UI exists on four (RFQ) / two (e-Auction+PO) portals
+  only.** RFQ: Cooperative, Buyer, InputSupplier, and the Farmer
+  top-level nav. e-Auction + Contract + Purchase Order: Cooperative and
+  Buyer only. Lender, Machinery, MarketVenue, FertilizerMixingService,
+  Admin, and Gov have neither, even though the backend already accepts a
+  verified-organization JWT of any role type for all of it. Purely a UI
+  coverage gap — adding either section to another portal needs no backend
   change.
 
 ## End-to-end verification performed
