@@ -2022,6 +2022,637 @@ router.post('/logistics/shipments/:id/cancel', async (req, res, next) => {
 
 /**
  * ============================================================================
+ * M15 Government Integration Gateway — consent -> credential -> submission
+ * (queue/attempt/acknowledge/retry/dead-letter), all scoped to this
+ * cooperative's own org_id. See grant_cooperative_gov_gateway.sql for the
+ * full design rationale, in particular why this is inside the existing
+ * backend rather than a separate service (Open Decision #5), why
+ * govgw.credential never stores a real secret, why the retry/dead-letter
+ * mechanism is a status-field simulation rather than a real message
+ * broker, and why govgw.gov_audit_log exists as a second, government-
+ * specific audit trail alongside the platform's existing audit.access_log.
+ *
+ * govgw.endpoint_catalog is migration-seeded reference data (same pattern
+ * as registry.commodity_ref) — there is deliberately no POST route to
+ * create endpoints here; only GET to read the catalog.
+ * ============================================================================
+ */
+
+/** Resolves a consent_id iff it belongs to this cooperative, else null. */
+async function assertConsentOwned(client, subjectId, consentId) {
+  const { rows } = await client.query(
+    'SELECT consent_id FROM govgw.consent WHERE consent_id = $1 AND org_id = $2',
+    [consentId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/** Resolves a credential_id iff it belongs to this cooperative, else null. */
+async function assertCredentialOwned(client, subjectId, credentialId) {
+  const { rows } = await client.query(
+    'SELECT credential_id FROM govgw.credential WHERE credential_id = $1 AND org_id = $2',
+    [credentialId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+/** Resolves a submission_id iff it belongs to this cooperative, else null. */
+async function assertSubmissionOwned(client, subjectId, submissionId) {
+  const { rows } = await client.query(
+    'SELECT submission_id FROM govgw.data_submission WHERE submission_id = $1 AND org_id = $2',
+    [submissionId, subjectId],
+  );
+  return rows.length > 0;
+}
+
+const SUBMISSION_OUTCOMES = ['Success', 'Failure'];
+
+/**
+ * GET /coop/gov/endpoints — the platform-wide catalog of government
+ * endpoint categories this gateway knows about (see the migration's
+ * header note: two placeholder categories, not a real live API catalog).
+ */
+router.get('/gov/endpoints', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT endpoint_id, endpoint_code, endpoint_name, agency_name, description, status
+           FROM govgw.endpoint_catalog
+          WHERE status = 'Active'
+          ORDER BY agency_name, endpoint_name`,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/gov/consents — this cooperative's consent decisions.
+ */
+router.get('/gov/consents', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT consent_id, endpoint_id, endpoint_name, agency_name, scope_note, status,
+                granted_by, granted_at, revoked_by, revoked_at, revoke_reason
+           FROM govgw.v_consent_status
+          WHERE org_id = $1
+          ORDER BY granted_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/consents — record a consent decision.
+ * Body: { endpoint_id?: null-for-blanket, scope_note?, granted_by }
+ */
+router.post('/gov/consents', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { endpoint_id: endpointId, scope_note: scopeNote, granted_by: grantedBy } = req.body || {};
+
+  if (!grantedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['granted_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT govgw.grant_consent($1, $2, $3, $4) AS consent_id',
+          [subjectId, endpointId || null, scopeNote || null, grantedBy],
+        );
+        await logAccess(client, 'write', 'govgw.consent', rows[0].consent_id);
+        return { consentId: rows[0].consent_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) return res.status(409).json({ error: 'cannot_grant_consent', detail: result.businessError });
+    return res.status(201).json({ consent_id: result.consentId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/consents/:id/revoke
+ * Body: { revoked_by, reason }
+ */
+router.post('/gov/consents/:id/revoke', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { revoked_by: revokedBy, reason } = req.body || {};
+
+  if (!revokedBy || !reason) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['revoked_by', 'reason'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertConsentOwned(client, subjectId, id))) return { consentNotFound: true };
+
+      try {
+        await client.query('SELECT govgw.revoke_consent($1, $2, $3)', [id, revokedBy, reason]);
+        await logAccess(client, 'write', 'govgw.consent', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.consentNotFound) return res.status(404).json({ error: 'consent_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_revoke_consent', detail: result.businessError });
+    return res.json({ status: 'Revoked' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/gov/credentials — this cooperative's government API accounts.
+ */
+router.get('/gov/credentials', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT credential_id, endpoint_id, endpoint_name, agency_name, credential_label, status,
+                requested_by, requested_at, activated_at, expires_at, last_rotated_at,
+                revoked_by, revoked_at, revoke_reason, note, is_expiring_soon
+           FROM govgw.v_credential_status
+          WHERE org_id = $1
+          ORDER BY requested_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/credentials — request a government API account for an
+ * endpoint. Requires an Active consent on file for that endpoint (or a
+ * blanket one) — enforced inside govgw.request_credential() itself.
+ * Body: { endpoint_id, credential_label, requested_by }
+ */
+router.post('/gov/credentials', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { endpoint_id: endpointId, credential_label: credentialLabel, requested_by: requestedBy } = req.body || {};
+
+  if (!endpointId || !credentialLabel || !requestedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['endpoint_id', 'credential_label', 'requested_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT govgw.request_credential($1, $2, $3, $4) AS credential_id',
+          [subjectId, endpointId, credentialLabel, requestedBy],
+        );
+        await logAccess(client, 'write', 'govgw.credential', rows[0].credential_id);
+        return { credentialId: rows[0].credential_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) return res.status(409).json({ error: 'cannot_request_credential', detail: result.businessError });
+    return res.status(201).json({ credential_id: result.credentialId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/credentials/:id/activate
+ * Body: { activated_by, expires_at }
+ */
+router.post('/gov/credentials/:id/activate', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { activated_by: activatedBy, expires_at: expiresAt } = req.body || {};
+
+  if (!activatedBy || !expiresAt) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['activated_by', 'expires_at'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertCredentialOwned(client, subjectId, id))) return { credentialNotFound: true };
+
+      try {
+        await client.query('SELECT govgw.activate_credential($1, $2, $3)', [id, activatedBy, expiresAt]);
+        await logAccess(client, 'write', 'govgw.credential', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.credentialNotFound) return res.status(404).json({ error: 'credential_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_activate_credential', detail: result.businessError });
+    return res.json({ status: 'Active' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/credentials/:id/rotate
+ * Body: { rotated_by, new_expires_at }
+ */
+router.post('/gov/credentials/:id/rotate', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { rotated_by: rotatedBy, new_expires_at: newExpiresAt } = req.body || {};
+
+  if (!rotatedBy || !newExpiresAt) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['rotated_by', 'new_expires_at'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertCredentialOwned(client, subjectId, id))) return { credentialNotFound: true };
+
+      try {
+        await client.query('SELECT govgw.rotate_credential($1, $2, $3)', [id, rotatedBy, newExpiresAt]);
+        await logAccess(client, 'write', 'govgw.credential', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.credentialNotFound) return res.status(404).json({ error: 'credential_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_rotate_credential', detail: result.businessError });
+    return res.json({ status: 'Active' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/credentials/:id/revoke
+ * Body: { revoked_by, reason }
+ */
+router.post('/gov/credentials/:id/revoke', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { revoked_by: revokedBy, reason } = req.body || {};
+
+  if (!revokedBy || !reason) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['revoked_by', 'reason'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertCredentialOwned(client, subjectId, id))) return { credentialNotFound: true };
+
+      try {
+        await client.query('SELECT govgw.revoke_credential($1, $2, $3)', [id, revokedBy, reason]);
+        await logAccess(client, 'write', 'govgw.credential', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.credentialNotFound) return res.status(404).json({ error: 'credential_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_revoke_credential', detail: result.businessError });
+    return res.json({ status: 'Revoked' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/gov/submissions — this cooperative's submission queue/history.
+ */
+router.get('/gov/submissions', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT submission_id, endpoint_id, endpoint_name, agency_name, period_label, status,
+                max_attempts, attempt_count, created_by, created_at, last_attempted_at,
+                acknowledged_at, ack_reference, last_error, cancelled_by, cancelled_at, cancel_reason,
+                last_attempt_outcome, last_attempt_response_code, last_attempt_at
+           FROM govgw.v_submission_summary
+          WHERE org_id = $1
+          ORDER BY created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/gov/submissions/:id — submission detail + its full attempt
+ * history + related audit-log entries.
+ */
+router.get('/gov/submissions/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const submission = await client.query(
+        `SELECT submission_id, endpoint_id, endpoint_name, agency_name, period_label, payload, status,
+                max_attempts, attempt_count, created_by, created_at, last_attempted_at,
+                acknowledged_at, ack_reference, last_error, cancelled_by, cancelled_at, cancel_reason
+           FROM govgw.v_submission_summary
+          WHERE submission_id = $1 AND org_id = $2`,
+        [id, subjectId],
+      );
+      if (submission.rows.length === 0) return null;
+
+      const attempts = await client.query(
+        `SELECT attempt_id, attempt_number, attempted_at, outcome, response_code, error_message, recorded_by
+           FROM govgw.submission_attempt
+          WHERE submission_id = $1
+          ORDER BY attempt_number`,
+        [id],
+      );
+
+      const auditLog = await client.query(
+        `SELECT gov_audit_id, event_type, actor, detail, occurred_at
+           FROM govgw.gov_audit_log
+          WHERE related_table = 'govgw.data_submission' AND related_id = $1
+          ORDER BY occurred_at`,
+        [id],
+      );
+
+      return { submission: submission.rows[0], attempts: attempts.rows, audit_log: auditLog.rows };
+    });
+
+    if (!result) return res.status(404).json({ error: 'submission_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/submissions — queue a new submission. Requires an Active
+ * consent AND a usable credential for the endpoint — enforced inside
+ * govgw.create_submission() itself. `summary` is wrapped into the opaque
+ * payload jsonb column (see the migration's header note on why there is
+ * no real field-level government schema to map into yet).
+ * Body: { endpoint_id, period_label, summary, created_by, max_attempts? }
+ */
+router.post('/gov/submissions', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    endpoint_id: endpointId, period_label: periodLabel, summary, created_by: createdBy, max_attempts: maxAttempts,
+  } = req.body || {};
+
+  if (!endpointId || !periodLabel || !summary || !createdBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['endpoint_id', 'period_label', 'summary', 'created_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      try {
+        const payload = JSON.stringify({ summary });
+        const { rows } = await client.query(
+          'SELECT govgw.create_submission($1, $2, $3, $4::jsonb, $5, $6) AS submission_id',
+          [subjectId, endpointId, periodLabel, payload, createdBy, maxAttempts || 3],
+        );
+        await logAccess(client, 'write', 'govgw.data_submission', rows[0].submission_id);
+        return { submissionId: rows[0].submission_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) return res.status(409).json({ error: 'cannot_create_submission', detail: result.businessError });
+    return res.status(201).json({ submission_id: result.submissionId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/submissions/:id/attempt — record the outcome of one
+ * attempt to actually send this submission. See the migration's header
+ * note: this endpoint does NOT itself call any real government system —
+ * it records the outcome its caller reports, exactly like every other
+ * "record what happened" action in this platform.
+ * Body: { outcome: Success|Failure, response_code?, error_message?, recorded_by }
+ */
+router.post('/gov/submissions/:id/attempt', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const {
+    outcome, response_code: responseCode, error_message: errorMessage, recorded_by: recordedBy,
+  } = req.body || {};
+
+  if (!outcome || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['outcome', 'recorded_by'] });
+  }
+  if (!SUBMISSION_OUTCOMES.includes(outcome)) {
+    return res.status(400).json({ error: 'invalid_outcome', valid: SUBMISSION_OUTCOMES });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertSubmissionOwned(client, subjectId, id))) return { submissionNotFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT govgw.attempt_submission($1, $2, $3, $4, $5) AS new_status',
+          [id, outcome, responseCode || null, errorMessage || null, recordedBy],
+        );
+        await logAccess(client, 'write', 'govgw.data_submission', id);
+        return { newStatus: rows[0].new_status };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.submissionNotFound) return res.status(404).json({ error: 'submission_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_attempt_submission', detail: result.businessError });
+    return res.json({ status: result.newStatus });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/submissions/:id/acknowledge — record the government
+ * side's confirmation reference once a Sent submission is acknowledged.
+ * Body: { ack_reference, recorded_by }
+ */
+router.post('/gov/submissions/:id/acknowledge', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { ack_reference: ackReference, recorded_by: recordedBy } = req.body || {};
+
+  if (!ackReference || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['ack_reference', 'recorded_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertSubmissionOwned(client, subjectId, id))) return { submissionNotFound: true };
+
+      try {
+        await client.query('SELECT govgw.record_acknowledgement($1, $2, $3)', [id, ackReference, recordedBy]);
+        await logAccess(client, 'write', 'govgw.data_submission', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.submissionNotFound) return res.status(404).json({ error: 'submission_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_acknowledge_submission', detail: result.businessError });
+    return res.json({ status: 'Acknowledged' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/submissions/:id/cancel — only works while Queued (never
+ * successfully sent).
+ * Body: { cancelled_by, reason }
+ */
+router.post('/gov/submissions/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { cancelled_by: cancelledBy, reason } = req.body || {};
+
+  if (!cancelledBy || !reason) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['cancelled_by', 'reason'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertSubmissionOwned(client, subjectId, id))) return { submissionNotFound: true };
+
+      try {
+        await client.query('SELECT govgw.cancel_submission($1, $2, $3)', [id, cancelledBy, reason]);
+        await logAccess(client, 'write', 'govgw.data_submission', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.submissionNotFound) return res.status(404).json({ error: 'submission_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_cancel_submission', detail: result.businessError });
+    return res.json({ status: 'Cancelled' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/gov/submissions/:id/requeue — manual ops recovery for a
+ * Dead-lettered submission: raises max_attempts and puts it back in the
+ * queue. Body: { additional_attempts, recorded_by }
+ */
+router.post('/gov/submissions/:id/requeue', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { additional_attempts: additionalAttempts, recorded_by: recordedBy } = req.body || {};
+
+  if (!additionalAttempts || !recordedBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['additional_attempts', 'recorded_by'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertSubmissionOwned(client, subjectId, id))) return { submissionNotFound: true };
+
+      try {
+        await client.query('SELECT govgw.retry_dead_letter($1, $2, $3)', [id, additionalAttempts, recordedBy]);
+        await logAccess(client, 'write', 'govgw.data_submission', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.submissionNotFound) return res.status(404).json({ error: 'submission_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_requeue_submission', detail: result.businessError });
+    return res.json({ status: 'Queued' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/gov/dead-letter — this cooperative's Dead-lettered
+ * submissions, the queryable "dead-letter queue" itself.
+ */
+router.get('/gov/dead-letter', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT submission_id, endpoint_id, endpoint_name, agency_name, period_label, status,
+                max_attempts, attempt_count, created_by, created_at, last_attempted_at, last_error
+           FROM govgw.v_dead_letter_queue
+          WHERE org_id = $1
+          ORDER BY last_attempted_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/gov/audit-log — this cooperative's government-gateway audit
+ * trail (govgw.gov_audit_log — see the migration's header note on why
+ * this is separate from audit.access_log).
+ */
+router.get('/gov/audit-log', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT gov_audit_id, event_type, related_table, related_id, actor, detail, occurred_at
+           FROM govgw.gov_audit_log
+          WHERE org_id = $1
+          ORDER BY occurred_at DESC
+          LIMIT 100`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * ============================================================================
  * M04 Cooperative Finance — a read-only KPI dashboard for cooperative
  * executives (Coop Manager/Accountant), built entirely on top of the
  * existing ledger/produce/warehouse data — no new money-movement logic

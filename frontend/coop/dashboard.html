@@ -269,6 +269,101 @@
       <div class="loading-line">กำลังโหลดรายการจัดส่ง…</div>
     </div>
 
+    <div class="section-title">🏛️ ประตูเชื่อมต่อภาครัฐ (Government Integration Gateway)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมายเหตุขอบเขต: หมวดหมู่ช่องทางด้านล่างเป็น placeholder อ้างอิงกรมส่งเสริมสหกรณ์/กรมตรวจบัญชีสหกรณ์ตามแนวทาง GDX/TGIX ของ DGA เท่านั้น
+      ยังไม่ใช่ API จริงของหน่วยงาน — ระบบนี้จำลองขั้นตอนความยินยอม/บัญชี API/คิวส่งข้อมูล/dead-letter queue
+      เพื่อเตรียมความพร้อมก่อนมี spec จริงจากหน่วยงาน
+    </p>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">✅ ความยินยอม (Consent)</div>
+    <form id="govConsentForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="govConsentEndpointSelect">ช่องทาง</label>
+          <select id="govConsentEndpointSelect">
+            <option value="">-- ทุกช่องทาง (Blanket) --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="govConsentScopeInput">ขอบเขต/หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="govConsentScopeInput" placeholder="เช่น อนุญาตส่งข้อมูลรายเดือน" />
+        </div>
+        <div class="field">
+          <label for="govConsentGrantedByInput">ชื่อผู้อนุมัติ</label>
+          <input type="text" id="govConsentGrantedByInput" placeholder="เช่น ประธานสหกรณ์" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="govConsentSubmitBtn" style="max-width:220px;">บันทึกความยินยอม</button>
+    </form>
+    <div id="govConsentsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดความยินยอม…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">🔑 บัญชี API ภาครัฐ (Credential Lifecycle)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
+      หมายเหตุขอบเขต: ระบบเก็บเฉพาะสถานะวงจรชีวิตของบัญชี API (คำขอ/ใช้งาน/ใกล้หมดอายุ/ยกเลิก/หมดอายุ) เท่านั้น —
+      ไม่มีการเก็บรหัสผ่าน/token จริงในฐานข้อมูลนี้ ของจริงต้องใช้ระบบจัดเก็บความลับ (secrets manager) โดยเฉพาะ
+    </p>
+    <form id="govCredentialForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="govCredentialEndpointSelect">ช่องทาง</label>
+          <select id="govCredentialEndpointSelect" required>
+            <option value="">-- เลือกช่องทาง --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="govCredentialLabelInput">ชื่อบัญชี API</label>
+          <input type="text" id="govCredentialLabelInput" placeholder="เช่น บัญชี GDX สหกรณ์ ก." required />
+        </div>
+        <div class="field">
+          <label for="govCredentialRequestedByInput">ชื่อผู้ขอ</label>
+          <input type="text" id="govCredentialRequestedByInput" placeholder="เช่น เจ้าหน้าที่ IT สหกรณ์" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="govCredentialSubmitBtn" style="max-width:220px;">ขอบัญชี API ใหม่</button>
+    </form>
+    <div id="govCredentialsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดบัญชี API…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📤 การส่งข้อมูลให้ภาครัฐ (Submissions)</div>
+    <form id="govSubmissionForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="govSubmissionEndpointSelect">ช่องทาง</label>
+          <select id="govSubmissionEndpointSelect" required>
+            <option value="">-- เลือกช่องทาง --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="govSubmissionPeriodInput">งวดข้อมูล</label>
+          <input type="text" id="govSubmissionPeriodInput" placeholder="เช่น 2569-08" required />
+        </div>
+        <div class="field">
+          <label for="govSubmissionCreatedByInput">ชื่อผู้จัดทำ</label>
+          <input type="text" id="govSubmissionCreatedByInput" placeholder="เช่น เจ้าหน้าที่ธุรการสหกรณ์" required />
+        </div>
+        <div class="field full">
+          <label for="govSubmissionSummaryInput">สรุปข้อมูลที่จะส่ง</label>
+          <input type="text" id="govSubmissionSummaryInput" placeholder="เช่น รายงานจำนวนสมาชิกและปริมาณผลผลิตประจำเดือน" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="govSubmissionSubmitBtn" style="max-width:220px;">เพิ่มเข้าคิวส่งข้อมูล</button>
+    </form>
+    <div id="govSubmissionsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการส่งข้อมูล…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">☠️ Dead-letter Queue</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
+      รายการที่ลองส่งครบจำนวนครั้งสูงสุดแล้วแต่ยังไม่สำเร็จ — ต้องมีเจ้าหน้าที่ตรวจสอบและนำกลับเข้าคิวด้วยตนเอง
+    </p>
+    <div id="govDeadLetterSection" class="card-list">
+      <div class="loading-line">กำลังโหลด Dead-letter Queue…</div>
+    </div>
+
     <div class="section-title">📋 ประวัติการรับซื้อทั้งหมด</div>
     <div class="filter-bar">
       <div class="field">

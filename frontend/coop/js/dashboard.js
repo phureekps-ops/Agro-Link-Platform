@@ -1198,6 +1198,14 @@ const SHIPMENT_STATUS_LABEL_TH = { Pending: "รอดำเนินการ",
 const SHIPMENT_STATUS_BADGE_CLASS = { Pending: "status-pending", InTransit: "status-active", Delivered: "status-completed", Cancelled: "status-declined" };
 const EXCEPTION_TYPE_LABEL_TH = { Damage: "สินค้าเสียหาย", Shortage: "ขาดหาย", Delay: "ล่าช้า", Rejected: "ถูกปฏิเสธรับสินค้า", Other: "อื่นๆ" };
 
+let govEndpointsCache = []; // GET /coop/gov/endpoints — platform-wide reference catalog, used to populate every endpoint dropdown in the M15 section
+const GOV_CONSENT_STATUS_LABEL_TH = { Active: "ใช้งานอยู่", Revoked: "ถูกเพิกถอนแล้ว" };
+const GOV_CONSENT_STATUS_BADGE_CLASS = { Active: "status-active", Revoked: "status-declined" };
+const GOV_CREDENTIAL_STATUS_LABEL_TH = { Requested: "รอเปิดใช้งาน", Active: "ใช้งานอยู่", Expiring: "ใกล้หมดอายุ", Revoked: "ถูกเพิกถอนแล้ว", Expired: "หมดอายุแล้ว" };
+const GOV_CREDENTIAL_STATUS_BADGE_CLASS = { Requested: "status-pending", Active: "status-active", Expiring: "status-pending", Revoked: "status-declined", Expired: "status-declined" };
+const GOV_SUBMISSION_STATUS_LABEL_TH = { Queued: "อยู่ในคิว", Sent: "ส่งแล้ว (รอตอบรับ)", Acknowledged: "ตอบรับแล้ว", DeadLettered: "Dead-letter", Cancelled: "ยกเลิกแล้ว" };
+const GOV_SUBMISSION_STATUS_BADGE_CLASS = { Queued: "status-pending", Sent: "status-active", Acknowledged: "status-completed", DeadLettered: "status-declined", Cancelled: "status-declined" };
+
 function carrierCard(c) {
   const badge = `<span class="badge status-active">${escapeHtml(CARRIER_TYPE_LABEL_TH[c.carrier_type] || c.carrier_type)}</span>`;
   const vehiclesHtml = c.vehicles.length === 0
@@ -1662,6 +1670,458 @@ document.getElementById("shipmentsSection").addEventListener("click", async (e) 
 // its default "no contract / spot sale" option; POST /coop/deliveries
 // still accepts a contract_id if one is ever wired in from elsewhere.
 
+/**
+ * ============================================================================
+ * M15 Government Integration Gateway — consent -> credential -> submission
+ * (queue/attempt/acknowledge/retry/dead-letter). See
+ * grant_cooperative_gov_gateway.sql for the full design rationale.
+ * govEndpointsCache is loaded once and reused to populate all three
+ * endpoint dropdowns (consent/credential/submission forms) — it is
+ * platform-wide reference data, not something this cooperative can add to.
+ * ============================================================================
+ */
+
+async function loadGovEndpoints() {
+  try {
+    govEndpointsCache = await AgroLinkCoopAPI.get("/coop/gov/endpoints");
+  } catch (err) {
+    govEndpointsCache = [];
+  }
+  const optionsHtml = govEndpointsCache
+    .map((e) => `<option value="${e.endpoint_id}">${escapeHtml(e.endpoint_name)} (${escapeHtml(e.agency_name)})</option>`).join("");
+  document.getElementById("govConsentEndpointSelect").innerHTML = `<option value="">-- ทุกช่องทาง (Blanket) --</option>` + optionsHtml;
+  document.getElementById("govCredentialEndpointSelect").innerHTML = `<option value="">-- เลือกช่องทาง --</option>` + optionsHtml;
+  document.getElementById("govSubmissionEndpointSelect").innerHTML = `<option value="">-- เลือกช่องทาง --</option>` + optionsHtml;
+}
+
+function govConsentCard(c) {
+  const badge = `<span class="badge ${GOV_CONSENT_STATUS_BADGE_CLASS[c.status] || "status-pending"}">${escapeHtml(GOV_CONSENT_STATUS_LABEL_TH[c.status] || c.status)}</span>`;
+  return `
+    <div class="item-card" data-consent-id="${c.consent_id}">
+      <div class="row"><span class="title">${escapeHtml(c.endpoint_name)}</span>${badge}</div>
+      ${c.agency_name ? `<div class="detail-line muted">หน่วยงาน: ${escapeHtml(c.agency_name)}</div>` : ""}
+      ${c.scope_note ? `<div class="detail-line">${escapeHtml(c.scope_note)}</div>` : ""}
+      <div class="detail-line muted">อนุมัติโดย ${escapeHtml(c.granted_by)} เมื่อ ${thaiDate(c.granted_at)}</div>
+      ${c.status === "Revoked"
+        ? `<div class="detail-line muted">เพิกถอนโดย ${escapeHtml(c.revoked_by || "-")} เมื่อ ${thaiDate(c.revoked_at)} — เหตุผล: ${escapeHtml(c.revoke_reason || "-")}</div>`
+        : `<div class="action-row">
+            <input type="text" class="reject-reason-input" data-revoke-consent-by-for="${c.consent_id}" placeholder="ชื่อผู้เพิกถอน" />
+            <input type="text" class="reject-reason-input" data-revoke-consent-reason-for="${c.consent_id}" placeholder="เหตุผล" />
+            <button type="button" class="btn btn-decline btn-sm" data-revoke-consent="${c.consent_id}">เพิกถอนความยินยอม</button>
+          </div>`}
+    </div>
+  `;
+}
+
+async function loadGovConsents() {
+  const el = document.getElementById("govConsentsSection");
+  try {
+    const consents = await AgroLinkCoopAPI.get("/coop/gov/consents");
+    el.innerHTML = consents.length === 0
+      ? `<div class="empty-state">ยังไม่มีความยินยอม — ใช้ฟอร์มด้านบนเพื่อบันทึกรายการแรก</div>`
+      : consents.map(govConsentCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดความยินยอมไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("govConsentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const endpointId = document.getElementById("govConsentEndpointSelect").value;
+  const scopeNote = document.getElementById("govConsentScopeInput").value.trim();
+  const grantedBy = document.getElementById("govConsentGrantedByInput").value.trim();
+  if (!grantedBy) {
+    toast("กรุณากรอกชื่อผู้อนุมัติ", true);
+    return;
+  }
+  const btn = document.getElementById("govConsentSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/gov/consents", {
+      endpoint_id: endpointId || undefined, scope_note: scopeNote || undefined, granted_by: grantedBy,
+    });
+    toast("บันทึกความยินยอมเรียบร้อยแล้ว");
+    document.getElementById("govConsentForm").reset();
+    await loadGovConsents();
+  } catch (err) {
+    toast("บันทึกความยินยอมไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("govConsentsSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-revoke-consent]");
+  if (!btn) return;
+  const consentId = btn.dataset.revokeConsent;
+  const revokedBy = document.querySelector(`[data-revoke-consent-by-for="${consentId}"]`).value.trim();
+  const reason = document.querySelector(`[data-revoke-consent-reason-for="${consentId}"]`).value.trim();
+  if (!revokedBy || !reason) {
+    toast("กรุณากรอกชื่อผู้เพิกถอนและเหตุผล", true);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/gov/consents/${consentId}/revoke`, { revoked_by: revokedBy, reason });
+    toast("เพิกถอนความยินยอมเรียบร้อยแล้ว");
+    await loadGovConsents();
+  } catch (err) {
+    toast("เพิกถอนไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+    btn.disabled = false;
+  }
+});
+
+function govCredentialCard(cr) {
+  const badge = `<span class="badge ${GOV_CREDENTIAL_STATUS_BADGE_CLASS[cr.status] || "status-pending"}">${escapeHtml(GOV_CREDENTIAL_STATUS_LABEL_TH[cr.status] || cr.status)}</span>`;
+  const expiringBadge = cr.is_expiring_soon ? `<span class="badge status-pending">ใกล้หมดอายุ (30 วัน)</span>` : "";
+
+  let actions = "";
+  if (cr.status === "Requested") {
+    actions = `
+      <div class="action-row">
+        <input type="datetime-local" class="reject-reason-input" data-activate-cred-expires-for="${cr.credential_id}" />
+        <input type="text" class="reject-reason-input" data-activate-cred-by-for="${cr.credential_id}" placeholder="ชื่อผู้เปิดใช้งาน" />
+        <button type="button" class="btn btn-approve btn-sm" data-activate-credential="${cr.credential_id}">เปิดใช้งาน</button>
+      </div>
+    `;
+  } else if (cr.status === "Active" || cr.status === "Expiring") {
+    actions = `
+      <div class="action-row">
+        <input type="datetime-local" class="reject-reason-input" data-rotate-cred-expires-for="${cr.credential_id}" />
+        <input type="text" class="reject-reason-input" data-rotate-cred-by-for="${cr.credential_id}" placeholder="ชื่อผู้หมุนเวียน" />
+        <button type="button" class="btn btn-ghost btn-sm" data-rotate-credential="${cr.credential_id}">หมุนเวียน (Rotate)</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-revoke-cred-by-for="${cr.credential_id}" placeholder="ชื่อผู้เพิกถอน" />
+        <input type="text" class="reject-reason-input" data-revoke-cred-reason-for="${cr.credential_id}" placeholder="เหตุผล" />
+        <button type="button" class="btn btn-decline btn-sm" data-revoke-credential="${cr.credential_id}">เพิกถอน</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card" data-credential-id="${cr.credential_id}">
+      <div class="row"><span class="title">${escapeHtml(cr.credential_label)}</span>${badge}${expiringBadge}</div>
+      <div class="detail-line muted">ช่องทาง: ${escapeHtml(cr.endpoint_name)} (${escapeHtml(cr.agency_name)})</div>
+      <div class="detail-line muted">ขอโดย ${escapeHtml(cr.requested_by)} เมื่อ ${thaiDate(cr.requested_at)}${cr.activated_at ? " · เปิดใช้งานเมื่อ " + thaiDate(cr.activated_at) : ""}${cr.expires_at ? " · หมดอายุ " + thaiDate(cr.expires_at) : ""}</div>
+      ${cr.status === "Revoked" ? `<div class="detail-line muted">เพิกถอนโดย ${escapeHtml(cr.revoked_by || "-")} — เหตุผล: ${escapeHtml(cr.revoke_reason || "-")}</div>` : ""}
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadGovCredentials() {
+  const el = document.getElementById("govCredentialsSection");
+  try {
+    const creds = await AgroLinkCoopAPI.get("/coop/gov/credentials");
+    el.innerHTML = creds.length === 0
+      ? `<div class="empty-state">ยังไม่มีบัญชี API — ใช้ฟอร์มด้านบนเพื่อขอรายการแรก (ต้องมีความยินยอมที่ใช้งานอยู่ก่อน)</div>`
+      : creds.map(govCredentialCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดบัญชี API ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("govCredentialForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const endpointId = document.getElementById("govCredentialEndpointSelect").value;
+  const label = document.getElementById("govCredentialLabelInput").value.trim();
+  const requestedBy = document.getElementById("govCredentialRequestedByInput").value.trim();
+  if (!endpointId || !label || !requestedBy) {
+    toast("กรุณาเลือกช่องทาง กรอกชื่อบัญชี และชื่อผู้ขอ", true);
+    return;
+  }
+  const btn = document.getElementById("govCredentialSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/gov/credentials", {
+      endpoint_id: endpointId, credential_label: label, requested_by: requestedBy,
+    });
+    toast("ส่งคำขอบัญชี API เรียบร้อยแล้ว");
+    document.getElementById("govCredentialForm").reset();
+    await loadGovCredentials();
+  } catch (err) {
+    toast("ส่งคำขอไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("govCredentialsSection").addEventListener("click", async (e) => {
+  const activateBtn = e.target.closest("[data-activate-credential]");
+  const rotateBtn = e.target.closest("[data-rotate-credential]");
+  const revokeBtn = e.target.closest("[data-revoke-credential]");
+
+  if (activateBtn) {
+    const credId = activateBtn.dataset.activateCredential;
+    const expiresAt = document.querySelector(`[data-activate-cred-expires-for="${credId}"]`).value;
+    const activatedBy = document.querySelector(`[data-activate-cred-by-for="${credId}"]`).value.trim();
+    if (!expiresAt || !activatedBy) {
+      toast("กรุณาระบุวันหมดอายุและชื่อผู้เปิดใช้งาน", true);
+      return;
+    }
+    activateBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/gov/credentials/${credId}/activate`, {
+        activated_by: activatedBy, expires_at: new Date(expiresAt).toISOString(),
+      });
+      toast("เปิดใช้งานบัญชี API เรียบร้อยแล้ว");
+      await loadGovCredentials();
+    } catch (err) {
+      toast("เปิดใช้งานไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      activateBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (rotateBtn) {
+    const credId = rotateBtn.dataset.rotateCredential;
+    const newExpiresAt = document.querySelector(`[data-rotate-cred-expires-for="${credId}"]`).value;
+    const rotatedBy = document.querySelector(`[data-rotate-cred-by-for="${credId}"]`).value.trim();
+    if (!newExpiresAt || !rotatedBy) {
+      toast("กรุณาระบุวันหมดอายุใหม่และชื่อผู้หมุนเวียน", true);
+      return;
+    }
+    rotateBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/gov/credentials/${credId}/rotate`, {
+        rotated_by: rotatedBy, new_expires_at: new Date(newExpiresAt).toISOString(),
+      });
+      toast("หมุนเวียนบัญชี API เรียบร้อยแล้ว");
+      await loadGovCredentials();
+    } catch (err) {
+      toast("หมุนเวียนไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      rotateBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (revokeBtn) {
+    const credId = revokeBtn.dataset.revokeCredential;
+    const revokedBy = document.querySelector(`[data-revoke-cred-by-for="${credId}"]`).value.trim();
+    const reason = document.querySelector(`[data-revoke-cred-reason-for="${credId}"]`).value.trim();
+    if (!revokedBy || !reason) {
+      toast("กรุณากรอกชื่อผู้เพิกถอนและเหตุผล", true);
+      return;
+    }
+    revokeBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/gov/credentials/${credId}/revoke`, { revoked_by: revokedBy, reason });
+      toast("เพิกถอนบัญชี API เรียบร้อยแล้ว");
+      await loadGovCredentials();
+    } catch (err) {
+      toast("เพิกถอนไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      revokeBtn.disabled = false;
+    }
+  }
+});
+
+function govSubmissionCard(s) {
+  const badge = `<span class="badge ${GOV_SUBMISSION_STATUS_BADGE_CLASS[s.status] || "status-pending"}">${escapeHtml(GOV_SUBMISSION_STATUS_LABEL_TH[s.status] || s.status)}</span>`;
+  const summary = s.payload && s.payload.summary ? s.payload.summary : "-";
+
+  let actions = "";
+  if (s.status === "Queued") {
+    actions = `
+      <div class="action-row">
+        <select class="reject-reason-input" data-attempt-outcome-for="${s.submission_id}">
+          <option value="Success">จำลองว่าส่งสำเร็จ</option>
+          <option value="Failure">จำลองว่าส่งไม่สำเร็จ</option>
+        </select>
+        <input type="text" class="reject-reason-input" data-attempt-error-for="${s.submission_id}" placeholder="ข้อความ error (ถ้ามี)" />
+        <input type="text" class="reject-reason-input" data-attempt-by-for="${s.submission_id}" placeholder="ชื่อผู้บันทึก" />
+        <button type="button" class="btn btn-approve btn-sm" data-attempt-submission="${s.submission_id}">ลองส่ง</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-cancel-sub-by-for="${s.submission_id}" placeholder="ชื่อผู้ยกเลิก" />
+        <input type="text" class="reject-reason-input" data-cancel-sub-reason-for="${s.submission_id}" placeholder="เหตุผล" />
+        <button type="button" class="btn btn-decline btn-sm" data-cancel-submission="${s.submission_id}">ยกเลิก</button>
+      </div>
+    `;
+  } else if (s.status === "Sent") {
+    actions = `
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-ack-ref-for="${s.submission_id}" placeholder="เลขอ้างอิงการตอบรับจากหน่วยงาน" />
+        <input type="text" class="reject-reason-input" data-ack-by-for="${s.submission_id}" placeholder="ชื่อผู้บันทึก" />
+        <button type="button" class="btn btn-approve btn-sm" data-acknowledge-submission="${s.submission_id}">บันทึกการตอบรับ</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card" data-submission-id="${s.submission_id}">
+      <div class="row"><span class="title">${escapeHtml(s.endpoint_name)} — งวด ${escapeHtml(s.period_label)}</span>${badge}</div>
+      <div class="detail-line muted">หน่วยงาน: ${escapeHtml(s.agency_name)}</div>
+      <div class="detail-line">${escapeHtml(summary)}</div>
+      <div class="detail-line muted">ลองส่งแล้ว ${s.attempt_count}/${s.max_attempts} ครั้ง${s.last_attempt_outcome ? " · ผลล่าสุด: " + escapeHtml(s.last_attempt_outcome) : ""}</div>
+      ${s.ack_reference ? `<div class="detail-line">✅ เลขอ้างอิงการตอบรับ: ${escapeHtml(s.ack_reference)}</div>` : ""}
+      ${s.last_error ? `<div class="detail-line muted">ข้อผิดพลาดล่าสุด: ${escapeHtml(s.last_error)}</div>` : ""}
+      <div class="detail-line muted">จัดทำโดย ${escapeHtml(s.created_by)} เมื่อ ${thaiDate(s.created_at)}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadGovSubmissions() {
+  const el = document.getElementById("govSubmissionsSection");
+  try {
+    const rows = await AgroLinkCoopAPI.get("/coop/gov/submissions");
+    el.innerHTML = rows.length === 0
+      ? `<div class="empty-state">ยังไม่มีรายการส่งข้อมูล — ใช้ฟอร์มด้านบนเพื่อเพิ่มรายการแรก (ต้องมีความยินยอมและบัญชี API ที่ใช้งานได้ก่อน)</div>`
+      : rows.map(govSubmissionCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายการส่งข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function govDeadLetterCard(s) {
+  return `
+    <div class="item-card" data-dead-letter-id="${s.submission_id}">
+      <div class="row"><span class="title">${escapeHtml(s.endpoint_name)} — งวด ${escapeHtml(s.period_label)}</span><span class="badge status-declined">Dead-letter</span></div>
+      <div class="detail-line">ลองส่งครบ ${s.attempt_count}/${s.max_attempts} ครั้งแล้ว — ${escapeHtml(s.last_error || "ไม่ทราบสาเหตุ")}</div>
+      <div class="action-row">
+        <input type="number" min="1" step="1" class="reject-reason-input" data-requeue-attempts-for="${s.submission_id}" placeholder="เพิ่มโควตากี่ครั้ง เช่น 3" />
+        <input type="text" class="reject-reason-input" data-requeue-by-for="${s.submission_id}" placeholder="ชื่อผู้นำกลับเข้าคิว" />
+        <button type="button" class="btn btn-ghost btn-sm" data-requeue-submission="${s.submission_id}">นำกลับเข้าคิว</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadGovDeadLetter() {
+  const el = document.getElementById("govDeadLetterSection");
+  try {
+    const rows = await AgroLinkCoopAPI.get("/coop/gov/dead-letter");
+    el.innerHTML = rows.length === 0
+      ? `<div class="empty-state">ไม่มีรายการใน Dead-letter Queue ในขณะนี้</div>`
+      : rows.map(govDeadLetterCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลด Dead-letter Queue ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshGovGateway() {
+  await loadGovEndpoints();
+  await Promise.all([loadGovConsents(), loadGovCredentials(), loadGovSubmissions(), loadGovDeadLetter()]);
+}
+
+document.getElementById("govSubmissionForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const endpointId = document.getElementById("govSubmissionEndpointSelect").value;
+  const periodLabel = document.getElementById("govSubmissionPeriodInput").value.trim();
+  const createdBy = document.getElementById("govSubmissionCreatedByInput").value.trim();
+  const summary = document.getElementById("govSubmissionSummaryInput").value.trim();
+  if (!endpointId || !periodLabel || !createdBy || !summary) {
+    toast("กรุณากรอกข้อมูลให้ครบถ้วน", true);
+    return;
+  }
+  const btn = document.getElementById("govSubmissionSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/gov/submissions", {
+      endpoint_id: endpointId, period_label: periodLabel, created_by: createdBy, summary,
+    });
+    toast("เพิ่มเข้าคิวส่งข้อมูลเรียบร้อยแล้ว");
+    document.getElementById("govSubmissionForm").reset();
+    await loadGovSubmissions();
+  } catch (err) {
+    toast("เพิ่มเข้าคิวไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("govSubmissionsSection").addEventListener("click", async (e) => {
+  const attemptBtn = e.target.closest("[data-attempt-submission]");
+  const ackBtn = e.target.closest("[data-acknowledge-submission]");
+  const cancelBtn = e.target.closest("[data-cancel-submission]");
+
+  if (attemptBtn) {
+    const subId = attemptBtn.dataset.attemptSubmission;
+    const outcome = document.querySelector(`[data-attempt-outcome-for="${subId}"]`).value;
+    const errorMessage = document.querySelector(`[data-attempt-error-for="${subId}"]`).value.trim();
+    const recordedBy = document.querySelector(`[data-attempt-by-for="${subId}"]`).value.trim();
+    if (!recordedBy) {
+      toast("กรุณากรอกชื่อผู้บันทึก", true);
+      return;
+    }
+    attemptBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/gov/submissions/${subId}/attempt`, {
+        outcome, error_message: errorMessage || undefined, recorded_by: recordedBy,
+      });
+      toast("บันทึกผลการลองส่งเรียบร้อยแล้ว");
+      await Promise.all([loadGovSubmissions(), loadGovDeadLetter()]);
+    } catch (err) {
+      toast("บันทึกผลไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      attemptBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (ackBtn) {
+    const subId = ackBtn.dataset.acknowledgeSubmission;
+    const ackRef = document.querySelector(`[data-ack-ref-for="${subId}"]`).value.trim();
+    const recordedBy = document.querySelector(`[data-ack-by-for="${subId}"]`).value.trim();
+    if (!ackRef || !recordedBy) {
+      toast("กรุณากรอกเลขอ้างอิงและชื่อผู้บันทึก", true);
+      return;
+    }
+    ackBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/gov/submissions/${subId}/acknowledge`, { ack_reference: ackRef, recorded_by: recordedBy });
+      toast("บันทึกการตอบรับเรียบร้อยแล้ว");
+      await loadGovSubmissions();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      ackBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (cancelBtn) {
+    const subId = cancelBtn.dataset.cancelSubmission;
+    const cancelledBy = document.querySelector(`[data-cancel-sub-by-for="${subId}"]`).value.trim();
+    const reason = document.querySelector(`[data-cancel-sub-reason-for="${subId}"]`).value.trim();
+    if (!cancelledBy || !reason) {
+      toast("กรุณากรอกชื่อผู้ยกเลิกและเหตุผล", true);
+      return;
+    }
+    cancelBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/gov/submissions/${subId}/cancel`, { cancelled_by: cancelledBy, reason });
+      toast("ยกเลิกรายการเรียบร้อยแล้ว");
+      await loadGovSubmissions();
+    } catch (err) {
+      toast("ยกเลิกไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+      cancelBtn.disabled = false;
+    }
+  }
+});
+
+document.getElementById("govDeadLetterSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-requeue-submission]");
+  if (!btn) return;
+  const subId = btn.dataset.requeueSubmission;
+  const attempts = document.querySelector(`[data-requeue-attempts-for="${subId}"]`).value;
+  const recordedBy = document.querySelector(`[data-requeue-by-for="${subId}"]`).value.trim();
+  if (!attempts || !recordedBy) {
+    toast("กรุณากรอกจำนวนครั้งที่เพิ่มและชื่อผู้นำกลับเข้าคิว", true);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/gov/submissions/${subId}/requeue`, {
+      additional_attempts: Number(attempts), recorded_by: recordedBy,
+    });
+    toast("นำกลับเข้าคิวเรียบร้อยแล้ว");
+    await Promise.all([loadGovSubmissions(), loadGovDeadLetter()]);
+  } catch (err) {
+    toast("นำกลับเข้าคิวไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+    btn.disabled = false;
+  }
+});
+
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkCoopAPI.logout());
 
 /**
@@ -1698,6 +2158,7 @@ async function init() {
   refreshFinance();
   refreshProcessing();
   refreshLogistics();
+  refreshGovGateway();
 }
 
 init();
