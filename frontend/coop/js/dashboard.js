@@ -2122,6 +2122,179 @@ document.getElementById("govDeadLetterSection").addEventListener("click", async 
   }
 });
 
+// ---------- เอกสารจดทะเบียนสหกรณ์ (M01 Object Storage) ----------
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result); // data: URL — matches lib/storage.js's decodeBase64Payload
+    reader.onerror = () => reject(reader.error || new Error("read_failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatBytes(n) {
+  if (!n) return "0 B";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function loadRegistrationDocument() {
+  const el = document.getElementById("registrationDocumentSection");
+  try {
+    const { file } = await AgroLinkCoopAPI.get("/coop/registration-document");
+    if (!file) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีเอกสารแนบ — ใช้ฟอร์มด้านล่างเพื่ออัปโหลดไฟล์แรก</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="detail-line"><strong>${escapeHtml(file.original_filename)}</strong> (${formatBytes(file.byte_size)})</div>
+      <div class="detail-line muted">อัปโหลดโดย ${escapeHtml(file.uploaded_by)} เมื่อ ${thaiDate(file.created_at)}</div>
+      <div class="action-row">
+        <button type="button" class="btn btn-ghost btn-sm" id="viewRegistrationDocumentBtn" data-file-id="${file.file_id}">เปิดดูเอกสาร</button>
+      </div>
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลเอกสารไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("registrationDocumentSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("#viewRegistrationDocumentBtn");
+  if (!btn) return;
+  const fileId = btn.dataset.fileId;
+  btn.disabled = true;
+  try {
+    const session = AgroLinkCoopAPI.getSession();
+    const res = await fetch(`${API_BASE}/storage/${fileId}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+    if (!res.ok) throw new Error(`download_failed_${res.status}`);
+    const blob = await res.blob();
+    window.open(URL.createObjectURL(blob), "_blank");
+  } catch (err) {
+    toast("เปิดเอกสารไม่สำเร็จ: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("registrationDocumentUploadBtn").addEventListener("click", async () => {
+  const input = document.getElementById("registrationDocumentInput");
+  const file = input.files[0];
+  if (!file) {
+    toast("กรุณาเลือกไฟล์ก่อน", true);
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    toast("ไฟล์มีขนาดใหญ่เกิน 5MB", true);
+    return;
+  }
+  const btn = document.getElementById("registrationDocumentUploadBtn");
+  btn.disabled = true;
+  try {
+    const dataUrl = await fileToBase64(file);
+    const uploadResult = await AgroLinkCoopAPI.post("/storage/upload", {
+      purpose: "cooperative_registration_document",
+      filename: file.name,
+      content_type: file.type,
+      file_base64: dataUrl,
+      uploaded_by: document.getElementById("orgName").textContent || "เจ้าหน้าที่สหกรณ์",
+    });
+    await AgroLinkCoopAPI.post("/coop/registration-document/link", { file_id: uploadResult.file_id });
+    toast("อัปโหลดเอกสารเรียบร้อยแล้ว");
+    input.value = "";
+    await loadRegistrationDocument();
+  } catch (err) {
+    const reason = (err.body && err.body.error) || err.message;
+    toast("อัปโหลดไม่สำเร็จ: " + reason, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------- จัดการเจ้าหน้าที่สหกรณ์ (Staff Login, M01) ----------
+const STAFF_STATUS_LABEL_TH = { Active: "ใช้งานอยู่", Inactive: "ปิดใช้งานแล้ว" };
+
+async function loadStaffRoles() {
+  const sel = document.getElementById("staffRoleSelect");
+  try {
+    const roles = await AgroLinkCoopAPI.get("/coop/staff/roles");
+    sel.innerHTML = `<option value="">-- เลือกบทบาท --</option>` +
+      roles.map((r) => `<option value="${escapeHtml(r.role_code)}">${escapeHtml(r.description || r.role_code)}</option>`).join("");
+  } catch (err) {
+    sel.innerHTML = `<option value="">โหลดบทบาทไม่สำเร็จ</option>`;
+  }
+}
+
+function staffCard(m) {
+  const badge = `<span class="badge ${m.status === "Active" ? "status-active" : "status-declined"}">${escapeHtml(STAFF_STATUS_LABEL_TH[m.status] || m.status)}</span>`;
+  const actions = m.status === "Active"
+    ? `<div class="action-row"><button type="button" class="btn btn-decline btn-sm" data-deactivate-staff="${m.member_id}">ปิดใช้งานบัญชี</button></div>`
+    : "";
+  return `
+    <div class="item-card" data-staff-id="${m.member_id}">
+      <div class="row"><span class="title">${escapeHtml(m.full_name)}</span>${badge}</div>
+      <div class="detail-line muted">บทบาท: ${escapeHtml(m.role_description || m.role_code || "-")}</div>
+      ${m.auth_subject_id ? `<div class="detail-line muted">Auth Subject (สำหรับเข้าสู่ระบบ): ${escapeHtml(m.auth_subject_id)}</div>` : ""}
+      <div class="detail-line muted">สร้างเมื่อ ${thaiDate(m.created_at)}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadStaff() {
+  const el = document.getElementById("staffListSection");
+  try {
+    const staff = await AgroLinkCoopAPI.get("/coop/staff");
+    el.innerHTML = staff.length === 0
+      ? `<div class="empty-state">ยังไม่มีบัญชีเจ้าหน้าที่ — ใช้ฟอร์มด้านบนเพื่อสร้างรายการแรก</div>`
+      : staff.map(staffCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายชื่อเจ้าหน้าที่ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("staffForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fullName = document.getElementById("staffFullNameInput").value.trim();
+  const nationalId = document.getElementById("staffNationalIdInput").value.trim();
+  const roleCode = document.getElementById("staffRoleSelect").value;
+  const createdBy = document.getElementById("staffCreatedByInput").value.trim();
+  if (!fullName || !nationalId || !roleCode || !createdBy) {
+    toast("กรุณากรอกข้อมูลให้ครบทุกช่อง", true);
+    return;
+  }
+  const btn = document.getElementById("staffSubmitBtn");
+  btn.disabled = true;
+  try {
+    const result = await AgroLinkCoopAPI.post("/coop/staff", {
+      full_name: fullName, national_id: nationalId, role_code: roleCode, created_by: createdBy,
+    });
+    toast(`สร้างบัญชีเรียบร้อยแล้ว — รหัสเข้าสู่ระบบ: ${result.auth_subject_id} (กรุณาคัดลอกไว้แจ้งเจ้าหน้าที่)`);
+    document.getElementById("staffForm").reset();
+    await loadStaff();
+  } catch (err) {
+    toast("สร้างบัญชีไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("staffListSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-deactivate-staff]");
+  if (!btn) return;
+  const memberId = btn.dataset.deactivateStaff;
+  if (!confirm("ยืนยันปิดใช้งานบัญชีเจ้าหน้าที่รายนี้?")) return;
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/staff/${memberId}/deactivate`, {});
+    toast("ปิดใช้งานบัญชีเรียบร้อยแล้ว");
+    await loadStaff();
+  } catch (err) {
+    toast("ปิดใช้งานไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+    btn.disabled = false;
+  }
+});
+
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkCoopAPI.logout());
 
 /**
@@ -2159,6 +2332,9 @@ async function init() {
   refreshProcessing();
   refreshLogistics();
   refreshGovGateway();
+  loadStaffRoles();
+  loadStaff();
+  loadRegistrationDocument();
 }
 
 init();

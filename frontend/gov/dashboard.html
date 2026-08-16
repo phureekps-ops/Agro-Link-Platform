@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลเจ้าหน้าที่ภาครัฐ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🏛️</span><span>AgroLink Platform — พอร์ทัลเจ้าหน้าที่ภาครัฐ</span></div>
+    <div class="who">
+      <span class="name" id="officerName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">👤 ข้อมูลของท่าน</div>
+    <div id="profileSection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลเจ้าหน้าที่…</div>
+    </div>
+
+    <div class="section-title">🏢 สหกรณ์ในเขตความรับผิดชอบ</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมายเหตุขอบเขต: ข้อมูลด้านล่างเป็นข้อมูลเชิงพรรณนา (descriptive) สำหรับติดตามภาพรวมเท่านั้น พอร์ทัลนี้เป็นแบบอ่านอย่างเดียว (read-only) —
+      การอนุมัติ/แก้ไขข้อมูลสหกรณ์ยังคงทำผ่านผู้ดูแลระบบ (Platform Ops) เท่านั้น
+    </p>
+    <div id="cooperativesSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อสหกรณ์…</div>
+    </div>
+
+    <div class="section-title" id="detailSectionTitle" style="display:none;">🔍 รายละเอียดสหกรณ์</div>
+    <div id="cooperativeDetailSection" style="display:none;"></div>
+
+    <div class="section-title">📊 ภาพรวมเชิงสถิติ (Analytics)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ข้อมูลสรุปเชิงพรรณนา (descriptive) จากฐานข้อมูลของสหกรณ์ในเขตความรับผิดชอบของท่าน — ไม่รวมข้อมูลคะแนนสินเชื่อรายบุคคลของเกษตรกร
+      (ข้อมูลดังกล่าวสงวนไว้สำหรับผู้ดูแลระบบ Platform Ops เท่านั้น เนื่องจากเป็นข้อมูลอ่อนไหวรายบุคคล)
+    </p>
+
+    <div style="font-weight:700; margin: 10px 0 8px;">จำนวนสมาชิกสหกรณ์ (ที่แจ้งเอง) แยกตามจังหวัด</div>
+    <div id="membershipSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div style="font-weight:700; margin: 18px 0 8px;">ปริมาณการรับซื้อ แยกตามจังหวัด/ชนิดผลผลิต</div>
+    <div id="deliveryVolumeSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div style="font-weight:700; margin: 18px 0 8px;">อัตราการใช้พื้นที่คลัง/ลานตาก แยกตามจังหวัด</div>
+    <div id="warehouseUtilizationSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div style="font-weight:700; margin: 18px 0 8px;">ผลผลิตที่ได้จากการแปรรูป (Yield)</div>
+    <div id="processingYieldSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

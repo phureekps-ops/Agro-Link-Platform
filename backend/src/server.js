@@ -19,6 +19,8 @@ const fertilizerMixingRouter = require('./routes/fertilizermixing');
 const carbonRouter = require('./routes/carbon');
 const farmerMachineryRouter = require('./routes/farmermachinery');
 const coopCollectionRouter = require('./routes/coopcollection');
+const governmentRouter = require('./routes/government');
+const storageRouter = require('./routes/storage');
 
 const app = express();
 
@@ -73,6 +75,16 @@ app.use('/buyer', buyerRouter);
 // produce.delivery machinery under the hood (see the route file's own
 // doc comment).
 app.use('/coop', coopCollectionRouter);
+// government.js — Provincial/National government officer portal
+// (identity.government_officer, see grant_staff_and_government_access.
+// sql). A brand new subject type, so its own prefix rather than sharing
+// '/admin' (Platform Ops) — a government officer is explicitly NOT
+// Platform Ops, just as a Cooperative is not a private Buyer.
+app.use('/gov', governmentRouter);
+// storage.js — generic object storage upload/download (M01, see
+// backend/db/grant_object_storage.sql). Its own prefix since it is
+// subject-type agnostic and not owned by any one portal.
+app.use('/storage', storageRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/marketvenue', marketVenueRouter);

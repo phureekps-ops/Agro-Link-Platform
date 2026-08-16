@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ข้อมูลดาวเทียม/Remote Sensing (Satellite Observations)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🛰️</span><span>AgroLink Platform — ข้อมูลดาวเทียม/Remote Sensing</span></div>
+    <div class="who">
+      <span class="name">ผู้ดูแลระบบ</span>
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับแดชบอร์ดผู้ดูแลระบบ</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="section-title">🛰️ บันทึกข้อมูลดาวเทียม/Remote Sensing</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมายเหตุขอบเขต: สภาพแวดล้อมนี้ยังไม่ได้เชื่อมต่อผู้ให้บริการภาพถ่ายดาวเทียมจริง (Sentinel Hub / Google Earth Engine / GISTDA)
+      — ผู้ดูแลระบบป้อนข้อมูลด้วยมือแทนในขั้นนี้ (source_provider = manual) โดยตารางออกแบบให้รองรับการเชื่อมต่อ API จริงในอนาคตได้โดยไม่ต้องแก้ schema
+      ตารางนี้แยกจากข้อมูลดาวเทียมของโมดูลคาร์บอนเครดิต (AWD) ซึ่งใช้เฉพาะสถานะน้ำท่วม/แห้งเท่านั้น
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="observationForm" class="form-grid">
+        <div class="field full">
+          <label for="unitSelect">แปลง/หน่วยผลิต</label>
+          <select id="unitSelect" required>
+            <option value="">-- กำลังโหลดรายชื่อแปลง --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="observationDateInput">วันที่ถ่ายภาพ/สังเกตการณ์</label>
+          <input type="date" id="observationDateInput" required />
+        </div>
+        <div class="field">
+          <label for="observationTypeSelect">ประเภทข้อมูล</label>
+          <select id="observationTypeSelect" required>
+            <option value="">-- เลือกประเภท --</option>
+            <option value="ndvi">ค่าดัชนีพืชพรรณ (NDVI)</option>
+            <option value="crop_health">สุขภาพพืช (Crop Health)</option>
+            <option value="land_cover">การใช้ที่ดิน (Land Cover)</option>
+            <option value="flood_extent">พื้นที่น้ำท่วม (Flood Extent)</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="sourceProviderSelect">แหล่งข้อมูล</label>
+          <select id="sourceProviderSelect">
+            <option value="manual">ป้อนด้วยมือ (Manual)</option>
+            <option value="sentinel1_sar">Sentinel-1 SAR</option>
+            <option value="sentinel2_optical">Sentinel-2 Optical</option>
+            <option value="landsat">Landsat</option>
+            <option value="gistda">GISTDA</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="valueNumericInput">ค่าตัวเลข (ถ้ามี เช่น NDVI -1 ถึง 1)</label>
+          <input type="number" id="valueNumericInput" step="0.0001" placeholder="เช่น 0.72" />
+        </div>
+        <div class="field">
+          <label for="valueLabelInput">ค่าป้ายกำกับ (ถ้ามี เช่น Healthy/Stressed)</label>
+          <input type="text" id="valueLabelInput" placeholder="เช่น Healthy" />
+        </div>
+        <div class="field">
+          <label for="imageRefInput">อ้างอิงรูปภาพ/ไฟล์ (URL หรือรหัสอ้างอิง — ไม่บังคับ)</label>
+          <input type="text" id="imageRefInput" placeholder="เช่น https://..." />
+        </div>
+        <div class="field">
+          <label for="recordedByInput">ชื่อผู้บันทึก</label>
+          <input type="text" id="recordedByInput" placeholder="เช่น ผู้ดูแลระบบ ก." required />
+        </div>
+        <div class="field full">
+          <label for="noteInput">หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="noteInput" />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="observationSubmitBtn" style="max-width:260px;">บันทึกข้อมูล</button>
+    </div>
+
+    <div class="section-title">📋 ประวัติข้อมูลของแปลงที่เลือก</div>
+    <div id="observationsSection" class="card-list">
+      <div class="loading-line">เลือกแปลงด้านบนเพื่อดูประวัติข้อมูล</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/satellite-observations.js"></script>
+</body>
+</html>

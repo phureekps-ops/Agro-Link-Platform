@@ -130,6 +130,29 @@ document.getElementById("cooperativesSection").addEventListener("click", async (
   await loadCooperativeDetail(btn.dataset.viewCoop);
 });
 
+// Platform Ops viewing a cooperative's registration document — same
+// authenticated-blob-fetch pattern as coop/js/dashboard.js's own viewer
+// (GET /storage/:id requires a Bearer token, so a plain <a href> can't be
+// used). Allowed because storage.js's ownership check treats a 'platform'
+// subject as always authorized, regardless of who originally uploaded it.
+document.getElementById("cooperativeDetailSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("#viewRegistrationDocumentBtn");
+  if (!btn) return;
+  const fileId = btn.dataset.fileId;
+  btn.disabled = true;
+  try {
+    const session = AgroLinkAdminAPI.getSession();
+    const res = await fetch(`${API_BASE}/storage/${fileId}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+    if (!res.ok) throw new Error(`download_failed_${res.status}`);
+    const blob = await res.blob();
+    window.open(URL.createObjectURL(blob), "_blank");
+  } catch (err) {
+    toast("เปิดเอกสารไม่สำเร็จ: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---------- รายละเอียดสหกรณ์ + สิทธิ์การเข้าถึง ----------
 async function loadCooperativeDetail(orgId) {
   const titleEl = document.getElementById("detailSectionTitle");
@@ -157,6 +180,12 @@ async function loadCooperativeDetail(orgId) {
         ${c.notes ? `<div class="detail-line muted">หมายเหตุ: ${escapeHtml(c.notes)}</div>` : ""}
         <div class="detail-line muted">Auth Subject (สำหรับเข้าสู่ระบบ): ${escapeHtml(c.auth_subject_id)}</div>
         <div class="detail-line muted">จัดตั้งเมื่อ ${thaiDate(c.created_at)}</div>
+        <div class="detail-line">
+          เอกสารจดทะเบียน:
+          ${c.registration_document_file_id
+            ? `<button type="button" class="btn btn-ghost btn-sm" id="viewRegistrationDocumentBtn" data-file-id="${c.registration_document_file_id}" style="margin-left:6px;">${escapeHtml(c.registration_document_filename)} — เปิดดู</button>`
+            : `<span class="muted">ยังไม่มีเอกสารแนบ (สหกรณ์ยังไม่ได้อัปโหลด)</span>`}
+        </div>
         <div class="detail-line" style="margin-top:6px;">
           <a href="../coop/index.html" target="_blank" rel="noopener">เปิดพอร์ทัลสหกรณ์ (จุดรับซื้อผลผลิต) &rarr;</a>
           — ใช้ Auth Subject ด้านบนเพื่อเข้าสู่ระบบในนามสหกรณ์นี้

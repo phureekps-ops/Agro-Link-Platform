@@ -972,10 +972,13 @@ router.get('/cooperatives/:id', async (req, res, next) => {
       const orgRes = await client.query(
         `SELECT o.org_id, o.org_name, o.tax_id, o.kyb_status, o.verified_badge, o.auth_subject_id, o.created_at,
                 cp.province_code, p.province_name_th, p.region_th,
-                cp.cooperative_registration_no, cp.established_year, cp.member_count_reported, cp.notes
+                cp.cooperative_registration_no, cp.established_year, cp.member_count_reported, cp.notes,
+                cp.registration_document_file_id, f.original_filename AS registration_document_filename,
+                f.byte_size AS registration_document_byte_size
            FROM identity.organization o
            JOIN registry.cooperative_profile cp ON cp.org_id = o.org_id
            JOIN registry.province p ON p.province_code = cp.province_code
+           LEFT JOIN storage.file_object f ON f.file_id = cp.registration_document_file_id
           WHERE o.org_id = $1 AND o.org_type = 'Cooperative'`,
         [coopOrgId],
       );
@@ -1178,6 +1181,300 @@ router.post('/cooperatives/:id/activate-settlement', async (req, res, next) => {
       return res.status(409).json({ error: 'cannot_activate_settlement', detail: result.businessError });
     }
     return res.json(result.profile);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * ============================================================================
+ * M01 Tenant Foundation, remaining piece — government officer provisioning.
+ * Same "Platform Ops provisions, no self-service signup" shape as POST
+ * /admin/cooperatives above. See grant_staff_and_government_access.sql for
+ * the full design rationale (why government_officer is its own table, not
+ * an identity.organization row — a government officer isn't affiliated
+ * with any organization at all).
+ * ============================================================================
+ */
+
+const GOVERNMENT_OFFICER_CONSTRAINT_ERRORS = {
+  government_officer_auth_subject_id_key: 'subject_claim_collision',
+};
+
+/**
+ * GET /admin/government-officers — every government officer, most recent
+ * first.
+ */
+router.get('/government-officers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT g.officer_id, g.full_name, g.scope_type, g.province_code, p.province_name_th, g.status,
+                g.created_by, g.created_at, sr.role_code, r.description AS role_description
+           FROM identity.government_officer g
+           LEFT JOIN registry.province p ON p.province_code = g.province_code
+           LEFT JOIN identity.subject_role sr ON sr.subject_type = 'government_officer' AND sr.subject_id = g.officer_id
+           LEFT JOIN identity.role r ON r.role_code = sr.role_code
+          ORDER BY g.created_at DESC`,
+      );
+      await logAccess(client, 'read', 'identity.government_officer', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/government-officers/:id — single officer detail, including
+ * auth_subject_id (shown here for Platform Ops to relay out-of-band, same
+ * as the cooperative detail screen).
+ */
+router.get('/government-officers/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const officerId = req.params.id;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const officerRes = await client.query(
+        `SELECT g.officer_id, g.full_name, g.scope_type, g.province_code, p.province_name_th, g.status,
+                g.auth_subject_id, g.created_by, g.created_at
+           FROM identity.government_officer g
+           LEFT JOIN registry.province p ON p.province_code = g.province_code
+          WHERE g.officer_id = $1`,
+        [officerId],
+      );
+      if (officerRes.rows.length === 0) return { notFound: true };
+
+      const rolesRes = await client.query(
+        `SELECT sr.role_code, r.description, sr.granted_at
+           FROM identity.subject_role sr
+           JOIN identity.role r ON r.role_code = sr.role_code
+          WHERE sr.subject_type = 'government_officer' AND sr.subject_id = $1
+          ORDER BY sr.granted_at ASC`,
+        [officerId],
+      );
+      await logAccess(client, 'read', 'identity.government_officer', officerId);
+      return { officer: officerRes.rows[0], roles: rolesRes.rows };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'government_officer_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/government-officers
+ * Body: { full_name, national_id, scope_type: National|Province,
+ *         province_code? (required iff Province), role_code, created_by }
+ * Returns auth_subject_id for Platform Ops to relay to the officer
+ * out-of-band — same shape as POST /admin/cooperatives.
+ */
+router.post('/government-officers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    full_name: fullName, national_id: nationalId, scope_type: scopeType,
+    province_code: provinceCode, role_code: roleCode, created_by: createdBy,
+  } = req.body || {};
+
+  if (!fullName || !nationalId || !scopeType || !roleCode || !createdBy) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['full_name', 'national_id', 'scope_type', 'role_code', 'created_by'],
+    });
+  }
+  if (!['National', 'Province'].includes(scopeType)) {
+    return res.status(400).json({ error: 'invalid_scope_type', valid: ['National', 'Province'] });
+  }
+  if (scopeType === 'Province' && !provinceCode) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['province_code'] });
+  }
+
+  const nationalIdHash = crypto.createHash('sha256').update(String(nationalId).trim()).digest('hex');
+  const authSubjectId = `oidc|gov-${crypto.randomUUID()}`;
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT identity.register_government_officer($1, $2, $3, $4, $5, $6, $7) AS officer_id',
+          [fullName, nationalIdHash, scopeType, provinceCode || null, authSubjectId, roleCode, createdBy],
+        );
+        await logAccess(client, 'write', 'identity.government_officer', rows[0].officer_id);
+        return { officerId: rows[0].officer_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) return res.status(409).json({ error: 'cannot_create_government_officer', detail: result.businessError });
+    return res.status(201).json({ officer_id: result.officerId, auth_subject_id: authSubjectId });
+  } catch (err) {
+    if (err.code === UNIQUE_VIOLATION) {
+      const mapped = GOVERNMENT_OFFICER_CONSTRAINT_ERRORS[err.constraint];
+      if (mapped) return res.status(409).json({ error: mapped });
+    }
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/government-officers/:id/deactivate
+ */
+router.post('/government-officers/:id/deactivate', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      try {
+        await client.query('SELECT identity.deactivate_government_officer($1)', [id]);
+        await logAccess(client, 'write', 'identity.government_officer', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) return res.status(404).json({ error: 'government_officer_not_found' });
+    return res.json({ status: 'Inactive' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ===========================================================================
+// M14 Data/AI/Satellite — general-purpose satellite observation adapter
+// (see grant_satellite_observation.sql for the schema and why this is
+// deliberately a SEPARATE table from carbon.satellite_observation).
+// ===========================================================================
+
+/**
+ * GET /admin/production-units — a flat, farmer-joined list of every
+ * registry.production_unit, for the satellite-observations admin page to
+ * pick a unit_id from (no such generic listing endpoint existed before
+ * this — the carbon module's own admin UI reaches a unit_id through a
+ * different, AWD-specific path). identity.farmer/registry.production_unit
+ * have no RLS restricting 'platform', same as GET /admin/farmers above.
+ */
+router.get('/production-units', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT pu.unit_id, pu.unit_type, pu.commodity_code, c.name_th AS commodity_name_th,
+                pu.area_rai, pu.status, f.farmer_id, f.full_name AS farmer_name
+           FROM registry.production_unit pu
+           JOIN identity.farmer f ON f.farmer_id = pu.owner_farmer_id
+           LEFT JOIN registry.commodity_ref c ON c.commodity_code = pu.commodity_code
+          ORDER BY f.full_name, pu.created_at DESC`,
+      );
+      await logAccess(client, 'read', 'registry.production_unit', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+const SATELLITE_OBSERVATION_TYPES = ['ndvi', 'crop_health', 'land_cover', 'flood_extent', 'other'];
+const SATELLITE_SOURCE_PROVIDERS = ['manual', 'sentinel1_sar', 'sentinel2_optical', 'landsat', 'gistda', 'other'];
+
+/**
+ * GET /admin/satellite-observations?unit_id= — optionally filtered to one
+ * plot, most recent first. Same shape as GET /admin/carbon/satellite-
+ * observations.
+ */
+router.get('/satellite-observations', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { unit_id: unitId } = req.query;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      let filter = '';
+      if (unitId) {
+        params.push(unitId);
+        filter = 'WHERE unit_id = $1';
+      }
+      const result = await client.query(
+        `SELECT observation_id, unit_id, observation_date, source_provider, observation_type,
+                value_numeric, value_label, image_ref, note, recorded_by, ingested_at
+           FROM satellite.observation
+           ${filter}
+          ORDER BY observation_date DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'satellite.observation', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/satellite-observations
+ * Body: { unit_id, observation_date, observation_type, value_numeric?,
+ *         value_label?, source_provider?, image_ref?, note?, recorded_by }
+ * At least one of value_numeric/value_label is required (see the DB
+ * CHECK constraint this mirrors). Upserts on (unit_id, observation_date,
+ * source_provider, observation_type) — re-entering the same plot/date/
+ * provider/type corrects rather than duplicates, same convention as
+ * carbon's own manual-entry route.
+ */
+router.post('/satellite-observations', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    unit_id: unitId, observation_date: observationDate, observation_type: observationType,
+    value_numeric: valueNumeric, value_label: valueLabel, source_provider: sourceProvider,
+    image_ref: imageRef, note, recorded_by: recordedBy,
+  } = req.body || {};
+
+  if (!unitId || !observationDate || !observationType || !recordedBy) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['unit_id', 'observation_date', 'observation_type', 'recorded_by'],
+    });
+  }
+  if (!SATELLITE_OBSERVATION_TYPES.includes(observationType)) {
+    return res.status(400).json({ error: 'invalid_observation_type', valid: SATELLITE_OBSERVATION_TYPES });
+  }
+  if (sourceProvider && !SATELLITE_SOURCE_PROVIDERS.includes(sourceProvider)) {
+    return res.status(400).json({ error: 'invalid_source_provider', valid: SATELLITE_SOURCE_PROVIDERS });
+  }
+  if ((valueNumeric === undefined || valueNumeric === null || valueNumeric === '') && !valueLabel) {
+    return res.status(400).json({ error: 'value_numeric_or_value_label_required' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const unit = await client.query('SELECT unit_id FROM registry.production_unit WHERE unit_id = $1', [unitId]);
+      if (unit.rows.length === 0) return { unitNotFound: true };
+
+      const obsRes = await client.query(
+        `INSERT INTO satellite.observation
+           (unit_id, observation_date, source_provider, observation_type, value_numeric, value_label, image_ref, note, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (unit_id, observation_date, source_provider, observation_type) DO UPDATE SET
+           value_numeric = EXCLUDED.value_numeric,
+           value_label = EXCLUDED.value_label,
+           image_ref = EXCLUDED.image_ref,
+           note = EXCLUDED.note,
+           recorded_by = EXCLUDED.recorded_by,
+           ingested_at = now()
+         RETURNING *`,
+        [unitId, observationDate, sourceProvider || 'manual', observationType, valueNumeric || null, valueLabel || null, imageRef || null, note || null, recordedBy],
+      );
+      await logAccess(client, 'write', 'satellite.observation', obsRes.rows[0].observation_id);
+      return { observation: obsRes.rows[0] };
+    });
+
+    if (result.unitNotFound) return res.status(404).json({ error: 'production_unit_not_found' });
+    return res.status(201).json(result.observation);
   } catch (err) {
     return next(err);
   }

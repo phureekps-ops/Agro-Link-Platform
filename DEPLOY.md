@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (28 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (39 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -149,7 +149,26 @@ grant_stage_calendar_farmer.sql
 grant_fertilizer_mixing_service.sql
 grant_fertilizer_mixing_group_order.sql
 grant_carbon_awd.sql
+grant_cooperative_tenant_foundation.sql
+grant_cooperative_collection_station.sql
+grant_cooperative_warehouse.sql
+grant_cooperative_finance_dashboard.sql
+grant_cooperative_processing.sql
+grant_cooperative_logistics.sql
+grant_cooperative_gov_gateway.sql
+grant_staff_and_government_access.sql
+grant_object_storage.sql
+grant_analytics_warehouse.sql
+grant_satellite_observation.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-16:** 11 ไฟล์สุดท้าย (`grant_cooperative_tenant_foundation.sql`
+ถึง `grant_satellite_observation.sql`) — โมดูลสหกรณ์ทั้งหมด (M01 รากฐานสหกรณ์,
+M09 จุดรับซื้อผลผลิต, M10 คลัง/ลานตาก, M04 แดชบอร์ดการเงินสหกรณ์, M11 การแปรรูป,
+M13 การขนส่ง, M15 ประตูเชื่อมต่อภาครัฐ, M01 ส่วนที่ค้าง — ลำดับชั้นจังหวัด/บัญชีรายบุคคล
+ของเจ้าหน้าที่สหกรณ์/เจ้าหน้าที่ภาครัฐ + ระบบจัดเก็บไฟล์ และ M14 คลังข้อมูลวิเคราะห์เชิงสถิติ
++ ข้อมูลดาวเทียม) ถูกสร้างและทดสอบจริงในเซสชันนี้เช่นกัน แต่ตกหล่นจากรายการนี้เหมือนกรณี
+`grant_carbon_awd.sql` ด้านบน — เพิ่มเข้ามาให้ครบเพื่อให้การ deploy ฐานข้อมูลใหม่ตั้งแต่ต้นได้ครบทุกฟีเจอร์
 
 **เพิ่มเมื่อ 2026-08-04 (เช้า):** `grant_carbon_awd.sql` — ระบบยืนยันการปลูกข้าว
 คาร์บอนต่ำแบบเปียกสลับแห้ง (AWD) + ประเมินคาร์บอนเครดิต ดูรายละเอียดที่

@@ -77,4 +77,33 @@ function requirePlatform(req, res, next) {
   return next();
 }
 
-module.exports = { requireAuth, requireFarmer, requireOrganization, requirePlatform };
+/**
+ * Extra gate for the /gov/* slice (Provincial/National government officer
+ * portal — see grant_staff_and_government_access.sql). A valid farmer/
+ * organization/organization_member/platform JWT is still a valid JWT, but
+ * it has no business calling these endpoints.
+ */
+function requireGovernmentOfficer(req, res, next) {
+  if (!req.subject || req.subject.subjectType !== 'government_officer') {
+    return res.status(403).json({ error: 'government_officer_subject_required' });
+  }
+  return next();
+}
+
+/**
+ * Extra gate for routes meant for an individual cooperative staff login
+ * (subjectType='organization_member', subjectId=member_id — NOT org_id).
+ * See coopcollection.js's M01 staff section for the scope note on how
+ * far this identity currently reaches.
+ */
+function requireOrganizationMember(req, res, next) {
+  if (!req.subject || req.subject.subjectType !== 'organization_member') {
+    return res.status(403).json({ error: 'organization_member_subject_required' });
+  }
+  return next();
+}
+
+module.exports = {
+  requireAuth, requireFarmer, requireOrganization, requirePlatform,
+  requireGovernmentOfficer, requireOrganizationMember,
+};

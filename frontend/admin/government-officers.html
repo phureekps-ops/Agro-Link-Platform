@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — จัดการเจ้าหน้าที่ภาครัฐ (Government Officers)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🏛️</span><span>AgroLink Platform — จัดการเจ้าหน้าที่ภาครัฐ (Government Officers)</span></div>
+    <div class="who">
+      <span class="name">ผู้ดูแลระบบ</span>
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับแดชบอร์ดผู้ดูแลระบบ</a>
+      <a href="cooperatives.html" class="logout-btn" style="text-decoration:none;">จัดการสหกรณ์</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="section-title">➕ เพิ่มเจ้าหน้าที่ภาครัฐใหม่</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      เจ้าหน้าที่ภาครัฐ (กรมส่งเสริมสหกรณ์/กรมตรวจบัญชีสหกรณ์) มี 2 ระดับสิทธิ์: <strong>ระดับประเทศ (National)</strong> เห็นข้อมูลสหกรณ์ทุกจังหวัด
+      และ <strong>ระดับจังหวัด (Province)</strong> เห็นเฉพาะสหกรณ์ในจังหวัดที่รับผิดชอบ — หลังสร้างบัญชีแล้ว ระบบจะสร้างรหัสเข้าสู่ระบบ (Auth Subject)
+      ให้ท่านนำไปแจ้งเจ้าหน้าที่ท่านนั้นด้วยตนเอง (ยังไม่มีอีเมล/รหัสผ่านจริงในระบบทดลองนี้) — สิทธิ์การใช้งานปัจจุบันเป็นแบบอ่านอย่างเดียว (read-only)
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="createOfficerForm" class="form-grid">
+        <div class="field">
+          <label for="officerFullName">ชื่อ-นามสกุล</label>
+          <input type="text" id="officerFullName" placeholder="เช่น สมชาย ใจดี" required />
+        </div>
+        <div class="field">
+          <label for="officerNationalId">เลขบัตรประชาชน</label>
+          <input type="text" id="officerNationalId" placeholder="เช่น 1234567890123" required />
+        </div>
+        <div class="field">
+          <label for="officerScopeSelect">ระดับสิทธิ์</label>
+          <select id="officerScopeSelect" required>
+            <option value="">-- เลือกระดับสิทธิ์ --</option>
+            <option value="National">ระดับประเทศ (National)</option>
+            <option value="Province">ระดับจังหวัด (Province)</option>
+          </select>
+        </div>
+        <div class="field" id="officerProvinceField" style="display:none;">
+          <label for="officerProvinceSelect">จังหวัดที่รับผิดชอบ</label>
+          <select id="officerProvinceSelect"></select>
+        </div>
+        <div class="field">
+          <label for="officerRoleSelect">บทบาท (gov.*)</label>
+          <select id="officerRoleSelect" required>
+            <option value="">-- เลือกบทบาท --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="officerCreatedBy">ชื่อผู้อนุมัติสร้างบัญชี</label>
+          <input type="text" id="officerCreatedBy" placeholder="เช่น ผู้ดูแลระบบ ก." required />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="createOfficerBtn" style="max-width:260px;">สร้างบัญชีเจ้าหน้าที่</button>
+    </div>
+
+    <div class="section-title">🏛️ เจ้าหน้าที่ภาครัฐทั้งหมดในระบบ</div>
+    <div id="officersSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อเจ้าหน้าที่…</div>
+    </div>
+
+    <div class="section-title" id="detailSectionTitle" style="display:none;">🔍 รายละเอียดเจ้าหน้าที่</div>
+    <div id="officerDetailSection" style="display:none;"></div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/government-officers.js"></script>
+</body>
+</html>

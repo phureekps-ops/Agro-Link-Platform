@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireOrganization } = require('../middleware/auth');
@@ -2740,6 +2741,239 @@ router.get('/finance/transactions', async (req, res, next) => {
       return result.rows;
     });
     return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * ============================================================================
+ * M01 Tenant Foundation, remaining piece — per-staff-member login. Lets a
+ * Coop Admin create DISTINCT login accounts for their own people
+ * (coop.manager/coop.accountant/coop.credit_officer/coop.member_officer/
+ * coop.warehouse_officer/coop.admin) instead of everyone sharing the one
+ * organization-level login this platform has used until now. See
+ * grant_staff_and_government_access.sql for the full design rationale.
+ *
+ * Scope note: this is the LOGIN/IDENTITY primitive only. A staff member's
+ * JWT carries subjectType='organization_member' with subjectId=member_id
+ * (NOT org_id) — every OTHER route in this file still assumes subjectId
+ * IS org_id (requireOrganization gates on subjectType==='organization'
+ * specifically), so an organization_member token cannot yet call any of
+ * the M09-M15 routes above. Retrofitting the entire existing coop.* route
+ * surface to accept a second subject type and resolve it to the right
+ * org_id is real future work — deliberately not attempted here. What DOES
+ * work end-to-end today: a staff member can log in, see their own
+ * profile, and every action taken while managing staff is individually
+ * audit-logged (subject_type='organization_member', subject_id=member_id)
+ * rather than blurring into the shared org identity.
+ * ============================================================================
+ */
+
+// national_id_hash exists specifically so the raw national ID is never
+// stored — only a one-way hash of it. Same convention (and same caveat
+// about a real deployment needing a per-deployment pepper) as
+// hashNationalId() in auth.js — duplicated here rather than imported,
+// same one-line-helper-not-worth-coupling-files-together reasoning
+// admin.js's own generateOrgAuthSubjectId() comment already gives.
+function hashNationalId(nationalId) {
+  return crypto.createHash('sha256').update(String(nationalId).trim()).digest('hex');
+}
+
+function generateStaffAuthSubjectId() {
+  return `oidc|staff-${crypto.randomUUID()}`;
+}
+
+/**
+ * GET /coop/staff/roles — the coop.* operational role catalog, read live
+ * from identity.role rather than hard-coded client-side — same
+ * config-drift lesson as the FACILITY_TYPES bug fixed in the M10/M11
+ * section above (a hard-coded copy silently going stale when the DB's own
+ * list changes).
+ */
+router.get('/staff/roles', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT role_code, description FROM identity.role WHERE role_code LIKE 'coop.%' ORDER BY role_code`,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/staff — this cooperative's staff login accounts (eKYB-only
+ * signatory/representative rows with no auth_subject_id are excluded —
+ * this list is specifically about who can log in).
+ */
+router.get('/staff', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT m.member_id, m.full_name, m.status, m.created_at, sr.role_code, r.description AS role_description
+           FROM identity.organization_member m
+           LEFT JOIN identity.subject_role sr ON sr.subject_type = 'organization_member' AND sr.subject_id = m.member_id
+           LEFT JOIN identity.role r ON r.role_code = sr.role_code
+          WHERE m.org_id = $1 AND m.auth_subject_id IS NOT NULL
+          ORDER BY m.created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/staff — create a new staff login account.
+ * Body: { full_name, national_id, role_code, created_by }
+ * Returns auth_subject_id — the Coop Admin relays this to the staff
+ * member out-of-band (same pattern as POST /admin/cooperatives returning
+ * the cooperative's own auth_subject_id for Platform Ops to relay).
+ */
+router.post('/staff', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    full_name: fullName, national_id: nationalId, role_code: roleCode, created_by: createdBy,
+  } = req.body || {};
+
+  if (!fullName || !nationalId || !roleCode || !createdBy) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['full_name', 'national_id', 'role_code', 'created_by'] });
+  }
+
+  const nationalIdHash = hashNationalId(nationalId);
+  const authSubjectId = generateStaffAuthSubjectId();
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT identity.register_staff_member($1, $2, $3, $4, $5, $6) AS member_id',
+          [subjectId, fullName, nationalIdHash, authSubjectId, roleCode, createdBy],
+        );
+        await logAccess(client, 'write', 'identity.organization_member', rows[0].member_id);
+        return { memberId: rows[0].member_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) return res.status(409).json({ error: 'cannot_create_staff_member', detail: result.businessError });
+    return res.status(201).json({ member_id: result.memberId, auth_subject_id: authSubjectId });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'subject_claim_collision' });
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/staff/:id/deactivate — revokes login (audit trail is kept).
+ */
+router.post('/staff/:id/deactivate', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const owned = await client.query(
+        'SELECT member_id FROM identity.organization_member WHERE member_id = $1 AND org_id = $2',
+        [id, subjectId],
+      );
+      if (owned.rows.length === 0) return { staffNotFound: true };
+
+      await client.query('SELECT identity.deactivate_staff_member($1)', [id]);
+      await logAccess(client, 'write', 'identity.organization_member', id);
+      return { ok: true };
+    });
+
+    if (result.staffNotFound) return res.status(404).json({ error: 'staff_not_found' });
+    return res.json({ status: 'Inactive' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ============================================================================
+// M01 — object storage: cooperative registration document. The generic
+// upload lives at POST /storage/upload (src/routes/storage.js, purpose=
+// 'cooperative_registration_document') — the frontend calls that FIRST to
+// get a file_id, then calls POST /coop/registration-document/link below to
+// actually attach it to this cooperative's profile. Two calls rather than
+// one so /storage/upload stays a domain-agnostic primitive any future
+// module can reuse without coopcollection.js needing to know about them
+// (see grant_object_storage.sql's header comment for the full rationale).
+// ============================================================================
+const REGISTRATION_DOCUMENT_PURPOSE = 'cooperative_registration_document';
+
+/**
+ * GET /coop/registration-document — metadata of the document currently on
+ * file (via a join through storage.file_object), or { file: null } if none
+ * has been uploaded yet. Never returns the file bytes themselves — the
+ * frontend fetches those from GET /storage/:id separately, same ownership
+ * check applying there.
+ */
+router.get('/registration-document', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT f.file_id, f.original_filename, f.content_type, f.byte_size, f.uploaded_by, f.created_at
+           FROM registry.cooperative_profile cp
+           JOIN storage.file_object f ON f.file_id = cp.registration_document_file_id
+          WHERE cp.org_id = $1`,
+        [subjectId],
+      );
+      return rows[0] || null;
+    });
+    return res.json({ file: result });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/registration-document/link
+ * Body: { file_id } — must be a file this SAME organization already
+ * uploaded via POST /storage/upload with purpose='cooperative_registration_
+ * document'. Rejects any other file_id (wrong owner, wrong purpose, or
+ * doesn't exist) rather than trusting the caller — same "route validates
+ * ownership, trusts nothing about the ID it was handed" convention used
+ * everywhere else in this codebase.
+ */
+router.post('/registration-document/link', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { file_id: fileId } = req.body || {};
+  if (!fileId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['file_id'] });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const file = await client.query(
+        `SELECT file_id FROM storage.file_object
+          WHERE file_id = $1 AND owner_subject_type = 'organization' AND owner_subject_id = $2 AND purpose = $3`,
+        [fileId, subjectId, REGISTRATION_DOCUMENT_PURPOSE],
+      );
+      if (file.rows.length === 0) return { fileNotFound: true };
+
+      await client.query(
+        'UPDATE registry.cooperative_profile SET registration_document_file_id = $1, updated_at = now() WHERE org_id = $2',
+        [fileId, subjectId],
+      );
+      await logAccess(client, 'write', 'registry.cooperative_profile', subjectId);
+      return { ok: true };
+    });
+
+    if (result.fileNotFound) return res.status(404).json({ error: 'uploaded_file_not_found_for_this_cooperative' });
+    return res.json({ status: 'linked', file_id: fileId });
   } catch (err) {
     return next(err);
   }

@@ -381,6 +381,59 @@
       <div class="loading-line">กำลังโหลดประวัติการรับซื้อ…</div>
     </div>
 
+    <div class="section-title">📄 เอกสารจดทะเบียนสหกรณ์</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      แนบไฟล์สแกน/ถ่ายภาพหนังสือรับรองการจดทะเบียนสหกรณ์ (PDF หรือรูปภาพ ไม่เกิน 5MB) เพื่อเก็บไว้เป็นหลักฐานในระบบ —
+      ผู้ดูแลระบบ (Platform Ops) สามารถเรียกดูเอกสารนี้ได้เพื่อประกอบการตรวจสอบ (KYB) การอัปโหลดครั้งใหม่จะไม่ลบเอกสารเดิม
+      (เก็บเป็นประวัติ) แต่จะใช้ไฟล์ล่าสุดเป็นเอกสารหลักเสมอ
+    </p>
+    <div id="registrationDocumentSection" class="panel">
+      <div class="loading-line">กำลังโหลดข้อมูลเอกสาร…</div>
+    </div>
+    <div class="panel" style="margin-top:12px;">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="registrationDocumentInput">เลือกไฟล์ (PDF, JPG, PNG)</label>
+          <input type="file" id="registrationDocumentInput" accept="application/pdf,image/jpeg,image/png,image/webp" />
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" id="registrationDocumentUploadBtn" style="max-width:220px;">อัปโหลดเอกสาร</button>
+    </div>
+
+    <div class="section-title">👤 จัดการเจ้าหน้าที่สหกรณ์ (Staff Login)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      สร้างบัญชีเข้าสู่ระบบแยกรายบุคคลให้เจ้าหน้าที่สหกรณ์ (ผู้จัดการ/บัญชี/เจ้าหน้าที่สินเชื่อ ฯลฯ) แทนการใช้บัญชีสหกรณ์ร่วมกัน —
+      หลังสร้างบัญชีแล้ว ระบบจะสร้างรหัสเข้าสู่ระบบ (Auth Subject) ให้ท่านนำไปแจ้งเจ้าหน้าที่ท่านนั้นด้วยตนเอง (ยังไม่มีอีเมล/รหัสผ่านจริงในระบบทดลองนี้)
+      หมายเหตุขอบเขต: บัญชีเจ้าหน้าที่ที่สร้างจากส่วนนี้ยังใช้เข้าเมนูอื่นในพอร์ทัลนี้ไม่ได้ (เมนูอื่นทั้งหมดยังผูกกับบัญชีสหกรณ์ส่วนกลางเท่านั้น) —
+      เป็นเพียงชั้นการยืนยันตัวตนเริ่มต้น ส่วนการเชื่อมสิทธิ์การใช้งานจริงรายเมนูเป็นงานขั้นถัดไป
+    </p>
+    <form id="staffForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="staffFullNameInput">ชื่อ-นามสกุล</label>
+          <input type="text" id="staffFullNameInput" placeholder="เช่น วิชัย ทำงานดี" required />
+        </div>
+        <div class="field">
+          <label for="staffNationalIdInput">เลขบัตรประชาชน</label>
+          <input type="text" id="staffNationalIdInput" placeholder="เช่น 1234567890123" required />
+        </div>
+        <div class="field">
+          <label for="staffRoleSelect">บทบาทการทำงาน</label>
+          <select id="staffRoleSelect" required>
+            <option value="">-- เลือกบทบาท --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="staffCreatedByInput">ชื่อผู้อนุมัติสร้างบัญชี</label>
+          <input type="text" id="staffCreatedByInput" placeholder="เช่น ประธานสหกรณ์" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="staffSubmitBtn" style="max-width:220px;">สร้างบัญชีเจ้าหน้าที่</button>
+    </form>
+    <div id="staffListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อเจ้าหน้าที่…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
