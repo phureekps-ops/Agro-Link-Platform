@@ -2979,4 +2979,534 @@ router.post('/registration-document/link', async (req, res, next) => {
   }
 });
 
+/**
+ * M14.1 Cooperative produce/processed-goods catalog — reuses the
+ * InputSupplier product-catalog machinery (marketplace.product_listing /
+ * product_photo / product_order, see src/routes/inputsupplier.js) instead
+ * of a bespoke table set, per an explicit user request to have the
+ * cooperative "use this same catalog." See grant_cooperative_product_
+ * catalog.sql for the two schema changes that made this possible: widened
+ * category CHECK constraints, and product_order.farmer_id becoming
+ * nullable alongside a new buyer_org_id (exactly one of the two set).
+ *
+ * The buyer-facing counterpart (browse + place order) lives in buyer.js as
+ * GET/POST /buyer/coop-products* — this file only has the seller side
+ * (list management + deciding on incoming orders), same split as
+ * inputsupplier.js (seller) / farmer.js (buyer) for the InputSupplier
+ * catalog.
+ *
+ * IMPORTANT: marketplace.product_listing/product_photo/product_order have
+ * NO row-level security (same situation as every other marketplace.*
+ * table — see the note at the top of src/routes/machinery.js). Every
+ * query below MUST include an explicit `WHERE org_id = $1` — this is the
+ * entire security boundary, not defense-in-depth.
+ */
+const COOP_PRODUCT_CATEGORIES = ['produce', 'processed_good', 'other'];
+const COOP_MAX_PHOTO_DATA_URL_LENGTH = 4 * 1024 * 1024;
+
+/**
+ * marketplace.product_listing.org_id REFERENCES partner.vendor_profile
+ * (org_id) — a cooperative provisioned via POST /admin/cooperatives does
+ * NOT get a vendor_profile row automatically (see the doc comment on
+ * POST /admin/cooperatives/:id/activate-settlement in admin.js, which
+ * exists for the exact same FK gap for a different reason — M09
+ * settlement). Rather than forcing every cooperative through that
+ * settlement-activation endpoint before it can even list a product, this
+ * helper provisions an idempotent vendor_profile row inline the first
+ * time a cooperative creates a listing. Reuses an existing row if one
+ * already exists (e.g. because the coop already settled a buyer delivery
+ * before) instead of erroring.
+ */
+async function ensureVendorProfile(client, orgId) {
+  const existing = await client.query('SELECT org_id FROM partner.vendor_profile WHERE org_id = $1', [orgId]);
+  if (existing.rows.length > 0) return;
+  const org = await client.query('SELECT tax_id FROM identity.organization WHERE org_id = $1', [orgId]);
+  await client.query(
+    `INSERT INTO partner.vendor_profile (org_id, business_registration_no)
+     VALUES ($1, $2)
+     ON CONFLICT (org_id) DO NOTHING`,
+    [orgId, org.rows[0].tax_id],
+  );
+}
+
+/**
+ * GET /coop/products?category= — this cooperative's own catalog rows
+ * (active and inactive alike — the seller needs to see deactivated
+ * products too, unlike the buyer-facing browse route which only shows
+ * is_active = true). Mirrors GET /inputsupplier/products exactly.
+ */
+router.get('/products', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { category } = req.query;
+
+  if (category && !COOP_PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: COOP_PRODUCT_CATEGORIES });
+  }
+
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (category) {
+        params.push(category);
+        filter = 'AND category = $2';
+      }
+      const result = await client.query(
+        `SELECT listing_id, category, product_name, brand, description, unit_price, price_unit,
+                is_active, is_featured, featured_until, created_at, updated_at
+           FROM marketplace.product_listing
+          WHERE org_id = $1 ${filter}
+          ORDER BY category, product_name`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.product_listing', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/products
+ * Body: { category, product_name, brand?, description?, unit_price, price_unit? }
+ * category is restricted server-side to COOP_PRODUCT_CATEGORIES
+ * ('produce' / 'processed_good' / 'other') — the DB CHECK constraint is
+ * the union across both InputSupplier and Cooperative sellers (see
+ * grant_cooperative_product_catalog.sql), so this application-level check
+ * is what actually stops a cooperative from listing something under
+ * 'fertilizer_hormone', not the database.
+ */
+router.post('/products', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    category, product_name: productName, brand, description,
+    unit_price: unitPrice, price_unit: priceUnit,
+  } = req.body || {};
+
+  if (!category || !COOP_PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: COOP_PRODUCT_CATEGORIES });
+  }
+  if (!productName || !productName.trim()) {
+    return res.status(400).json({ error: 'product_name_required' });
+  }
+  const price = Number(unitPrice);
+  if (!Number.isFinite(price) || price <= 0) {
+    return res.status(400).json({ error: 'invalid_unit_price' });
+  }
+
+  try {
+    const row = await withSessionContext('organization', subjectId, async (client) => {
+      await ensureVendorProfile(client, subjectId);
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.product_listing (org_id, category, product_name, brand, description, unit_price, price_unit)
+         VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'บาท/หน่วย'))
+         RETURNING listing_id, category, product_name, brand, description, unit_price, price_unit, is_active, created_at, updated_at`,
+        [subjectId, category, productName.trim(), brand || null, description || null, price, priceUnit || null],
+      );
+      await logAccess(client, 'write', 'marketplace.product_listing', rows[0].listing_id);
+      return rows[0];
+    });
+
+    return res.status(201).json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PUT /coop/products/:id
+ * Body: any of { category, product_name, brand, description, unit_price, price_unit, is_active }
+ * Same ownership-gated update shape as PUT /inputsupplier/products/:id.
+ */
+router.put('/products/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const {
+    category, product_name: productName, brand, description,
+    unit_price: unitPrice, price_unit: priceUnit, is_active: isActive,
+  } = req.body || {};
+
+  if (category !== undefined && !COOP_PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: COOP_PRODUCT_CATEGORIES });
+  }
+  if (productName !== undefined && !productName.trim()) {
+    return res.status(400).json({ error: 'product_name_required' });
+  }
+  if (unitPrice !== undefined && (!Number.isFinite(Number(unitPrice)) || Number(unitPrice) <= 0)) {
+    return res.status(400).json({ error: 'invalid_unit_price' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const owned = await client.query(
+        'SELECT listing_id FROM marketplace.product_listing WHERE org_id = $1 AND listing_id = $2',
+        [subjectId, id],
+      );
+      if (owned.rows.length === 0) return { notFound: true };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_listing SET
+           category     = COALESCE($3, category),
+           product_name = COALESCE($4, product_name),
+           brand        = CASE WHEN $5::boolean THEN $6 ELSE brand END,
+           description  = CASE WHEN $7::boolean THEN $8 ELSE description END,
+           unit_price   = COALESCE($9, unit_price),
+           price_unit   = COALESCE($10, price_unit),
+           is_active    = COALESCE($11, is_active),
+           updated_at   = now()
+         WHERE org_id = $1 AND listing_id = $2
+         RETURNING listing_id, category, product_name, brand, description, unit_price, price_unit, is_active, created_at, updated_at`,
+        [
+          subjectId, id,
+          category || null, productName ? productName.trim() : null,
+          brand !== undefined, brand || null,
+          description !== undefined, description || null,
+          unitPrice !== undefined ? Number(unitPrice) : null,
+          priceUnit || null,
+          isActive !== undefined ? Boolean(isActive) : null,
+        ],
+      );
+      await logAccess(client, 'write', 'marketplace.product_listing', id);
+      return { product: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'product_not_found' });
+    }
+    return res.json(result.product);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * DELETE /coop/products/:id — deactivate-only, same reasoning as
+ * DELETE /inputsupplier/products/:id (marketplace.product_order can
+ * reference a listing_id, so a hard delete would orphan any order already
+ * placed against it). Removes it from GET /buyer/coop-products
+ * (is_active = true only) without touching order history.
+ */
+router.delete('/products/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const deactivated = await withSessionContext('organization', subjectId, async (client) => {
+      const { rowCount } = await client.query(
+        `UPDATE marketplace.product_listing SET is_active = false, updated_at = now()
+          WHERE org_id = $1 AND listing_id = $2`,
+        [subjectId, id],
+      );
+      if (rowCount > 0) {
+        await logAccess(client, 'write', 'marketplace.product_listing', id);
+      }
+      return rowCount > 0;
+    });
+
+    if (!deactivated) {
+      return res.status(404).json({ error: 'product_not_found' });
+    }
+    return res.status(204).end();
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/products/:id/photos
+ */
+router.get('/products/:id/photos', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const owned = await client.query(
+        'SELECT listing_id FROM marketplace.product_listing WHERE org_id = $1 AND listing_id = $2',
+        [subjectId, id],
+      );
+      if (owned.rows.length === 0) return { notFound: true };
+
+      const photos = await client.query(
+        `SELECT photo_id, photo_data_url, caption, created_at
+           FROM marketplace.product_photo
+          WHERE org_id = $1 AND listing_id = $2
+          ORDER BY created_at DESC`,
+        [subjectId, id],
+      );
+      return { photos: photos.rows };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'product_not_found' });
+    }
+    return res.json(result.photos);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/products/:id/photos
+ * Body: { photo_data_url, caption? }
+ */
+router.post('/products/:id/photos', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { photo_data_url: photoDataUrl, caption } = req.body || {};
+
+  if (!photoDataUrl || typeof photoDataUrl !== 'string' || !photoDataUrl.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'invalid_photo_data_url' });
+  }
+  if (photoDataUrl.length > COOP_MAX_PHOTO_DATA_URL_LENGTH) {
+    return res.status(400).json({ error: 'photo_too_large' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const owned = await client.query(
+        'SELECT listing_id FROM marketplace.product_listing WHERE org_id = $1 AND listing_id = $2',
+        [subjectId, id],
+      );
+      if (owned.rows.length === 0) return { notFound: true };
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.product_photo (listing_id, org_id, photo_data_url, caption)
+         VALUES ($1, $2, $3, $4)
+         RETURNING photo_id, photo_data_url, caption, created_at`,
+        [id, subjectId, photoDataUrl, caption || null],
+      );
+      await logAccess(client, 'write', 'marketplace.product_photo', rows[0].photo_id);
+      return { photo: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'product_not_found' });
+    }
+    return res.status(201).json(result.photo);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * DELETE /coop/products/:id/photos/:photoId
+ */
+router.delete('/products/:id/photos/:photoId', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id, photoId } = req.params;
+  try {
+    const deleted = await withSessionContext('organization', subjectId, async (client) => {
+      const { rowCount } = await client.query(
+        'DELETE FROM marketplace.product_photo WHERE org_id = $1 AND listing_id = $2 AND photo_id = $3',
+        [subjectId, id, photoId],
+      );
+      if (rowCount > 0) {
+        await logAccess(client, 'write', 'marketplace.product_photo', photoId);
+      }
+      return rowCount > 0;
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'photo_not_found' });
+    }
+    return res.status(204).end();
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/products/orders?status=... — orders placed by BUYER orgs
+ * against this cooperative's catalog. Joined with the ordering buyer's
+ * org_name (buyer_org_id, not farmer_id — see grant_cooperative_product_
+ * catalog.sql's orderer_check). `status` accepts the same
+ * `action_needed` shorthand (`requested` + `confirmed`) as
+ * GET /inputsupplier/orders.
+ */
+router.get('/products/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status === 'action_needed') {
+        filter = "AND o.status IN ('requested', 'confirmed')";
+      } else if (status) {
+        params.push(status);
+        filter = 'AND o.status = $2';
+      }
+      const result = await client.query(
+        `SELECT o.order_id, o.listing_id, o.product_name, o.category, o.unit_price,
+                o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.requested_at, o.decided_at, o.fulfilled_at, o.buyer_org_id, bo.org_name AS buyer_org_name
+           FROM marketplace.product_order o
+           JOIN identity.organization bo ON bo.org_id = o.buyer_org_id
+          WHERE o.org_id = $1 AND o.buyer_org_id IS NOT NULL ${filter}
+          ORDER BY o.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.product_order', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/products/orders/:id — single order detail.
+ */
+router.get('/products/orders/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT o.order_id, o.listing_id, o.product_name, o.category, o.unit_price,
+                o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.requested_at, o.decided_at, o.fulfilled_at, o.buyer_org_id, bo.org_name AS buyer_org_name
+           FROM marketplace.product_order o
+           JOIN identity.organization bo ON bo.org_id = o.buyer_org_id
+          WHERE o.org_id = $1 AND o.order_id = $2 AND o.buyer_org_id IS NOT NULL`,
+        [subjectId, id],
+      );
+      return rows[0] || null;
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/products/orders/:id/confirm — requested -> confirmed.
+ * Same ownership-gate + status-guard shape as
+ * POST /inputsupplier/orders/:id/confirm. The explicit
+ * `AND buyer_org_id IS NOT NULL` on every query in this section makes
+ * sure a cooperative can only ever act on orders placed by a BUYER org
+ * against ITS OWN catalog — never a farmer's InputSupplier order that
+ * happens to share the same org_id column shape.
+ */
+router.post('/products/orders/:id/confirm', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE org_id = $1 AND order_id = $2 AND buyer_org_id IS NOT NULL',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'confirmed', decided_at = now(), updated_at = now()
+          WHERE org_id = $1 AND order_id = $2
+          RETURNING order_id, status, decided_at`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/products/orders/:id/reject
+ * Body: { reason? } — requested -> rejected.
+ */
+router.post('/products/orders/:id/reject', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { reason } = req.body || {};
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE org_id = $1 AND order_id = $2 AND buyer_org_id IS NOT NULL',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'rejected', decided_reason = $3, decided_at = now(), updated_at = now()
+          WHERE org_id = $1 AND order_id = $2
+          RETURNING order_id, status, decided_reason, decided_at`,
+        [subjectId, id, reason || null],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/products/orders/:id/fulfill — confirmed -> fulfilled.
+ */
+router.post('/products/orders/:id/fulfill', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE org_id = $1 AND order_id = $2 AND buyer_org_id IS NOT NULL',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'confirmed') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'fulfilled', fulfilled_at = now(), updated_at = now()
+          WHERE org_id = $1 AND order_id = $2
+          RETURNING order_id, status, fulfilled_at`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_confirmed', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

@@ -2301,6 +2301,375 @@ document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkCoo
  * GET /coop/dashboard doubles as the KYB/role gate check here — same
  * pattern as every other portal's init().
  */
+// ============================================================
+// แค็ตตาล็อกผลผลิต/สินค้าแปรรูป (M14.1) — /coop/products*, reusing the
+// same marketplace.product_listing/product_photo/product_order machinery
+// the InputSupplier Portal uses (see frontend/inputsupplier/js/dashboard.js
+// for the pattern this mirrors), scoped to Cooperative sellers and Buyer
+// orgs instead of InputSupplier sellers and farmers.
+// ============================================================
+
+const COOP_PRODUCT_CATEGORY_LABEL_TH = {
+  produce: "ผลผลิตทางการเกษตร",
+  processed_good: "สินค้าแปรรูป",
+  other: "อื่นๆ",
+};
+
+const COOP_ORDER_STATUS_LABEL_TH = {
+  requested: "รอการยืนยันจากสหกรณ์",
+  confirmed: "ยืนยันแล้ว (รอส่งมอบ)",
+  fulfilled: "ส่งมอบแล้ว",
+  rejected: "สหกรณ์ปฏิเสธ",
+  cancelled: "ผู้ซื้อยกเลิกแล้ว",
+};
+const COOP_ORDER_STATUS_BADGE_CLASS = {
+  requested: "status-pending",
+  confirmed: "status-approved",
+  fulfilled: "status-completed",
+  rejected: "status-declined",
+  cancelled: "status-declined",
+};
+
+const coopProductForm = document.getElementById("coopProductForm");
+const coopEditingListingIdInput = document.getElementById("coopEditingListingId");
+const coopProductSubmitBtn = document.getElementById("coopProductSubmitBtn");
+const coopProductCancelEditBtn = document.getElementById("coopProductCancelEditBtn");
+
+function resetCoopProductForm() {
+  coopProductForm.reset();
+  document.getElementById("coopPriceUnitInput").value = "บาท/กก.";
+  coopEditingListingIdInput.value = "";
+  coopProductSubmitBtn.textContent = "เพิ่มสินค้า";
+  coopProductCancelEditBtn.style.display = "none";
+}
+
+function startEditingCoopProduct(p) {
+  coopEditingListingIdInput.value = p.listing_id;
+  document.getElementById("coopCategorySelect").value = p.category;
+  document.getElementById("coopProductNameInput").value = p.product_name;
+  document.getElementById("coopBrandInput").value = p.brand || "";
+  document.getElementById("coopPriceInput").value = p.unit_price;
+  document.getElementById("coopPriceUnitInput").value = p.price_unit;
+  document.getElementById("coopDescriptionInput").value = p.description || "";
+  coopProductSubmitBtn.textContent = "บันทึกการแก้ไข";
+  coopProductCancelEditBtn.style.display = "inline-block";
+  coopProductForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+coopProductCancelEditBtn.addEventListener("click", () => resetCoopProductForm());
+
+coopProductForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const listingId = coopEditingListingIdInput.value;
+  const payload = {
+    category: document.getElementById("coopCategorySelect").value,
+    product_name: document.getElementById("coopProductNameInput").value.trim(),
+    brand: document.getElementById("coopBrandInput").value.trim() || null,
+    description: document.getElementById("coopDescriptionInput").value.trim() || null,
+    unit_price: Number(document.getElementById("coopPriceInput").value),
+    price_unit: document.getElementById("coopPriceUnitInput").value.trim() || "บาท/กก.",
+  };
+
+  if (!payload.product_name) {
+    toast("กรุณากรอกชื่อสินค้า", true);
+    return;
+  }
+  if (!Number.isFinite(payload.unit_price) || payload.unit_price <= 0) {
+    toast("กรุณากรอกราคาที่มากกว่า 0", true);
+    return;
+  }
+
+  coopProductSubmitBtn.disabled = true;
+  try {
+    if (listingId) {
+      await AgroLinkCoopAPI.put(`/coop/products/${listingId}`, payload);
+      toast("บันทึกการแก้ไขสินค้าเรียบร้อยแล้ว");
+    } else {
+      await AgroLinkCoopAPI.post("/coop/products", payload);
+      toast("เพิ่มสินค้าเรียบร้อยแล้ว");
+    }
+    resetCoopProductForm();
+    await loadCoopProducts();
+  } catch (err) {
+    toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  } finally {
+    coopProductSubmitBtn.disabled = false;
+  }
+});
+
+function coopProductPhotoThumb(photo, listingId) {
+  return `
+    <div class="photo-card" data-photo-id="${photo.photo_id}" style="width:80px; height:80px;">
+      <img src="${photo.photo_data_url}" alt="${escapeHtml(photo.caption || "")}" />
+      <button type="button" class="photo-remove" title="ลบรูปภาพ" data-listing-id="${listingId}" data-photo-id="${photo.photo_id}">✕</button>
+    </div>
+  `;
+}
+
+function coopProductCard(p) {
+  const photosHtml = (p.photos || []).map((photo) => coopProductPhotoThumb(photo, p.listing_id)).join("");
+  const featured = p.is_featured && (!p.featured_until || new Date(p.featured_until).getTime() > Date.now());
+  return `
+    <div class="item-card" data-listing-id="${p.listing_id}">
+      <div class="row">
+        <span class="title">${featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
+        <span class="badge ${p.is_active ? "status-active" : "status-declined"}">${p.is_active ? "กำลังขาย" : "ปิดการขาย"}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(COOP_PRODUCT_CATEGORY_LABEL_TH[p.category] || p.category)}</div>
+      ${p.description ? `<div class="detail-line muted">${escapeHtml(p.description)}</div>` : ""}
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">
+        ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit)}
+      </div>
+
+      <div class="photo-grid" style="grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); margin:10px 0;" data-photo-grid="${p.listing_id}">
+        ${photosHtml || `<div class="muted" style="font-size:12px;">ยังไม่มีรูปภาพสินค้านี้</div>`}
+      </div>
+      <div class="action-row">
+        <input type="file" accept="image/*" data-coop-photo-file="${p.listing_id}" style="max-width:220px;" />
+        <button type="button" class="btn btn-sm btn-ghost" data-coop-upload-photo="${p.listing_id}">อัปโหลดรูป</button>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="btn btn-sm btn-ghost" data-coop-edit="${p.listing_id}">แก้ไข</button>
+        <button type="button" class="btn btn-sm btn-decline" data-coop-delete="${p.listing_id}">ปิดการขาย</button>
+      </div>
+    </div>
+  `;
+}
+
+let coopProductsCache = [];
+
+async function loadCoopProductPhotos(listingId) {
+  try {
+    return await AgroLinkCoopAPI.get(`/coop/products/${listingId}/photos`);
+  } catch (err) {
+    return [];
+  }
+}
+
+async function loadCoopProducts() {
+  const el = document.getElementById("coopProductListSection");
+  const category = document.getElementById("coopCategoryFilter").value;
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const query = category ? `?category=${encodeURIComponent(category)}` : "";
+    const products = await AgroLinkCoopAPI.get(`/coop/products${query}`);
+    if (products.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีสินค้าในแค็ตตาล็อก — เพิ่มสินค้าแรกของสหกรณ์ได้ด้านบน</div>`;
+      coopProductsCache = [];
+      return;
+    }
+    const withPhotos = await Promise.all(
+      products.map(async (p) => ({ ...p, photos: await loadCoopProductPhotos(p.listing_id) })),
+    );
+    coopProductsCache = withPhotos;
+    el.innerHTML = withPhotos.map(coopProductCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดแค็ตตาล็อกสินค้าไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("coopCategoryFilter").addEventListener("change", () => loadCoopProducts());
+
+document.getElementById("coopProductListSection").addEventListener("click", async (e) => {
+  const editBtn = e.target.closest("[data-coop-edit]");
+  const deleteBtn = e.target.closest("[data-coop-delete]");
+  const uploadBtn = e.target.closest("[data-coop-upload-photo]");
+  const removePhotoBtn = e.target.closest(".photo-remove");
+
+  if (editBtn) {
+    const listingId = editBtn.dataset.coopEdit;
+    const product = coopProductsCache.find((p) => p.listing_id === listingId);
+    if (product) startEditingCoopProduct(product);
+    return;
+  }
+
+  if (deleteBtn) {
+    const listingId = deleteBtn.dataset.coopDelete;
+    deleteBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.del(`/coop/products/${listingId}`);
+      toast("ปิดการขายสินค้าเรียบร้อยแล้ว");
+      if (coopEditingListingIdInput.value === listingId) resetCoopProductForm();
+      await loadCoopProducts();
+    } catch (err) {
+      toast("ปิดการขายไม่สำเร็จ: " + err.message, true);
+      deleteBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (uploadBtn) {
+    const listingId = uploadBtn.dataset.coopUploadPhoto;
+    const fileInput = document.querySelector(`input[data-coop-photo-file="${listingId}"]`);
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if (!file) {
+      toast("กรุณาเลือกไฟล์รูปภาพ", true);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast("กรุณาเลือกไฟล์รูปภาพเท่านั้น", true);
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast("ไฟล์รูปภาพใหญ่เกินไป (สูงสุด 2MB)", true);
+      return;
+    }
+    uploadBtn.disabled = true;
+    try {
+      const dataUrl = await fileToBase64(file);
+      await AgroLinkCoopAPI.post(`/coop/products/${listingId}/photos`, {
+        photo_data_url: dataUrl,
+        caption: null,
+      });
+      toast("อัปโหลดรูปภาพเรียบร้อยแล้ว");
+      await loadCoopProducts();
+    } catch (err) {
+      toast("อัปโหลดรูปภาพไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    } finally {
+      uploadBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (removePhotoBtn) {
+    const listingId = removePhotoBtn.dataset.listingId;
+    const photoId = removePhotoBtn.dataset.photoId;
+    removePhotoBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.del(`/coop/products/${listingId}/photos/${photoId}`);
+      toast("ลบรูปภาพเรียบร้อยแล้ว");
+      await loadCoopProducts();
+    } catch (err) {
+      toast("ลบรูปภาพไม่สำเร็จ: " + err.message, true);
+      removePhotoBtn.disabled = false;
+    }
+  }
+});
+
+// ---------- คำสั่งซื้อจากผู้รับซื้อ ----------
+function coopOrderCard(o) {
+  const badgeClass = COOP_ORDER_STATUS_BADGE_CLASS[o.status] || "status-pending";
+  const badge = `<span class="badge ${badgeClass}">${escapeHtml(COOP_ORDER_STATUS_LABEL_TH[o.status] || o.status)}</span>`;
+
+  let actions = "";
+  if (o.status === "requested") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-coop-confirm-order="${o.order_id}">ยืนยันคำสั่งซื้อ</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-coop-reject-reason-for="${o.order_id}" placeholder="เหตุผลการปฏิเสธ (ไม่บังคับ)" />
+        <button type="button" class="btn btn-decline btn-sm" data-coop-reject-order="${o.order_id}">ปฏิเสธ</button>
+      </div>
+    `;
+  } else if (o.status === "confirmed") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-coop-fulfill-order="${o.order_id}">บันทึกว่าส่งมอบสินค้าแล้ว</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card" data-order-id="${o.order_id}">
+      <div class="row"><span class="title">${escapeHtml(o.buyer_org_name)} — ${escapeHtml(o.product_name)}</span>${badge}</div>
+      <div class="detail-line">${escapeHtml(COOP_PRODUCT_CATEGORY_LABEL_TH[o.category] || o.category)} · จำนวน ${Number(o.quantity).toLocaleString("th-TH")} x ${Number(o.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(o.price_unit)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">รวม ${Number(o.total_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+      ${o.decided_reason ? `<div class="detail-line muted">เหตุผล: ${escapeHtml(o.decided_reason)}</div>` : ""}
+      <div class="detail-line muted">สั่งซื้อเมื่อ ${thaiDate(o.requested_at)}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadCoopOrderReviewQueue() {
+  const el = document.getElementById("coopOrderReviewQueueSection");
+  try {
+    const orders = await AgroLinkCoopAPI.get("/coop/products/orders?status=action_needed");
+    el.innerHTML = orders.length === 0
+      ? `<div class="empty-state">ไม่มีคำสั่งซื้อที่ต้องดำเนินการในขณะนี้</div>`
+      : orders.map(coopOrderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadCoopOrderHistory() {
+  const el = document.getElementById("coopOrderHistorySection");
+  const status = document.getElementById("coopOrderStatusFilter").value;
+  try {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const orders = await AgroLinkCoopAPI.get(`/coop/products/orders${query}`);
+    el.innerHTML = orders.length === 0
+      ? `<div class="empty-state">ยังไม่มีคำสั่งซื้อ</div>`
+      : orders.map(coopOrderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดประวัติคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshCoopOrders() {
+  await Promise.all([loadCoopOrderReviewQueue(), loadCoopOrderHistory()]);
+}
+
+document.getElementById("coopOrderStatusFilter").addEventListener("change", () => loadCoopOrderHistory());
+
+function handleCoopOrderActionClick(container) {
+  container.addEventListener("click", async (e) => {
+    const confirmBtn = e.target.closest("[data-coop-confirm-order]");
+    const rejectBtn = e.target.closest("[data-coop-reject-order]");
+    const fulfillBtn = e.target.closest("[data-coop-fulfill-order]");
+
+    if (confirmBtn) {
+      const orderId = confirmBtn.dataset.coopConfirmOrder;
+      confirmBtn.disabled = true;
+      try {
+        await AgroLinkCoopAPI.post(`/coop/products/orders/${orderId}/confirm`, {});
+        toast("ยืนยันคำสั่งซื้อเรียบร้อยแล้ว");
+        await refreshCoopOrders();
+      } catch (err) {
+        toast("ยืนยันคำสั่งซื้อไม่สำเร็จ: " + err.message, true);
+        confirmBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (rejectBtn) {
+      const orderId = rejectBtn.dataset.coopRejectOrder;
+      const reasonInput = container.querySelector(`[data-coop-reject-reason-for="${orderId}"]`);
+      rejectBtn.disabled = true;
+      try {
+        await AgroLinkCoopAPI.post(`/coop/products/orders/${orderId}/reject`, {
+          reason: (reasonInput && reasonInput.value.trim()) || null,
+        });
+        toast("ปฏิเสธคำสั่งซื้อเรียบร้อยแล้ว");
+        await refreshCoopOrders();
+      } catch (err) {
+        toast("ปฏิเสธคำสั่งซื้อไม่สำเร็จ: " + err.message, true);
+        rejectBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (fulfillBtn) {
+      const orderId = fulfillBtn.dataset.coopFulfillOrder;
+      fulfillBtn.disabled = true;
+      try {
+        await AgroLinkCoopAPI.post(`/coop/products/orders/${orderId}/fulfill`, {});
+        toast("บันทึกการส่งมอบสินค้าเรียบร้อยแล้ว");
+        await refreshCoopOrders();
+      } catch (err) {
+        toast("บันทึกการส่งมอบไม่สำเร็จ: " + err.message, true);
+        fulfillBtn.disabled = false;
+      }
+    }
+  });
+}
+
+handleCoopOrderActionClick(document.getElementById("coopOrderReviewQueueSection"));
+handleCoopOrderActionClick(document.getElementById("coopOrderHistorySection"));
+
 async function init() {
   const session = AgroLinkCoopAPI.requireSessionOrRedirect();
   if (!session) return;
@@ -2335,6 +2704,8 @@ async function init() {
   loadStaffRoles();
   loadStaff();
   loadRegistrationDocument();
+  loadCoopProducts();
+  refreshCoopOrders();
 }
 
 init();

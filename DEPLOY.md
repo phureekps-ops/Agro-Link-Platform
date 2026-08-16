@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (39 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (40 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -160,9 +160,19 @@ grant_staff_and_government_access.sql
 grant_object_storage.sql
 grant_analytics_warehouse.sql
 grant_satellite_observation.sql
+grant_cooperative_product_catalog.sql
 ```
 
-**เพิ่มเมื่อ 2026-08-16:** 11 ไฟล์สุดท้าย (`grant_cooperative_tenant_foundation.sql`
+**เพิ่มเมื่อ 2026-08-16 (บ่าย):** `grant_cooperative_product_catalog.sql` —
+เปิดให้สหกรณ์ประกาศขายผลผลิต/สินค้าแปรรูปให้ผู้รับซื้อผ่านระบบแค็ตตาล็อกเดียวกับที่
+ผู้จำหน่ายปัจจัยการผลิตใช้อยู่แล้ว (ไม่ได้สร้างตารางใหม่ แค่ขยาย category ที่อนุญาต
+และเปิดให้ผู้รับซื้อ (Buyer) สั่งซื้อได้ ไม่ใช่แค่เกษตรกร) และทำให้ฟีเจอร์ "รายการแนะนำ"
+(Featured Listings — มีแค่โครงสร้างฐานข้อมูลมาตั้งแต่ก่อนหน้านี้) ใช้งานได้จริงเป็นครั้งแรก
+ต้องรันไฟล์นี้**หลังสุด** (หลัง `grant_input_supplier_and_buy_prices.sql`,
+`grant_farmer_product_orders.sql` และ `grant_cooperative_tenant_foundation.sql`
+ซึ่งสร้างตาราง/บัญชีที่ไฟล์นี้ต้องใช้ต่อ)
+
+**เพิ่มเมื่อ 2026-08-16 (เช้า):** 11 ไฟล์ (`grant_cooperative_tenant_foundation.sql`
 ถึง `grant_satellite_observation.sql`) — โมดูลสหกรณ์ทั้งหมด (M01 รากฐานสหกรณ์,
 M09 จุดรับซื้อผลผลิต, M10 คลัง/ลานตาก, M04 แดชบอร์ดการเงินสหกรณ์, M11 การแปรรูป,
 M13 การขนส่ง, M15 ประตูเชื่อมต่อภาครัฐ, M01 ส่วนที่ค้าง — ลำดับชั้นจังหวัด/บัญชีรายบุคคล

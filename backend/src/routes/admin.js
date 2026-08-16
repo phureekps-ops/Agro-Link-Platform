@@ -1480,4 +1480,207 @@ router.post('/satellite-observations', async (req, res, next) => {
   }
 });
 
+/**
+ * Featured Listings — Platform-Ops-managed promotion for the InputSupplier
+ * product catalog (marketplace.product_listing, also now used by the
+ * Cooperative produce catalog — see grant_cooperative_product_catalog.sql)
+ * and the Machinery/FertilizerMixingService rate card
+ * (marketplace.service_listing). Schema (is_featured/featured_until) was
+ * added by grant_featured_listings.sql, which explicitly promised these
+ * exact routes — GET/POST /admin/product-listings*,
+ * GET/POST /admin/service-listings* — surfaced as a sort-to-top +
+ * "⭐ แนะนำ" badge on GET /farmer/products and
+ * GET /farmer/machinery-providers. That file shipped with the schema only;
+ * this is the first working implementation.
+ *
+ * Deliberately admin-toggled, not self-serve: like every other paid
+ * interaction in this platform, there is no online payment gateway — a
+ * provider pays AgroLink offline, Platform Ops flips is_featured on for a
+ * chosen number of days. featured_until is computed server-side from a
+ * `days` count (make_interval keeps this a plain integer param, no string
+ * concatenation/casting needed) rather than accepting a raw timestamp from
+ * the client.
+ */
+const FEATURED_DEFAULT_DAYS = 30;
+
+/**
+ * GET /admin/product-listings?org_id=&category=&featured=
+ * Every product_listing row across every org (InputSupplier AND
+ * Cooperative sellers alike), joined with org_name/org_type, so Platform
+ * Ops can find the listing to feature without hunting through each
+ * seller's own dashboard. `featured=true` filters to currently-featured
+ * (is_featured AND (featured_until IS NULL OR featured_until > now())) —
+ * an expired featured_until is treated as not-featured here even though
+ * is_featured itself is never auto-cleared (see the farmer-facing routes'
+ * identical live-expiry check).
+ */
+router.get('/product-listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    org_id: orgId, category, featured,
+  } = req.query;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      const filters = [];
+      if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
+      if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
+      if (featured === 'true') filters.push('p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())');
+      const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+      const result = await client.query(
+        `SELECT p.listing_id, p.org_id, o.org_name, o.org_type, p.category, p.product_name, p.brand,
+                p.unit_price, p.price_unit, p.is_active, p.is_featured, p.featured_until, p.created_at
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+           ${where}
+          ORDER BY p.is_featured DESC, o.org_name, p.product_name`,
+        params,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/product-listings/:id/feature
+ * Body: { days? } — defaults to FEATURED_DEFAULT_DAYS (30).
+ */
+router.post('/product-listings/:id/feature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { days } = req.body || {};
+  const numDays = days !== undefined && days !== null ? Number(days) : FEATURED_DEFAULT_DAYS;
+  if (!Number.isFinite(numDays) || numDays <= 0) {
+    return res.status(400).json({ error: 'invalid_days' });
+  }
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_listing
+            SET is_featured = true, featured_until = now() + make_interval(days => $2::int), updated_at = now()
+          WHERE listing_id = $1
+          RETURNING listing_id, org_id, product_name, is_featured, featured_until`,
+        [id, Math.round(numDays)],
+      );
+      if (rows.length > 0) await logAccess(client, 'write', 'marketplace.product_listing', id);
+      return rows[0] || null;
+    });
+    if (!result) return res.status(404).json({ error: 'product_listing_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/product-listings/:id/unfeature
+ */
+router.post('/product-listings/:id/unfeature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_listing
+            SET is_featured = false, featured_until = NULL, updated_at = now()
+          WHERE listing_id = $1
+          RETURNING listing_id, org_id, product_name, is_featured, featured_until`,
+        [id],
+      );
+      if (rows.length > 0) await logAccess(client, 'write', 'marketplace.product_listing', id);
+      return rows[0] || null;
+    });
+    if (!result) return res.status(404).json({ error: 'product_listing_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * Same three routes for marketplace.service_listing (Machinery /
+ * FertilizerMixingService rate-card items) — service_listing has no
+ * updated_at column, unlike product_listing, so the UPDATE statements
+ * below omit it.
+ */
+router.get('/service-listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { org_id: orgId, service_type: serviceType, featured } = req.query;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      const filters = [];
+      if (orgId) { params.push(orgId); filters.push(`s.org_id = $${params.length}`); }
+      if (serviceType) { params.push(serviceType); filters.push(`s.service_type = $${params.length}`); }
+      if (featured === 'true') filters.push('s.is_featured AND (s.featured_until IS NULL OR s.featured_until > now())');
+      const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+      const result = await client.query(
+        `SELECT s.listing_id, s.org_id, o.org_name, o.org_type, s.service_key, s.service_type,
+                s.description, s.unit_price, s.price_unit, s.is_active, s.is_featured, s.featured_until, s.created_at
+           FROM marketplace.service_listing s
+           JOIN identity.organization o ON o.org_id = s.org_id
+           ${where}
+          ORDER BY s.is_featured DESC, o.org_name, s.service_type`,
+        params,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/service-listings/:id/feature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { days } = req.body || {};
+  const numDays = days !== undefined && days !== null ? Number(days) : FEATURED_DEFAULT_DAYS;
+  if (!Number.isFinite(numDays) || numDays <= 0) {
+    return res.status(400).json({ error: 'invalid_days' });
+  }
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.service_listing
+            SET is_featured = true, featured_until = now() + make_interval(days => $2::int)
+          WHERE listing_id = $1
+          RETURNING listing_id, org_id, service_type, is_featured, featured_until`,
+        [id, Math.round(numDays)],
+      );
+      if (rows.length > 0) await logAccess(client, 'write', 'marketplace.service_listing', id);
+      return rows[0] || null;
+    });
+    if (!result) return res.status(404).json({ error: 'service_listing_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/service-listings/:id/unfeature', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE marketplace.service_listing
+            SET is_featured = false, featured_until = NULL
+          WHERE listing_id = $1
+          RETURNING listing_id, org_id, service_type, is_featured, featured_until`,
+        [id],
+      );
+      if (rows.length > 0) await logAccess(client, 'write', 'marketplace.service_listing', id);
+      return rows[0] || null;
+    });
+    if (!result) return res.status(404).json({ error: 'service_listing_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

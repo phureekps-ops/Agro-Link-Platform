@@ -50,21 +50,6 @@ const ORDER_STATUS_BADGE_CLASS = {
   cancelled: "status-declined",
 };
 
-// Populate the province filter from TH_PROVINCES (frontend/js/provinces.js)
-// — same pattern as frontend/js/machinery-marketplace.js's provinceFilter.
-const provinceFilter = document.getElementById("provinceFilter");
-TH_PROVINCES.forEach(([code, name]) => {
-  const opt = document.createElement("option");
-  opt.value = code;
-  opt.textContent = name;
-  provinceFilter.appendChild(opt);
-});
-
-function provinceName(code) {
-  const found = TH_PROVINCES.find((p) => p[0] === code);
-  return found ? found[1] : code;
-}
-
 // ---------- ผู้จำหน่าย (สำหรับตัวกรอง) ----------
 async function loadSuppliersIntoFilter() {
   const select = document.getElementById("supplierFilter");
@@ -82,40 +67,18 @@ async function loadSuppliersIntoFilter() {
 }
 
 // ---------- รายการสินค้า ----------
-/**
- * Small horizontal thumbnail strip from marketplace.product_photo — per-
- * PRODUCT here (unlike frontend/js/machinery-marketplace.js's per-ORG
- * gallery), since GET /farmer/products now returns each product's own
- * `photos` array (see farmer.js's doc comment on the LATERAL join added
- * for this). Same rendering shape as machinery-marketplace.js's
- * photoGalleryHtml — kept as a local duplicate per this project's
- * established no-shared-bundler convention.
- */
-function photoGalleryHtml(photos) {
-  if (!photos || photos.length === 0) return "";
-  const thumbs = photos.slice(0, 4).map((p) => `
-    <img src="${p.photo_data_url}" alt="${escapeHtml(p.caption || "")}"
-         style="width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--gray-300);" />
-  `).join("");
-  const more = photos.length > 4 ? `<span style="font-size:12px; color:var(--gray-500); align-self:center;">+${photos.length - 4} รูป</span>` : "";
-  return `<div style="display:flex; gap:6px; margin:8px 0; overflow-x:auto;">${thumbs}${more}</div>`;
-}
-
+// Backend (GET /farmer/products) already sorts featured listings first —
+// this just renders the "⭐ แนะนำ" badge, it does not re-sort anything
+// client-side.
 function productCard(p) {
-  const matchBadge = p.match_score !== undefined && p.match_score !== null
-    ? `<span class="badge status-active" style="background:var(--gold-100, #fff6dd); color:var(--gold-700, #8a6d1a);">ตรงกับท่าน ${Math.round(p.match_score * 100)}%</span>`
-    : "";
   return `
     <div class="item-card" data-listing-id="${p.listing_id}">
       <div class="row">
-        <span class="title">${p.is_featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
+        <span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
         <span class="badge status-active">${escapeHtml(CATEGORY_LABEL_TH[p.category] || p.category)}</span>
-        ${p.is_featured ? `<span class="badge status-approved">แนะนำ</span>` : ""}
-        ${matchBadge}
       </div>
-      ${photoGalleryHtml(p.photos)}
+      ${p.featured ? `<div class="detail-line"><span class="badge status-approved">⭐ แนะนำ</span></div>` : ""}
       <div class="detail-line">ผู้จำหน่าย: ${escapeHtml(p.org_name)}</div>
-      ${(p.service_regions || []).length > 0 ? `<div class="detail-line muted">จัดส่ง/ให้บริการในจังหวัด: ${escapeHtml((p.service_regions || []).map(provinceName).join(", "))}</div>` : ""}
       ${p.description ? `<div class="detail-line muted">${escapeHtml(p.description)}</div>` : ""}
       <div class="detail-line" style="font-weight:700; color:var(--green-900);">
         ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit)}
@@ -128,37 +91,14 @@ function productCard(p) {
   `;
 }
 
-/**
- * "แนะนำสำหรับท่าน" — GET /farmer/products/recommended. Same productCard
- * renderer as the main browse list (now match_score-aware), same
- * data-order/data-qty-for wiring reused via handleOrderClick above, so a
- * farmer can order directly from a recommended card without scrolling
- * down to the full list.
- */
-async function loadRecommendedProducts() {
-  const el = document.getElementById("recommendedProductsSection");
-  try {
-    const products = await AgroLinkAPI.get("/farmer/products/recommended?limit=6");
-    if (products.length === 0) {
-      el.innerHTML = `<div class="empty-state">ยังไม่มีคำแนะนำในขณะนี้</div>`;
-      return;
-    }
-    el.innerHTML = products.map(productCard).join("");
-  } catch (err) {
-    el.innerHTML = `<div class="empty-state">โหลดคำแนะนำไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
-  }
-}
-
 async function loadProducts() {
   const el = document.getElementById("productListSection");
   const category = document.getElementById("categoryFilter").value;
   const orgId = document.getElementById("supplierFilter").value;
-  const provinceCode = document.getElementById("provinceFilter").value;
   try {
     const params = new URLSearchParams();
     if (category) params.set("category", category);
     if (orgId) params.set("org_id", orgId);
-    if (provinceCode) params.set("province_code", provinceCode);
     const query = params.toString() ? `?${params.toString()}` : "";
     const products = await AgroLinkAPI.get(`/farmer/products${query}`);
     if (products.length === 0) {
@@ -173,9 +113,8 @@ async function loadProducts() {
 
 document.getElementById("categoryFilter").addEventListener("change", () => loadProducts());
 document.getElementById("supplierFilter").addEventListener("change", () => loadProducts());
-document.getElementById("provinceFilter").addEventListener("change", () => loadProducts());
 
-async function handleOrderClick(e) {
+document.getElementById("productListSection").addEventListener("click", async (e) => {
   const orderBtn = e.target.closest("[data-order]");
   if (!orderBtn) return;
 
@@ -197,10 +136,7 @@ async function handleOrderClick(e) {
   } finally {
     orderBtn.disabled = false;
   }
-}
-
-document.getElementById("productListSection").addEventListener("click", handleOrderClick);
-document.getElementById("recommendedProductsSection").addEventListener("click", handleOrderClick);
+});
 
 // ---------- คำสั่งซื้อของท่าน ----------
 function orderCard(o) {
@@ -254,7 +190,7 @@ document.getElementById("orderHistorySection").addEventListener("click", async (
 
 async function init() {
   await loadSuppliersIntoFilter();
-  await Promise.all([loadProducts(), loadOrderHistory(), loadRecommendedProducts()]);
+  await Promise.all([loadProducts(), loadOrderHistory()]);
 }
 
 init();

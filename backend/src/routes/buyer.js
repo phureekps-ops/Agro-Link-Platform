@@ -539,4 +539,215 @@ router.put('/price-quotes', async (req, res, next) => {
   }
 });
 
+/**
+ * M14.1 buyer-facing side of the Cooperative produce/processed-goods
+ * catalog — browse + order + cancel, mirroring farmer.js's GET /farmer/
+ * input-suppliers, GET /farmer/products, POST /farmer/orders,
+ * GET /farmer/orders, POST /farmer/orders/:id/cancel exactly, just with
+ * `buyer_org_id = subjectId` instead of `farmer_id = subjectId` on every
+ * write and ownership check (see grant_cooperative_product_catalog.sql's
+ * orderer_check — a product_order row has exactly one of the two set).
+ * The seller side (list management, deciding on incoming orders) lives in
+ * coopcollection.js as /coop/products*.
+ */
+const COOP_PRODUCT_CATEGORIES = ['produce', 'processed_good', 'other'];
+
+/**
+ * GET /buyer/coop-directory — every Verified Cooperative organization,
+ * with how many active catalog products it currently has listed. Mirrors
+ * GET /farmer/input-suppliers' shape.
+ */
+router.get('/coop-directory', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT o.org_id, o.org_name, COUNT(p.listing_id) FILTER (WHERE p.is_active) AS active_product_count
+           FROM identity.organization o
+           JOIN identity.organization_role r ON r.org_id = o.org_id AND r.role_type = 'Cooperative' AND r.status = 'Verified'
+           LEFT JOIN marketplace.product_listing p ON p.org_id = o.org_id
+          WHERE o.kyb_status = 'Verified'
+          GROUP BY o.org_id, o.org_name
+          ORDER BY o.org_name`,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /buyer/coop-products?category=&org_id= — browse the ACTIVE catalog
+ * across every Verified Cooperative (or one, via org_id). `o.org_type =
+ * 'Cooperative'` is a FIXED filter for the same reason GET /farmer/
+ * products fixes it to 'InputSupplier' — marketplace.product_listing is
+ * shared by both seller directions now, and each browse route must only
+ * ever show its own audience's sellers. Featured listings sort first,
+ * same live-expiry computation as GET /farmer/products.
+ */
+router.get('/coop-products', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { category, org_id: orgId } = req.query;
+
+  if (category && !COOP_PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: COOP_PRODUCT_CATEGORIES });
+  }
+
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [];
+      const filters = ['p.is_active = true', "o.org_type = 'Cooperative'"];
+      if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
+      if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
+
+      const result = await client.query(
+        `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
+                p.description, p.unit_price, p.price_unit, p.updated_at,
+                (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) AS featured
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE ${filters.join(' AND ')}
+          ORDER BY (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) DESC,
+                   o.org_name, p.category, p.product_name`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /buyer/coop-products/orders
+ * Body: { listing_id, quantity }
+ * Same snapshot-at-order-time reasoning as POST /farmer/orders.
+ * buyer_org_id is always req.subject, never the request body — farmer_id
+ * is left NULL (the orderer_check CHECK constraint requires exactly one).
+ */
+router.post('/coop-products/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { listing_id: listingId, quantity } = req.body || {};
+
+  if (!listingId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['listing_id', 'quantity'] });
+  }
+  const qty = Number(quantity);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    return res.status(400).json({ error: 'invalid_quantity' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const listing = await client.query(
+        `SELECT p.listing_id, p.org_id, p.category, p.product_name, p.unit_price, p.price_unit
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE p.listing_id = $1 AND p.is_active = true AND o.org_type = 'Cooperative'`,
+        [listingId],
+      );
+      if (listing.rows.length === 0) return { listingNotFound: true };
+      const l = listing.rows[0];
+      const totalPrice = Math.round(qty * Number(l.unit_price) * 100) / 100;
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.product_order
+           (listing_id, org_id, buyer_org_id, product_name, category, unit_price, price_unit, quantity, total_price)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING order_id, listing_id, org_id, product_name, category, unit_price, price_unit,
+                   quantity, total_price, status, requested_at`,
+        [listingId, l.org_id, subjectId, l.product_name, l.category, l.unit_price, l.price_unit, qty, totalPrice],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', rows[0].order_id);
+      return { order: rows[0] };
+    });
+
+    if (result.listingNotFound) {
+      return res.status(404).json({ error: 'product_not_found' });
+    }
+    return res.status(201).json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /buyer/coop-products/orders?status=... — this buyer's own order
+ * history across every cooperative, joined with the cooperative's
+ * org_name.
+ */
+router.get('/coop-products/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status) { params.push(status); filter = 'AND o.status = $2'; }
+
+      const result = await client.query(
+        `SELECT o.order_id, o.org_id, coop.org_name AS coop_org_name, o.product_name, o.category, o.unit_price,
+                o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.requested_at, o.decided_at, o.fulfilled_at
+           FROM marketplace.product_order o
+           JOIN identity.organization coop ON coop.org_id = o.org_id
+          WHERE o.buyer_org_id = $1 ${filter}
+          ORDER BY o.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.product_order', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /buyer/coop-products/orders/:id/cancel — a buyer can cancel their
+ * OWN order, only while it's still `requested` — same "before the seller
+ * has acted on it" rule as POST /farmer/orders/:id/cancel.
+ */
+router.post('/coop-products/orders/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE buyer_org_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'cancelled', updated_at = now()
+          WHERE buyer_org_id = $1 AND order_id = $2
+          RETURNING order_id, status`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

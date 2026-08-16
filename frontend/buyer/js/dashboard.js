@@ -393,6 +393,163 @@ document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkBuy
  * GET /buyer/dashboard doubles as the KYB/role gate check here — same
  * pattern as every other portal's init().
  */
+// ============================================================
+// แค็ตตาล็อกผลผลิต/สินค้าแปรรูปจากสหกรณ์ (M14.1) — buyer-facing browse +
+// order + cancel against GET/POST /buyer/coop-products* and
+// /buyer/coop-directory. Mirrors frontend/js/marketplace.js's shape (the
+// farmer-facing InputSupplier catalog browser) — same card/order pattern,
+// just a different seller audience (Cooperative orgs, not InputSupplier).
+// ============================================================
+
+const COOP_CATALOG_CATEGORY_LABEL_TH = {
+  produce: "ผลผลิตทางการเกษตร",
+  processed_good: "สินค้าแปรรูป",
+  other: "อื่นๆ",
+};
+
+const COOP_ORDER_STATUS_LABEL_TH = {
+  requested: "รอสหกรณ์ยืนยัน",
+  confirmed: "ยืนยันแล้ว (รอส่งมอบ)",
+  fulfilled: "ส่งมอบแล้ว",
+  rejected: "สหกรณ์ปฏิเสธ",
+  cancelled: "ยกเลิกแล้ว",
+};
+const COOP_ORDER_STATUS_BADGE_CLASS = {
+  requested: "status-pending",
+  confirmed: "status-approved",
+  fulfilled: "status-completed",
+  rejected: "status-declined",
+  cancelled: "status-declined",
+};
+
+async function loadCoopSuppliersIntoFilter() {
+  const select = document.getElementById("coopCatalogSupplierFilter");
+  try {
+    const coops = await AgroLinkBuyerAPI.get("/buyer/coop-directory");
+    coops.forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c.org_id;
+      opt.textContent = `${c.org_name} (${c.active_product_count} รายการ)`;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    // Non-fatal — "ทั้งหมด" still works without the supplier list.
+  }
+}
+
+function coopCatalogCard(p) {
+  return `
+    <div class="item-card" data-listing-id="${p.listing_id}">
+      <div class="row">
+        <span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
+        <span class="badge status-active">${escapeHtml(COOP_CATALOG_CATEGORY_LABEL_TH[p.category] || p.category)}</span>
+      </div>
+      ${p.featured ? `<div class="detail-line"><span class="badge status-approved">⭐ แนะนำ</span></div>` : ""}
+      <div class="detail-line">สหกรณ์: ${escapeHtml(p.org_name)}</div>
+      ${p.description ? `<div class="detail-line muted">${escapeHtml(p.description)}</div>` : ""}
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">
+        ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit)}
+      </div>
+      <div class="action-row">
+        <input type="number" class="order-qty-input" data-coop-qty-for="${p.listing_id}" min="0.01" step="0.01" value="1" style="max-width:120px;" />
+        <button type="button" class="btn btn-primary btn-sm" data-coop-order="${p.listing_id}">สั่งซื้อ</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadCoopCatalog() {
+  const el = document.getElementById("coopCatalogSection");
+  const category = document.getElementById("coopCatalogCategoryFilter").value;
+  const orgId = document.getElementById("coopCatalogSupplierFilter").value;
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (orgId) params.set("org_id", orgId);
+    const qs = params.toString();
+    const products = await AgroLinkBuyerAPI.get(`/buyer/coop-products${qs ? "?" + qs : ""}`);
+    el.innerHTML = products.length === 0
+      ? `<div class="empty-state">ยังไม่มีสินค้าจากสหกรณ์ตามเงื่อนไขที่เลือก</div>`
+      : products.map(coopCatalogCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดแค็ตตาล็อกไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("coopCatalogCategoryFilter").addEventListener("change", () => loadCoopCatalog());
+document.getElementById("coopCatalogSupplierFilter").addEventListener("change", () => loadCoopCatalog());
+
+document.getElementById("coopCatalogSection").addEventListener("click", async (e) => {
+  const orderBtn = e.target.closest("[data-coop-order]");
+  if (!orderBtn) return;
+  const listingId = orderBtn.dataset.coopOrder;
+  const qtyInput = document.querySelector(`[data-coop-qty-for="${listingId}"]`);
+  const quantity = Number(qtyInput && qtyInput.value);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    toast("กรุณากรอกจำนวนที่ต้องการสั่งซื้อ", true);
+    return;
+  }
+  orderBtn.disabled = true;
+  try {
+    await AgroLinkBuyerAPI.post("/buyer/coop-products/orders", { listing_id: listingId, quantity });
+    toast("สั่งซื้อเรียบร้อยแล้ว — รอสหกรณ์ยืนยัน");
+    await loadCoopOrderHistory();
+  } catch (err) {
+    toast("สั่งซื้อไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  } finally {
+    orderBtn.disabled = false;
+  }
+});
+
+// ---------- ประวัติคำสั่งซื้อของฉัน ----------
+function coopOrderCard(o) {
+  const badgeClass = COOP_ORDER_STATUS_BADGE_CLASS[o.status] || "status-pending";
+  const badge = `<span class="badge ${badgeClass}">${escapeHtml(COOP_ORDER_STATUS_LABEL_TH[o.status] || o.status)}</span>`;
+  const canCancel = o.status === "requested";
+  return `
+    <div class="item-card" data-order-id="${o.order_id}">
+      <div class="row"><span class="title">${escapeHtml(o.coop_org_name)} — ${escapeHtml(o.product_name)}</span>${badge}</div>
+      <div class="detail-line">${escapeHtml(COOP_CATALOG_CATEGORY_LABEL_TH[o.category] || o.category)} · จำนวน ${Number(o.quantity).toLocaleString("th-TH")} x ${Number(o.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(o.price_unit)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">รวม ${Number(o.total_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+      ${o.decided_reason ? `<div class="detail-line muted">เหตุผล: ${escapeHtml(o.decided_reason)}</div>` : ""}
+      <div class="detail-line muted">สั่งซื้อเมื่อ ${thaiDate(o.requested_at)}</div>
+      ${canCancel ? `<div class="action-row"><button type="button" class="btn btn-decline btn-sm" data-coop-cancel-order="${o.order_id}">ยกเลิกคำสั่งซื้อ</button></div>` : ""}
+    </div>
+  `;
+}
+
+async function loadCoopOrderHistory() {
+  const el = document.getElementById("coopOrderHistorySection");
+  const status = document.getElementById("coopOrderStatusFilter").value;
+  try {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const orders = await AgroLinkBuyerAPI.get(`/buyer/coop-products/orders${query}`);
+    el.innerHTML = orders.length === 0
+      ? `<div class="empty-state">ยังไม่มีคำสั่งซื้อ</div>`
+      : orders.map(coopOrderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดประวัติคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("coopOrderStatusFilter").addEventListener("change", () => loadCoopOrderHistory());
+
+document.getElementById("coopOrderHistorySection").addEventListener("click", async (e) => {
+  const cancelBtn = e.target.closest("[data-coop-cancel-order]");
+  if (!cancelBtn) return;
+  const orderId = cancelBtn.dataset.coopCancelOrder;
+  cancelBtn.disabled = true;
+  try {
+    await AgroLinkBuyerAPI.post(`/buyer/coop-products/orders/${orderId}/cancel`, {});
+    toast("ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว");
+    await loadCoopOrderHistory();
+  } catch (err) {
+    toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    cancelBtn.disabled = false;
+  }
+});
+
 async function init() {
   const session = AgroLinkBuyerAPI.requireSessionOrRedirect();
   if (!session) return;
@@ -419,6 +576,9 @@ async function init() {
   loadCommodities();
   loadPriceQuotes();
   loadContracts();
+  loadCoopSuppliersIntoFilter();
+  loadCoopCatalog();
+  loadCoopOrderHistory();
 }
 
 init();

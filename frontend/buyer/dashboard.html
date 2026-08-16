@@ -93,6 +93,49 @@
       <div class="loading-line">กำลังโหลดสัญญารับซื้อ…</div>
     </div>
 
+    <div class="section-title">🛒 แค็ตตาล็อกผลผลิต/สินค้าแปรรูปจากสหกรณ์</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      เรียกดูผลผลิต/สินค้าแปรรูปที่สหกรณ์ต่างๆ ประกาศขาย และสั่งซื้อได้โดยตรง — คำสั่งซื้อจะรอสหกรณ์ยืนยันก่อนถือว่าตกลงซื้อขาย
+    </p>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="coopCatalogSupplierFilter">กรองตามสหกรณ์</label>
+        <select id="coopCatalogSupplierFilter">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="coopCatalogCategoryFilter">กรองตามหมวดหมู่</label>
+        <select id="coopCatalogCategoryFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="produce">ผลผลิตทางการเกษตร</option>
+          <option value="processed_good">สินค้าแปรรูป</option>
+          <option value="other">อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+    <div id="coopCatalogSection" class="card-list">
+      <div class="loading-line">กำลังโหลดแค็ตตาล็อก…</div>
+    </div>
+
+    <div class="section-title">📜 ประวัติคำสั่งซื้อของฉัน</div>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="coopOrderStatusFilter">สถานะ</label>
+        <select id="coopOrderStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="requested">รอสหกรณ์ยืนยัน</option>
+          <option value="confirmed">ยืนยันแล้ว (รอส่งมอบ)</option>
+          <option value="fulfilled">ส่งมอบแล้ว</option>
+          <option value="rejected">สหกรณ์ปฏิเสธ</option>
+          <option value="cancelled">ยกเลิกแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="coopOrderHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>

@@ -29,6 +29,11 @@ const MACHINERY_ORG_TYPES = ['TractorService', 'DroneService', 'HarvesterService
  * drying_storage — the five values RATE_CARD_ITEMS in machinery.js maps its
  * seven service_keys onto). Mirrors GET /farmer/fertilizer-mixing-providers'
  * shape, just without the single fixed service_key filter that route uses.
+ *
+ * Featured listings (see grant_featured_listings.sql / the
+ * /admin/service-listings routes in admin.js) sort first — `featured` is
+ * computed live the same way GET /farmer/products does, since is_featured
+ * is never auto-cleared once featured_until passes.
  */
 router.get('/machinery-providers', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -43,7 +48,8 @@ router.get('/machinery-providers', async (req, res, next) => {
       }
       const result = await client.query(
         `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
-                sl.description AS label_th, sl.unit_price, sl.price_unit
+                sl.description AS label_th, sl.unit_price, sl.price_unit,
+                (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) AS featured
            FROM marketplace.service_listing sl
            JOIN identity.organization o ON o.org_id = sl.org_id
           WHERE sl.is_active = true
@@ -54,7 +60,8 @@ router.get('/machinery-providers', async (req, res, next) => {
                WHERE r.org_id = sl.org_id AND r.role_type = ANY($1) AND r.status = 'Verified'
             )
             ${filter}
-          ORDER BY o.org_name, sl.service_type`,
+          ORDER BY (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) DESC,
+                   o.org_name, sl.service_type`,
         params,
       );
       return result.rows;

@@ -830,6 +830,70 @@ UPDATE` never needs a matching `WHERE` predicate — this was a deliberate
 design choice made specifically to avoid re-triggering that class of bug,
 not an accident.
 
+## Featured Listings (Platform-Ops-managed promotion)
+
+`grant_featured_listings.sql` added `is_featured`/`featured_until` to
+`marketplace.product_listing` and `marketplace.service_listing` some time
+ago, but shipped schema-only — no route ever read or wrote those columns,
+and no frontend ever surfaced them. **That gap is now closed.**
+
+- `GET/POST /admin/product-listings*` and `GET/POST /admin/service-listings*`
+  (`src/routes/admin.js`) let Platform Ops list every catalog row across
+  every org and flip `is_featured` on for a chosen number of days
+  (`POST .../feature`, body `{ days? }`, defaults to 30) or off
+  (`POST .../unfeature`). Deliberately admin-toggled, not self-serve — like
+  every other paid interaction in this platform, there is no online payment
+  gateway; a provider pays AgroLink offline and Platform Ops flips the
+  switch, same operating model as KYB approval.
+- `GET /farmer/products` and `GET /farmer/machinery-providers` sort
+  currently-featured rows first and return a computed `featured` boolean
+  (`is_featured AND (featured_until IS NULL OR featured_until > now())`) —
+  computed live rather than trusted from the stored flag, since
+  `is_featured` is never auto-cleared once `featured_until` passes.
+- `frontend/admin/featured-listings.html` is the management UI (linked
+  from the admin dashboard as "รายการแนะนำ"); `frontend/js/marketplace.js`
+  and `frontend/js/machinery-marketplace.js` render the "⭐ แนะนำ" badge on
+  the farmer-facing side.
+
+## Cooperative produce/processed-goods catalog (M14.1)
+
+A cooperative can now advertise available produce/processed goods (milled
+rice, dried paddy, etc.) to **Buyer** orgs, reusing the exact same
+`marketplace.product_listing` / `product_photo` / `product_order` machinery
+the InputSupplier catalog above uses, rather than a parallel table set —
+an explicit product decision to have the cooperative "use this same
+catalog." `grant_cooperative_product_catalog.sql` made two schema changes
+to allow it: widened the `category` CHECK on both tables to add `produce`/
+`processed_good` (which categories are valid for which seller org_type is
+enforced at the application layer, not the database — see that file's
+comment), and made `product_order.farmer_id` nullable alongside a new
+nullable `buyer_org_id`, with a CHECK requiring exactly one of the two set.
+
+- Seller side: `GET/POST /coop/products`, `PUT/DELETE /coop/products/:id`,
+  photo endpoints, and the order lifecycle
+  (`GET /coop/products/orders`, `.../confirm`, `.../reject`, `.../fulfill`)
+  — `src/routes/coopcollection.js`, gated by the existing
+  `requireCooperativeOrg`. A cooperative provisioned via
+  `POST /admin/cooperatives` has no `partner.vendor_profile` row yet
+  (`product_listing.org_id` REFERENCES that table) — the first `POST
+  /coop/products` call provisions one inline, idempotently, rather than
+  requiring the coop to go through `POST /admin/cooperatives/:id/
+  activate-settlement` first.
+- Buyer side: `GET /buyer/coop-directory`, `GET /buyer/coop-products`,
+  `POST /buyer/coop-products/orders`, `GET /buyer/coop-products/orders`,
+  `POST /buyer/coop-products/orders/:id/cancel` — `src/routes/buyer.js`,
+  mirroring `farmer.js`'s InputSupplier-browsing routes shape exactly.
+- `GET /farmer/products` and `GET /buyer/coop-products` each add a FIXED
+  (not client-controlled) `o.org_type = 'InputSupplier'` /
+  `o.org_type = 'Cooperative'` filter respectively — without it, both
+  seller directions sharing one table would bleed into each other's
+  audience now that Cooperative orgs can also write to
+  `marketplace.product_listing`.
+- Frontend: `frontend/coop/dashboard.html`/`js/dashboard.js` (catalog
+  management + incoming-order queue) and
+  `frontend/buyer/dashboard.html`/`js/dashboard.js` (browse + order +
+  cancel + order history).
+
 ## What's mocked / simplified (be aware of this before relying on it)
 
 - **OIDC verification is stubbed.** `POST /auth/login` trusts whatever

@@ -434,6 +434,88 @@
       <div class="loading-line">กำลังโหลดรายชื่อเจ้าหน้าที่…</div>
     </div>
 
+    <div class="section-title">🛒 แค็ตตาล็อกผลผลิต/สินค้าแปรรูป</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ประกาศผลผลิต/สินค้าแปรรูปที่สหกรณ์มีจำหน่าย ให้ผู้รับซื้อ (Buyer Portal) ค้นหาและสั่งซื้อได้ —
+      ใช้ระบบแค็ตตาล็อกเดียวกับที่ผู้จำหน่ายปัจจัยการผลิตใช้ขายให้เกษตรกร แต่แยกหมวดหมู่และผู้ชมกันคนละกลุ่ม
+      (ที่นี่ผู้ซื้อคือองค์กรผู้รับซื้อเท่านั้น ไม่ใช่เกษตรกร)
+    </p>
+    <form id="coopProductForm" class="panel">
+      <input type="hidden" id="coopEditingListingId" value="" />
+      <div class="form-grid">
+        <div class="field">
+          <label for="coopCategorySelect">หมวดหมู่</label>
+          <select id="coopCategorySelect" required>
+            <option value="produce">ผลผลิตทางการเกษตร (ยังไม่แปรรูป)</option>
+            <option value="processed_good">สินค้าแปรรูป (ข้าวสาร ฯลฯ)</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="coopProductNameInput">ชื่อสินค้า</label>
+          <input type="text" id="coopProductNameInput" placeholder="เช่น ข้าวสารหอมมะลิ 100%" required />
+        </div>
+        <div class="field">
+          <label for="coopBrandInput">แบรนด์/ชื่อรุ่น (ถ้ามี)</label>
+          <input type="text" id="coopBrandInput" />
+        </div>
+        <div class="field">
+          <label for="coopPriceInput">ราคาต่อหน่วย</label>
+          <input type="number" id="coopPriceInput" min="0.01" step="0.01" required />
+        </div>
+        <div class="field">
+          <label for="coopPriceUnitInput">หน่วยราคา</label>
+          <input type="text" id="coopPriceUnitInput" value="บาท/กก." />
+        </div>
+        <div class="field full">
+          <label for="coopDescriptionInput">รายละเอียดสินค้า</label>
+          <textarea id="coopDescriptionInput" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="action-row">
+        <button type="submit" class="btn btn-primary btn-sm" id="coopProductSubmitBtn">เพิ่มสินค้า</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="coopProductCancelEditBtn" style="display:none;">ยกเลิกการแก้ไข</button>
+      </div>
+    </form>
+
+    <div class="form-grid" style="margin:14px 0;">
+      <div class="field">
+        <label for="coopCategoryFilter">กรองตามหมวดหมู่</label>
+        <select id="coopCategoryFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="produce">ผลผลิตทางการเกษตร</option>
+          <option value="processed_good">สินค้าแปรรูป</option>
+          <option value="other">อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+    <div id="coopProductListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดแค็ตตาล็อก…</div>
+    </div>
+
+    <div class="section-title">📥 คำสั่งซื้อจากผู้รับซื้อ (ต้องดำเนินการ)</div>
+    <div id="coopOrderReviewQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title">📜 ประวัติคำสั่งซื้อทั้งหมด</div>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="coopOrderStatusFilter">สถานะ</label>
+        <select id="coopOrderStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="requested">รอดำเนินการ</option>
+          <option value="confirmed">ยืนยันแล้ว (รอส่งมอบ)</option>
+          <option value="fulfilled">ส่งมอบแล้ว</option>
+          <option value="rejected">ปฏิเสธแล้ว</option>
+          <option value="cancelled">ยกเลิกแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="coopOrderHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>

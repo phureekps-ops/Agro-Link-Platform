@@ -43,10 +43,14 @@ const BOOKING_STATUS_BADGE_CLASS = {
 };
 
 // ---------- ผู้ให้บริการ ----------
+// Backend (GET /farmer/machinery-providers) already sorts featured
+// listings first — this just renders the "⭐ แนะนำ" badge, it does not
+// re-sort anything client-side.
 function providerCard(p) {
   return `
     <div class="item-card" data-listing-id="${p.listing_id}">
-      <div class="row"><span class="title">${escapeHtml(p.org_name)}</span></div>
+      <div class="row"><span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.org_name)}</span></div>
+      ${p.featured ? `<div class="detail-line"><span class="badge status-approved">⭐ แนะนำ</span></div>` : ""}
       <div class="detail-line">${escapeHtml(p.label_th)}</div>
       <div class="detail-line muted">ราคา: ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit || "")}</div>
       <div class="action-row">

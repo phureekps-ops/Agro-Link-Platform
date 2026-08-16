@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — รายการสินค้า/บริการแนะนำ (Featured Listings)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>⭐</span><span>AgroLink Platform — รายการสินค้า/บริการแนะนำ</span></div>
+    <div class="who">
+      <span class="name">ผู้ดูแลระบบ</span>
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับแดชบอร์ดผู้ดูแลระบบ</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      ผู้ให้บริการ/ผู้จำหน่ายชำระค่าโปรโมทกับทีม AgroLink แบบออฟไลน์ (ระบบยังไม่เชื่อมช่องทางชำระเงินออนไลน์) —
+      ผู้ดูแลระบบเป็นผู้เปิด/ปิดสถานะ "แนะนำ" ให้ทีละรายการที่นี่ รายการที่แนะนำจะถูกจัดเรียงขึ้นก่อนและมีตรา "⭐ แนะนำ"
+      กำกับในหน้าค้นหาสินค้าของเกษตรกร
+    </p>
+
+    <div class="section-title">🛒 แค็ตตาล็อกสินค้า (ปัจจัยการผลิต / ผลผลิตสหกรณ์)</div>
+    <div class="panel" style="margin-bottom:24px;">
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field">
+          <label for="productCategoryFilter">หมวดหมู่</label>
+          <select id="productCategoryFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="fertilizer_hormone">ปุ๋ย/ฮอร์โมน</option>
+            <option value="chemical_pesticide">สารเคมี/ยาปราบศัตรูพืช</option>
+            <option value="equipment">อุปกรณ์การเกษตร</option>
+            <option value="produce">ผลผลิตทางการเกษตร (สหกรณ์)</option>
+            <option value="processed_good">สินค้าแปรรูป (สหกรณ์)</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="productFeaturedFilter">สถานะแนะนำ</label>
+          <select id="productFeaturedFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="true">แนะนำอยู่ตอนนี้เท่านั้น</option>
+          </select>
+        </div>
+      </div>
+      <div id="productListingsSection" class="card-list">
+        <div class="loading-line">กำลังโหลด…</div>
+      </div>
+    </div>
+
+    <div class="section-title">🚜 แค็ตตาล็อกบริการ (เครื่องจักรกล/ผสมปุ๋ยสั่งตัด)</div>
+    <div class="panel">
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field">
+          <label for="serviceTypeFilter">ประเภทบริการ</label>
+          <select id="serviceTypeFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="land_preparation">เตรียมดิน</option>
+            <option value="harvesting">เก็บเกี่ยว</option>
+            <option value="pest_control">พ่นยา/กำจัดศัตรูพืช</option>
+            <option value="transport">ขนส่ง</option>
+            <option value="drying_storage">ลานตาก/จัดเก็บ</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="serviceFeaturedFilter">สถานะแนะนำ</label>
+          <select id="serviceFeaturedFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="true">แนะนำอยู่ตอนนี้เท่านั้น</option>
+          </select>
+        </div>
+      </div>
+      <div id="serviceListingsSection" class="card-list">
+        <div class="loading-line">กำลังโหลด…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/featured-listings.js"></script>
+</body>
+</html>
