@@ -14,11 +14,16 @@ const router = express.Router();
 // pattern, no path collision (none of those define a /machinery-* sub-path).
 router.use(requireAuth, requireFarmer);
 
-// Same five org_types as MACHINERY_ORG_TYPES in src/routes/machinery.js —
+// Same role_types as MACHINERY_ORG_TYPES in src/routes/machinery.js —
 // duplicated here rather than shared, matching this project's existing
 // convention (see FERTILIZER_MIXING_ORG_TYPES in fertilizer.js, also
-// duplicated rather than imported).
-const MACHINERY_ORG_TYPES = ['TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService'];
+// duplicated rather than imported). Includes 'MachineryService' (the
+// 2026-08-17 consolidation of the four individual machine-type roles, see
+// machinery.js's own comment) alongside the four legacy values for
+// backward compatibility with orgs that requested one of them earlier.
+const MACHINERY_ORG_TYPES = [
+  'MachineryService', 'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
+];
 
 /**
  * GET /farmer/machinery-providers — every currently-priced rate-card item

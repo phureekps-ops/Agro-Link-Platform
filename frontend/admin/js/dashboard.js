@@ -25,9 +25,17 @@ const FARMER_STATUS_LABEL = {
   pending_kyc: "รอตรวจสอบ KYC", active: "ใช้งานได้", suspended: "ถูกระงับ", closed: "ปิดบัญชี/ถูกปฏิเสธ",
 };
 const KYB_STATUS_LABEL = { Pending: "รอตรวจสอบ", Verified: "ผ่านการตรวจสอบแล้ว", Rejected: "ถูกปฏิเสธ" };
+// Kept covering the four legacy machine-type values (TractorService/
+// DroneService/HarvesterService/TruckService) even though 2026-08-17
+// onward every new request/self-registration uses 'MachineryService'
+// instead (see organization.js's ORG_REQUESTABLE_ROLE_TYPES comment) — this
+// map labels whatever org_type/role_type Platform Ops is looking at in the
+// KYB/role queues below, including pre-consolidation rows that were never
+// migrated.
 const ORG_TYPE_LABEL = {
   Cooperative: "สหกรณ์", Mill: "โรงสี", Bank: "ธนาคาร", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
   Lender: "ผู้ปล่อยกู้", Logistics: "โลจิสติกส์", Buyer: "ผู้รับซื้อผลผลิต", VillageFund: "กองทุนหมู่บ้าน",
+  MachineryService: "ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)",
   TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี", HarvesterService: "บริการรถเกี่ยวข้าว",
   TruckService: "บริการรถบรรทุก", DryingYardService: "บริการลานตากข้าว",
   MarketVenue: "ผู้ให้บริการลานตลาด/พื้นที่ค้าขาย", FertilizerMixingService: "ผู้ให้บริการผสมปุ๋ยสั่งตัด",

@@ -10,15 +10,31 @@ const router = express.Router();
 router.use(requireAuth, requireOrganization);
 
 /**
- * The five org_types folded into this one unified portal — see the
+ * The role_types that unlock this one unified portal — see the
  * conversation that led here: rather than a separate portal per machine
  * type (TractorService, DroneService, HarvesterService, TruckService) or
- * for drying-yard providers (DryingYardService), all five share one
+ * for drying-yard providers (DryingYardService), all of them share one
  * "ผู้ให้บริการเครื่องจักรกล/ลานตากข้าว" portal and one shared rate card,
  * since a single provider commonly offers more than one of these services
  * (e.g. a tractor operator who also runs a truck).
+ *
+ * 2026-08-17: the four individual machine-type roles were CONSOLIDATED
+ * into one 'MachineryService' role for new requests (see
+ * MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md §5.1 + grant_machinery_service_
+ * consolidation.sql) — approving four separate role rows never bought any
+ * real access-control distinction downstream, since this portal already
+ * grants full access (all seven rate-card items) the moment ANY ONE
+ * machinery role is Verified (see requireMachineryOrg below). The four
+ * legacy values stay in this array so an org that already holds one of
+ * them from before the consolidation keeps working unchanged — this list
+ * checks "does this org hold ANY of these role_types", so old and new
+ * orgs are both covered without a data migration. DryingYardService is
+ * unaffected (kept as its own separate role_type — see that migration's
+ * comment for why).
  */
-const MACHINERY_ORG_TYPES = ['TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService'];
+const MACHINERY_ORG_TYPES = [
+  'MachineryService', 'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
+];
 
 /**
  * The seven fixed rate-card line items this portal exposes. Each maps to

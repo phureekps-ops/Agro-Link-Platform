@@ -51,15 +51,18 @@ const ORG_TYPE_LABEL = {
   Lender: "ผู้ปล่อยกู้", Buyer: "ผู้รับซื้อผลผลิต", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
   VillageFund: "กองทุนหมู่บ้าน",
   Logistics: "โลจิสติกส์/ขนส่งทั่วไป",
-  TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี",
-  HarvesterService: "บริการรถเกี่ยวข้าว", TruckService: "บริการรถบรรทุก",
+  MachineryService: "ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)",
   DryingYardService: "บริการลานตากข้าว",
 };
 
-// The five org_types that share the unified "เครื่องจักรกล/ลานตาก" portal
-// — see src/routes/machinery.js's MACHINERY_ORG_TYPES for the backend side
-// of this same list.
-const MACHINERY_ORG_TYPES = ["TractorService", "DroneService", "HarvesterService", "TruckService", "DryingYardService"];
+// The role_types that share the unified "เครื่องจักรกล/ลานตาก" portal —
+// see src/routes/machinery.js's MACHINERY_ORG_TYPES for the backend side of
+// this same list. 'MachineryService' (2026-08-17) is the only one offered
+// on the dropdown below now — the four individual entries this used to
+// list were consolidated into it (see that file's comment) but stay here
+// too, harmlessly unreachable via this form since ORG_TYPE_SELECT no
+// longer offers them, in case a future path ever resurrects one.
+const MACHINERY_ORG_TYPES = ["MachineryService", "TractorService", "DroneService", "HarvesterService", "TruckService", "DryingYardService"];
 
 function showError(message) {
   errorBox.textContent = message;

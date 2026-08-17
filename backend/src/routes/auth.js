@@ -35,9 +35,21 @@ const REGISTER_CONSTRAINT_ERRORS = {
 // (still gated behind Admin KYB approval same as every other type here)
 // is the only path that costs a one-line change instead of new
 // infrastructure.
+// 'TractorService'/'DroneService'/'HarvesterService'/'TruckService' were
+// CONSOLIDATED into a single 'MachineryService' entry on 2026-08-17 (see
+// MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md §5.1 + grant_machinery_service_
+// consolidation.sql) — src/routes/machinery.js already treats all four (plus
+// DryingYardService) as one unified portal with no per-type access
+// difference, so offering four separate self-registration options never
+// bought any real distinction. Same additive pattern as 'Cooperative'/
+// 'Mill' above: the four individual values are NOT removed from the DB
+// domain, only from this list — an org already registered as one of them
+// keeps working unchanged. 'DryingYardService' is intentionally left as
+// its own separate entry (not folded into 'MachineryService') — see that
+// migration's own comment for why.
 const ORG_SELF_REGISTER_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer', 'VillageFund',
-  'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
+  'MachineryService', 'DryingYardService',
 ];
 const ORG_REGISTER_CONSTRAINT_ERRORS = {
   uq_organization_tax_id: 'tax_id_already_registered',

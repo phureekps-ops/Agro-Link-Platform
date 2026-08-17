@@ -43,16 +43,35 @@ router.use(requireAuth, requireOrganization);
 // endpoint exists, so self-service request/approval (here, as an
 // ADDITIONAL role on top of an existing org) has to be the path, same as
 // every other type in this list.
+//
+// 'TractorService'/'DroneService'/'HarvesterService'/'TruckService'
+// CONSOLIDATED into 'MachineryService' on 2026-08-17 — same change, same
+// reasoning, as the matching edit to ORG_SELF_REGISTER_TYPES in auth.js
+// (see that file's comment + MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md
+// §5.1): an org requesting machinery capability as an ADDITIONAL role
+// (e.g. a Cooperative that already holds a different primary role) now
+// requests the one consolidated type instead of up to four separate ones.
+// The four individual values stay valid in the DB domain for any org that
+// already holds one of them — only removed from this requestable list.
 const ORG_REQUESTABLE_ROLE_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer', 'VillageFund',
-  'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
+  'MachineryService', 'DryingYardService',
   'FertilizerMixingService',
 ];
 
+// Kept covering ALL of TractorService/DroneService/HarvesterService/
+// TruckService here even though they're gone from ORG_REQUESTABLE_ROLE_TYPES
+// above — this map is also used by GET /roles to label whatever role_type
+// rows an org ALREADY holds (see ROLE label_th mapping below), and an org
+// that requested one of the four before the 2026-08-17 consolidation still
+// has that exact row today (no backfill — see grant_machinery_service_
+// consolidation.sql). Dropping their labels here would just replace a
+// correct Thai label with a raw enum string for those existing orgs.
 const ROLE_LABEL_TH = {
   InputSupplier: 'ผู้จำหน่ายปัจจัยการผลิต',
   Lender: 'ผู้ปล่อยกู้', Logistics: 'โลจิสติกส์/ขนส่งทั่วไป', Buyer: 'ผู้รับซื้อผลผลิต',
   VillageFund: 'กองทุนหมู่บ้าน',
+  MachineryService: 'ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)',
   TractorService: 'บริการรถไถ', DroneService: 'บริการโดรน/ฉีดพ่นสารเคมี',
   HarvesterService: 'บริการรถเกี่ยวข้าว', TruckService: 'บริการรถบรรทุก',
   DryingYardService: 'บริการลานตากข้าว',

@@ -165,7 +165,18 @@ grant_rfq_marketplace.sql
 grant_b2b_commerce_engine.sql
 grant_b2b_commerce_engine_phase3.sql
 grant_farmer_360.sql
+grant_machinery_service_consolidation.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-17 (ค่ำ):** `grant_machinery_service_consolidation.sql` —
+ยุบ role บริการเครื่องจักร 4 ประเภทเดิม (`TractorService`/`DroneService`/
+`HarvesterService`/`TruckService`) เป็น role เดียว `MachineryService` (แค่
+ขยาย `CHECK` constraint เพิ่มค่าใหม่ ไม่แตะแถวข้อมูลเดิมเลย ปลอดภัย 100%)
+เพื่อลดขั้นตอนอนุมัติของ Platform Ops จาก 4 รอบเหลือรอบเดียวสำหรับผู้ให้บริการ
+เครื่องจักรกลรายใหม่ — ดูรายละเอียดเต็มที่ `backend/README.md` หัวข้อ
+"Machinery/Drying-Yard Portal" และ `MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md`
+ข้อ 5.1 **ต้องรันหลัง** `02_full_schema.sql` เท่านั้น รันเป็นไฟล์สุดท้ายใน
+ลำดับนี้ก็เพียงพอ
 
 **เพิ่มเมื่อ 2026-08-17:** `grant_farmer_360.sql` — สร้างฟีเจอร์ "ข้อมูล
 เกษตรกรรอบด้าน" (Farmer 360° View): ตาราง `identity.farmer_org_relationship`

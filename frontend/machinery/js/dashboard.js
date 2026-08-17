@@ -27,7 +27,14 @@ function dateOnly(value) {
   return String(value).slice(0, 10);
 }
 
+// Kept covering the four legacy machine-type values even though new orgs
+// only ever get 'MachineryService' now (2026-08-17 consolidation, see
+// src/routes/machinery.js's MACHINERY_ORG_TYPES comment) — d.service_types
+// (below) reflects whichever role_type row(s) THIS org actually holds, and
+// an org that requested one of the four before the consolidation still has
+// that exact row, unmigrated by design.
 const SERVICE_TYPE_LABEL_TH = {
+  MachineryService: "ผู้ให้บริการเครื่องจักรกล",
   TractorService: "บริการรถไถ",
   DroneService: "บริการโดรน/ฉีดพ่นสารเคมี",
   HarvesterService: "บริการรถเกี่ยวข้าว",
