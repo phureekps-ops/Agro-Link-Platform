@@ -166,7 +166,33 @@ grant_b2b_commerce_engine.sql
 grant_b2b_commerce_engine_phase3.sql
 grant_farmer_360.sql
 grant_machinery_service_consolidation.sql
+grant_ledger_revenue_segregation.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-17 (ดึก):** `grant_ledger_revenue_segregation.sql` —
+เพิ่มคอลัมน์ `ledger.journal_entry.source_role_type` (nullable, ไม่มี
+`CHECK`) เพื่อติด tag ว่าธุรกรรมเงินแต่ละรายการเกิดจากหน้าที่ทางธุรกิจไหน
+ของสหกรณ์ (แก้ปัญหาที่บัญชี `vendor_settlement` ใช้ร่วมกันทุกหน้าที่ที่ไม่ใช่
+Lender ทำให้แยกรายได้ตามหน้าที่ไม่ได้มาก่อน) พร้อมแก้ `ledger.transfer_funds()`
+ให้รับพารามิเตอร์ใหม่ (**ต้อง `DROP FUNCTION` ลายเซ็นเดิม 8 พารามิเตอร์ก่อน
+`CREATE`** — ทดสอบแล้วว่า `CREATE OR REPLACE` เพิ่มพารามิเตอร์ต่อท้ายเฉยๆ จะสร้าง
+overload ที่สอง ไม่ได้แทนที่ตัวเดิม ทำให้ผู้เรียกที่ใช้จำนวนอาร์กิวเมนต์แบบเดิม
+กำกวม — ดูรายละเอียดในคอมเมนต์หัวไฟล์) และแก้ `procurement.pay_invoice()`
+ให้ส่งค่า `'Wholesale'` ทุกครั้งที่มีการชำระใบแจ้งหนี้ขายส่งจริง ผู้เรียก
+`transfer_funds()` รายอื่นทั้งหมด (`credit.repay_loan`, `ledger.hold_escrow`/
+`release_escrow`, `marketplace.complete_service_request`,
+`produce.settle_delivery`) **ไม่ถูกแก้ในรอบนี้** เพราะตรวจโค้ดจริงแล้วพบว่า
+มีเพียงเส้นทางขายส่ง (`procurement.pay_invoice`) เท่านั้นที่มีเงินไหลผ่าน
+เลดเจอร์จริงวันนี้ — ดอกเบี้ยเงินกู้ยังไม่มี route เรียก `credit.repay_loan`
+เลย ส่วนค่าเช่าเครื่องจักร/ค่าลานตาก/ค่าคอมมิชชันขายปัจจัยการผลิตตั้งใจให้
+ชำระเงินนอกระบบ (ดูรายละเอียดเต็มที่คอมเมนต์หัวไฟล์ migration นี้เอง และ
+`backend/README.md` หัวข้อ "Ledger revenue segregation by function" และ
+`MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md` ข้อ 5.3a) **ต้องรันหลัง**
+`02_full_schema.sql` และ `grant_b2b_commerce_engine_phase3.sql` (ซึ่งเป็นที่
+มาของ `procurement.pay_invoice()` ที่ migration นี้ไป `CREATE OR REPLACE`)
+เท่านั้น รันเป็นไฟล์สุดท้ายในลำดับนี้ก็เพียงพอ — เป็น additive ล้วนๆ
+(เพิ่มคอลัมน์ nullable + เพิ่มพารามิเตอร์ที่มี default + ฟังก์ชันใหม่)
+ไม่แตะข้อมูลเดิมแม้แต่แถวเดียว ปลอดภัย 100%
 
 **เพิ่มเมื่อ 2026-08-17 (ค่ำ):** `grant_machinery_service_consolidation.sql` —
 ยุบ role บริการเครื่องจักร 4 ประเภทเดิม (`TractorService`/`DroneService`/

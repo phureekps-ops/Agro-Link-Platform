@@ -2728,7 +2728,8 @@ router.get('/finance/transactions', async (req, res, next) => {
     const rows = await withSessionContext('organization', subjectId, async (client) => {
       const result = await client.query(
         `SELECT jl.line_id, jl.direction, jl.amount, jl.currency,
-                je.entry_type, je.description, je.reference_type, je.reference_id, je.posted_at
+                je.entry_type, je.description, je.reference_type, je.reference_id, je.posted_at,
+                je.source_role_type
            FROM ledger.journal_line jl
            JOIN ledger.journal_entry je ON je.entry_id = jl.entry_id
            JOIN ledger.account a ON a.account_id = jl.account_id
@@ -2738,6 +2739,33 @@ router.get('/finance/transactions', async (req, res, next) => {
         [subjectId],
       );
       await logAccess(client, 'read', 'ledger.journal_line', subjectId);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/finance/revenue-by-function — cash in/out broken down by
+ * `ledger.journal_entry.source_role_type` via `reporting.
+ * coop_revenue_by_function()` — added 2026-08-17,
+ * MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md §5.3a. See
+ * grant_ledger_revenue_segregation.sql for the full audit of which of this
+ * platform's money flows actually carry this tag today (only wholesale
+ * produce sales via `procurement.pay_invoice()` — every other row still
+ * comes back with `source_role_type: null`, which is a real, honest
+ * "not yet attributed" bucket, not a bug). The frontend should render the
+ * `null` row with its own label (e.g. "ยังไม่ระบุหน้าที่") rather than
+ * hiding it, for the same reason the SQL function doesn't filter it out.
+ */
+router.get('/finance/revenue-by-function', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query('SELECT * FROM reporting.coop_revenue_by_function($1)', [subjectId]);
+      await logAccess(client, 'read', 'reporting.coop_revenue_by_function', subjectId);
       return result.rows;
     });
     return res.json(rows);
