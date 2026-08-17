@@ -1,13 +1,18 @@
 const express = require('express');
 
 const { withSessionContext, logAccess } = require('../db/pool');
-const { requireAuth, requireOrganization } = require('../middleware/auth');
+const { requireAuth, requireOrganizationOrStaff, resolveEffectiveOrgSubject } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Every route below requires a valid organization JWT. requireOrganization
-// runs after requireAuth so req.subject is guaranteed populated first.
-router.use(requireAuth, requireOrganization);
+// Every route below requires a valid organization JWT — OR, since 2026-08-17
+// (staff permission scoping, MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md §5.2),
+// a named cooperative staff login (subjectType='organization_member') whose
+// operational role is coop.credit_officer/coop.admin/coop.manager — see
+// requireLenderOrg below, which is where that finer-grained check actually
+// happens. requireOrganizationOrStaff runs after requireAuth so req.subject
+// is guaranteed populated first.
+router.use(requireAuth, requireOrganizationOrStaff);
 
 /**
  * Confirms the authenticated organization actually HOLDS a Verified
@@ -38,10 +43,20 @@ router.use(requireAuth, requireOrganization);
  *      which) rather than the old blanket 'lender_subject_required', so
  *      the frontend can offer "request this role" instead of just
  *      bouncing to login.
+ *
+ * Since 2026-08-17 this is also where a staff (organization_member) login
+ * gets resolved down to its org_id — see resolveEffectiveOrgSubject's own
+ * doc comment in middleware/auth.js. Only coop.credit_officer/coop.admin/
+ * coop.manager staff can reach past this point; a coop.warehouse_officer
+ * or coop.accountant staff login is rejected here with
+ * 'operational_role_does_not_cover_module', same as it would be rejected
+ * by /machinery/*'s own requireMachineryOrg for the opposite reason.
  */
 async function requireLenderOrg(req, res, next) {
-  const { subjectId } = req.subject;
   try {
+    const resolved = await resolveEffectiveOrgSubject(req, res, ['Lender']);
+    if (!resolved) return; // resolveEffectiveOrgSubject already sent the response
+    const { subjectId } = req.subject; // now guaranteed to be an org_id, whether from the shared org login or a resolved staff login
     const result = await withSessionContext('organization', subjectId, async (client) => {
       const org = await client.query(
         'SELECT org_id, org_name, org_type, kyb_status FROM identity.organization WHERE org_id = $1',
@@ -111,6 +126,11 @@ router.get('/dashboard', async (req, res, next) => {
       return {
         org_name: req.org.org_name,
         kyb_status: req.org.kyb_status,
+        // Set only when this request came from a resolved staff login (see
+        // resolveEffectiveOrgSubject) — null for the org's own shared
+        // login, so the frontend can show "เข้าสู่ระบบในฐานะเจ้าหน้าที่สินเชื่อ"
+        // only when that's actually true.
+        acting_staff: req.actingStaff || null,
         applications_by_status: statusCounts,
         needs_action_count: statusCounts.manual_review + statusCounts.approved,
         active_contracts: portfolio.rows[0].active_contracts,

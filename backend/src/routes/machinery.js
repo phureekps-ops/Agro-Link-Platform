@@ -1,13 +1,18 @@
 const express = require('express');
 
 const { withSessionContext, logAccess } = require('../db/pool');
-const { requireAuth, requireOrganization } = require('../middleware/auth');
+const { requireAuth, requireOrganizationOrStaff, resolveEffectiveOrgSubject } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Every route below requires a valid organization JWT. requireOrganization
-// runs after requireAuth so req.subject is guaranteed populated first.
-router.use(requireAuth, requireOrganization);
+// Every route below requires a valid organization JWT — OR, since 2026-08-17
+// (staff permission scoping, MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md §5.2),
+// a named cooperative staff login (subjectType='organization_member') whose
+// operational role is coop.warehouse_officer/coop.admin/coop.manager — see
+// requireMachineryOrg below, which is where that finer-grained check
+// actually happens. requireOrganizationOrStaff runs after requireAuth so
+// req.subject is guaranteed populated first.
+router.use(requireAuth, requireOrganizationOrStaff);
 
 /**
  * The role_types that unlock this one unified portal — see the
@@ -72,10 +77,26 @@ const RATE_CARD_KEYS = Object.keys(RATE_CARD_ITEMS);
  * for the same reason as Lender/Buyer: POST /auth/org-register issues a
  * real, working JWT the moment someone registers, before Platform Ops ever
  * reviews the application.
+ *
+ * Since 2026-08-17 this is also where a staff (organization_member) login
+ * gets resolved down to its org_id — see resolveEffectiveOrgSubject's own
+ * doc comment in middleware/auth.js. Only coop.warehouse_officer/
+ * coop.admin/coop.manager staff can reach past this point; a
+ * coop.credit_officer or coop.member_officer staff login is rejected here
+ * with 'operational_role_does_not_cover_module'. Note this portal's own
+ * pre-existing "no per-role field gating" limitation (see doc comment
+ * above) still applies to staff too: a coop.warehouse_officer who gets in
+ * because the org's DryingYardService role is Verified sees the SAME
+ * unified rate card/booking list as anyone else with machinery access,
+ * not a drying-yard-only view — that would need machinery.js's own
+ * data model to filter by service_key per staff role, a separate,
+ * currently out-of-scope change from this access-gating feature.
  */
 async function requireMachineryOrg(req, res, next) {
-  const { subjectId } = req.subject;
   try {
+    const resolved = await resolveEffectiveOrgSubject(req, res, MACHINERY_ORG_TYPES);
+    if (!resolved) return; // resolveEffectiveOrgSubject already sent the response
+    const { subjectId } = req.subject; // now guaranteed to be an org_id, whether from the shared org login or a resolved staff login
     const result = await withSessionContext('organization', subjectId, async (client) => {
       const org = await client.query(
         'SELECT org_id, org_name, org_type, kyb_status FROM identity.organization WHERE org_id = $1',
@@ -182,6 +203,9 @@ router.get('/dashboard', async (req, res, next) => {
         // doc comment on requireMachineryOrg above.
         service_types: req.org.verified_role_types,
         kyb_status: req.org.kyb_status,
+        // Set only when this request came from a resolved staff login (see
+        // resolveEffectiveOrgSubject) — null for the org's own shared login.
+        acting_staff: req.actingStaff || null,
         priced_items_count: pricedCount,
         total_rate_card_items: RATE_CARD_KEYS.length,
         photo_count: photos.rows[0].count,
