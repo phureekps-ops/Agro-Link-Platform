@@ -256,6 +256,202 @@ async function loadContracts() {
   }
 }
 
+// ---------- Farmer 360° View ----------
+// See FARMER_360_ARCHITECTURE.md §4 (visibility model) and
+// backend/src/routes/farmer360.js for exactly what each response field
+// means and why. This MVP round is membership + land + transactions only
+// — no consent workflow, no credit score (both explicitly deferred).
+const RELATIONSHIP_TYPE_LABEL_TH = {
+  CooperativeMember: "สมาชิกสหกรณ์",
+  VillageFundMember: "สมาชิกกองทุนหมู่บ้าน",
+  LoanCustomer: "ลูกค้าสินเชื่อ",
+  Other: "อื่น ๆ",
+};
+
+function relationshipTypeLabel(t) {
+  return RELATIONSHIP_TYPE_LABEL_TH[t] || t || "-";
+}
+
+function farmer360SearchResultCard(f) {
+  return `
+    <div class="item-card" data-search-farmer-id="${f.farmer_id}">
+      <div class="row"><span class="title">${escapeHtml(f.full_name)}</span><span class="badge">${escapeHtml(f.farmer_code)}</span></div>
+      <div class="action-row">
+        <button type="button" class="btn btn-primary btn-sm" data-add-farmer="${f.farmer_id}">เพิ่มเป็นลูกค้า</button>
+      </div>
+    </div>
+  `;
+}
+
+async function handleFarmer360Search() {
+  const codeInput = document.getElementById("farmer360SearchCode");
+  const phoneInput = document.getElementById("farmer360SearchPhone");
+  const el = document.getElementById("farmer360SearchResultSection");
+  const code = codeInput.value.trim();
+  const phone = phoneInput.value.trim();
+  if (!code && !phone) {
+    toast("กรุณากรอกรหัส AgroLink ID หรือเบอร์โทร", true);
+    return;
+  }
+  const query = code ? `code=${encodeURIComponent(code)}` : `phone=${encodeURIComponent(phone)}`;
+  el.innerHTML = `<div class="loading-line">กำลังค้นหา…</div>`;
+  try {
+    const farmer = await AgroLinkLenderAPI.get(`/farmer360/search?${query}`);
+    el.innerHTML = farmer360SearchResultCard(farmer);
+  } catch (err) {
+    if (err.status === 404) {
+      el.innerHTML = `<div class="empty-state">ไม่พบเกษตรกรที่ตรงกับข้อมูลที่ค้นหา</div>`;
+    } else {
+      el.innerHTML = `<div class="empty-state">ค้นหาไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+document.getElementById("farmer360SearchBtn").addEventListener("click", handleFarmer360Search);
+
+document.getElementById("farmer360SyncBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("farmer360SyncBtn");
+  btn.disabled = true;
+  try {
+    const result = await AgroLinkLenderAPI.post("/farmer360/relationships/sync");
+    toast(`ซิงค์สำเร็จ — เพิ่มลูกค้าใหม่ ${result.linked_count} ราย`);
+    await loadFarmer360Roster();
+  } catch (err) {
+    toast("ซิงค์ไม่สำเร็จ: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("farmer360SearchResultSection").addEventListener("click", async (e) => {
+  const addBtn = e.target.closest("[data-add-farmer]");
+  if (!addBtn) return;
+  const farmerId = addBtn.dataset.addFarmer;
+  addBtn.disabled = true;
+  try {
+    await AgroLinkLenderAPI.post("/farmer360/relationships", { farmer_id: farmerId });
+    toast("เพิ่มเกษตรกรเป็นลูกค้าเรียบร้อยแล้ว");
+    document.getElementById("farmer360SearchResultSection").innerHTML = "";
+    document.getElementById("farmer360SearchCode").value = "";
+    document.getElementById("farmer360SearchPhone").value = "";
+    await loadFarmer360Roster();
+  } catch (err) {
+    toast("เพิ่มลูกค้าไม่สำเร็จ: " + err.message, true);
+    addBtn.disabled = false;
+  }
+});
+
+function farmer360TransactionLine(label, tx) {
+  if (!tx) return "";
+  const amountPart = tx.total_amount !== undefined ? ` — ${thb(tx.total_amount)} บาท` : "";
+  return `<div class="detail-line">${label}: ${tx.count} รายการ${amountPart}</div>`;
+}
+
+function render360Detail(view) {
+  const membershipsHtml = view.memberships.length
+    ? view.memberships.map((m) => `<span class="badge">${escapeHtml(m.org_name)} (${relationshipTypeLabel(m.relationship_type)})</span>`).join(" ")
+    : `<span class="detail-line muted">ไม่มีข้อมูลสมาชิกภาพอื่น</span>`;
+
+  const landHtml = view.land.length
+    ? view.land.map((l) => `<div class="detail-line">${escapeHtml(l.commodity_name)} — ${l.area_rai} ไร่ (${escapeHtml(l.unit_type)})</div>`).join("")
+    : `<div class="detail-line muted">ไม่มีข้อมูลที่ดิน/แปลง</div>`;
+
+  return `
+    <div class="item-card" style="margin-top:8px; background:var(--gray-50);">
+      <div class="row"><span class="title">👤 ${escapeHtml(view.farmer.full_name)}</span><span class="badge">${escapeHtml(view.farmer.farmer_code)}</span></div>
+      <div class="detail-line muted">โทร ${escapeHtml(view.farmer.phone || "-")} · พื้นที่ ${escapeHtml(view.farmer.region_code || "-")}</div>
+
+      <div class="detail-line" style="margin-top:10px; font-weight:600;">🏞️ ที่ดิน/แปลงปลูก</div>
+      ${landHtml}
+
+      <div class="detail-line" style="margin-top:10px; font-weight:600;">🏷️ สมาชิกภาพกับหน่วยงานอื่น</div>
+      <div class="detail-line">${membershipsHtml}</div>
+
+      <div class="detail-line" style="margin-top:10px; font-weight:600;">💳 ธุรกรรมกับท่าน</div>
+      ${farmer360TransactionLine("ขายผลผลิต", view.transactions.produce_sales)}
+      ${farmer360TransactionLine("คำขอสินเชื่อ", view.transactions.loans)}
+      ${farmer360TransactionLine("ซื้อปัจจัยการผลิต", view.transactions.input_purchases)}
+      ${farmer360TransactionLine("เช่าเครื่องจักร", view.transactions.machinery_rental)}
+
+      <div class="detail-line muted" style="margin-top:10px;">
+        คะแนนเครดิต: ยังไม่แสดงในรอบนี้ — รอระบบยินยอม (consent) ในรอบถัดไป
+      </div>
+    </div>
+  `;
+}
+
+function farmer360RosterCard(r) {
+  return `
+    <div class="item-card" data-roster-farmer-id="${r.farmer_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(r.full_name)}</span>
+        <span class="badge">${escapeHtml(r.farmer_code)}</span>
+      </div>
+      <div class="detail-line muted">${relationshipTypeLabel(r.relationship_type)} · เป็นลูกค้าตั้งแต่ ${thaiDate(r.joined_at)}</div>
+      <div class="action-row">
+        <button type="button" class="btn btn-ghost btn-sm" data-view360="${r.farmer_id}">ดูข้อมูล 360°</button>
+        <button type="button" class="btn btn-decline btn-sm" data-unlink-farmer="${r.farmer_id}">เลิกเป็นลูกค้า</button>
+      </div>
+      <div data-detail-for="${r.farmer_id}"></div>
+    </div>
+  `;
+}
+
+async function loadFarmer360Roster() {
+  const el = document.getElementById("farmer360RosterSection");
+  try {
+    const roster = await AgroLinkLenderAPI.get("/farmer360/relationships/mine");
+    if (roster.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีเกษตรกรที่เป็นลูกค้า — ค้นหาและเพิ่ม หรือกด "ซิงค์ลูกค้าจากธุรกรรมเดิมอัตโนมัติ" ด้านบน</div>`;
+      return;
+    }
+    el.innerHTML = roster.map(farmer360RosterCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรายชื่อลูกค้าไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("farmer360RosterSection").addEventListener("click", async (e) => {
+  const viewBtn = e.target.closest("[data-view360]");
+  const unlinkBtn = e.target.closest("[data-unlink-farmer]");
+
+  if (viewBtn) {
+    const farmerId = viewBtn.dataset.view360;
+    const detailEl = document.querySelector(`[data-detail-for="${farmerId}"]`);
+    if (detailEl.dataset.expanded === "true") {
+      detailEl.innerHTML = "";
+      detailEl.dataset.expanded = "false";
+      viewBtn.textContent = "ดูข้อมูล 360°";
+      return;
+    }
+    viewBtn.disabled = true;
+    try {
+      const view = await AgroLinkLenderAPI.get(`/farmer360/${farmerId}`);
+      detailEl.innerHTML = render360Detail(view);
+      detailEl.dataset.expanded = "true";
+      viewBtn.textContent = "ซ่อนข้อมูล 360°";
+    } catch (err) {
+      toast("โหลดข้อมูล 360° ไม่สำเร็จ: " + err.message, true);
+    } finally {
+      viewBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (unlinkBtn) {
+    const farmerId = unlinkBtn.dataset.unlinkFarmer;
+    unlinkBtn.disabled = true;
+    try {
+      await AgroLinkLenderAPI.del(`/farmer360/relationships/${farmerId}`);
+      toast("เลิกเป็นลูกค้าเรียบร้อยแล้ว");
+      await loadFarmer360Roster();
+    } catch (err) {
+      toast("ดำเนินการไม่สำเร็จ: " + err.message, true);
+      unlinkBtn.disabled = false;
+    }
+  }
+});
+
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkLenderAPI.logout());
 
 /**
@@ -285,6 +481,7 @@ async function init() {
   loadApplicationReviewQueue();
   loadApplicationHistory();
   loadContracts();
+  loadFarmer360Roster();
 }
 
 init();

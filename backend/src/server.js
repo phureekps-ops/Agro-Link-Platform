@@ -27,6 +27,12 @@ const storageRouter = require('./routes/storage');
 // on the same endpoints, gated per-handler), so its own prefix rather
 // than sharing any one portal's mount.
 const procurementRouter = require('./routes/procurement');
+// farmer360.js — Farmer 360° View (see FARMER_360_ARCHITECTURE.md).
+// Generic across ANY verified organization (same "own prefix, not
+// portal-scoped" reasoning as procurement.js above) — used by the
+// Cooperative, Lender, and VillageFund portals in this pass.
+const farmer360Router = require('./routes/farmer360');
+const villageFundRouter = require('./routes/villagefund');
 
 const app = express();
 
@@ -92,6 +98,8 @@ app.use('/gov', governmentRouter);
 // subject-type agnostic and not owned by any one portal.
 app.use('/storage', storageRouter);
 app.use('/procurement', procurementRouter);
+app.use('/farmer360', farmer360Router);
+app.use('/villagefund', villageFundRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/marketvenue', marketVenueRouter);

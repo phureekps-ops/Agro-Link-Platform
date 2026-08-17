@@ -53,6 +53,33 @@
       <div class="loading-line">กำลังโหลดสัญญาเงินกู้…</div>
     </div>
 
+    <div class="section-title" style="margin-top:22px;">🔍 ข้อมูลเกษตรกรรอบด้าน (Farmer 360°)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ดูข้อมูลรวมของเกษตรกรที่เป็นลูกค้าของท่าน — สมาชิกภาพกับหน่วยงานอื่น (สหกรณ์/กองทุนหมู่บ้าน/ผู้ปล่อยกู้รายอื่น),
+      ที่ดิน/พืชที่ปลูก, และธุรกรรมที่ทำกับ**ท่านเท่านั้น** (ยังไม่รวมยอดธุรกรรมกับหน่วยงานอื่น — รอระบบ consent ในรอบถัดไป)
+      ต้องเพิ่มเกษตรกรเป็น "ลูกค้า" ก่อนจึงจะดูข้อมูล 360° ได้
+    </p>
+    <div class="form-grid" style="margin-bottom:10px;">
+      <div class="field">
+        <label for="farmer360SearchCode">ค้นหาด้วยรหัส AgroLink ID</label>
+        <input type="text" id="farmer360SearchCode" placeholder="เช่น AF-000001" />
+      </div>
+      <div class="field">
+        <label for="farmer360SearchPhone">หรือค้นหาด้วยเบอร์โทร</label>
+        <input type="text" id="farmer360SearchPhone" placeholder="เช่น +66812345678" />
+      </div>
+    </div>
+    <div class="action-row">
+      <button type="button" class="btn btn-primary btn-sm" id="farmer360SearchBtn" style="max-width:160px;">ค้นหา</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="farmer360SyncBtn" style="max-width:280px;">ซิงค์ลูกค้าจากธุรกรรมเดิมอัตโนมัติ</button>
+    </div>
+    <div id="farmer360SearchResultSection" style="margin-top:10px;"></div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">👥 เกษตรกรที่เป็นลูกค้าของฉัน</div>
+    <div id="farmer360RosterSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>

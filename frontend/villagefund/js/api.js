@@ -1,10 +1,13 @@
 /**
- * AgroLink Lender Portal — shared API client.
+ * AgroLink VillageFund Portal — shared API client.
  *
- * Same shape as ../../js/api.js (the Farmer Portal client), but kept as its
- * own copy rather than shared: the storage key must be different so a
- * farmer session and a lender session in the same browser never collide,
- * and the redirect targets point at this folder's own pages.
+ * Same shape as ../../lender/js/api.js — kept as its own copy rather than
+ * shared: the storage key must be different so a session from another
+ * portal in the same browser never collides, and the redirect targets
+ * point at this folder's own pages. This portal was built solely to host
+ * the Farmer 360° View (see FARMER_360_ARCHITECTURE.md §6) — there is no
+ * VillageFund-specific business logic beyond the shared /farmer360/* and
+ * /villagefund/dashboard endpoints.
  */
 const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
   ? "http://localhost:4000"
@@ -17,9 +20,9 @@ const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
 // match exactly what's shown on the service's page in the Render
 // Dashboard, not just the service name.
 
-const AUTH_STORAGE_KEY = "agrolink_lender_session";
+const AUTH_STORAGE_KEY = "agrolink_villagefund_session";
 
-const AgroLinkLenderAPI = (() => {
+const AgroLinkVillageFundAPI = (() => {
   function getSession() {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return null;
@@ -48,10 +51,10 @@ const AgroLinkLenderAPI = (() => {
   }
 
   /**
-   * Login against POST /auth/login — the SAME endpoint the Farmer Portal
+   * Login against POST /auth/login — the SAME endpoint every other portal
    * uses. security.resolve_subject_from_external_claim() already resolves
-   * claims to either a farmer or an organization, so no separate lender
-   * login endpoint was needed on the backend.
+   * claims to either a farmer or an organization, so no separate
+   * VillageFund login endpoint was needed on the backend.
    */
   async function login(externalSubjectClaim) {
     const res = await fetch(`${API_BASE}/auth/login`, {
@@ -76,17 +79,10 @@ const AgroLinkLenderAPI = (() => {
   }
 
   /**
-   * Authenticated GET/POST helper. On 401 (expired/invalid token), clears
-   * the session and bounces back to login. On 403, there are two distinct
-   * cases the backend now tells apart:
-   *   - 'kyb_not_verified': a REAL Lender-org token, just not yet approved
-   *     (e.g. freshly self-registered via register-provider.html). The
-   *     session is kept — no need to log in again once approved — and a
-   *     normal (non-redirecting) error is thrown so dashboard.js can render
-   *     a "your application is under review" state instead.
-   *   - anything else (e.g. a farmer token, or a non-Lender organization):
-   *     same "get out of here" treatment as an expired token, bounced back
-   *     to login with a reason shown inline.
+   * Authenticated GET/POST/DELETE helper. On 401 (expired/invalid token),
+   * clears the session and bounces back to login. On 403, 'kyb_not_verified'
+   * and 'role_not_verified' keep the session alive (a real VillageFund-org
+   * token, just not yet approved) — everything else bounces back to login.
    */
   async function request(path, options = {}) {
     const session = getSession();
@@ -108,18 +104,14 @@ const AgroLinkLenderAPI = (() => {
     if (res.status === 403) {
       const body = await res.json().catch(() => ({}));
       if (body.error === "kyb_not_verified" || body.error === "role_not_verified") {
-        // Both are a REAL org token, just not (yet, or not for this role)
-        // approved by Platform Ops — keep the session alive either way so
-        // the user never needs to log in again once approved. See the
-        // matching comment in src/routes/lender.js's requireLenderOrg.
         const err = new Error(body.error);
         err.status = 403;
         err.body = body;
         throw err;
       }
       clearSession();
-      window.location.href = "index.html?reason=not_a_lender";
-      throw new Error("not_a_lender");
+      window.location.href = "index.html?reason=not_a_villagefund";
+      throw new Error("not_a_villagefund");
     }
 
     const isJson = (res.headers.get("content-type") || "").includes("application/json");

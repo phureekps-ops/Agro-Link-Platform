@@ -36,8 +36,15 @@ router.use(requireAuth, requireOrganization);
 // an ADDITIONAL role here — on top of the from-scratch self-registration
 // path (org_type = FertilizerMixingService via POST /auth/org-register)
 // that เส้นทาง A already shipped.
+//
+// 'VillageFund' added 2026-08-17 for the Farmer 360° View feature (see
+// FARMER_360_ARCHITECTURE.md §6) — same reasoning as VillageFund's
+// addition to ORG_SELF_REGISTER_TYPES in auth.js: no admin org-creation
+// endpoint exists, so self-service request/approval (here, as an
+// ADDITIONAL role on top of an existing org) has to be the path, same as
+// every other type in this list.
 const ORG_REQUESTABLE_ROLE_TYPES = [
-  'InputSupplier', 'Lender', 'Logistics', 'Buyer',
+  'InputSupplier', 'Lender', 'Logistics', 'Buyer', 'VillageFund',
   'TractorService', 'DroneService', 'HarvesterService', 'TruckService', 'DryingYardService',
   'FertilizerMixingService',
 ];
@@ -45,6 +52,7 @@ const ORG_REQUESTABLE_ROLE_TYPES = [
 const ROLE_LABEL_TH = {
   InputSupplier: 'ผู้จำหน่ายปัจจัยการผลิต',
   Lender: 'ผู้ปล่อยกู้', Logistics: 'โลจิสติกส์/ขนส่งทั่วไป', Buyer: 'ผู้รับซื้อผลผลิต',
+  VillageFund: 'กองทุนหมู่บ้าน',
   TractorService: 'บริการรถไถ', DroneService: 'บริการโดรน/ฉีดพ่นสารเคมี',
   HarvesterService: 'บริการรถเกี่ยวข้าว', TruckService: 'บริการรถบรรทุก',
   DryingYardService: 'บริการลานตากข้าว',

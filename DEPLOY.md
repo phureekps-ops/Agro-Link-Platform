@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (41 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (44 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -164,7 +164,18 @@ grant_cooperative_product_catalog.sql
 grant_rfq_marketplace.sql
 grant_b2b_commerce_engine.sql
 grant_b2b_commerce_engine_phase3.sql
+grant_farmer_360.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-17:** `grant_farmer_360.sql` — สร้างฟีเจอร์ "ข้อมูล
+เกษตรกรรอบด้าน" (Farmer 360° View): ตาราง `identity.farmer_org_relationship`
+(สมาชิกภาพของเกษตรกรกับหลายองค์กรพร้อมกัน — สหกรณ์/กองทุนหมู่บ้าน/ผู้ปล่อยกู้ ฯลฯ),
+ฟังก์ชันเชื่อม/เลิกเชื่อมสมาชิกภาพและซิงค์อัตโนมัติจากธุรกรรมเดิม, และรหัส
+"AgroLink ID" (`farmer_code`, รูปแบบ `AF-000001`) ให้เกษตรกรทุกคน — ดูรายละเอียด
+เต็มที่ `backend/README.md` หัวข้อ "Farmer 360° View" และ
+`FARMER_360_ARCHITECTURE.md` ที่ root ของโปรเจกต์ **ต้องรันหลัง**
+`02_full_schema.sql` และ `03_grant_schema_usage.sql` เท่านั้น (ไม่ต้องพึ่งไฟล์
+B2B Commerce Engine ด้านบน) รันเป็นไฟล์สุดท้ายในลำดับนี้ก็เพียงพอ
 
 **เพิ่มเมื่อ 2026-08-16 (ดึก):** `grant_b2b_commerce_engine_phase3.sql` —
 ต่อยอดจาก `grant_b2b_commerce_engine.sql` ด้านบน เพิ่มใบรับสินค้า (Goods

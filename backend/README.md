@@ -280,7 +280,7 @@ npm start          # or: node src/server.js
 - `POST /auth/login` — body `{ "external_subject_claim": "oidc|farmer-001" }` → resolves the claim via `security.resolve_subject_from_external_claim()` and returns a signed JWT.
 - `POST /auth/register` — body `{ "full_name", "phone", "national_id", "region_code" }` → creates a new `identity.farmer` row (status `pending_kyc`), grants it the `farmer.self` role in `identity.subject_role`, mints a fresh mock OIDC claim (`oidc|farmer-<uuid>`), and auto-issues a session JWT so the new farmer lands straight in the portal. `national_id` is SHA-256 hashed before it ever reaches the database — only the hash is stored. Duplicate phone/national ID return `409` with `phone_already_registered` / `national_id_already_registered`.
 - `GET /auth/session/current` — requires `Authorization: Bearer <token>`; echoes back the resolved identity and display name.
-- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `InputSupplier`/`Lender`/`Logistics`/`Buyer`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank`/`VillageFund` are deliberately excluded, see "what's mocked" below, and `Cooperative`/`Mill` were removed from this list on 2026-07-24 per an explicit product decision — both values still exist in `identity.organization`'s underlying `org_type` domain, they just aren't self-registerable through this endpoint anymore). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
+- `POST /auth/org-register` — body `{ "org_name", "tax_id", "org_type" }` → the service-provider equivalent of `POST /auth/register`. `org_type` must be one of `InputSupplier`/`Lender`/`Logistics`/`Buyer`/`VillageFund`/`TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` (see `ORG_SELF_REGISTER_TYPES` in `src/routes/auth.js` — `Bank` remains deliberately excluded, see "what's mocked" below, and `Cooperative`/`Mill` were removed from this list on 2026-07-24 per an explicit product decision — both values still exist in `identity.organization`'s underlying `org_type` domain, they just aren't self-registerable through this endpoint anymore. `VillageFund` was ADDED to this list on 2026-08-17 for the Farmer 360° View feature — see "Farmer 360° View" below and `FARMER_360_ARCHITECTURE.md` §6 — because no admin-side org-creation endpoint exists anywhere in this codebase, so self-registration behind the same KYB gate as every other type here was the lowest-cost onboarding path). Creates a new `identity.organization` row at `kyb_status = 'Pending'`, grants it the `org.admin` role, creates a matching `partner.vendor_profile` row (using `tax_id` as `business_registration_no` — a real simplification, see below), mints a fresh mock OIDC claim (`oidc|org-<uuid>`), and auto-issues a session JWT. Also inserts this `org_type` as the org's **primary role** into `identity.organization_role` at `status = 'Pending'` — see "Multi-role organizations" below. Duplicate `tax_id` returns `409 tax_id_already_registered`.
 
 Note: `POST /auth/login` is shared by the Farmer Portal, Lender Portal, AND
 Buyer Portal — `security.resolve_subject_from_external_claim()` already
@@ -358,7 +358,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `POST /inputsupplier/orders/:id/fulfill` — `confirmed` → `fulfilled`, the terminal "handed the goods over" step. `409 order_not_confirmed` if it isn't `confirmed`.
 
 **Organization Roles / multi-role self-service** (`src/routes/organization.js`, requires any valid organization-subject JWT — deliberately NOT gated to any one `org_type`/role, since managing your own set of business roles is something every organization can do regardless of which roles it currently holds)
-- `GET /organization/roles` — this org's full role picture: `org_name`, `primary_org_type` (the role chosen at registration), `entity_kyb_status`, every role it currently holds (`roles[]`, each with `status`/`requested_at`/`decided_at`/`decided_reason`/`label_th`), and every role type it could still request (`requestable_roles[]` — anything in the fixed 9-type `ORG_REQUESTABLE_ROLE_TYPES` domain it doesn't already have a row for, regardless of that row's status; `Bank`/`VillageFund`/`Cooperative`/`Mill` are excluded from this domain — see "what's mocked" above).
+- `GET /organization/roles` — this org's full role picture: `org_name`, `primary_org_type` (the role chosen at registration), `entity_kyb_status`, every role it currently holds (`roles[]`, each with `status`/`requested_at`/`decided_at`/`decided_reason`/`label_th`), and every role type it could still request (`requestable_roles[]` — anything in the `ORG_REQUESTABLE_ROLE_TYPES` domain it doesn't already have a row for, regardless of that row's status; `Bank`/`Cooperative`/`Mill` are excluded from this domain. `VillageFund` was ADDED to this domain on 2026-08-17, same reasoning/date as `ORG_SELF_REGISTER_TYPES` above — an org that already holds some other primary role can now request `VillageFund` as an ADDITIONAL role here too).
 - `POST /organization/roles` — body `{ role_type }` → self-service request for an ADDITIONAL business role. Requires the org's entity `kyb_status` to already be `Verified` (`409 entity_kyb_not_verified` — you need to clear base KYB before adding business capabilities on top of it) and no existing `(org_id, role_type)` row at all (`409 role_already_requested`, with the existing row's `status` — deliberately does NOT let a `Rejected` role be re-requested through self-service; that needs a human to intervene directly, not an unlimited retry loop against the same rejection). On success, inserts a new row at `status = 'Pending'` — same starting state as the org's primary role, same approval flow via `POST /admin/organizations/:id/roles/:role_type/status` above.
 
 **Platform Ops / Admin Portal** (`src/routes/admin.js`, all require a `platform`-subject JWT from `POST /auth/admin-login`)
@@ -433,10 +433,12 @@ already has — no re-login, no new token, since the JWT only ever encoded
   primary key `(org_id, role_type)` — one row per role an org holds or has
   requested, `status` following the same `Pending`/`Verified`/`Rejected`
   domain as `kyb_status`. `role_type` accepts the same 13-value domain as
-  `identity.organization.org_type` (including `Bank`/`VillageFund`, which
-  can never be *requested* via `POST /organization/roles` since they're
-  excluded from `ORG_REQUESTABLE_ROLE_TYPES`, but a seeded org could in
-  principle already hold one).
+  `identity.organization.org_type` (`VillageFund` is both self-registerable
+  and self-requestable as of 2026-08-17, same as most of this domain — see
+  "Farmer 360° View" below. `Bank` is the remaining excluded value: it can
+  never be *requested* via `POST /organization/roles` since it's excluded
+  from `ORG_REQUESTABLE_ROLE_TYPES`, but a seeded org could in principle
+  already hold it).
 - `partner.activate_vendor_role(p_org_id, p_role_type)` — role-aware
   replacement for the old `partner.activate_vendor(p_org_id)`: creates a
   `lender_clearing` ledger account for a `Lender` role, or a shared
@@ -1201,6 +1203,128 @@ sections). All test data created for this (one throwaway Cooperative org,
 from them, and 15 ledger entries) was deleted afterward — nothing test-only
 was left in the database.
 
+## Farmer 360° View — cross-organization farmer profile (consent-free MVP)
+
+A farmer in the real world is often simultaneously a member/customer of
+several separate organizations at once — a Cooperative, BAAC or another
+Lender, a Village Fund (กองทุนหมู่บ้าน) — and none of those organizations
+could previously see anything about the farmer's relationships elsewhere.
+This feature gives staff at ANY verified organization a consolidated
+"360°" view of a farmer, scoped per organization so each org sees only
+what it's entitled to. Full design rationale, the visibility-rules table,
+and the Phase 2 (consent + credit score) roadmap all live in
+`FARMER_360_ARCHITECTURE.md` at the repo root — this section is the
+implementation summary.
+
+**This is an explicit MVP scope, decided 2026-08-17**: membership + land +
+transactions only. No consent workflow, no credit-score sharing — both
+deferred to Phase 2 (see the architecture doc §5). The visibility rules
+this pass enforces:
+- **Basic identity + land**: shown in full to ANY org with an active
+  relationship to the farmer.
+- **Other orgs' membership**: shown as name + type only (e.g. "สหกรณ์ A
+  (สมาชิกสหกรณ์)") — existence, not financial detail. This is the actual
+  "360°" value (a Lender can see a farmer already has a Village Fund
+  relationship) without leaking anything sensitive, since there's no
+  consent system yet to gate a deeper share.
+- **Transactions**: visible ONLY between the farmer and the VIEWING org
+  itself — never another org's amounts. Enforced at the query level (every
+  transaction sub-query filters on both `farmer_id` AND the caller's own
+  `org_id`), not just in the response shape.
+- **Credit score**: NOT included this pass at all (`credit_score: null`,
+  `credit_score_available_in_next_phase: true` in every response) —
+  `risk.credit_score`'s RLS has no policy for organization subjects, and
+  that's a deliberate pre-existing product decision this pass does not
+  route around.
+
+**Schema** (`backend/db/grant_farmer_360.sql`):
+- `identity.farmer_org_relationship (relationship_id, farmer_id, org_id, relationship_type, status, joined_at, ended_at, created_by_subject_type, created_by_subject_id, notes)`,
+  `UNIQUE(farmer_id, org_id)` — the "membership roster" concept that never
+  existed anywhere in the schema before this feature (`identity.organization_member`
+  is a staff/signatory table, not a farmer roster, and
+  `registry.cooperative_profile.member_count_reported` is explicitly
+  self-reported — see that column's own comment).
+- `identity.link_farmer_to_org(p_farmer_id, p_org_id, p_created_by_subject_type, p_created_by_subject_id, p_notes)` —
+  the only way a relationship row gets created. `relationship_type` is
+  derived server-side from the org's own `org_type` (Cooperative →
+  `CooperativeMember`, VillageFund → `VillageFundMember`, Lender/Bank →
+  `LoanCustomer`, else `Other`) — never taken from the client. Reactivates
+  an `ended` relationship on conflict rather than erroring.
+- `identity.unlink_farmer_from_org(p_farmer_id, p_org_id)` — soft-delete
+  (`status = 'ended'`), row kept for history.
+- `identity.sync_farmer_relationships_from_transactions(p_org_id, p_created_by_subject_type, p_created_by_subject_id)` —
+  bulk-creates relationship rows for every farmer who already has a real
+  transaction with the calling org (produce delivery / loan application /
+  product order / machinery booking) but no roster row yet. Solves the "no
+  real member import exists" gap `cooperative_profile`'s own comment
+  already admitted, for every org type at once, not just cooperatives.
+- `identity.farmer.farmer_code` ("AgroLink ID", format `AF-000001`) — new
+  public-facing farmer identifier. Backfilled deterministically
+  (`ROW_NUMBER() OVER (ORDER BY created_at, farmer_id)`, not a bulk
+  `nextval()` update, since Postgres doesn't guarantee row order for
+  that), then a sequence + `BEFORE INSERT` trigger continues numbering new
+  farmers.
+
+**Backend** (`src/routes/farmer360.js`, mounted at `/farmer360`, generic
+across ANY verified organization — same "own prefix, not portal-scoped"
+convention as `procurement.js`, since the real security boundary is "does
+my org have an active relationship with this farmer," not the org's
+`org_type`):
+- `GET /farmer360/search?code=AF-000001` or `?phone=+66...` — exact-match
+  only, by design (deliberately no partial/name search, so this endpoint
+  can never be used to browse the farmer table). Returns only a minimal
+  preview (`farmer_id`, `farmer_code`, `full_name`) — not the full 360
+  view, which still requires an actual relationship.
+- `POST /farmer360/relationships` — body `{ farmer_id }` → adds a
+  found farmer as a member/customer of the calling org.
+- `POST /farmer360/relationships/sync` — bulk-import via
+  `identity.sync_farmer_relationships_from_transactions()`, returns
+  `{ linked_count }`.
+- `GET /farmer360/relationships/mine` — the calling org's own roster.
+- `DELETE /farmer360/relationships/:farmerId` — ends the relationship.
+- `GET /farmer360/:farmerId` — the 360 view itself. `403
+  no_relationship_with_farmer` (deliberately 403, not 404 — `farmer_id` is
+  a UUID, not a guessable sequential id, so there's little to protect by
+  hiding existence; 403 is the more honest signal that this is a
+  permission wall) unless the calling org has an active relationship row.
+
+**Portals**: the feature is wired into THREE portals simultaneously (per
+the 2026-08-17 product decision to launch across all org types at once,
+not stagger by type) — the existing Cooperative Portal
+(`frontend/coop/`) and Lender Portal (`frontend/lender/`, standing in for
+"Bank" since it's the only bank-like org type with an existing portal),
+plus a brand-new **VillageFund Portal** (`frontend/villagefund/`,
+built from scratch this pass — `index.html`/`dashboard.html`/`js/api.js`/
+`js/login.js`/`js/dashboard.js`, ~620 lines total, same structure as every
+other single-purpose portal in this codebase). Each portal's dashboard
+gained a search/add/sync/roster UI with an expand-inline "ดูข้อมูล 360°"
+detail view — same expand-inline pattern already used for PO/GRN/invoice
+detail in the B2B Commerce Engine UI above, no modal pattern exists in
+this codebase.
+
+`VillageFund` was added to `ORG_SELF_REGISTER_TYPES` (`auth.js`),
+`ORG_REQUESTABLE_ROLE_TYPES` (`organization.js`), the org-type dropdown on
+`register-provider.html` (with the matching auto-login-and-redirect
+branch in `js/register-provider.js`, same as `Lender`/`Buyer`/
+`InputSupplier`), and the session-key list in `js/manage-roles.js` — see
+"Multi-role organizations" above and "what's mocked" below for why
+self-registration (rather than a new admin-creation endpoint) was the
+chosen onboarding path.
+
+**Verified**: a 16-assertion end-to-end script covering the full flow
+(VillageFund self-registration → pre/post-KYB dashboard gating → admin KYB
+approval → farmer search by code/phone → 360-view-blocked-without-
+relationship → linking to two different orgs simultaneously → cross-org
+membership visibility confirmed BOTH directions (a Lender and a
+VillageFund, both linked to the same farmer, each see the OTHER org's
+membership badge but 0 transaction amounts for the other org's dealings)
+→ credit-score withholding → roster listing → idempotent sync → unlink +
+re-block → non-organization-subject rejection) — all 16 assertions
+passed. Each of the three portals' Farmer 360 UI was additionally verified
+with a real headless-browser pass (search → add → expand 360 detail →
+unlink, against live seeded data, no JS errors). All test data (throwaway
+VillageFund/Cooperative orgs, relationship rows) was deleted afterward.
+
 ## What's mocked / simplified (be aware of this before relying on it)
 
 - **OIDC verification is stubbed.** `POST /auth/login` trusts whatever
@@ -1296,24 +1420,32 @@ was left in the database.
   operator acted, never *which one*. This is the single biggest gap in the
   admin slice and is called out explicitly rather than glossed over: a
   real deployment must not ship this as-is.
-- **`POST /auth/org-register` excludes `Bank`, `VillageFund`, `Cooperative`,
-  and `Mill` from self-service sign-up.** `ORG_SELF_REGISTER_TYPES` in
-  `src/routes/auth.js` deliberately leaves these four out of the selectable
-  list. `Bank`/`VillageFund` read as institutional/government-linked
-  entities that wouldn't plausibly sign up through a public web form in a
-  real deployment. `Cooperative`/`Mill` were removed later, on 2026-07-24,
+- **`POST /auth/org-register` excludes `Bank`, `Cooperative`, and `Mill`
+  from self-service sign-up.** `ORG_SELF_REGISTER_TYPES` in
+  `src/routes/auth.js` deliberately leaves these three out of the selectable
+  list. `Bank` reads as an institutional/government-linked entity that
+  wouldn't plausibly sign up through a public web form in a real
+  deployment. `Cooperative`/`Mill` were removed later, on 2026-07-24,
   per an explicit product decision (not an architectural one — both are
   otherwise completely ordinary private-business categories, same shape as
   `Logistics`, which is still self-registerable). `POST /organization/roles`
   (self-service *additional*-role requests, see "Multi-role organizations"
-  below) excludes the same four types from `ORG_REQUESTABLE_ROLE_TYPES` in
+  below) excludes the same three types from `ORG_REQUESTABLE_ROLE_TYPES` in
   `src/routes/organization.js`, kept in lockstep with the registration list
   by convention (the two lists are separate on purpose, but have always been
   kept identical in practice — see that file's own comment). There is
-  currently no other onboarding path for any of these four types at all
-  (they can still only be created directly, e.g. seeded), which is a real
-  gap if AgroLink ever needs to onboard one — just a deliberately
-  out-of-scope one for now.
+  currently no other onboarding path for any of these three types at all
+  (they can still only be created directly, e.g. seeded — `Cooperative`
+  being the one exception, provisioned via `POST /admin/cooperatives`, see
+  that endpoint's own doc comment), which is a real gap if AgroLink ever
+  needs to onboard `Bank` or `Mill` — just a deliberately out-of-scope one
+  for now.
+  `VillageFund` was REMOVED from both exclusion lists on 2026-08-17 (it is
+  now both self-registerable and self-requestable, same as `Lender`/`Buyer`/
+  etc.) specifically to unblock the Farmer 360° View feature — see
+  "Farmer 360° View" below and `FARMER_360_ARCHITECTURE.md` §6 for the full
+  reasoning (no admin-side org-creation endpoint exists for it, unlike
+  `Cooperative`, so self-registration was the only low-cost path).
 - **`business_registration_no` is assumed equal to `tax_id`.**
   `POST /auth/org-register` only collects one number (`tax_id`) but
   `partner.vendor_profile.business_registration_no` is a real, distinct
@@ -1760,10 +1892,13 @@ and the live `agrolink_test` database — not unit tests against mocks:
   to. Low risk today since only a `platform`-subject JWT can reach these
   routes at all, but worth hardening consistently with the rest of the
   schema eventually.
-- An onboarding path for `Bank`, `VillageFund`, `Cooperative`, and `Mill`
-  organizations — all four currently excluded from `POST
-  /auth/org-register`'s self-service list (see "what's mocked" above) with
-  no alternative path built yet.
+- An onboarding path for `Bank`, `Cooperative`, and `Mill` organizations —
+  all three currently excluded from `POST /auth/org-register`'s
+  self-service list (see "what's mocked" above); `Cooperative` has an
+  alternative path (`POST /admin/cooperatives`, Platform-Ops-provisioned),
+  but `Bank`/`Mill` have none built yet. (`VillageFund` was REMOVED from
+  this gap on 2026-08-17 — it now self-registers through the normal flow,
+  see "Farmer 360° View" below.)
 - A way to correct `partner.vendor_profile.business_registration_no` after
   registration if it genuinely differs from `tax_id` — no edit endpoint
   exists for `vendor_profile` fields today.
@@ -1788,11 +1923,14 @@ and the live `agrolink_test` database — not unit tests against mocks:
   registration-received confirmation, with nowhere to log into afterward.
   (`Cooperative` and `Mill` were removed from self-registration entirely on
   2026-07-24, so they're no longer part of this gap; `InputSupplier` got
-  its own dedicated portal earlier the same day.)
-- Farmer Portal, Lender Portal, Buyer Portal, Platform Ops, and the
-  Machinery/Drying-Yard Portal are all now built end-to-end (backend +
-  frontend, tested), and organizations can now both self-register and be
-  approved through the API — closing the loop that was the previous "Next
-  steps" headline item. The natural next candidates are the gaps just
-  above, or a fresh vertical slice (e.g. Logistics, VillageFund) reusing
-  the same patterns established here.
+  its own dedicated portal earlier the same day. `VillageFund` got its own
+  dedicated portal on 2026-08-17 — see "Farmer 360° View" below — so it's
+  no longer part of this gap either.)
+- Farmer Portal, Lender Portal, Buyer Portal, Platform Ops, the
+  Machinery/Drying-Yard Portal, the Cooperative Portal, and the
+  VillageFund Portal are all now built end-to-end (backend + frontend,
+  tested), and organizations can now both self-register and be approved
+  through the API — closing the loop that was the previous "Next steps"
+  headline item. The natural next candidates are the gaps just above, or a
+  fresh vertical slice (e.g. `Logistics`) reusing the same patterns
+  established here.

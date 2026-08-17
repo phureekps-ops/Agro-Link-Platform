@@ -29,10 +29,14 @@ const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
 // inputsupplier/fertilizermixing/marketvenue on 2026-08-04 (เส้นทาง C) so
 // an org that only ever logged into one of those three portals can still
 // reach this page and self-request FertilizerMixingService (or any other
-// role) as an additional business role.
+// role) as an additional business role. Added villagefund on 2026-08-17
+// for the same reason, now that VillageFund is both self-registerable
+// (auth.js) and self-requestable as an additional role (organization.js)
+// — see FARMER_360_ARCHITECTURE.md §6.
 const SESSION_KEYS = [
   "agrolink_lender_session", "agrolink_buyer_session", "agrolink_machinery_session",
   "agrolink_inputsupplier_session", "agrolink_fertilizermixing_session", "agrolink_marketvenue_session",
+  "agrolink_villagefund_session",
 ];
 
 function findSession() {
