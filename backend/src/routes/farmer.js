@@ -271,6 +271,41 @@ router.get('/production-units', async (req, res, next) => {
 });
 
 /**
+ * GET /farmer/memberships — the farmer's OWN "which organizations am I a
+ * member/customer of" list (สมาชิกภาพของฉัน). This is the farmer-facing
+ * counterpart to the Farmer 360° View built for organization staff (see
+ * FARMER_360_ARCHITECTURE.md and src/routes/farmer360.js) — same
+ * underlying table (`identity.farmer_org_relationship`), just filtered to
+ * the calling farmer's own row instead of requiring an org to already have
+ * a relationship. Deliberately simple this pass (name + type + joined
+ * date only, no transaction detail) — this is exactly the kind of list a
+ * future consent screen (Phase 2, see architecture doc §5) would extend
+ * with "who has access to what" controls, but that's out of scope here.
+ */
+router.get('/memberships', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT r.relationship_id, o.org_id, o.org_name, o.org_type,
+                r.relationship_type, r.joined_at
+           FROM identity.farmer_org_relationship r
+           JOIN identity.organization o ON o.org_id = r.org_id
+          WHERE r.farmer_id = $1 AND r.status = 'active'
+          ORDER BY r.joined_at DESC`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'identity.farmer_org_relationship', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * GET /farmer/lenders — active Lender organizations a farmer can pick from
  * when submitting a loan application. Small supporting endpoint so the
  * frontend doesn't have to hardcode org_ids; still behind requireAuth so it

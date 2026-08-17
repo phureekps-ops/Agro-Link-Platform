@@ -52,6 +52,51 @@ async function refreshSummary() {
   }
 }
 
+// ---------- สมาชิกภาพของฉัน (identity.farmer_org_relationship) ----------
+// Farmer-facing counterpart to the Farmer 360° View built for organization
+// staff (see FARMER_360_ARCHITECTURE.md) — this is deliberately a plain
+// read-only list this pass (name + type + joined date), not a consent
+// management screen. GET /farmer/memberships only ever returns the
+// farmer's OWN active relationships (see farmer.js), so no additional
+// filtering is needed here.
+const RELATIONSHIP_TYPE_LABEL_TH = {
+  CooperativeMember: "สมาชิกสหกรณ์",
+  VillageFundMember: "สมาชิกกองทุนหมู่บ้าน",
+  LoanCustomer: "ลูกค้าสินเชื่อ",
+  Other: "อื่น ๆ",
+};
+const ORG_TYPE_ICON = {
+  Cooperative: "🏢", VillageFund: "🏘️", Lender: "🏦", Bank: "🏦",
+};
+
+function membershipCard(m) {
+  const icon = ORG_TYPE_ICON[m.org_type] || "🏷️";
+  const relLabel = RELATIONSHIP_TYPE_LABEL_TH[m.relationship_type] || m.relationship_type || "-";
+  return `
+    <div class="item-card" data-org-id="${m.org_id}">
+      <div class="row">
+        <span class="title">${icon} ${escapeHtml(m.org_name)}</span>
+        <span class="badge">${escapeHtml(relLabel)}</span>
+      </div>
+      <div class="detail-line muted">เป็นสมาชิกตั้งแต่ ${thaiDate(m.joined_at)}</div>
+    </div>
+  `;
+}
+
+async function loadMemberships() {
+  const el = document.getElementById("membershipsSection");
+  try {
+    const memberships = await AgroLinkAPI.get("/farmer/memberships");
+    if (memberships.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีหน่วยงานใดเพิ่มท่านเป็นสมาชิก — เมื่อสหกรณ์ ผู้ปล่อยกู้ หรือกองทุนหมู่บ้านเพิ่มท่านเป็นสมาชิก/ลูกค้า รายชื่อจะแสดงที่นี่</div>`;
+      return;
+    }
+    el.innerHTML = memberships.map(membershipCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลสมาชิกภาพไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 // ---------- คะแนนความน่าเชื่อถือทางสินเชื่อ (risk.v_farmer_latest_score) ----------
 const FACTOR_META = {
   production_reliability: { label: "ความสม่ำเสมอของการผลิต (ส่งมอบตรงเวลา)", numKey: "on_time" },
@@ -383,6 +428,7 @@ async function init() {
     return;
   }
 
+  loadMemberships();
   loadCreditScore();
   loadContracts();
   loadNotifications();

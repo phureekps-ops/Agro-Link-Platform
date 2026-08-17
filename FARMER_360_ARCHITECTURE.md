@@ -104,6 +104,14 @@ CREATE SEQUENCE IF NOT EXISTS identity.farmer_code_seq;
 - `DELETE /farmer360/relationships/:farmerId` — เลิกความสัมพันธ์ (`status='ended'`)
 - `GET /farmer360/:farmerId` — **หน้าจอ 360 องศา** (ต้องมีความสัมพันธ์ `status='active'` กับเกษตรกรคนนี้ก่อน มิฉะนั้น `403`) คืนข้อมูลตามตารางข้อ 4: ข้อมูลพื้นฐาน, ที่ดิน (`registry.production_unit` ทั้งหมดของเกษตรกร), สมาชิกภาพกับองค์กรอื่น (ชื่อ+ประเภทเท่านั้น), สรุปธุรกรรมกับหน่วยงานตัวเองเท่านั้น (แยกหมวด: ซื้อปัจจัยการผลิต/ขายผลผลิต/เครื่องจักร/สินเชื่อ — ยอดรวมและจำนวนรายการ), `credit_score: null` พร้อม flag `available_in_next_phase: true`
 
+### 7.1 ฝั่งเกษตรกรเอง — "สมาชิกภาพของฉัน" (เพิ่มเติมนอกแผนเดิม วันเดียวกัน)
+
+หลัง MVP ฝั่งองค์กรเสร็จ มีคำถามตามธรรมชาติว่า **เกษตรกรควรเห็นข้อมูลนี้ของตัวเองด้วยไหม** — คำตอบคือใช่ เพราะจะเป็นรากฐานให้ Phase 2 (consent) ต่อยอดได้ทันที (เกษตรกรต้องเห็นรายชื่อหน่วยงานที่เข้าถึงข้อมูลตัวเองอยู่แล้ว ก่อนจะอนุมัติ/เพิกถอนสิทธิ์ได้)
+
+- **`GET /farmer/memberships`** (ใหม่ ใน `backend/src/routes/farmer.js`, ไม่ใช่ `farmer360.js` — เพราะ subject เป็น farmer ไม่ใช่ organization ต้องอยู่หลัง `requireFarmer` ไม่ใช่ `requireOrganization`) — คืนรายการ `identity.farmer_org_relationship` ของเกษตรกรคนที่ login เองเท่านั้น (`WHERE r.farmer_id = $1` จาก JWT ไม่รับจาก client) join กับ `identity.organization` เอาชื่อ/ประเภทองค์กร — **จงใจให้เป็น read-only list ธรรมดา** (ชื่อ+ประเภท+วันที่เป็นสมาชิก) ไม่มีปุ่มจัดการสิทธิ์ใดๆ รอบนี้ เพราะยังไม่มีระบบ consent จริงให้ผูก
+- **UI**: เพิ่ม section "🏷️ สมาชิกภาพของฉัน" ใน `frontend/dashboard.html` (พอร์ทัลเกษตรกรหลัก) วางไว้หลัง "ภาพรวมบัญชี" ก่อน "คะแนนความน่าเชื่อถือทางสินเชื่อ" — ตำแหน่งเดียวกับ mockup ต้นฉบับ (ชื่อ/ID → badge สมาชิกภาพ → ที่ดิน → เครดิต)
+- **ทดสอบแล้ว**: backend 8 assertions (เกษตรกรเห็น 0 สมาชิกภาพก่อนถูกเพิ่ม, เห็นชื่อองค์กร/ประเภทความสัมพันธ์/วันที่ถูกต้องหลังถูกเพิ่ม, JWT ที่ไม่ใช่ farmer โดน `403`, กลับเป็น 0 หลังเลิกเป็นสมาชิก) + headless-browser ยืนยัน UI แสดงผลถูกต้อง ล้างข้อมูลทดสอบเรียบร้อย
+
 ## 8. ไฟล์ที่เกี่ยวข้อง (แผนที่)
 
 | ไฟล์ | สถานะ |
@@ -118,12 +126,15 @@ CREATE SEQUENCE IF NOT EXISTS identity.farmer_code_seq;
 | `frontend/coop/`, `frontend/lender/` | ✅ ขยายแล้ว — เพิ่ม UI ค้นหา/ดูโปรไฟล์ 360 |
 | `consent.farmer_data_grant`, credit-score RLS policy ใหม่, ขยาย `register_staff_member` ให้ Lender/VillageFund | 📋 ออกแบบไว้แล้วในเอกสารนี้ (ข้อ 5) — Phase 2 ยังไม่เริ่ม |
 | พอร์ทัล `Bank` แยกจาก `Lender` | 📋 org_type มีอยู่แล้ว ยังไม่มี frontend — รอบถัดไป (เหมือน Mill/Logistics เดิม) |
+| `backend/src/routes/farmer.js` (route `GET /memberships`) | ✅ สร้างและทดสอบแล้ว (เพิ่มเติมนอกแผนเดิม วันเดียวกัน — ดูข้อ 7.1) — ฝั่งเกษตรกรเองดูสมาชิกภาพของตัวเอง |
+| `frontend/dashboard.html`, `frontend/js/dashboard.js` | ✅ แก้แล้ว (เพิ่มเติมนอกแผนเดิม วันเดียวกัน — ดูข้อ 7.1) — เพิ่ม section "🏷️ สมาชิกภาพของฉัน" ในพอร์ทัลเกษตรกรหลัก |
 
 ## 9. Roadmap สรุป
 
 | Phase | ขอบเขต | สถานะ |
 |---|---|---|
 | MVP | สมาชิกภาพหลายองค์กร + ที่ดิน + ธุรกรรม (เฉพาะกับตัวเอง) + พอร์ทัล VillageFund ใหม่ + UI ใน 3 พอร์ทัล | ✅ **เสร็จสมบูรณ์และทดสอบ end-to-end แล้ว** (16 assertions ผ่านหมด ทั้ง backend + headless-browser ทั้ง 3 พอร์ทัล ล้างข้อมูลทดสอบเรียบร้อย) |
+| MVP+ | ฝั่งเกษตรกรเอง — "สมาชิกภาพของฉัน" (`GET /farmer/memberships` + UI ใน `dashboard.html`) — ดูข้อ 7.1 | ✅ **เสร็จสมบูรณ์และทดสอบ end-to-end แล้ว** (8 assertions ผ่านหมด + headless-browser ยืนยัน UI ล้างข้อมูลทดสอบเรียบร้อย) |
 | 2 | Consent workflow (farmer-grants-org) + Credit Score แบบ consent-gated (คะแนนเต็ม 0-100) + membership-visibility consent + cross-org transaction visibility | 📋 ถัดไป |
 | 3 | ขยาย `register_staff_member` ให้ Lender/VillageFund (named-individual login แทน shared org login) | 📋 ถัดไป |
 | 4 | พอร์ทัล `Bank` แยกจาก `Lender` | 📋 ถัดไป |

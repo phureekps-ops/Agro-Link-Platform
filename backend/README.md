@@ -309,6 +309,7 @@ of `org_type`), so no separate lender- or buyer-login endpoint was needed.
 - `GET /farmer/contracts` → `contract.contract` joined through `contract.contract_party`
 - `GET /farmer/notifications` → `notification.v_unread_notifications`
 - `GET /farmer/production-units` → `registry.production_unit` (PostGIS boundary returned as GeoJSON via `ST_AsGeoJSON`)
+- `GET /farmer/memberships` → the farmer's OWN active rows from `identity.farmer_org_relationship`, joined with `identity.organization` for `org_name`/`org_type` — added 2026-08-17 as the farmer-facing counterpart to the Farmer 360° View (see below): "which organizations am I currently a member/customer of." Deliberately a plain read-only list (name, type, joined date) with no transaction detail and no per-org access controls — the natural extension point for the Phase 2 consent screen, not built this pass.
 - `GET /farmer/lenders` → active `Lender` organizations from `identity.organization` — added while building the frontend, so the loan-application form's lender dropdown reads real data instead of a hardcoded value.
 - `GET /farmer/rice-prices` → for every row in `registry.rice_grade_ref`, every Buyer org's current ACTIVE `marketplace.buy_price_quote` (org name, price, price unit, last-updated), sorted `quoted_price DESC` within each grade so the highest payer for a given rice type is always first. Grades nobody has quoted yet still appear, with an empty `quotes: []` array, so the page can render a "no buyer has posted a price for this yet" state rather than silently omitting the grade. This is the farmer-facing half of the daily rice-buying-price announcement feature — see "Daily rice-buying-price announcements" below.
 - `GET /farmer/input-suppliers` → every Verified `InputSupplier` organization, with how many active products it currently has listed — a small supporting directory endpoint, same shape as `GET /farmer/lenders`, so the frontend never has to hardcode an `org_id`.
@@ -1324,6 +1325,23 @@ passed. Each of the three portals' Farmer 360 UI was additionally verified
 with a real headless-browser pass (search → add → expand 360 detail →
 unlink, against live seeded data, no JS errors). All test data (throwaway
 VillageFund/Cooperative orgs, relationship rows) was deleted afterward.
+
+**Farmer-facing counterpart ("สมาชิกภาพของฉัน" / "My Memberships"), added
+same day:** the Farmer Portal's own dashboard (`frontend/dashboard.html`)
+gained a read-only section listing the farmer's OWN active relationships —
+`GET /farmer/memberships` (see above), rendered as a card list right below
+the account summary, above the credit-score panel (matching the original
+mockup's ordering: identity → membership badges → land → credit). This is
+NOT the org-facing Farmer 360 view — it's deliberately minimal (org name +
+type + joined date, no transaction detail, no per-org access controls) —
+but it's the natural seed for the Phase 2 consent screen, where the farmer
+will need exactly this list to grant/revoke access per org. Verified with
+a dedicated backend test (farmer sees 0 memberships before linking, sees
+the correct org name/relationship_type/joined_at after an org links them,
+a non-farmer JWT gets `403`, list goes back to empty after unlink — 8
+assertions, all passed) plus a headless-browser pass confirming the UI
+renders the org name and Thai relationship-type label correctly. Test data
+was deleted afterward.
 
 ## What's mocked / simplified (be aware of this before relying on it)
 
