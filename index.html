@@ -243,6 +243,8 @@
   @media (max-width: 950px) { .weather-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) { .weather-grid { grid-template-columns: 1fr; } }
   .weather-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; text-align: center; }
+  a.weather-card { display: block; text-decoration: none; color: inherit; transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease; }
+  a.weather-card:hover { border-color: var(--green); box-shadow: 0 10px 24px rgba(27,107,74,.12); transform: translateY(-2px); }
   .weather-card .wicon { font-size: 30px; color: var(--gold); margin-bottom: 12px; }
   .weather-card h4 { font-size: 14.5px; margin-bottom: 4px; }
   .weather-card .region-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
@@ -538,48 +540,48 @@
       <p class="section-sub">ข้อมูลอากาศรายภาค ปรับคำแนะนำให้ตรงกับระยะการเจริญเติบโตของแต่ละแปลงโดยอัตโนมัติ</p>
     </div>
     <div class="weather-grid reveal">
-      <div class="weather-card">
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
         <div class="wicon"><i class="fa-solid fa-sun"></i></div>
         <h4>ภาคกลาง</h4>
         <div class="region-sub">จ.ชัยนาท</div>
         <div class="temp">26–34°C</div>
         <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 10%</div>
         <div class="advisory">เหมาะกับการพ่นปุ๋ยและกำจัดวัชพืช</div>
-      </div>
-      <div class="weather-card">
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
         <div class="wicon"><i class="fa-solid fa-cloud-sun-rain"></i></div>
         <h4>ภาคอีสาน</h4>
         <div class="region-sub">จ.อุบลราชธานี</div>
         <div class="temp">24–33°C</div>
         <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 40%</div>
         <div class="advisory">เตรียมระบายน้ำในแปลงนาลุ่ม</div>
-      </div>
-      <div class="weather-card">
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
         <div class="wicon"><i class="fa-solid fa-cloud"></i></div>
         <h4>ภาคเหนือ</h4>
         <div class="region-sub">จ.เชียงราย</div>
         <div class="temp">22–31°C</div>
         <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 20%</div>
         <div class="advisory">อากาศเย็นลงช่วงเช้า เหมาะปลูกพืชฤดูหนาว</div>
-      </div>
-      <div class="weather-card">
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
         <div class="wicon"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
         <h4>ภาคใต้</h4>
         <div class="region-sub">จ.สุราษฎร์ธานี</div>
         <div class="temp">24–30°C</div>
         <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 70%</div>
         <div class="advisory">เฝ้าระวังน้ำท่วมขังในสวนปาล์ม/ยาง</div>
-      </div>
-      <div class="weather-card">
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
         <div class="wicon"><i class="fa-solid fa-cloud-sun"></i></div>
         <h4>ภาคตะวันออก</h4>
         <div class="region-sub">จ.ระยอง</div>
         <div class="temp">25–33°C</div>
         <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 30%</div>
         <div class="advisory">ช่วงเหมาะสมสำหรับเก็บเกี่ยวผลไม้</div>
-      </div>
+      </a>
     </div>
-    <p class="weather-note reveal">ข้อมูลตัวอย่างเพื่อประกอบการนำเสนอ ระบบจริงเชื่อมข้อมูลจากกรมอุตุนิยมวิทยาและ GISTDA เป็นรายแปลง แล้วส่งการแจ้งเตือนผ่านระบบเตือนภัยร่วมโดยอัตโนมัติ</p>
+    <p class="weather-note reveal">ข้อมูลตัวอย่างเพื่อประกอบการนำเสนอ ระบบจริงเชื่อมข้อมูลจากกรมอุตุนิยมวิทยาและ GISTDA เป็นรายแปลง แล้วส่งการแจ้งเตือนผ่านระบบเตือนภัยร่วมโดยอัตโนมัติ — ดูพยากรณ์อากาศฉบับเต็มที่ <a href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer" style="color:var(--green);font-weight:700;">กรมอุตุนิยมวิทยา</a></p>
   </div>
 </section>
 
