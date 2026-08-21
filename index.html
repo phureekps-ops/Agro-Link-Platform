@@ -162,7 +162,8 @@
   .partner-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #fff; }
   .partner-strip .container { display: flex; align-items: center; gap: 34px; padding: 22px 24px; flex-wrap: wrap; justify-content: center; }
   .partner-strip .label { font-size: 12.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-  .partner-chip { font-size: 13.5px; font-weight: 700; color: var(--navy); background: var(--cream); padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); }
+  .partner-chip { font-size: 13.5px; font-weight: 700; color: var(--navy); background: var(--cream); padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); text-decoration: none; display: inline-block; transition: border-color .15s ease, background .15s ease; }
+  a.partner-chip:hover { border-color: var(--green); background: #fff; }
 
   /* PROBLEM */
   .card-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
@@ -172,6 +173,8 @@
   .pain-card .icn { width: 46px; height: 46px; border-radius: 12px; background: #FDEEEE; color: #C0392B; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px; }
   .pain-card h4 { font-size: 17px; margin-bottom: 8px; }
   .pain-card p { font-size: 14.5px; color: var(--muted); }
+  a.pain-card { display: block; text-decoration: none; color: inherit; transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease; }
+  a.pain-card:hover { border-color: var(--green); box-shadow: 0 10px 24px rgba(27,107,74,.12); transform: translateY(-2px); }
 
   /* TEMPLATE 6 COMPONENTS */
   .template-section { background: var(--green-dark); color: #fff; }
@@ -380,15 +383,15 @@
 <div class="partner-strip">
   <div class="container">
     <span class="label">เชื่อมข้อมูลร่วมกับ</span>
-    <span class="partner-chip">ธ.ก.ส.</span>
-    <span class="partner-chip">GISTDA</span>
-    <span class="partner-chip">กรมส่งเสริมการเกษตร</span>
-    <span class="partner-chip">กรมส่งเสริมสหกรณ์</span>
-    <span class="partner-chip">กรมปศุสัตว์</span>
-    <span class="partner-chip">กรมประมง</span>
-    <span class="partner-chip">การยางแห่งประเทศไทย</span>
-    <span class="partner-chip">กรมวิชาการเกษตร</span>
-    <span class="partner-chip">กรมการข้าว</span>
+    <a class="partner-chip" href="https://www.baac.or.th/" target="_blank" rel="noopener noreferrer">ธ.ก.ส.</a>
+    <a class="partner-chip" href="https://www.gistda.or.th/" target="_blank" rel="noopener noreferrer">GISTDA</a>
+    <a class="partner-chip" href="https://www.doae.go.th/" target="_blank" rel="noopener noreferrer">กรมส่งเสริมการเกษตร</a>
+    <a class="partner-chip" href="https://www.cpd.go.th/" target="_blank" rel="noopener noreferrer">กรมส่งเสริมสหกรณ์</a>
+    <a class="partner-chip" href="https://www.dld.go.th/" target="_blank" rel="noopener noreferrer">กรมปศุสัตว์</a>
+    <a class="partner-chip" href="https://www4.fisheries.go.th/" target="_blank" rel="noopener noreferrer">กรมประมง</a>
+    <a class="partner-chip" href="https://www.raot.co.th/" target="_blank" rel="noopener noreferrer">การยางแห่งประเทศไทย</a>
+    <a class="partner-chip" href="https://www.doa.go.th/" target="_blank" rel="noopener noreferrer">กรมวิชาการเกษตร</a>
+    <a class="partner-chip" href="https://www.ricethailand.go.th/" target="_blank" rel="noopener noreferrer">กรมการข้าว</a>
   </div>
 </div>
 
@@ -681,14 +684,14 @@
       <h2 class="section-title">สร้างบนความร่วมมือกับหน่วยงานภาครัฐและสถาบันการเงิน</h2>
     </div>
     <div class="card-grid-4 reveal">
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-building-columns"></i></div><h4>ธ.ก.ส. / ธนาคารพาณิชย์</h4><p>ผู้ให้กู้หลักและพันธมิตร AI Credit Scoring</p></div>
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-satellite"></i></div><h4>GISTDA</h4><p>ภาพถ่ายดาวเทียมติดตามน้ำท่วม/ภัยแล้ง</p></div>
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-id-card"></i></div><h4>กรมส่งเสริมการเกษตร</h4><p>ทะเบียนเกษตรกรกลาง (Farmbook) และการขึ้นทะเบียน</p></div>
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-people-group"></i></div><h4>กรมส่งเสริมสหกรณ์</h4><p>ทะเบียนสหกรณ์การเกษตรและการกำกับดูแลธรรมาภิบาล</p></div>
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-file-shield"></i></div><h4>กรมวิชาการเกษตร / ACFS</h4><p>มาตรฐานสินค้าเกษตรและการขึ้นทะเบียนผู้ส่งออก</p></div>
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-cow"></i></div><h4>กรมปศุสัตว์</h4><p>มาตรฐานและการขึ้นทะเบียนฟาร์มปศุสัตว์</p></div>
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-fish"></i></div><h4>กรมประมง</h4><p>มาตรฐานฟาร์มเพาะเลี้ยงสัตว์น้ำและการตรวจสอบย้อนกลับ</p></div>
-      <div class="pain-card"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-wheat-awn"></i></div><h4>กรมการข้าว</h4><p>พันธุ์ข้าวรับรองและมาตรฐานการผลิตข้าว</p></div>
+      <a class="pain-card" href="https://www.baac.or.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-building-columns"></i></div><h4>ธ.ก.ส. / ธนาคารพาณิชย์</h4><p>ผู้ให้กู้หลักและพันธมิตร AI Credit Scoring</p></a>
+      <a class="pain-card" href="https://www.gistda.or.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-satellite"></i></div><h4>GISTDA</h4><p>ภาพถ่ายดาวเทียมติดตามน้ำท่วม/ภัยแล้ง</p></a>
+      <a class="pain-card" href="https://www.doae.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-id-card"></i></div><h4>กรมส่งเสริมการเกษตร</h4><p>ทะเบียนเกษตรกรกลาง (Farmbook) และการขึ้นทะเบียน</p></a>
+      <a class="pain-card" href="https://www.cpd.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-people-group"></i></div><h4>กรมส่งเสริมสหกรณ์</h4><p>ทะเบียนสหกรณ์การเกษตรและการกำกับดูแลธรรมาภิบาล</p></a>
+      <a class="pain-card" href="https://www.doa.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-file-shield"></i></div><h4>กรมวิชาการเกษตร / ACFS</h4><p>มาตรฐานสินค้าเกษตรและการขึ้นทะเบียนผู้ส่งออก</p></a>
+      <a class="pain-card" href="https://www.dld.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-cow"></i></div><h4>กรมปศุสัตว์</h4><p>มาตรฐานและการขึ้นทะเบียนฟาร์มปศุสัตว์</p></a>
+      <a class="pain-card" href="https://www4.fisheries.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-fish"></i></div><h4>กรมประมง</h4><p>มาตรฐานฟาร์มเพาะเลี้ยงสัตว์น้ำและการตรวจสอบย้อนกลับ</p></a>
+      <a class="pain-card" href="https://www.ricethailand.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-wheat-awn"></i></div><h4>กรมการข้าว</h4><p>พันธุ์ข้าวรับรองและมาตรฐานการผลิตข้าว</p></a>
     </div>
   </div>
 </section>
