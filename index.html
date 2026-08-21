@@ -236,6 +236,8 @@
   .trend.up { color: #1B7A43; }
   .trend.down { color: #C0392B; }
   .trend.flat { color: var(--muted); }
+  .price-table .source-link { color: var(--green); font-weight: 700; text-decoration: none; }
+  .price-table .source-link:hover { text-decoration: underline; }
   .price-note { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 22px; }
 
   /* WEATHER */
@@ -519,12 +521,12 @@
           <tr><th>สินค้า</th><th>ราคาล่าสุด</th><th>เทียบสัปดาห์ก่อน</th><th>แหล่งอ้างอิง</th></tr>
         </thead>
         <tbody>
-          <tr><td class="commodity">ข้าวเปลือกหอมมะลิ<small>ความชื้น 15%</small></td><td>13,450 บาท/ตัน</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 1.8%</span></td><td>กรมการค้าภายใน</td></tr>
-          <tr><td class="commodity">ข้าวเปลือกเจ้านาปี<small>ความชื้น 15%</small></td><td>9,200 บาท/ตัน</td><td><span class="trend down"><i class="fa-solid fa-arrow-down"></i> 0.6%</span></td><td>กรมการค้าภายใน</td></tr>
-          <tr><td class="commodity">มันสำปะหลังสด<small>เชื้อแป้ง 25%</small></td><td>2.85 บาท/กก.</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 0.4%</span></td><td>สมาคมโรงงานผู้ผลิตมันสำปะหลัง</td></tr>
-          <tr><td class="commodity">ข้าวโพดเลี้ยงสัตว์<small>ความชื้น 14.5%</small></td><td>11.20 บาท/กก.</td><td><span class="trend flat"><i class="fa-solid fa-minus"></i> 0.0%</span></td><td>ตลาดสินค้าเกษตรล่วงหน้าฯ</td></tr>
-          <tr><td class="commodity">ยางแผ่นรมควันชั้น 3</td><td>62.30 บาท/กก.</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 2.1%</span></td><td>การยางแห่งประเทศไทย</td></tr>
-          <tr><td class="commodity">ปาล์มน้ำมัน<small>ผลปาล์มทั้งทะลาย</small></td><td>6.10 บาท/กก.</td><td><span class="trend down"><i class="fa-solid fa-arrow-down"></i> 1.2%</span></td><td>กรมการค้าภายใน</td></tr>
+          <tr><td class="commodity">ข้าวเปลือกหอมมะลิ<small>ความชื้น 15%</small></td><td>13,450 บาท/ตัน</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 1.8%</span></td><td><a class="source-link" href="https://www.price.moc.go.th/" target="_blank" rel="noopener noreferrer">กรมการค้าภายใน</a></td></tr>
+          <tr><td class="commodity">ข้าวเปลือกเจ้านาปี<small>ความชื้น 15%</small></td><td>9,200 บาท/ตัน</td><td><span class="trend down"><i class="fa-solid fa-arrow-down"></i> 0.6%</span></td><td><a class="source-link" href="https://www.price.moc.go.th/" target="_blank" rel="noopener noreferrer">กรมการค้าภายใน</a></td></tr>
+          <tr><td class="commodity">มันสำปะหลังสด<small>เชื้อแป้ง 25%</small></td><td>2.85 บาท/กก.</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 0.4%</span></td><td><a class="source-link" href="https://www.nettathai.org/" target="_blank" rel="noopener noreferrer">สมาคมโรงงานผู้ผลิตมันสำปะหลัง</a></td></tr>
+          <tr><td class="commodity">ข้าวโพดเลี้ยงสัตว์<small>ความชื้น 14.5%</small></td><td>11.20 บาท/กก.</td><td><span class="trend flat"><i class="fa-solid fa-minus"></i> 0.0%</span></td><td><a class="source-link" href="https://www.oae.go.th/" target="_blank" rel="noopener noreferrer">สำนักงานเศรษฐกิจการเกษตร (สศก.)</a></td></tr>
+          <tr><td class="commodity">ยางแผ่นรมควันชั้น 3</td><td>62.30 บาท/กก.</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 2.1%</span></td><td><a class="source-link" href="https://www.raot.co.th/" target="_blank" rel="noopener noreferrer">การยางแห่งประเทศไทย</a></td></tr>
+          <tr><td class="commodity">ปาล์มน้ำมัน<small>ผลปาล์มทั้งทะลาย</small></td><td>6.10 บาท/กก.</td><td><span class="trend down"><i class="fa-solid fa-arrow-down"></i> 1.2%</span></td><td><a class="source-link" href="https://www.price.moc.go.th/" target="_blank" rel="noopener noreferrer">กรมการค้าภายใน</a></td></tr>
         </tbody>
       </table>
     </div>
