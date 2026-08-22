@@ -763,21 +763,60 @@ async function ensureAuctionSettled(client, auctionRow) {
 }
 
 /**
+ * Whether a given bidder org is currently "leading" a sealed auction — i.e.
+ * whether their org would be the one awarded the contract if the auction
+ * closed right now. Uses the exact same `ORDER BY bid_price ASC,
+ * submitted_at ASC` tiebreak as closeAndAwardAuction() so this can never
+ * disagree with the eventual auto-award outcome. Returns
+ * { hasBid: boolean, isLeading: boolean } — `hasBid` is false when the org
+ * has not submitted any bid yet (isLeading is always false in that case).
+ */
+async function computeLeadingStatus(client, auctionId, bidderOrgId) {
+  const bestRes = await client.query(
+    `SELECT bidder_org_id FROM procurement.auction_bid
+      WHERE auction_id = $1
+      ORDER BY bid_price ASC, submitted_at ASC
+      LIMIT 1`,
+    [auctionId],
+  );
+  if (bestRes.rows.length === 0) return { hasBid: false, isLeading: false };
+
+  const mineRes = await client.query(
+    'SELECT 1 FROM procurement.auction_bid WHERE auction_id = $1 AND bidder_org_id = $2 LIMIT 1',
+    [auctionId, bidderOrgId],
+  );
+  const hasBid = mineRes.rows.length > 0;
+  const isLeading = hasBid && bestRes.rows[0].bidder_org_id === bidderOrgId;
+  return { hasBid, isLeading };
+}
+
+/**
  * POST /procurement/auctions
- * Body: { rfq_id, closes_at }
+ * Body: { rfq_id, closes_at, bid_visibility? }
  * Creates a real-time reverse auction on an RFQ the caller already owns
  * (requester-only) and which is still `open`. One auction per RFQ.
+ *
+ * `bid_visibility` chooses the auction's mode — 'live' (default, existing
+ * "sealed-bid-lite": price visible live, must strictly beat the current
+ * lowest to bid) or 'sealed' (true sealed-bid: no price ever shown while
+ * open, unlimited resubmission, only a leading/not-leading answer per
+ * submission). See grant_sealed_bid_auction.sql for the full design
+ * rationale.
  */
 router.post('/auctions', async (req, res, next) => {
   const subject = req.subject;
   if (!isRequesterEligible(subject.subjectType)) {
     return res.status(403).json({ error: 'farmer_or_organization_subject_required' });
   }
-  const { rfq_id: rfqId, closes_at: closesAt } = req.body || {};
+  const { rfq_id: rfqId, closes_at: closesAt, bid_visibility: bidVisibilityRaw } = req.body || {};
   if (!rfqId) return res.status(400).json({ error: 'rfq_id_required' });
   const closesAtDate = closesAt ? new Date(closesAt) : null;
   if (!closesAtDate || Number.isNaN(closesAtDate.getTime()) || closesAtDate.getTime() <= Date.now()) {
     return res.status(400).json({ error: 'invalid_closes_at', detail: 'must be a valid future timestamp' });
+  }
+  const bidVisibility = bidVisibilityRaw === undefined || bidVisibilityRaw === null ? 'live' : bidVisibilityRaw;
+  if (!['live', 'sealed'].includes(bidVisibility)) {
+    return res.status(400).json({ error: 'invalid_bid_visibility', valid: ['live', 'sealed'] });
   }
 
   try {
@@ -794,10 +833,10 @@ router.post('/auctions', async (req, res, next) => {
       if (existing.rows.length > 0) return { alreadyExists: true };
 
       const { rows } = await client.query(
-        `INSERT INTO procurement.auction (rfq_id, closes_at)
-         VALUES ($1, $2)
-         RETURNING auction_id, rfq_id, starts_at, closes_at, status, created_at`,
-        [rfqId, closesAtDate.toISOString()],
+        `INSERT INTO procurement.auction (rfq_id, closes_at, bid_visibility)
+         VALUES ($1, $2, $3)
+         RETURNING auction_id, rfq_id, starts_at, closes_at, status, bid_visibility, created_at`,
+        [rfqId, closesAtDate.toISOString(), bidVisibility],
       );
       await logAccess(client, 'write', 'procurement.auction', rows[0].auction_id);
       return { auction: rows[0] };
@@ -817,7 +856,10 @@ router.post('/auctions', async (req, res, next) => {
  * eligible subject (spectating an auction is harmless; only bidding is
  * organization-gated). Includes `current_lowest_bid`/`bid_count` but
  * never bidder identity — see the sealed-bidder-identity note in
- * grant_b2b_commerce_engine.sql.
+ * grant_b2b_commerce_engine.sql. For a 'sealed' auction that is still
+ * `open`, `current_lowest_bid` is omitted entirely (null) for everyone,
+ * including the requester — see grant_sealed_bid_auction.sql. `bid_count`
+ * stays visible in both modes since it carries no price information.
  */
 router.get('/auctions', async (req, res, next) => {
   const subject = req.subject;
@@ -838,7 +880,7 @@ router.get('/auctions', async (req, res, next) => {
       const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
       const result = await client.query(
-        `SELECT a.auction_id, a.rfq_id, a.starts_at, a.closes_at, a.status, a.created_at,
+        `SELECT a.auction_id, a.rfq_id, a.starts_at, a.closes_at, a.status, a.bid_visibility, a.created_at,
                 r.title, r.category, r.description, r.quantity, r.quantity_unit,
                 COALESCE(f.full_name, o.org_name) AS requester_name,
                 (SELECT MIN(bid_price) FROM procurement.auction_bid WHERE auction_id = a.auction_id) AS current_lowest_bid,
@@ -853,12 +895,15 @@ router.get('/auctions', async (req, res, next) => {
       );
       const settled = [];
       for (const row of result.rows) {
+        let out = row;
         if (row.status === 'open' && new Date(row.closes_at).getTime() <= Date.now()) {
           const fresh = await ensureAuctionSettled(client, row);
-          settled.push({ ...row, status: fresh.status });
-        } else {
-          settled.push(row);
+          out = { ...row, status: fresh.status };
         }
+        if (out.bid_visibility === 'sealed' && out.status === 'open') {
+          out = { ...out, current_lowest_bid: null };
+        }
+        settled.push(out);
       }
       return settled;
     });
@@ -869,7 +914,12 @@ router.get('/auctions', async (req, res, next) => {
   }
 });
 
-/** GET /procurement/auctions/mine — requester's own auctions, every status. */
+/**
+ * GET /procurement/auctions/mine — requester's own auctions, every status.
+ * For a 'sealed' auction that is still `open`, `current_lowest_bid` is
+ * omitted even here — a true sealed-bid stays sealed from the requester
+ * too until it closes, so they can't tip off a favoured bidder mid-auction.
+ */
 router.get('/auctions/mine', async (req, res, next) => {
   const subject = req.subject;
   if (!isRequesterEligible(subject.subjectType)) {
@@ -878,7 +928,7 @@ router.get('/auctions/mine', async (req, res, next) => {
   try {
     const rows = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
       const result = await client.query(
-        `SELECT a.auction_id, a.rfq_id, a.starts_at, a.closes_at, a.status, a.winning_bid_id, a.closed_at, a.created_at,
+        `SELECT a.auction_id, a.rfq_id, a.starts_at, a.closes_at, a.status, a.bid_visibility, a.winning_bid_id, a.closed_at, a.created_at,
                 r.title, r.category,
                 (SELECT MIN(bid_price) FROM procurement.auction_bid WHERE auction_id = a.auction_id) AS current_lowest_bid,
                 (SELECT count(*)::int FROM procurement.auction_bid WHERE auction_id = a.auction_id) AS bid_count
@@ -890,12 +940,15 @@ router.get('/auctions/mine', async (req, res, next) => {
       );
       const settled = [];
       for (const row of result.rows) {
+        let out = row;
         if (row.status === 'open' && new Date(row.closes_at).getTime() <= Date.now()) {
           const fresh = await ensureAuctionSettled(client, row);
-          settled.push({ ...row, status: fresh.status, winning_bid_id: fresh.winning_bid_id, closed_at: fresh.closed_at });
-        } else {
-          settled.push(row);
+          out = { ...row, status: fresh.status, winning_bid_id: fresh.winning_bid_id, closed_at: fresh.closed_at };
         }
+        if (out.bid_visibility === 'sealed' && out.status === 'open') {
+          out = { ...out, current_lowest_bid: null };
+        }
+        settled.push(out);
       }
       return settled;
     });
@@ -909,6 +962,14 @@ router.get('/auctions/mine', async (req, res, next) => {
  * GET /procurement/auctions/:id — detail. Includes `current_lowest_bid`/
  * `bid_count` for everyone, and `my_lowest_bid` for an organization caller
  * (so a bidder knows where they stand without seeing who else is bidding).
+ *
+ * For a 'sealed' auction that is still `open`, this flips to true
+ * sealed-bid shape instead: `current_lowest_bid`/`my_lowest_bid` are
+ * omitted entirely (nobody sees price while it's running, not even the
+ * requester), and an organization caller gets `my_status` — one of
+ * 'leading', 'not_leading', or 'no_bid_yet' — computed with the same
+ * tiebreak closeAndAwardAuction() uses, so it can never disagree with the
+ * eventual award. See grant_sealed_bid_auction.sql.
  */
 router.get('/auctions/:id', async (req, res, next) => {
   const subject = req.subject;
@@ -920,7 +981,7 @@ router.get('/auctions/:id', async (req, res, next) => {
   try {
     const result = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
       const auctionRes = await client.query(
-        `SELECT a.auction_id, a.rfq_id, a.starts_at, a.closes_at, a.status, a.winning_bid_id, a.closed_at, a.created_at,
+        `SELECT a.auction_id, a.rfq_id, a.starts_at, a.closes_at, a.status, a.bid_visibility, a.winning_bid_id, a.closed_at, a.created_at,
                 r.title, r.category, r.description, r.quantity, r.quantity_unit, r.target_price,
                 r.delivery_location, r.needed_by_date,
                 COALESCE(f.full_name, o.org_name) AS requester_name
@@ -939,19 +1000,33 @@ router.get('/auctions/:id', async (req, res, next) => {
         auction = { ...auction, status: fresh.status, winning_bid_id: fresh.winning_bid_id, closed_at: fresh.closed_at };
       }
 
-      const lowestRes = await client.query(
-        'SELECT MIN(bid_price) AS current_lowest_bid, count(*)::int AS bid_count FROM procurement.auction_bid WHERE auction_id = $1',
+      const sealedAndOpen = auction.bid_visibility === 'sealed' && auction.status === 'open';
+
+      const countRes = await client.query(
+        'SELECT count(*)::int AS bid_count FROM procurement.auction_bid WHERE auction_id = $1',
         [id],
       );
-      auction.current_lowest_bid = lowestRes.rows[0].current_lowest_bid;
-      auction.bid_count = lowestRes.rows[0].bid_count;
+      auction.bid_count = countRes.rows[0].bid_count;
 
-      if (subject.subjectType === 'organization') {
-        const myBidRes = await client.query(
-          'SELECT MIN(bid_price) AS my_lowest_bid FROM procurement.auction_bid WHERE auction_id = $1 AND bidder_org_id = $2',
-          [id, subject.subjectId],
+      if (sealedAndOpen) {
+        if (subject.subjectType === 'organization') {
+          const { hasBid, isLeading } = await computeLeadingStatus(client, id, subject.subjectId);
+          auction.my_status = !hasBid ? 'no_bid_yet' : (isLeading ? 'leading' : 'not_leading');
+        }
+      } else {
+        const lowestRes = await client.query(
+          'SELECT MIN(bid_price) AS current_lowest_bid FROM procurement.auction_bid WHERE auction_id = $1',
+          [id],
         );
-        auction.my_lowest_bid = myBidRes.rows[0].my_lowest_bid;
+        auction.current_lowest_bid = lowestRes.rows[0].current_lowest_bid;
+
+        if (subject.subjectType === 'organization') {
+          const myBidRes = await client.query(
+            'SELECT MIN(bid_price) AS my_lowest_bid FROM procurement.auction_bid WHERE auction_id = $1 AND bidder_org_id = $2',
+            [id, subject.subjectId],
+          );
+          auction.my_lowest_bid = myBidRes.rows[0].my_lowest_bid;
+        }
       }
 
       return { auction };
@@ -967,11 +1042,24 @@ router.get('/auctions/:id', async (req, res, next) => {
 /**
  * POST /procurement/auctions/:id/bids
  * Body: { bid_price, bid_quantity?, message?, lot_id? }
- * Organization-only. A new bid must be strictly LOWER than the current
- * global lowest bid (if any exist) — this is what makes it a live
- * descending-price auction rather than an independent-quote list; enforced
- * here at the application layer (needs a MIN() query, not expressible as a
- * plain CHECK constraint).
+ * Organization-only.
+ *
+ * 'live' auctions (default, unchanged): a new bid must be strictly LOWER
+ * than the current global lowest bid (if any exist) — this is what makes
+ * it a live descending-price auction rather than an independent-quote
+ * list; enforced here at the application layer (needs a MIN() query, not
+ * expressible as a plain CHECK constraint). The response echoes the
+ * inserted bid, including its price.
+ *
+ * 'sealed' auctions (new): there is no "must beat the current lowest"
+ * check — the bidder cannot see the current lowest, so there is nothing to
+ * reject a bid against; every positive bid price is accepted, and a
+ * bidder may resubmit as many times as they like before `closes_at`. The
+ * response NEVER includes any bid price (not even the price the caller
+ * themselves just submitted) — only `{ bid_id, submitted_at, is_leading }`,
+ * where `is_leading` is computed with the same tiebreak
+ * closeAndAwardAuction() uses, so it can never disagree with the eventual
+ * award. See grant_sealed_bid_auction.sql for the full design rationale.
  *
  * `lot_id` (B2B Commerce Engine Phase 3): same rule as POST /rfqs/:id/
  * quotes — only on a 'produce' category RFQ's auction, and only a lot this
@@ -999,7 +1087,7 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
       if (!gate.ok) return { gate };
 
       const auctionRes = await client.query(
-        `SELECT a.auction_id, a.rfq_id, a.status, a.closes_at, r.category
+        `SELECT a.auction_id, a.rfq_id, a.status, a.closes_at, a.bid_visibility, r.category
            FROM procurement.auction a
            JOIN procurement.rfq r ON r.rfq_id = a.rfq_id
           WHERE a.auction_id = $1`,
@@ -1014,13 +1102,17 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
       }
       if (auction.status !== 'open') return { wrongStatus: auction.status };
 
-      const lowestRes = await client.query(
-        'SELECT MIN(bid_price) AS current_lowest_bid FROM procurement.auction_bid WHERE auction_id = $1',
-        [id],
-      );
-      const currentLowest = lowestRes.rows[0].current_lowest_bid;
-      if (currentLowest !== null && bidPrice >= Number(currentLowest)) {
-        return { notCompetitive: true, currentLowest: Number(currentLowest) };
+      const sealed = auction.bid_visibility === 'sealed';
+      let currentLowest = null;
+      if (!sealed) {
+        const lowestRes = await client.query(
+          'SELECT MIN(bid_price) AS current_lowest_bid FROM procurement.auction_bid WHERE auction_id = $1',
+          [id],
+        );
+        currentLowest = lowestRes.rows[0].current_lowest_bid;
+        if (currentLowest !== null && bidPrice >= Number(currentLowest)) {
+          return { notCompetitive: true, currentLowest: Number(currentLowest) };
+        }
       }
 
       if (lotId) {
@@ -1039,6 +1131,18 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
         [id, subject.subjectId, bidPrice, bidQuantityRaw || null, message || null, lotId || null],
       );
       await logAccess(client, 'write', 'procurement.auction_bid', rows[0].bid_id);
+
+      if (sealed) {
+        const { isLeading } = await computeLeadingStatus(client, id, subject.subjectId);
+        return {
+          bid: {
+            bid_id: rows[0].bid_id,
+            auction_id: rows[0].auction_id,
+            submitted_at: rows[0].submitted_at,
+            is_leading: isLeading,
+          },
+        };
+      }
       return { bid: rows[0] };
     });
 

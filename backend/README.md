@@ -98,7 +98,31 @@ psql -d agrolink_test -f db/grant_stage_calendar_farmer.sql
 psql -d agrolink_test -f db/grant_fertilizer_mixing_service.sql
 psql -d agrolink_test -f db/grant_fertilizer_mixing_group_order.sql
 psql -d agrolink_test -f db/grant_carbon_awd.sql
+psql -d agrolink_test -f db/grant_cooperative_tenant_foundation.sql
+psql -d agrolink_test -f db/grant_cooperative_collection_station.sql
+psql -d agrolink_test -f db/grant_cooperative_warehouse.sql
+psql -d agrolink_test -f db/grant_cooperative_finance_dashboard.sql
+psql -d agrolink_test -f db/grant_cooperative_processing.sql
+psql -d agrolink_test -f db/grant_cooperative_logistics.sql
+psql -d agrolink_test -f db/grant_cooperative_gov_gateway.sql
+psql -d agrolink_test -f db/grant_staff_and_government_access.sql
+psql -d agrolink_test -f db/grant_object_storage.sql
+psql -d agrolink_test -f db/grant_analytics_warehouse.sql
+psql -d agrolink_test -f db/grant_satellite_observation.sql
+psql -d agrolink_test -f db/grant_cooperative_product_catalog.sql
+psql -d agrolink_test -f db/grant_rfq_marketplace.sql
+psql -d agrolink_test -f db/grant_b2b_commerce_engine.sql
+psql -d agrolink_test -f db/grant_b2b_commerce_engine_phase3.sql
+psql -d agrolink_test -f db/grant_farmer_360.sql
+psql -d agrolink_test -f db/grant_machinery_service_consolidation.sql
+psql -d agrolink_test -f db/grant_ledger_revenue_segregation.sql
+psql -d agrolink_test -f db/grant_sealed_bid_auction.sql
 ```
+
+(This continues the same file-by-file order as `DEPLOY.md`'s ordered list at
+the repo root, with `setup_backend_role.sql` inserted after
+`03_grant_schema_usage.sql` — see that file's own "checked against a real
+run" note.)
 
 **2026-08-04 correction:** this list had silently fallen nine migrations
 behind actual `db/` contents — everything from `grant_about_content.sql`
@@ -1101,6 +1125,75 @@ to, with an "ออกใบสั่งซื้อ" button on the ones they ca
 against), and "ใบสั่งซื้อ" (every PO, with acknowledge/cancel actions
 shown only to the side actually eligible for them).
 
+## AgroLink B2B Commerce Engine — Sealed-Bid Auction Mode (2026-08-22)
+
+A second e-Auction mode alongside the "sealed-bid-lite" one described above.
+No new tables — `backend/db/grant_sealed_bid_auction.sql` adds one column,
+`procurement.auction.bid_visibility text NOT NULL DEFAULT 'live' CHECK (IN
+('live', 'sealed'))`. Every existing/previously-created auction defaults to
+`'live'`, i.e. exactly the behaviour documented in the section above,
+unchanged — this migration is purely additive and was regression-tested
+against that unchanged behaviour (see "End-to-end verification performed"
+below).
+
+`'sealed'` (chosen by the requester at `POST /procurement/auctions` time via
+`{ bid_visibility: 'sealed' }`) is a genuinely sealed bid, per an explicit
+product request: while the auction is `open`, **no price is ever exposed to
+anyone** — not the bidders, not spectators, and not even the requester who
+created the auction (this last part is a deliberate design choice beyond
+what was literally asked: hiding price from the requester too, not just
+bidders, is what stops the requester from tipping off a favoured bidder
+mid-auction, which is how a real sealed tender works). Concretely:
+
+- `GET /procurement/auctions`, `/auctions/mine`, and `/auctions/:id` all
+  omit `current_lowest_bid`/`my_lowest_bid` for a `sealed`+`open` auction.
+  `bid_count` stays visible in both modes (it's an activity count, not a
+  price). An organization caller hitting the detail endpoint gets
+  `my_status: 'leading' | 'not_leading' | 'no_bid_yet'` instead of
+  `my_lowest_bid`.
+- `POST /procurement/auctions/:id/bids` drops the `'live'` mode's "must
+  strictly beat the current lowest" rejection entirely for `sealed`
+  auctions — a bidder who can't see the current lowest has nothing to beat
+  against, and rejecting would itself leak "you weren't competitive". Every
+  positive-price bid is accepted, and a bidder may resubmit as many times
+  as they like before `closes_at`, at any price (better or worse than their
+  own last attempt — nothing is validated against price history). The
+  response is `{ bid_id, auction_id, submitted_at, is_leading }` — **no
+  price field at all**, not even the price the caller themselves just
+  submitted. `is_leading` is computed by `computeLeadingStatus()`, which
+  runs the *exact same* `ORDER BY bid_price ASC, submitted_at ASC LIMIT 1`
+  query `closeAndAwardAuction()` uses to pick the real winner, so the live
+  indicator shown mid-auction can never disagree with the eventual
+  auto-award — verified directly in the E2E test (the historically cheapest
+  bid after close was the same one every intermediate `is_leading: true`
+  response had pointed to).
+- Once the auction closes/is awarded, prices reappear exactly the way they
+  already do for `'live'` auctions: `current_lowest_bid` returns in the
+  summary/detail endpoints, and the existing requester-only
+  `GET /procurement/auctions/:id/bids` full-history endpoint (bidder
+  identity + price, ordered cheapest-first) needed **zero changes** — it
+  was already gated to fire only for the auction's own requester, matching
+  the reveal-only-after-award pattern this codebase already uses for direct
+  RFQ quotes.
+- `closeAndAwardAuction()` and `ensureAuctionSettled()` (lazy-expiry
+  auto-close, no cron job) also needed **zero changes** — they already pick
+  the winner from `procurement.auction_bid` by lowest price regardless of
+  mode; the only thing that differs between `'live'` and `'sealed'` is who
+  gets to see prices while the auction is still running.
+
+**Not built in this pass:** a dashboard UI for choosing `bid_visibility` at
+auction-creation time or for showing the `is_leading`/`my_status` indicator
+— the existing e-Auction UI described in the section above lives in
+dashboard page files that weren't part of this working session, so this
+round shipped API-only, verified end-to-end with a raw-`fetch()` test
+script (see below) rather than through the dashboard. The API is fully
+backward-compatible and ready for a UI pass whenever those page files are
+available to edit.
+
+**Full design rationale:** `B2B_COMMERCE_ENGINE_ARCHITECTURE.md` §4.4a at
+the repo root, and the header comment in
+`backend/db/grant_sealed_bid_auction.sql`.
+
 ## AgroLink B2B Commerce Engine — Phase 3: GRN, Invoice, Payment, Revenue Sharing
 
 Phase 3 of the same pipeline, closing the loop from "we have a Purchase
@@ -1881,6 +1974,42 @@ and the live `agrolink_test` database — not unit tests against mocks:
   `organization_role`/`subject_role`/`vendor_profile`/
   `cooperative_profile` rows) were deleted afterward, not left in seed
   data.
+- **Sealed-Bid Auction Mode** (2026-08-22, raw `fetch()` script against a
+  real running server + rebuilt `agrolink_test`, all 47 migrations applied
+  including the new `grant_sealed_bid_auction.sql`): registered a fresh
+  Buyer org (requester) and two fresh InputSupplier orgs (bidders),
+  fast-tracked KYB to `Verified` for all three. **Sealed mode:** created an
+  RFQ + a `bid_visibility: 'sealed'` auction; bidder A's first bid (500)
+  came back `is_leading: true` with no price field in the response at all;
+  bidder B underbid at 300 and flipped to `is_leading: true`; confirmed via
+  `GET /auctions/:id` that bidder A now saw `my_status: 'not_leading'` with
+  `current_lowest_bid`/`my_lowest_bid` both absent from the response;
+  bidder A resubmitted at 200 (a brand-new row, not an update — unlimited
+  resubmission) and flipped back to leading; bidder B resubmitted at a
+  *worse* price (400) than their own earlier 300 and the bid was still
+  accepted (sealed mode never rejects on price), correctly reported
+  `is_leading: false`. Confirmed `GET /procurement/auctions` (browse) and
+  `GET /procurement/auctions/mine` (the requester's own view) both showed
+  `current_lowest_bid: null` while open+sealed — including for the
+  requester themselves, per this feature's stricter-than-asked design
+  choice — while `bid_count` stayed visible and correct in both. Let the
+  auction's `closes_at` pass (short window, no manual close) and confirmed
+  the existing lazy-expiry `ensureAuctionSettled()` auto-closed and
+  auto-awarded it with **zero code changes** — the winner was bidder A's
+  200 bid, the same bidder every intermediate `is_leading: true` response
+  had already pointed to, confirming the live indicator never disagreed
+  with the real award. Confirmed the existing requester-only
+  `GET /auctions/:id/bids` endpoint (unmodified) correctly revealed all 4
+  historical bid attempts with real prices and bidder identities once
+  closed, and that `current_lowest_bid` reappeared in the detail endpoint
+  post-award. Confirmed a bid submitted after close correctly `409`s
+  (`auction_not_open`). **Live-mode regression, same run:** created a
+  second RFQ + a default (`bid_visibility` omitted) auction and confirmed
+  it came back `bid_visibility: 'live'`; a bid still echoed its
+  `bid_price` back unchanged, and a subsequent non-competitive bid still
+  `409`'d with `bid_not_competitive` exactly as before this migration —
+  confirming the new column is genuinely additive and changed nothing
+  about the pre-existing auction mode.
 
 ## Next steps (not yet built)
 

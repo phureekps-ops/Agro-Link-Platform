@@ -87,6 +87,56 @@ flowchart LR
 - `POST /procurement/auctions/:id/bids` — วางราคา (organization เท่านั้น)
 - `POST /procurement/auctions/:id/close` — ปิดและตัดสินผู้ชนะ (requester เท่านั้น หรือระบบปิดอัตโนมัติเมื่อพ้นเวลา)
 
+### 4.4a Sealed-Bid Mode — 🆕 สร้างในรอบนี้ (2026-08-22)
+**ไม่สร้างตารางใหม่** — ต่อยอดจาก 4.4 ด้านบนโดยตรง ดูรายละเอียด SQL ใน
+`backend/db/grant_sealed_bid_auction.sql`
+
+ของเดิมใน 4.4 (`bid_visibility='live'`, ค่า default) คือสิ่งที่เอกสารนี้เรียกว่า
+"sealed-bid-lite" มาตลอด — ปิดบัง**ตัวตน**ผู้เสนอราคาระหว่างกัน แต่**ราคา**
+(`current_lowest_bid`/`bid_count`) ยังเห็นแบบ real-time ทุกฝ่าย และบังคับว่า
+bid ใหม่ต้องต่ำกว่า bid ต่ำสุดปัจจุบันเท่านั้นถึงจะรับ (409 `bid_not_competitive`
+มิฉะนั้น) ฟีเจอร์นี้เพิ่มโหมดที่สองคือ `bid_visibility='sealed'` ซึ่งเป็น
+sealed-bid แบบเต็ม ตามสเปกที่ผู้ใช้ระบุไว้ตรงๆ ดังนี้:
+
+- **ไม่เห็นราคาเลยไม่ว่าฝั่งไหน** — ระหว่างที่ auction ยัง `open`,
+  `current_lowest_bid`/`my_lowest_bid` จะถูกงดแสดงในทุก endpoint
+  (`GET /auctions`, `/auctions/mine`, `/auctions/:id`) **รวมถึงฝั่ง requester
+  เจ้าของ auction เองด้วย** — ตั้งใจให้เข้มกว่าที่ผู้ใช้ระบุ (ผู้ใช้พูดถึงแค่ฝั่ง
+  ผู้เสนอราคา) เพราะ sealed-bid ที่แท้จริงต้องปิดบังราคาจากทุกฝ่ายรวมถึงผู้จัด
+  ประมูลเองด้วย ไม่งั้นผู้จัดอาจหลุดข้อมูลไปบอกผู้เสนอราคารายที่ชอบระหว่างทางได้
+- **เสนอราคาใหม่ได้ไม่จำกัดจำนวนครั้ง** ก่อนถึง `closes_at` ไม่ว่าราคาจะดีขึ้นหรือ
+  แย่ลงกว่าที่เคยเสนอไว้ก่อนหน้าก็ตาม — ไม่มีการเช็ค "ต้องต่ำกว่าราคาต่ำสุดปัจจุบัน"
+  เหมือนโหมด `live` เพราะผู้เสนอราคามองไม่เห็นราคาต่ำสุดปัจจุบันอยู่แล้ว จะปฏิเสธ
+  ก็ไม่มีอะไรให้เทียบ (การ reject เองก็เท่ากับหลุดข้อมูลว่า "ราคานี้สู้ไม่ได้" อยู่ดี)
+- **ทุกครั้งที่เสนอราคา ระบบตอบกลับสถานะทันที** — `POST /auctions/:id/bids`
+  คืนแค่ `{ bid_id, submitted_at, is_leading }` เท่านั้น **ไม่มีฟิลด์ราคาใดๆ
+  ปนมาเลยแม้แต่ราคาที่ผู้เสนอราคาเพิ่งพิมพ์ส่งเข้ามาเอง** — `is_leading` คำนวณ
+  จาก query เดียวกันเป๊ะกับที่ `closeAndAwardAuction()` ใช้ตัดสินผู้ชนะจริง
+  (`ORDER BY bid_price ASC, submitted_at ASC LIMIT 1` แล้วเทียบว่า
+  `bidder_org_id` ตรงกับผู้เรียกหรือไม่) จึงรับประกันว่าสถานะ leading/not-leading
+  ที่เห็นระหว่างทางจะไม่มีวันขัดกับผลรางวัลจริงตอนปิดประมูล
+- ฝั่ง organization caller ที่ดู `GET /auctions/:id` ระหว่าง auction ยัง sealed
+  และ `open` จะได้ `my_status` แทน `my_lowest_bid` — ค่าเป็น `'leading'` /
+  `'not_leading'` / `'no_bid_yet'`
+- **`bid_count` ยังคงเห็นได้ปกติทั้งสองโหมด** เพราะเป็นแค่จำนวนครั้ง ไม่ใช่ราคา
+- **เปิดเผยราคาหลังปิดประมูลเหมือนเดิมทุกประการ** — เมื่อ `status` เปลี่ยนเป็น
+  `closed`/`awarded` แล้ว `current_lowest_bid` จะกลับมาแสดงตามปกติ และ
+  `GET /auctions/:id/bids` (requester-only, ประวัติราคา+ตัวตนผู้เสนอราคาทุกราย
+  เรียงจากถูกที่สุด) **ไม่ต้องแก้อะไรเลย** ใช้ endpoint เดิมได้ทันที — ตรงกับแพทเทิร์น
+  "เปิดเผยเฉพาะหลังปิดผล" ที่ใช้กับ RFQ/quote โดยตรงอยู่แล้วในไฟล์นี้
+- `closeAndAwardAuction()`/`ensureAuctionSettled()` (การปิดประมูลอัตโนมัติเมื่อ
+  พ้นเวลา + auto-award) **ไม่ต้องแก้เลย** ใช้ตรรกะเดิมได้กับทั้งสองโหมด เพราะเลือก
+  ผู้ชนะจากราคาต่ำสุดในตาราง `procurement.auction_bid` เหมือนกันไม่ว่าจะเป็นโหมด
+  ไหน — สิ่งที่ต่างกันมีแค่ "ใครเห็นราคาระหว่างทางได้บ้าง" เท่านั้น
+- auction เดิมทุกใบก่อนหน้ามี `bid_visibility='live'` เป็นค่า default โดย
+  migration นี้เป็นแบบ additive ล้วนๆ ไม่กระทบพฤติกรรมที่ใช้งานอยู่แล้วแม้แต่น้อย
+  (ทดสอบ regression แล้วว่าโหมด `live` เดิมทำงานเหมือนเดิมทุกจุด)
+
+**API ที่เปลี่ยน (ทั้งหมด backward-compatible):**
+- `POST /procurement/auctions` — เพิ่ม body param `bid_visibility?: 'live' | 'sealed'` (ไม่ส่งมา = `'live'` เหมือนเดิม)
+- `POST /procurement/auctions/:id/bids` — response shape เปลี่ยนเฉพาะเมื่อ auction เป็น `sealed` เท่านั้น (ดูด้านบน); โหมด `live` คืนค่าเหมือนเดิมทุกฟิลด์
+- `GET /procurement/auctions`, `/auctions/mine`, `/auctions/:id` — เพิ่ม `bid_visibility` ในผลลัพธ์ และงดแสดงฟิลด์ราคาเมื่อ auction เป็น `sealed`+`open` เท่านั้น
+
 ### 4.5 Contract — 🆕 auto-generation เชื่อมกับของเดิม
 **ไม่สร้างตารางใหม่** — `contract.contract`/`contract_party` มีอยู่แล้วและออกแบบมารองรับกรณีนี้ตั้งแต่แรก (`contract_type IN ('forward_purchase','service_agreement','input_supply_agreement', 'loan_agreement')`, มี `agreed_quantity`/`agreed_unit_price`/`quantity_unit`)
 

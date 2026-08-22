@@ -167,7 +167,24 @@ grant_b2b_commerce_engine_phase3.sql
 grant_farmer_360.sql
 grant_machinery_service_consolidation.sql
 grant_ledger_revenue_segregation.sql
+grant_sealed_bid_auction.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-22:** `grant_sealed_bid_auction.sql` — เพิ่มโหมด Sealed-Bid
+แบบเต็มให้ e-Auction (ข้อ 4.4 เดิม) เพิ่มคอลัมน์ `bid_visibility` (nullable
+ไม่ได้ แต่มี `DEFAULT 'live'` — auction เดิมทุกใบไม่กระทบ) บน
+`procurement.auction`: `'live'` (ค่า default, พฤติกรรมเดิมทุกประการ — ราคา
+มองเห็นแบบ real-time, bid ใหม่ต้องต่ำกว่าราคาต่ำสุดปัจจุบันเท่านั้นถึงจะรับ) กับ
+`'sealed'` (ใหม่ — ไม่เห็นราคาเลยไม่ว่าฝ่ายไหนรวมถึงผู้จัดประมูลเองระหว่างที่ยัง
+เปิดอยู่, เสนอราคาใหม่ได้ไม่จำกัดจำนวนครั้ง, ทุกครั้งที่เสนอราคาได้รับแค่สถานะ
+`is_leading: true/false` กลับมาทันที ไม่มีราคาปนมาเลย) ดูรายละเอียดเต็มที่
+`B2B_COMMERCE_ENGINE_ARCHITECTURE.md` ข้อ 4.4a และคอมเมนต์หัวไฟล์ migration นี้
+เอง **ต้องรันหลัง** `grant_b2b_commerce_engine.sql` เท่านั้น (ต้องมีตาราง
+`procurement.auction` อยู่ก่อน) เป็น additive ล้วนๆ ไม่ต้องมี GRANT เพิ่ม
+(agrolink_app มีสิทธิ์ระดับตารางอยู่แล้วซึ่งครอบคลุมคอลัมน์ใหม่โดยอัตโนมัติ)
+รันเป็นไฟล์สุดท้ายในลำดับนี้ก็เพียงพอ — ทดสอบแล้วจริงกับฐานข้อมูล local ทั้ง
+สอง mode (regression บนโหมด `live` เดิม + E2E เต็มรูปแบบบนโหมด `sealed` ใหม่
+รวมถึงกรณีปิดประมูลอัตโนมัติเมื่อพ้นเวลา)
 
 **เพิ่มเมื่อ 2026-08-17 (ดึก):** `grant_ledger_revenue_segregation.sql` —
 เพิ่มคอลัมน์ `ledger.journal_entry.source_role_type` (nullable, ไม่มี
