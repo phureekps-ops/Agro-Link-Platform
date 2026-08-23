@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้ให้บริการขนส่ง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🚚</span><span>AgroLink Platform — พอร์ทัลผู้ให้บริการขนส่ง</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">🚚 งานขนส่งที่ได้รับมอบหมาย</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      รายการจัดส่งที่สหกรณ์มอบหมายให้ท่าน (ผูกบัญชีผ่านผู้ขนส่งของสหกรณ์) — บันทึกออกเดินทางเมื่อรถออก,
+      บันทึกหลักฐานการส่งมอบเมื่อถึงปลายทาง, และรายงานปัญหาระหว่างทางได้จากที่นี่ (การยกเลิกหรือแก้ไขข้อยกเว้นยังเป็นสิทธิ์ของสหกรณ์ผู้วางแผนจัดส่ง)
+    </p>
+    <div class="form-grid" style="margin-bottom:10px;">
+      <div class="field">
+        <label for="statusFilterSelect">กรองตามสถานะ</label>
+        <select id="statusFilterSelect">
+          <option value="">-- ทั้งหมด --</option>
+          <option value="Pending">รอดำเนินการ</option>
+          <option value="InTransit">กำลังเดินทาง</option>
+          <option value="Delivered">ส่งมอบแล้ว</option>
+          <option value="Cancelled">ยกเลิกแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="shipmentsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการจัดส่ง…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

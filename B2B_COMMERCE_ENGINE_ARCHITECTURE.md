@@ -55,7 +55,7 @@ flowchart LR
 | โรงสี | `Mill` | *ยังไม่มีพอร์ทัล* | Buyer (ซื้อข้าวเปลือก) — ใช้เส้นทาง RFQ→Contract→PO เต็มรูปแบบเพราะปริมาณ/มูลค่าสูง |
 | โรงงานอาหารสัตว์ | *ไม่มี org_type เฉพาะ — แนะนำใช้ `Buyer` ชั่วคราว* | `frontend/buyer/` | Buyer (ซื้อวัตถุดิบ/ผลพลอยได้) |
 | Supplier (ปัจจัยการผลิต) | `InputSupplier` | `frontend/inputsupplier/` | Responder |
-| Logistics | `Logistics` | *ยังไม่มีพอร์ทัล* | ผู้ให้บริการขนส่งใน `logistics.shipment` (มี schema แล้ว ยังไม่มี UI) |
+| Logistics | `Logistics` | `frontend/logistics/` (เพิ่ม 2026-08-23) | ผู้ให้บริการขนส่งใน `logistics.shipment` — ดูงาน/บันทึกออกเดินทาง/POD/รายงานปัญหา เฉพาะงานที่สหกรณ์ผูกบัญชีให้ (ดูข้อ 4.7) |
 | Service Provider | `TractorService`/`DroneService`/`HarvesterService`/`TruckService`/`DryingYardService` | `frontend/machinery/` | Responder สำหรับ RFQ ประเภท `machinery_service` |
 
 ## 4. แต่ละขั้นตอน — schema เดิม/ใหม่ + API + สถานะการสร้าง
@@ -161,8 +161,8 @@ sealed-bid แบบเต็ม ตามสเปกที่ผู้ใช�
 - `POST /procurement/purchase-orders/:id/acknowledge` — ผู้ขายรับทราบ PO
 - `POST /procurement/purchase-orders/:id/cancel` — ยกเลิก (ทั้งสองฝ่ายก่อน `in_fulfillment`)
 
-### 4.7 Logistics — ✅ มี schema อยู่แล้ว เชื่อมต่อในรอบถัดไป
-`logistics.carrier`/`vehicle`/`shipment`/`shipment_item`/`proof_of_delivery`/`shipment_exception` (จาก `grant_cooperative_logistics.sql`) — ปัจจุบันผูกกับล็อตของสหกรณ์เท่านั้น (`grant_cooperative_logistics.sql`) **สิ่งที่ต้องทำในรอบถัดไป:** เพิ่ม `shipment.reference_type/reference_id` ให้ผูกกับ `purchase_order_id` ได้ด้วย (ไม่ใช่แค่ล็อตสหกรณ์) — เป็นการขยาย ไม่ใช่สร้างใหม่
+### 4.7 Logistics — ✅ มี schema + พอร์ทัลองค์กรขนส่งแล้ว (2026-08-23); เชื่อมกับ PO ในรอบถัดไป
+`logistics.carrier`/`vehicle`/`shipment`/`shipment_item`/`proof_of_delivery`/`shipment_exception` (จาก `grant_cooperative_logistics.sql`) — ปัจจุบันผูกกับล็อตของสหกรณ์เท่านั้น (ไม่ใช่ `purchase_order_id`) ยังคงจริงเหมือนเดิม แต่ `grant_logistics_portal.sql` (2026-08-23) เพิ่มคอลัมน์ `logistics.carrier.linked_org_id` ให้สหกรณ์ผูกผู้ขนส่งของตัวเองกับบัญชีองค์กร `Logistics` จริงที่ผ่าน KYB แล้วได้ — องค์กรนั้นจึงเข้าพอร์ทัลของตัวเอง (`frontend/logistics/`, `backend/src/routes/logistics.js`) และดู/จัดการงานที่ได้รับมอบหมายเองได้ (ออกเดินทาง/POD/รายงานปัญหา) โดยไม่ต้องพึ่งสหกรณ์กรอกแทนทุกขั้นตอน **สิ่งที่ยังเหลือสำหรับรอบถัดไป:** เพิ่ม `shipment.reference_type/reference_id` ให้ผูกกับ `purchase_order_id` ได้ด้วย (ไม่ใช่แค่ล็อตสหกรณ์) — เป็นการขยาย ไม่ใช่สร้างใหม่ ยังไม่ได้ทำในรอบนี้
 
 ### 4.8 GRN (ใบรับสินค้า/ตรวจรับ) — ✅ สร้างและทดสอบจริงแล้ว (2026-08-16 ดึก)
 **ตารางจริง:** `procurement.goods_receipt` (schema จริงตรงกับ draft เดิมทุกคอลัมน์
@@ -302,7 +302,7 @@ Revenue Sharing เพราะผู้ขายเป็น InputSupplier ไ�
 | `frontend/coop/`, `frontend/buyer/`, `frontend/inputsupplier/` | ✅ ขยายแล้ว — UI auction + PO + GRN + Invoice ทั้ง 3 พอร์ทัล (Revenue Sharing UI มีเฉพาะ `frontend/coop/` เพราะมีแต่สหกรณ์ที่ต้องกระจายเงินคืนสมาชิก) |
 | Logistics↔PO linking | 📋 ออกแบบในเอกสารนี้ (ข้อ 4.7) — รอบถัดไป |
 | RFI เป็น request_type ของ RFQ | 📋 ออกแบบในเอกสารนี้ (ข้อ 4.3) — รอบถัดไป |
-| พอร์ทัล Mill / VillageFund / Logistics | 📋 org_type มีอยู่แล้วในฐานข้อมูล ยังไม่มี frontend — รอบถัดไป |
+| พอร์ทัล Mill | 📋 org_type มีอยู่แล้วในฐานข้อมูล ยังไม่มี frontend — รอบถัดไป (VillageFund ทำแล้ว 2026-08-17, Logistics ทำแล้ว 2026-08-23 — ดูข้อ 3 และ 4.7) |
 | Auction+PO+GRN+Invoice UI บน Lender/Machinery/MarketVenue/FertilizerMixingService/Admin/Gov | 📋 backend รองรับ JWT องค์กรทุกประเภทอยู่แล้ว เหลือแค่ UI — รอบถัดไป |
 | Dispute-resolution workflow สำหรับ Invoice `disputed` | 📋 `POST /invoices/:id/dispute` มีแล้ว แต่ยังไม่มีขั้นตอนแก้ไขข้อพิพาทต่อ (เช่น เจรจาใหม่/ยกเลิก/แก้จำนวนเงิน) — ค้างในสถานะ `disputed` เฉยๆ — รอบถัดไป |
 
@@ -320,6 +320,6 @@ Revenue Sharing เพราะผู้ขายเป็น InputSupplier ไ�
 | 3 | Logistics↔PO linking (ต่อของเดิม) | 📋 ถัดไป |
 | 4 | GRN + Invoice + Payment-hook | ✅ เสร็จแล้ว (2026-08-16 ดึก, เรียกรวมกับ Phase 5 ว่า "Phase 3" ใน `backend/README.md`) |
 | 5 | Revenue Sharing (สหกรณ์/กองทุนหมู่บ้าน) | ✅ เสร็จแล้ว (2026-08-16 ดึก, พร้อม Phase 4 ในรอบเดียวกัน) |
-| 6 | พอร์ทัล Mill / VillageFund / Logistics (ปัจจุบันมีแต่ backend รองรับ org_type ยังไม่มีหน้าจอ) | 📋 ถัดไป |
+| 6 | พอร์ทัล Mill (ปัจจุบันมีแต่ backend รองรับ org_type ยังไม่มีหน้าจอ) | 📋 ถัดไป (VillageFund เสร็จแล้ว 2026-08-17, Logistics เสร็จแล้ว 2026-08-23) |
 | 7 | RFI แยกจาก RFQ, Credit Score integration | 📋 ถัดไป |
 | 8 | Auction+PO+GRN+Invoice UI บนพอร์ทัลที่เหลือ (Lender/Machinery/MarketVenue/FertilizerMixingService/Admin/Gov) + dispute-resolution workflow | 📋 ถัดไป |

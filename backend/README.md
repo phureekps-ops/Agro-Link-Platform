@@ -2083,19 +2083,23 @@ and the live `agrolink_test` database — not unit tests against mocks:
 - Stock/quantity tracking for `marketplace.product_listing` — nothing today
   stops a supplier's product from being ordered more times than they can
   actually supply.
-- A dedicated portal for `Logistics` — the one remaining self-registerable
-  org_type with no portal of its own; it still only gets a
-  registration-received confirmation, with nowhere to log into afterward.
-  (`Cooperative` and `Mill` were removed from self-registration entirely on
-  2026-07-24, so they're no longer part of this gap; `InputSupplier` got
-  its own dedicated portal earlier the same day. `VillageFund` got its own
-  dedicated portal on 2026-08-17 — see "Farmer 360° View" below — so it's
-  no longer part of this gap either.)
+- `Logistics` got its own dedicated portal on 2026-08-23 (`frontend/logistics/`,
+  `src/routes/logistics.js`, `grant_logistics_portal.sql`) — the one
+  remaining self-registerable org_type with no portal of its own is now
+  closed. (`Cooperative` and `Mill` were removed from self-registration
+  entirely on 2026-07-24, so they were never part of this gap;
+  `InputSupplier` got its own dedicated portal earlier the same day.
+  `VillageFund` got its own dedicated portal on 2026-08-17 — see "Farmer
+  360° View" below.) Note this portal only shows shipments assigned
+  through a `logistics.carrier` row a cooperative has explicitly linked to
+  the org (see "Cooperative Collection Station Portal" / M13 Logistics
+  below) — a Logistics org with no linked carrier yet sees an empty
+  dashboard, same as e.g. a fresh Lender org with no applications yet.
 - Farmer Portal, Lender Portal, Buyer Portal, Platform Ops, the
-  Machinery/Drying-Yard Portal, the Cooperative Portal, and the
-  VillageFund Portal are all now built end-to-end (backend + frontend,
-  tested), and organizations can now both self-register and be approved
-  through the API — closing the loop that was the previous "Next steps"
-  headline item. The natural next candidates are the gaps just above, or a
-  fresh vertical slice (e.g. `Logistics`) reusing the same patterns
-  established here.
+  Machinery/Drying-Yard Portal, the Cooperative Portal, the VillageFund
+  Portal, and the Logistics Portal are all now built end-to-end (backend +
+  frontend, tested), and organizations can now both self-register and be
+  approved through the API — closing the loop that was the previous "Next
+  steps" headline item. The natural next candidates are the gaps just
+  above, or a fresh vertical slice (e.g. a `Mill` portal) reusing the same
+  patterns established here.

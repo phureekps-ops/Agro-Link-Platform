@@ -1224,6 +1224,7 @@ document.getElementById("finishedGoodsSection").addEventListener("click", async 
 // ---------- การขนส่ง (M13) ----------
 let carriersCache = []; // flat carrier list (active + inactive), for the shipment form's carrier picker
 let vehiclesCache = []; // flat vehicle list across all carriers, for the shipment form's vehicle picker
+let linkableOrgsCache = []; // GET /coop/logistics/linkable-orgs — Verified 'Logistics' orgs a carrier record can be linked to (see grant_logistics_portal.sql)
 let shipLotsAvailableCache = []; // from GET /coop/logistics/lots-available — already nets out processing AND other shipments
 let shipFinishedGoodsCache = []; // GET /coop/processing/finished-goods, filtered client-side to quantity_on_hand_ton > 0
 
@@ -1247,10 +1248,29 @@ function carrierCard(c) {
     ? `<div class="detail-line muted">ยังไม่มียานพาหนะ</div>`
     : c.vehicles.map((v) => `<div class="detail-line">${escapeHtml(VEHICLE_TYPE_LABEL_TH[v.vehicle_type] || v.vehicle_type)} — ทะเบียน ${escapeHtml(v.license_plate)}${v.capacity_ton ? ` (${Number(v.capacity_ton).toLocaleString("th-TH")} ตัน)` : ""}</div>`).join("");
 
+  // Whether/who this carrier is linked to — see grant_logistics_portal.sql.
+  // A linked carrier's org can log into frontend/logistics/ and see/act on
+  // shipments this cooperative assigns to it.
+  const linkStatusHtml = c.linked_org_id
+    ? `<div class="detail-line">🔗 ผูกกับบัญชี: ${escapeHtml(c.linked_org_name || c.linked_org_id)}</div>`
+    : `<div class="detail-line muted">ยังไม่ได้ผูกกับบัญชีองค์กรขนส่งใด (ผู้ขนส่งนี้ยังเข้าพอร์ทัลของตัวเองไม่ได้)</div>`;
+  const linkOrgOptions = linkableOrgsCache
+    .map((o) => `<option value="${o.org_id}" ${o.org_id === c.linked_org_id ? "selected" : ""}>${escapeHtml(o.org_name)}</option>`).join("");
+  const linkActionRow = `
+    <div class="action-row">
+      <select class="reject-reason-input" data-link-org-select-for="${c.carrier_id}">
+        <option value="">-- ไม่ผูก --</option>
+        ${linkOrgOptions}
+      </select>
+      <button type="button" class="btn btn-ghost btn-sm" data-link-carrier="${c.carrier_id}">${c.linked_org_id ? "เปลี่ยน/ยกเลิกการผูกบัญชี" : "ผูกบัญชี"}</button>
+    </div>
+  `;
+
   return `
     <div class="item-card" data-carrier-id="${c.carrier_id}">
       <div class="row"><span class="title">${escapeHtml(c.carrier_name)}</span>${badge}</div>
       ${c.contact_phone ? `<div class="detail-line muted">เบอร์ติดต่อ: ${escapeHtml(c.contact_phone)}</div>` : ""}
+      ${linkStatusHtml}
       ${vehiclesHtml}
       <div class="action-row">
         <select class="reject-reason-input" data-vehicle-type-for="${c.carrier_id}">
@@ -1263,8 +1283,23 @@ function carrierCard(c) {
         <input type="number" min="0.01" step="0.01" class="reject-reason-input" data-vehicle-capacity-for="${c.carrier_id}" placeholder="ความจุ (ตัน) ไม่บังคับ" />
         <button type="button" class="btn btn-ghost btn-sm" data-add-vehicle="${c.carrier_id}">เพิ่มยานพาหนะ</button>
       </div>
+      ${linkActionRow}
     </div>
   `;
+}
+
+/** Loads Verified 'Logistics' orgs a carrier can be linked to. Called once
+ * up front (see refreshLogistics) and re-used by both the "add carrier"
+ * form's own select and every carrier card's link/unlink select. */
+async function loadLinkableOrgs() {
+  try {
+    linkableOrgsCache = await AgroLinkCoopAPI.get("/coop/logistics/linkable-orgs");
+  } catch (err) {
+    linkableOrgsCache = [];
+  }
+  const select = document.getElementById("carrierLinkedOrgSelect");
+  select.innerHTML = `<option value="">-- ไม่ผูก (พิมพ์ชื่อเองด้านบน) --</option>` +
+    linkableOrgsCache.map((o) => `<option value="${o.org_id}">${escapeHtml(o.org_name)}</option>`).join("");
 }
 
 async function loadCarriers() {
@@ -1305,6 +1340,7 @@ document.getElementById("carrierForm").addEventListener("submit", async (e) => {
   const carrierName = document.getElementById("carrierNameInput").value.trim();
   const carrierType = document.getElementById("carrierTypeSelect").value;
   const contactPhone = document.getElementById("carrierPhoneInput").value.trim();
+  const linkedOrgId = document.getElementById("carrierLinkedOrgSelect").value;
 
   if (!carrierName) {
     toast("กรุณากรอกชื่อผู้ขนส่ง", true);
@@ -1316,6 +1352,7 @@ document.getElementById("carrierForm").addEventListener("submit", async (e) => {
   try {
     await AgroLinkCoopAPI.post("/coop/logistics/carriers", {
       carrier_name: carrierName, carrier_type: carrierType, contact_phone: contactPhone || undefined,
+      linked_org_id: linkedOrgId || undefined,
     });
     toast("เพิ่มผู้ขนส่งเรียบร้อยแล้ว");
     document.getElementById("carrierForm").reset();
@@ -1324,6 +1361,24 @@ document.getElementById("carrierForm").addEventListener("submit", async (e) => {
     toast("เพิ่มผู้ขนส่งไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
   } finally {
     btn.disabled = false;
+  }
+});
+
+document.getElementById("carrierListSection").addEventListener("click", async (e) => {
+  const linkBtn = e.target.closest("[data-link-carrier]");
+  if (!linkBtn) return;
+
+  const carrierId = linkBtn.dataset.linkCarrier;
+  const linkedOrgId = document.querySelector(`[data-link-org-select-for="${carrierId}"]`).value;
+
+  linkBtn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/logistics/carriers/${carrierId}/link`, { linked_org_id: linkedOrgId || null });
+    toast(linkedOrgId ? "ผูกบัญชีเรียบร้อยแล้ว" : "ยกเลิกการผูกบัญชีเรียบร้อยแล้ว");
+    await loadCarriers();
+  } catch (err) {
+    toast("ผูกบัญชีไม่สำเร็จ: " + (err.body && err.body.detail ? err.body.detail : err.message), true);
+    linkBtn.disabled = false;
   }
 });
 
@@ -1502,6 +1557,7 @@ async function loadShipments() {
 async function refreshLogistics() {
   await loadShipLotsAvailable();
   await loadShipFinishedGoods();
+  await loadLinkableOrgs();
   await loadCarriers();
   await loadShipments();
   // A shipment mutation can change a lot's/finished-good's availability for

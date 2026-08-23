@@ -228,6 +228,16 @@
           <label for="carrierPhoneInput">เบอร์ติดต่อ (ถ้ามี)</label>
           <input type="text" id="carrierPhoneInput" placeholder="เช่น 081-234-5678" />
         </div>
+        <div class="field">
+          <label for="carrierLinkedOrgSelect">ผูกกับบัญชีองค์กรขนส่งที่สมัครสมาชิกแล้ว (ถ้ามี)</label>
+          <select id="carrierLinkedOrgSelect">
+            <option value="">-- ไม่ผูก (พิมพ์ชื่อเองด้านบน) --</option>
+          </select>
+          <div class="hint">
+            เมื่อผูกบัญชีแล้ว องค์กรขนส่งนั้นจะเข้าสู่ระบบพอร์ทัลผู้ให้บริการขนส่งของตนเอง (frontend/logistics/) และเห็นงานที่ท่านมอบหมายให้ได้เอง —
+            เลือกได้เฉพาะองค์กรประเภท "โลจิสติกส์/ขนส่งทั่วไป" ที่ผ่านการตรวจสอบ (KYB) แล้ว
+          </div>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary" id="carrierSubmitBtn" style="max-width:220px;">เพิ่มผู้ขนส่ง</button>
     </form>

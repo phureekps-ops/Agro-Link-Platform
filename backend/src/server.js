@@ -33,6 +33,13 @@ const procurementRouter = require('./routes/procurement');
 // Cooperative, Lender, and VillageFund portals in this pass.
 const farmer360Router = require('./routes/farmer360');
 const villageFundRouter = require('./routes/villagefund');
+// logistics.js — Logistics org self-service portal (see
+// grant_logistics_portal.sql). A brand new org-facing portal for a
+// self-registered org_type='Logistics' trucking company to see/act on
+// shipments a cooperative has linked its carrier record to — its own
+// prefix, distinct from '/coop' (coopcollection.js), which is the
+// cooperative's own side of the exact same logistics.* schema.
+const logisticsRouter = require('./routes/logistics');
 
 const app = express();
 
@@ -100,6 +107,7 @@ app.use('/storage', storageRouter);
 app.use('/procurement', procurementRouter);
 app.use('/farmer360', farmer360Router);
 app.use('/villagefund', villageFundRouter);
+app.use('/logistics', logisticsRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/marketvenue', marketVenueRouter);

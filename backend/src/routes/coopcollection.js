@@ -1512,6 +1512,43 @@ const VEHICLE_TYPES = ['Truck', 'Pickup', 'Trailer', 'Other'];
 const EXCEPTION_TYPES = ['Damage', 'Shortage', 'Delay', 'Rejected', 'Other'];
 
 /**
+ * GET /coop/logistics/linkable-orgs?q=... — Verified 'Logistics' orgs this
+ * cooperative can link a carrier record to (see grant_logistics_portal.sql).
+ * Optional ?q= filters org_name case-insensitively (ILIKE); with no q,
+ * returns the full list (expected to stay small in practice). This is a
+ * plain directory lookup — identity.organization has no RLS at all (every
+ * other portal's own "browse other verified orgs" list, e.g. GET
+ * /farmer/lenders, reads it the same way) — so it's fine to expose beyond
+ * this cooperative's own data.
+ */
+router.get('/logistics/linkable-orgs', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { q } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [];
+      let filter = '';
+      if (q) {
+        params.push(`%${q}%`);
+        filter = 'AND org_name ILIKE $1';
+      }
+      const result = await client.query(
+        `SELECT org_id, org_name, tax_id
+           FROM identity.organization
+          WHERE org_type = 'Logistics' AND kyb_status = 'Verified' ${filter}
+          ORDER BY org_name
+          LIMIT 50`,
+        params,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * GET /coop/logistics/carriers — this cooperative's transport providers,
  * each with its vehicle count.
  */
@@ -1521,11 +1558,13 @@ router.get('/logistics/carriers', async (req, res, next) => {
     const rows = await withSessionContext('organization', subjectId, async (client) => {
       const result = await client.query(
         `SELECT c.carrier_id, c.carrier_name, c.carrier_type, c.contact_phone, c.status, c.created_at,
+                c.linked_org_id, lo.org_name AS linked_org_name,
                 COUNT(v.vehicle_id)::int AS vehicle_count
            FROM logistics.carrier c
            LEFT JOIN logistics.vehicle v ON v.carrier_id = c.carrier_id
+           LEFT JOIN identity.organization lo ON lo.org_id = c.linked_org_id
           WHERE c.org_id = $1
-          GROUP BY c.carrier_id
+          GROUP BY c.carrier_id, lo.org_name
           ORDER BY c.created_at DESC`,
         [subjectId],
       );
@@ -1539,11 +1578,22 @@ router.get('/logistics/carriers', async (req, res, next) => {
 
 /**
  * POST /coop/logistics/carriers — register a new transport provider.
- * Body: { carrier_name, carrier_type: Internal|ThirdParty, contact_phone? }
+ * Body: { carrier_name, carrier_type: Internal|ThirdParty, contact_phone?,
+ *         linked_org_id? } — linked_org_id (added alongside
+ * grant_logistics_portal.sql) optionally ties this carrier record to a
+ * real, self-registered org_type='Logistics' organization (must be
+ * kyb_status='Verified' — see logistics.assert_linkable_logistics_org), so
+ * that organization can log into its own portal (frontend/logistics/) and
+ * see shipments this cooperative assigns to it. Leave unset for a plain
+ * free-text carrier (a member's own truck, a company that isn't itself a
+ * platform user) exactly as before this feature.
  */
 router.post('/logistics/carriers', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { carrier_name: carrierName, carrier_type: carrierType, contact_phone: contactPhone } = req.body || {};
+  const {
+    carrier_name: carrierName, carrier_type: carrierType, contact_phone: contactPhone,
+    linked_org_id: linkedOrgId,
+  } = req.body || {};
 
   if (!carrierName || !carrierType) {
     return res.status(400).json({ error: 'missing_required_fields', required: ['carrier_name', 'carrier_type'] });
@@ -1553,15 +1603,53 @@ router.post('/logistics/carriers', async (req, res, next) => {
   }
 
   try {
-    const carrierId = await withSessionContext('organization', subjectId, async (client) => {
-      const { rows } = await client.query(
-        'SELECT logistics.create_carrier($1, $2, $3, $4) AS carrier_id',
-        [subjectId, carrierName, carrierType, contactPhone || null],
-      );
-      await logAccess(client, 'write', 'logistics.carrier', rows[0].carrier_id);
-      return rows[0].carrier_id;
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT logistics.create_carrier($1, $2, $3, $4, $5) AS carrier_id',
+          [subjectId, carrierName, carrierType, contactPhone || null, linkedOrgId || null],
+        );
+        await logAccess(client, 'write', 'logistics.carrier', rows[0].carrier_id);
+        return { carrierId: rows[0].carrier_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
     });
-    return res.status(201).json({ carrier_id: carrierId });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_create_carrier', detail: result.businessError });
+    return res.status(201).json({ carrier_id: result.carrierId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/logistics/carriers/:id/link — link (or, with linked_org_id:
+ * null, unlink) an EXISTING carrier record to a real Logistics org after
+ * the fact — for a carrier that was typed in as free text before that org
+ * ever self-registered, or before this feature existed at all.
+ * Body: { linked_org_id: uuid | null }
+ */
+router.post('/logistics/carriers/:id/link', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { linked_org_id: linkedOrgId } = req.body || {};
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (!(await assertCarrierOwned(client, subjectId, id))) return { carrierNotFound: true };
+
+      try {
+        await client.query('SELECT logistics.link_carrier_org($1, $2)', [id, linkedOrgId || null]);
+        await logAccess(client, 'write', 'logistics.carrier', id);
+        return { ok: true };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.carrierNotFound) return res.status(404).json({ error: 'carrier_not_found' });
+    if (result.businessError) return res.status(409).json({ error: 'cannot_link_carrier', detail: result.businessError });
+    return res.json({ linked: linkedOrgId ? true : false });
   } catch (err) {
     return next(err);
   }
@@ -1576,7 +1664,11 @@ router.get('/logistics/carriers/:id', async (req, res, next) => {
   try {
     const result = await withSessionContext('organization', subjectId, async (client) => {
       const carrier = await client.query(
-        'SELECT carrier_id, carrier_name, carrier_type, contact_phone, status, created_at FROM logistics.carrier WHERE carrier_id = $1 AND org_id = $2',
+        `SELECT c.carrier_id, c.carrier_name, c.carrier_type, c.contact_phone, c.status, c.created_at,
+                c.linked_org_id, lo.org_name AS linked_org_name
+           FROM logistics.carrier c
+           LEFT JOIN identity.organization lo ON lo.org_id = c.linked_org_id
+          WHERE c.carrier_id = $1 AND c.org_id = $2`,
         [id, subjectId],
       );
       if (carrier.rows.length === 0) return null;
