@@ -47,9 +47,19 @@ function toGeoJSONPolygon(latlngs) {
 
 // ---------- แผนที่ ----------
 const map = L.map("plotMap").setView([15.87, 100.99], 6); // ศูนย์กลางประเทศไทย
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+
+// ภาพถ่ายดาวเทียม/มุมสูง (Esri World Imagery) — ฟรี ไม่ต้องมี API key/บัญชี
+// ผูกบัตร ต่างจาก Google Maps ตรงที่ไม่มีโควตา/ค่าใช้จ่ายให้ต้องจัดการ
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
   maxZoom: 19,
-  attribution: "&copy; OpenStreetMap contributors",
+  attribution: "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+}).addTo(map);
+
+// ชั้นป้ายชื่อสถานที่/ถนน/เขตแดน ซ้อนทับบนภาพถ่ายดาวเทียม ให้ได้อารมณ์คล้ายโหมด
+// "ไฮบริด" (satellite + labels) ของ Google Maps โดยไม่ต้องพึ่ง Google เลย
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19,
+  attribution: "Esri",
 }).addTo(map);
 
 let points = []; // array of L.LatLng, while still drawing
