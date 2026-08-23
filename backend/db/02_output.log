@@ -1,0 +1,389 @@
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+psql:02_full_schema.sql:24: ERROR:  schema "audit" already exists
+psql:02_full_schema.sql:31: ERROR:  schema "contract" already exists
+psql:02_full_schema.sql:38: ERROR:  schema "credit" already exists
+psql:02_full_schema.sql:45: ERROR:  schema "identity" already exists
+psql:02_full_schema.sql:52: ERROR:  schema "ledger" already exists
+psql:02_full_schema.sql:59: ERROR:  schema "marketplace" already exists
+psql:02_full_schema.sql:66: ERROR:  schema "monitoring" already exists
+psql:02_full_schema.sql:73: ERROR:  schema "notification" already exists
+psql:02_full_schema.sql:80: ERROR:  schema "ops" already exists
+psql:02_full_schema.sql:87: ERROR:  schema "partner" already exists
+psql:02_full_schema.sql:94: ERROR:  schema "produce" already exists
+psql:02_full_schema.sql:101: ERROR:  schema "production" already exists
+psql:02_full_schema.sql:108: ERROR:  schema "registry" already exists
+psql:02_full_schema.sql:115: ERROR:  schema "reporting" already exists
+psql:02_full_schema.sql:122: ERROR:  schema "retention" already exists
+psql:02_full_schema.sql:129: ERROR:  schema "risk" already exists
+psql:02_full_schema.sql:136: ERROR:  schema "security" already exists
+psql:02_full_schema.sql:143: ERROR:  schema "traceability" already exists
+psql:02_full_schema.sql:150: ERROR:  schema "underwriting" already exists
+psql:02_full_schema.sql:173: ERROR:  function "log_access" already exists with same argument types
+psql:02_full_schema.sql:195: ERROR:  function "fn_check_party_owner" already exists with same argument types
+psql:02_full_schema.sql:212: ERROR:  function "fn_log_status_change" already exists with same argument types
+psql:02_full_schema.sql:299: ERROR:  function "sign_contract" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:333: ERROR:  function "terminate_contract" already exists with same argument types
+psql:02_full_schema.sql:404: ERROR:  function "repay_loan" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:433: ERROR:  function "fn_check_verification_subject" already exists with same argument types
+psql:02_full_schema.sql:455: ERROR:  function "fn_check_account_owner" already exists with same argument types
+psql:02_full_schema.sql:483: ERROR:  function "fn_check_entry_balanced" already exists with same argument types
+psql:02_full_schema.sql:512: ERROR:  function "hold_escrow" already exists with same argument types
+psql:02_full_schema.sql:543: ERROR:  function "release_escrow" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:601: ERROR:  function "transfer_funds" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:630: ERROR:  function "accept_service_request" already exists with same argument types
+psql:02_full_schema.sql:685: ERROR:  function "complete_service_request" already exists with same argument types
+psql:02_full_schema.sql:716: ERROR:  function "request_service" already exists with same argument types
+psql:02_full_schema.sql:735: ERROR:  function "acknowledge_alert" already exists with same argument types
+psql:02_full_schema.sql:788: ERROR:  function "evaluate_metric" already exists with same argument types
+psql:02_full_schema.sql:819: ERROR:  function "fn_notify_application_decision" already exists with same argument types
+psql:02_full_schema.sql:841: ERROR:  function "fn_notify_contract_status" already exists with same argument types
+psql:02_full_schema.sql:863: ERROR:  function "fn_notify_late_repayment" already exists with same argument types
+psql:02_full_schema.sql:885: ERROR:  function "fn_notify_low_score" already exists with same argument types
+psql:02_full_schema.sql:903: ERROR:  function "notify" already exists with same argument types
+psql:02_full_schema.sql:925: ERROR:  function "record_backup" already exists with same argument types
+psql:02_full_schema.sql:947: ERROR:  function "record_benchmark" already exists with same argument types
+psql:02_full_schema.sql:971: ERROR:  function "record_query_observation" already exists with same argument types
+psql:02_full_schema.sql:997: ERROR:  function "record_restore_test" already exists with same argument types
+psql:02_full_schema.sql:1016: ERROR:  function "activate_vendor" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:1086: ERROR:  function "activate_vendor_role" already exists with same argument types
+psql:02_full_schema.sql:1112: ERROR:  function "confirm_quality" already exists with same argument types
+psql:02_full_schema.sql:1156: ERROR:  function "record_delivery" already exists with same argument types
+psql:02_full_schema.sql:1225: ERROR:  function "settle_delivery" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:1277: ERROR:  function "generate_stage_calendar" already exists with same argument types
+psql:02_full_schema.sql:1352: ERROR:  function "verify_stage" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:1394: ERROR:  function "purge_expired_rows" already exists with same argument types
+psql:02_full_schema.sql:1416: ERROR:  function "compute_all_scores" already exists with same argument types
+psql:02_full_schema.sql:1532: ERROR:  function "compute_credit_score" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:1569: ERROR:  function "link_external_identity" already exists with same argument types
+psql:02_full_schema.sql:1585: ERROR:  function "resolve_subject_from_external_claim" already exists with same argument types
+psql:02_full_schema.sql:1615: ERROR:  function "set_session_context" already exists with same argument types
+psql:02_full_schema.sql:1659: ERROR:  function "issue_certificate" already exists with same argument types
+COMMENT
+psql:02_full_schema.sql:1709: ERROR:  function "approve_application" already exists with same argument types
+psql:02_full_schema.sql:1738: ERROR:  function "decline_application" already exists with same argument types
+psql:02_full_schema.sql:1800: ERROR:  function "evaluate_application" already exists with same argument types
+psql:02_full_schema.sql:1845: ERROR:  function "submit_application" already exists with same argument types
+SET
+SET
+psql:02_full_schema.sql:1866: ERROR:  relation "access_log" already exists
+COMMENT
+psql:02_full_schema.sql:1894: ERROR:  relation "farmer" already exists
+COMMENT
+COMMENT
+psql:02_full_schema.sql:1927: ERROR:  relation "organization" already exists
+COMMENT
+psql:02_full_schema.sql:1957: ERROR:  relation "v_recent_access" already exists
+psql:02_full_schema.sql:1983: ERROR:  relation "contract" already exists
+ALTER TABLE
+psql:02_full_schema.sql:2001: ERROR:  relation "contract_party" already exists
+psql:02_full_schema.sql:2015: ERROR:  relation "contract_status_history" already exists
+psql:02_full_schema.sql:2030: ERROR:  relation "digital_signature" already exists
+psql:02_full_schema.sql:2047: ERROR:  relation "v_contract_signature_status" already exists
+psql:02_full_schema.sql:2065: ERROR:  relation "loan_repayment" already exists
+psql:02_full_schema.sql:2083: ERROR:  relation "v_repayment_summary" already exists
+psql:02_full_schema.sql:2105: ERROR:  relation "identity_verification" already exists
+COMMENT
+psql:02_full_schema.sql:2128: ERROR:  relation "organization_member" already exists
+COMMENT
+psql:02_full_schema.sql:2151: ERROR:  relation "organization_role" already exists
+psql:02_full_schema.sql:2161: ERROR:  relation "role" already exists
+psql:02_full_schema.sql:2174: ERROR:  relation "subject_role" already exists
+COMMENT
+psql:02_full_schema.sql:2199: ERROR:  relation "verifiable_credential" already exists
+COMMENT
+psql:02_full_schema.sql:2225: ERROR:  relation "account" already exists
+COMMENT
+psql:02_full_schema.sql:2252: ERROR:  relation "escrow_hold" already exists
+COMMENT
+psql:02_full_schema.sql:2277: ERROR:  relation "journal_entry" already exists
+COMMENT
+psql:02_full_schema.sql:2301: ERROR:  relation "journal_line" already exists
+COMMENT
+psql:02_full_schema.sql:2324: ERROR:  relation "v_account_balance" already exists
+COMMENT
+psql:02_full_schema.sql:2349: ERROR:  relation "v_reconciliation_summary" already exists
+COMMENT
+psql:02_full_schema.sql:2372: ERROR:  relation "v_unbalanced_entries" already exists
+COMMENT
+psql:02_full_schema.sql:2394: ERROR:  relation "buy_price_quote" already exists
+psql:02_full_schema.sql:2416: ERROR:  relation "product_listing" already exists
+psql:02_full_schema.sql:2445: ERROR:  relation "product_order" already exists
+psql:02_full_schema.sql:2459: ERROR:  relation "product_photo" already exists
+psql:02_full_schema.sql:2480: ERROR:  relation "service_listing" already exists
+psql:02_full_schema.sql:2501: ERROR:  relation "service_request" already exists
+psql:02_full_schema.sql:2520: ERROR:  relation "v_service_request_status" already exists
+psql:02_full_schema.sql:2535: ERROR:  relation "vendor_photo" already exists
+psql:02_full_schema.sql:2552: ERROR:  relation "alert_event" already exists
+COMMENT
+psql:02_full_schema.sql:2574: ERROR:  relation "go_live_checklist" already exists
+COMMENT
+psql:02_full_schema.sql:2595: ERROR:  relation "metric_observation" already exists
+psql:02_full_schema.sql:2612: ERROR:  relation "metric_threshold" already exists
+COMMENT
+psql:02_full_schema.sql:2638: ERROR:  relation "v_active_alerts" already exists
+psql:02_full_schema.sql:2651: ERROR:  relation "v_go_live_readiness" already exists
+psql:02_full_schema.sql:2669: ERROR:  relation "notification_log" already exists
+COMMENT
+psql:02_full_schema.sql:2698: ERROR:  relation "v_unread_notifications" already exists
+psql:02_full_schema.sql:2718: ERROR:  relation "backup_log" already exists
+COMMENT
+psql:02_full_schema.sql:2742: ERROR:  relation "performance_benchmark" already exists
+COMMENT
+psql:02_full_schema.sql:2765: ERROR:  relation "query_observation" already exists
+COMMENT
+psql:02_full_schema.sql:2791: ERROR:  relation "restore_test_log" already exists
+COMMENT
+psql:02_full_schema.sql:2820: ERROR:  relation "v_backup_restore_summary" already exists
+psql:02_full_schema.sql:2843: ERROR:  relation "production_unit" already exists
+COMMENT
+COMMENT
+psql:02_full_schema.sql:2874: ERROR:  relation "credit_score" already exists
+ALTER TABLE
+COMMENT
+psql:02_full_schema.sql:2908: ERROR:  relation "loan_application" already exists
+ALTER TABLE
+psql:02_full_schema.sql:2941: ERROR:  relation "v_integrity_checksum" already exists
+COMMENT
+psql:02_full_schema.sql:2962: ERROR:  relation "v_query_improvement" already exists
+COMMENT
+psql:02_full_schema.sql:2990: ERROR:  relation "vendor_profile" already exists
+COMMENT
+psql:02_full_schema.sql:3014: ERROR:  relation "v_vendor_directory" already exists
+psql:02_full_schema.sql:3030: ERROR:  relation "vendor_document" already exists
+psql:02_full_schema.sql:3058: ERROR:  relation "delivery" already exists
+psql:02_full_schema.sql:3078: ERROR:  relation "v_delivery_status" already exists
+psql:02_full_schema.sql:3096: ERROR:  relation "crop_cycle" already exists
+psql:02_full_schema.sql:3115: ERROR:  relation "stage_calendar" already exists
+psql:02_full_schema.sql:3130: ERROR:  relation "stage_template" already exists
+psql:02_full_schema.sql:3150: ERROR:  relation "v_stage_calendar_status" already exists
+psql:02_full_schema.sql:3161: ERROR:  relation "commodity_ref" already exists
+COMMENT
+psql:02_full_schema.sql:3183: ERROR:  relation "farmbook_sync_log" already exists
+COMMENT
+psql:02_full_schema.sql:3207: ERROR:  relation "production_cycle_history" already exists
+COMMENT
+psql:02_full_schema.sql:3225: ERROR:  relation "rice_grade_ref" already exists
+psql:02_full_schema.sql:3237: ERROR:  relation "v_exit_criteria_pilot_plots" already exists
+COMMENT
+psql:02_full_schema.sql:3261: ERROR:  relation "v_farmer_latest_score" already exists
+psql:02_full_schema.sql:3281: ERROR:  relation "certificate" already exists
+psql:02_full_schema.sql:3340: ERROR:  relation "v_executive_summary" already exists
+psql:02_full_schema.sql:3379: ERROR:  relation "v_farmer_360" already exists
+psql:02_full_schema.sql:3396: ERROR:  relation "retention_policy" already exists
+COMMENT
+psql:02_full_schema.sql:3419: ERROR:  relation "v_retention_status" already exists
+psql:02_full_schema.sql:3428: ERROR:  relation "v_current_session" already exists
+psql:02_full_schema.sql:3457: ERROR:  relation "v_certificate_trace" already exists
+psql:02_full_schema.sql:3474: ERROR:  relation "loan_policy" already exists
+COMMENT
+psql:02_full_schema.sql:3504: ERROR:  relation "v_application_status" already exists
+psql:02_full_schema.sql:3512: ERROR:  multiple primary keys for table "access_log" are not allowed
+psql:02_full_schema.sql:3520: ERROR:  multiple primary keys for table "contract_party" are not allowed
+psql:02_full_schema.sql:3528: ERROR:  multiple primary keys for table "contract" are not allowed
+psql:02_full_schema.sql:3536: ERROR:  multiple primary keys for table "contract_status_history" are not allowed
+psql:02_full_schema.sql:3544: ERROR:  relation "digital_signature_contract_party_id_key" already exists
+psql:02_full_schema.sql:3552: ERROR:  multiple primary keys for table "digital_signature" are not allowed
+psql:02_full_schema.sql:3560: ERROR:  relation "uq_contract_party" already exists
+psql:02_full_schema.sql:3568: ERROR:  multiple primary keys for table "loan_repayment" are not allowed
+psql:02_full_schema.sql:3576: ERROR:  relation "farmer_auth_subject_id_key" already exists
+psql:02_full_schema.sql:3584: ERROR:  multiple primary keys for table "farmer" are not allowed
+psql:02_full_schema.sql:3592: ERROR:  multiple primary keys for table "identity_verification" are not allowed
+psql:02_full_schema.sql:3600: ERROR:  relation "organization_auth_subject_id_key" already exists
+psql:02_full_schema.sql:3608: ERROR:  multiple primary keys for table "organization_member" are not allowed
+psql:02_full_schema.sql:3616: ERROR:  multiple primary keys for table "organization" are not allowed
+psql:02_full_schema.sql:3624: ERROR:  multiple primary keys for table "organization_role" are not allowed
+psql:02_full_schema.sql:3632: ERROR:  multiple primary keys for table "role" are not allowed
+psql:02_full_schema.sql:3640: ERROR:  multiple primary keys for table "subject_role" are not allowed
+psql:02_full_schema.sql:3648: ERROR:  relation "uq_farmer_national_id_hash" already exists
+psql:02_full_schema.sql:3656: ERROR:  relation "uq_farmer_phone" already exists
+psql:02_full_schema.sql:3664: ERROR:  relation "uq_organization_tax_id" already exists
+psql:02_full_schema.sql:3672: ERROR:  multiple primary keys for table "verifiable_credential" are not allowed
+psql:02_full_schema.sql:3680: ERROR:  multiple primary keys for table "account" are not allowed
+psql:02_full_schema.sql:3688: ERROR:  multiple primary keys for table "escrow_hold" are not allowed
+psql:02_full_schema.sql:3696: ERROR:  multiple primary keys for table "journal_entry" are not allowed
+psql:02_full_schema.sql:3704: ERROR:  multiple primary keys for table "journal_line" are not allowed
+psql:02_full_schema.sql:3712: ERROR:  multiple primary keys for table "buy_price_quote" are not allowed
+psql:02_full_schema.sql:3720: ERROR:  multiple primary keys for table "product_listing" are not allowed
+psql:02_full_schema.sql:3728: ERROR:  multiple primary keys for table "product_order" are not allowed
+psql:02_full_schema.sql:3736: ERROR:  multiple primary keys for table "product_photo" are not allowed
+psql:02_full_schema.sql:3744: ERROR:  multiple primary keys for table "service_listing" are not allowed
+psql:02_full_schema.sql:3752: ERROR:  multiple primary keys for table "service_request" are not allowed
+psql:02_full_schema.sql:3760: ERROR:  multiple primary keys for table "vendor_photo" are not allowed
+psql:02_full_schema.sql:3768: ERROR:  multiple primary keys for table "alert_event" are not allowed
+psql:02_full_schema.sql:3776: ERROR:  multiple primary keys for table "go_live_checklist" are not allowed
+psql:02_full_schema.sql:3784: ERROR:  multiple primary keys for table "metric_observation" are not allowed
+psql:02_full_schema.sql:3792: ERROR:  multiple primary keys for table "metric_threshold" are not allowed
+psql:02_full_schema.sql:3800: ERROR:  multiple primary keys for table "notification_log" are not allowed
+psql:02_full_schema.sql:3808: ERROR:  multiple primary keys for table "backup_log" are not allowed
+psql:02_full_schema.sql:3816: ERROR:  multiple primary keys for table "performance_benchmark" are not allowed
+psql:02_full_schema.sql:3824: ERROR:  multiple primary keys for table "query_observation" are not allowed
+psql:02_full_schema.sql:3832: ERROR:  multiple primary keys for table "restore_test_log" are not allowed
+psql:02_full_schema.sql:3840: ERROR:  relation "uq_vendor_business_registration_no" already exists
+psql:02_full_schema.sql:3848: ERROR:  multiple primary keys for table "vendor_document" are not allowed
+psql:02_full_schema.sql:3856: ERROR:  multiple primary keys for table "vendor_profile" are not allowed
+psql:02_full_schema.sql:3864: ERROR:  multiple primary keys for table "delivery" are not allowed
+psql:02_full_schema.sql:3872: ERROR:  multiple primary keys for table "crop_cycle" are not allowed
+psql:02_full_schema.sql:3880: ERROR:  multiple primary keys for table "stage_calendar" are not allowed
+psql:02_full_schema.sql:3888: ERROR:  multiple primary keys for table "stage_template" are not allowed
+psql:02_full_schema.sql:3896: ERROR:  relation "uq_stage_calendar" already exists
+psql:02_full_schema.sql:3904: ERROR:  relation "uq_stage_template" already exists
+psql:02_full_schema.sql:3912: ERROR:  multiple primary keys for table "commodity_ref" are not allowed
+psql:02_full_schema.sql:3920: ERROR:  multiple primary keys for table "farmbook_sync_log" are not allowed
+psql:02_full_schema.sql:3928: ERROR:  multiple primary keys for table "production_cycle_history" are not allowed
+psql:02_full_schema.sql:3936: ERROR:  multiple primary keys for table "production_unit" are not allowed
+psql:02_full_schema.sql:3944: ERROR:  multiple primary keys for table "rice_grade_ref" are not allowed
+psql:02_full_schema.sql:3952: ERROR:  multiple primary keys for table "retention_policy" are not allowed
+psql:02_full_schema.sql:3960: ERROR:  relation "retention_policy_table_schema_table_name_key" already exists
+psql:02_full_schema.sql:3968: ERROR:  multiple primary keys for table "credit_score" are not allowed
+psql:02_full_schema.sql:3976: ERROR:  multiple primary keys for table "certificate" are not allowed
+psql:02_full_schema.sql:3984: ERROR:  multiple primary keys for table "loan_application" are not allowed
+psql:02_full_schema.sql:3992: ERROR:  multiple primary keys for table "loan_policy" are not allowed
+psql:02_full_schema.sql:3999: ERROR:  relation "idx_access_log_occurred_at" already exists
+psql:02_full_schema.sql:4006: ERROR:  relation "idx_access_log_resource" already exists
+psql:02_full_schema.sql:4013: ERROR:  relation "idx_access_log_subject" already exists
+psql:02_full_schema.sql:4020: ERROR:  relation "idx_contract_party_contract" already exists
+psql:02_full_schema.sql:4027: ERROR:  relation "idx_loan_repayment_contract" already exists
+psql:02_full_schema.sql:4034: ERROR:  relation "idx_identity_verification_subject" already exists
+psql:02_full_schema.sql:4041: ERROR:  relation "idx_organization_role_status" already exists
+psql:02_full_schema.sql:4048: ERROR:  relation "idx_vc_holder" already exists
+psql:02_full_schema.sql:4055: ERROR:  relation "idx_account_owner" already exists
+psql:02_full_schema.sql:4062: ERROR:  relation "idx_escrow_unit" already exists
+psql:02_full_schema.sql:4069: ERROR:  relation "idx_journal_entry_posted_at" already exists
+psql:02_full_schema.sql:4076: ERROR:  relation "idx_journal_entry_reference" already exists
+psql:02_full_schema.sql:4083: ERROR:  relation "idx_journal_line_account" already exists
+psql:02_full_schema.sql:4090: ERROR:  relation "idx_journal_line_entry" already exists
+psql:02_full_schema.sql:4097: ERROR:  relation "uq_unit_wallet_per_unit" already exists
+psql:02_full_schema.sql:4104: ERROR:  relation "idx_buy_price_quote_grade_active" already exists
+psql:02_full_schema.sql:4111: ERROR:  relation "idx_product_listing_org" already exists
+psql:02_full_schema.sql:4118: ERROR:  relation "idx_product_listing_org_category" already exists
+psql:02_full_schema.sql:4125: ERROR:  relation "idx_product_order_farmer" already exists
+psql:02_full_schema.sql:4132: ERROR:  relation "idx_product_order_listing" already exists
+psql:02_full_schema.sql:4139: ERROR:  relation "idx_product_order_org" already exists
+psql:02_full_schema.sql:4146: ERROR:  relation "idx_product_photo_listing" already exists
+psql:02_full_schema.sql:4153: ERROR:  relation "idx_product_photo_org" already exists
+psql:02_full_schema.sql:4160: ERROR:  relation "idx_service_listing_org" already exists
+psql:02_full_schema.sql:4167: ERROR:  relation "idx_service_request_unit" already exists
+psql:02_full_schema.sql:4174: ERROR:  relation "idx_vendor_photo_org" already exists
+psql:02_full_schema.sql:4181: ERROR:  relation "uq_service_listing_org_service_key" already exists
+psql:02_full_schema.sql:4188: ERROR:  relation "idx_alert_event_unacknowledged" already exists
+psql:02_full_schema.sql:4195: ERROR:  relation "idx_metric_observation_name_time" already exists
+psql:02_full_schema.sql:4202: ERROR:  relation "idx_notification_log_subject" already exists
+psql:02_full_schema.sql:4209: ERROR:  relation "idx_notification_log_unread" already exists
+psql:02_full_schema.sql:4216: ERROR:  relation "idx_backup_log_started_at" already exists
+psql:02_full_schema.sql:4223: ERROR:  relation "idx_restore_test_log_backup_id" already exists
+psql:02_full_schema.sql:4230: ERROR:  relation "idx_vendor_document_org" already exists
+psql:02_full_schema.sql:4237: ERROR:  relation "idx_delivery_contract" already exists
+psql:02_full_schema.sql:4244: ERROR:  relation "idx_delivery_unit" already exists
+psql:02_full_schema.sql:4251: ERROR:  relation "idx_crop_cycle_unit" already exists
+psql:02_full_schema.sql:4258: ERROR:  relation "idx_stage_calendar_cycle" already exists
+psql:02_full_schema.sql:4265: ERROR:  relation "idx_cycle_unit" already exists
+psql:02_full_schema.sql:4272: ERROR:  relation "idx_farmbook_sync_farmer" already exists
+psql:02_full_schema.sql:4279: ERROR:  relation "idx_production_unit_boundary" already exists
+psql:02_full_schema.sql:4286: ERROR:  relation "idx_production_unit_owner" already exists
+psql:02_full_schema.sql:4293: ERROR:  relation "idx_credit_score_farmer" already exists
+psql:02_full_schema.sql:4300: ERROR:  relation "idx_certificate_delivery" already exists
+psql:02_full_schema.sql:4307: ERROR:  relation "idx_loan_application_farmer" already exists
+psql:02_full_schema.sql:4314: ERROR:  relation "idx_loan_application_status" already exists
+psql:02_full_schema.sql:4321: ERROR:  trigger "trg_check_contract_party" for relation "contract_party" already exists
+psql:02_full_schema.sql:4328: ERROR:  trigger "trg_log_status_change" for relation "contract" already exists
+psql:02_full_schema.sql:4335: ERROR:  trigger "trg_notify_contract_status" for relation "contract_status_history" already exists
+psql:02_full_schema.sql:4342: ERROR:  trigger "trg_notify_late_repayment" for relation "loan_repayment" already exists
+psql:02_full_schema.sql:4349: ERROR:  trigger "trg_check_verification_subject" for relation "identity_verification" already exists
+psql:02_full_schema.sql:4356: ERROR:  trigger "trg_check_account_owner" for relation "account" already exists
+psql:02_full_schema.sql:4363: ERROR:  trigger "trg_check_entry_balanced" for relation "journal_line" already exists
+psql:02_full_schema.sql:4370: ERROR:  trigger "trg_notify_low_score" for relation "credit_score" already exists
+psql:02_full_schema.sql:4377: ERROR:  trigger "trg_notify_application_decision" for relation "loan_application" already exists
+psql:02_full_schema.sql:4385: ERROR:  constraint "contract_escrow_hold_id_fkey" for relation "contract" already exists
+psql:02_full_schema.sql:4393: ERROR:  constraint "contract_party_contract_id_fkey" for relation "contract_party" already exists
+psql:02_full_schema.sql:4401: ERROR:  constraint "contract_related_unit_id_fkey" for relation "contract" already exists
+psql:02_full_schema.sql:4409: ERROR:  constraint "contract_status_history_contract_id_fkey" for relation "contract_status_history" already exists
+psql:02_full_schema.sql:4417: ERROR:  constraint "digital_signature_contract_party_id_fkey" for relation "digital_signature" already exists
+psql:02_full_schema.sql:4425: ERROR:  constraint "loan_repayment_contract_id_fkey" for relation "loan_repayment" already exists
+psql:02_full_schema.sql:4433: ERROR:  constraint "loan_repayment_settlement_entry_id_fkey" for relation "loan_repayment" already exists
+psql:02_full_schema.sql:4441: ERROR:  constraint "organization_member_farmer_id_fkey" for relation "organization_member" already exists
+psql:02_full_schema.sql:4449: ERROR:  constraint "organization_member_org_id_fkey" for relation "organization_member" already exists
+psql:02_full_schema.sql:4457: ERROR:  constraint "organization_role_org_id_fkey" for relation "organization_role" already exists
+psql:02_full_schema.sql:4465: ERROR:  constraint "subject_role_role_code_fkey" for relation "subject_role" already exists
+psql:02_full_schema.sql:4473: ERROR:  constraint "escrow_hold_escrow_account_id_fkey" for relation "escrow_hold" already exists
+psql:02_full_schema.sql:4481: ERROR:  constraint "escrow_hold_hold_entry_id_fkey" for relation "escrow_hold" already exists
+psql:02_full_schema.sql:4489: ERROR:  constraint "escrow_hold_release_entry_id_fkey" for relation "escrow_hold" already exists
+psql:02_full_schema.sql:4497: ERROR:  constraint "escrow_hold_unit_id_fkey" for relation "escrow_hold" already exists
+psql:02_full_schema.sql:4505: ERROR:  constraint "journal_line_account_id_fkey" for relation "journal_line" already exists
+psql:02_full_schema.sql:4513: ERROR:  constraint "journal_line_entry_id_fkey" for relation "journal_line" already exists
+psql:02_full_schema.sql:4521: ERROR:  constraint "buy_price_quote_grade_code_fkey" for relation "buy_price_quote" already exists
+psql:02_full_schema.sql:4529: ERROR:  constraint "buy_price_quote_org_id_fkey" for relation "buy_price_quote" already exists
+psql:02_full_schema.sql:4537: ERROR:  constraint "product_listing_org_id_fkey" for relation "product_listing" already exists
+psql:02_full_schema.sql:4545: ERROR:  constraint "product_order_farmer_id_fkey" for relation "product_order" already exists
+psql:02_full_schema.sql:4553: ERROR:  constraint "product_order_listing_id_fkey" for relation "product_order" already exists
+psql:02_full_schema.sql:4561: ERROR:  constraint "product_order_org_id_fkey" for relation "product_order" already exists
+psql:02_full_schema.sql:4569: ERROR:  constraint "product_photo_listing_id_fkey" for relation "product_photo" already exists
+psql:02_full_schema.sql:4577: ERROR:  constraint "service_listing_org_id_fkey" for relation "service_listing" already exists
+psql:02_full_schema.sql:4585: ERROR:  constraint "service_request_cycle_id_fkey" for relation "service_request" already exists
+psql:02_full_schema.sql:4593: ERROR:  constraint "service_request_listing_id_fkey" for relation "service_request" already exists
+psql:02_full_schema.sql:4601: ERROR:  constraint "service_request_payment_entry_id_fkey" for relation "service_request" already exists
+psql:02_full_schema.sql:4609: ERROR:  constraint "service_request_stage_id_fkey" for relation "service_request" already exists
+psql:02_full_schema.sql:4617: ERROR:  constraint "service_request_unit_id_fkey" for relation "service_request" already exists
+psql:02_full_schema.sql:4625: ERROR:  constraint "vendor_photo_org_id_fkey" for relation "vendor_photo" already exists
+psql:02_full_schema.sql:4633: ERROR:  constraint "alert_event_observation_id_fkey" for relation "alert_event" already exists
+psql:02_full_schema.sql:4641: ERROR:  constraint "alert_event_threshold_id_fkey" for relation "alert_event" already exists
+psql:02_full_schema.sql:4649: ERROR:  constraint "restore_test_log_backup_id_fkey" for relation "restore_test_log" already exists
+psql:02_full_schema.sql:4657: ERROR:  constraint "vendor_document_org_id_fkey" for relation "vendor_document" already exists
+psql:02_full_schema.sql:4665: ERROR:  constraint "vendor_profile_lender_clearing_account_id_fkey" for relation "vendor_profile" already exists
+psql:02_full_schema.sql:4673: ERROR:  constraint "vendor_profile_org_id_fkey" for relation "vendor_profile" already exists
+psql:02_full_schema.sql:4681: ERROR:  constraint "vendor_profile_settlement_account_id_fkey" for relation "vendor_profile" already exists
+psql:02_full_schema.sql:4689: ERROR:  constraint "delivery_buyer_org_id_fkey" for relation "delivery" already exists
+psql:02_full_schema.sql:4697: ERROR:  constraint "delivery_commodity_code_fkey" for relation "delivery" already exists
+psql:02_full_schema.sql:4705: ERROR:  constraint "delivery_contract_id_fkey" for relation "delivery" already exists
+psql:02_full_schema.sql:4713: ERROR:  constraint "delivery_cycle_id_fkey" for relation "delivery" already exists
+psql:02_full_schema.sql:4721: ERROR:  constraint "delivery_settlement_entry_id_fkey" for relation "delivery" already exists
+psql:02_full_schema.sql:4729: ERROR:  constraint "delivery_unit_id_fkey" for relation "delivery" already exists
+psql:02_full_schema.sql:4737: ERROR:  constraint "crop_cycle_commodity_code_fkey" for relation "crop_cycle" already exists
+psql:02_full_schema.sql:4745: ERROR:  constraint "crop_cycle_linked_contract_id_fkey" for relation "crop_cycle" already exists
+psql:02_full_schema.sql:4753: ERROR:  constraint "crop_cycle_unit_id_fkey" for relation "crop_cycle" already exists
+psql:02_full_schema.sql:4761: ERROR:  constraint "stage_calendar_cycle_id_fkey" for relation "stage_calendar" already exists
+psql:02_full_schema.sql:4769: ERROR:  constraint "stage_template_commodity_code_fkey" for relation "stage_template" already exists
+psql:02_full_schema.sql:4777: ERROR:  constraint "farmbook_sync_log_farmer_id_fkey" for relation "farmbook_sync_log" already exists
+psql:02_full_schema.sql:4785: ERROR:  constraint "production_cycle_history_commodity_code_fkey" for relation "production_cycle_history" already exists
+psql:02_full_schema.sql:4793: ERROR:  constraint "production_cycle_history_unit_id_fkey" for relation "production_cycle_history" already exists
+psql:02_full_schema.sql:4801: ERROR:  constraint "production_unit_commodity_code_fkey" for relation "production_unit" already exists
+psql:02_full_schema.sql:4809: ERROR:  constraint "production_unit_owner_farmer_id_fkey" for relation "production_unit" already exists
+psql:02_full_schema.sql:4817: ERROR:  constraint "credit_score_farmer_id_fkey" for relation "credit_score" already exists
+psql:02_full_schema.sql:4825: ERROR:  constraint "certificate_cycle_id_fkey" for relation "certificate" already exists
+psql:02_full_schema.sql:4833: ERROR:  constraint "certificate_delivery_id_fkey" for relation "certificate" already exists
+psql:02_full_schema.sql:4841: ERROR:  constraint "certificate_unit_id_fkey" for relation "certificate" already exists
+psql:02_full_schema.sql:4849: ERROR:  constraint "loan_application_contract_id_fkey" for relation "loan_application" already exists
+psql:02_full_schema.sql:4857: ERROR:  constraint "loan_application_farmer_id_fkey" for relation "loan_application" already exists
+psql:02_full_schema.sql:4865: ERROR:  constraint "loan_application_lender_org_id_fkey" for relation "loan_application" already exists
+psql:02_full_schema.sql:4873: ERROR:  constraint "loan_application_related_unit_id_fkey" for relation "loan_application" already exists
+psql:02_full_schema.sql:4881: ERROR:  constraint "loan_application_score_id_fkey" for relation "loan_application" already exists
+ALTER TABLE
+psql:02_full_schema.sql:4896: ERROR:  policy "party_own_contract" for table "contract" already exists
+COMMENT
+ALTER TABLE
+psql:02_full_schema.sql:4916: ERROR:  policy "farmer_own_score" for table "credit_score" already exists
+psql:02_full_schema.sql:4923: ERROR:  policy "platform_all_scores" for table "credit_score" already exists
+psql:02_full_schema.sql:4930: ERROR:  policy "farmer_own_applications" for table "loan_application" already exists
+psql:02_full_schema.sql:4937: ERROR:  policy "lender_own_applications" for table "loan_application" already exists
+ALTER TABLE
+psql:02_full_schema.sql:4950: ERROR:  policy "platform_all_applications" for table "loan_application" already exists

@@ -226,7 +226,17 @@ BEGIN
    WHERE f.farmer_id = numbered.farmer_id;
 
   SELECT COALESCE(MAX(SUBSTRING(farmer_code FROM 4)::int), 0) INTO v_max FROM identity.farmer;
-  PERFORM setval('identity.farmer_code_seq', v_max, true);
+  -- Guard added 2026-08-23: setval(..., 0, true) throws "value 0 is out of
+  -- bounds for sequence" on a fresh Postgres sequence (min value 1) — which
+  -- is exactly what happens on a brand-new production database that has
+  -- zero identity.farmer rows (dev_sample_data.sql, the only thing that
+  -- seeds farmer rows, is deliberately never run against production per
+  -- DEPLOY.md / this file's own README warnings). When there are no
+  -- existing farmers to backfill, there is nothing to advance the sequence
+  -- past — leave it at its default start (1) and skip setval entirely.
+  IF v_max > 0 THEN
+    PERFORM setval('identity.farmer_code_seq', v_max, true);
+  END IF;
 END $$;
 
 ALTER TABLE identity.farmer ALTER COLUMN farmer_code SET NOT NULL;
