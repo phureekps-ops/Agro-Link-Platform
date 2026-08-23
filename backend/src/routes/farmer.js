@@ -271,6 +271,90 @@ router.get('/production-units', async (req, res, next) => {
 });
 
 /**
+ * GET /farmer/commodities — registry.commodity_ref, for the plot
+ * registration form's commodity dropdown instead of hardcoding commodity
+ * codes in the frontend. Same query as GET /buyer/commodities and
+ * GET /coop/commodities — registry.commodity_ref has no owner/subject
+ * column, it is a flat reference list, so there is nothing to scope this
+ * to besides "every logged-in farmer sees the same list".
+ */
+router.get('/commodities', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query('SELECT commodity_code, name_th FROM registry.commodity_ref ORDER BY name_th');
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+const PRODUCTION_UNIT_TYPES = ['Plot', 'Pen', 'Pond', 'Orchard'];
+
+/**
+ * POST /farmer/production-units — a farmer registers a NEW plot/production
+ * unit (แปลง/หน่วยผลิต) belonging to themselves.
+ * Body: { unit_type, gps_boundary (GeoJSON Polygon object), area_rai,
+ *         commodity_code, season_id }
+ *
+ * Added 2026-08-23 — see grant_farmer_plot_registration.sql. Just like
+ * loan-applications above, owner_farmer_id/farmer_id is NEVER taken from
+ * the request body — it is always req.subject's id, so a farmer can only
+ * ever register a plot as themselves. Deeper business-rule validation
+ * (commodity_code exists, GeoJSON parses to a valid Polygon, area > 0)
+ * lives in registry.register_production_unit() itself, same pattern as
+ * underwriting.submit_application().
+ */
+router.post('/production-units', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { unit_type: unitType, gps_boundary: gpsBoundary, area_rai: areaRai, commodity_code: commodityCode, season_id: seasonId } = req.body || {};
+
+  if (!unitType || !gpsBoundary || areaRai === undefined || areaRai === null || !commodityCode || !seasonId) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['unit_type', 'gps_boundary', 'area_rai', 'commodity_code', 'season_id'],
+    });
+  }
+
+  if (!PRODUCTION_UNIT_TYPES.includes(unitType)) {
+    return res.status(400).json({ error: 'invalid_unit_type', allowed: PRODUCTION_UNIT_TYPES });
+  }
+
+  const areaRaiNumber = Number(areaRai);
+  if (!Number.isFinite(areaRaiNumber) || areaRaiNumber <= 0) {
+    return res.status(400).json({ error: 'invalid_area_rai' });
+  }
+
+  try {
+    const unitId = await withSessionContext('farmer', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'SELECT registry.register_production_unit($1, $2, $3, $4, $5, $6) AS unit_id',
+        [subjectId, unitType, JSON.stringify(gpsBoundary), areaRaiNumber, commodityCode, seasonId],
+      );
+      const newUnitId = rows[0].unit_id;
+      await logAccess(client, 'write', 'registry.production_unit', newUnitId);
+      return newUnitId;
+    });
+
+    return res.status(201).json({ unit_id: unitId });
+  } catch (err) {
+    // registry.register_production_unit() raises plain RAISE EXCEPTION
+    // (SQLSTATE P0001) for every validation failure it does itself — those
+    // are safe, farmer-facing Thai-language messages, not internal detail,
+    // so surface them as 400s instead of falling through to the generic
+    // 500 "internal_error" the error-handling middleware in server.js
+    // returns for everything else.
+    if (err.code === 'P0001') {
+      return res.status(400).json({ error: 'production_unit_registration_failed', message: err.message });
+    }
+    return next(err);
+  }
+});
+
+/**
  * GET /farmer/memberships — the farmer's OWN "which organizations am I a
  * member/customer of" list (สมาชิกภาพของฉัน). This is the farmer-facing
  * counterpart to the Farmer 360° View built for organization staff (see

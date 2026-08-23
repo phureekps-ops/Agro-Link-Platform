@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (44 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (46 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -168,7 +168,23 @@ grant_farmer_360.sql
 grant_machinery_service_consolidation.sql
 grant_ledger_revenue_segregation.sql
 grant_sealed_bid_auction.sql
+grant_farmer_plot_registration.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-23:** `grant_farmer_plot_registration.sql` — เพิ่ม
+`POST /farmer/production-units` ให้เกษตรกรลงทะเบียนแปลง/หน่วยผลิต
+(แปลงนา/คอก/บ่อ/สวน) ของตนเองได้เองเป็นครั้งแรก (ก่อนหน้านี้ตาราง
+`registry.production_unit` มีแต่ endpoint แบบอ่านอย่างเดียวทั่วทั้งระบบ —
+แถวข้อมูลที่เคยเห็นตอนทดสอบมาจาก `dev_sample_data.sql` เท่านั้น ซึ่งจงใจไม่รัน
+กับ production) เพิ่มฟังก์ชัน `registry.register_production_unit()` แบบ
+SECURITY DEFINER ที่ตรวจสอบเอง (มีเกษตรกรจริง, รหัสพืช/สัตว์มีอยู่จริงใน
+`registry.commodity_ref`, ขอบเขต GPS เป็น GeoJSON Polygon ที่ถูกต้องตาม
+เรขาคณิต, พื้นที่มากกว่า 0) ก่อน INSERT — ตามแบบเดียวกับ
+`underwriting.submit_application()` เดิม เป็น additive ล้วนๆ ไม่กระทบของเดิม
+รันเป็นไฟล์สุดท้ายในลำดับนี้ก็เพียงพอ (ต้องรันหลัง `02_full_schema.sql` และ
+`04_reference_data.sql` เท่านั้น เพราะอ้างถึงตาราง/ข้อมูลอ้างอิงที่ต้องมีอยู่ก่อน)
+ฝั่งหน้าเว็บมีหน้าใหม่ `frontend/register-plot.html` (ปักขอบเขต GPS บนแผนที่
+ด้วยการคลิก แล้วกรอกรายละเอียด) เชื่อมจากปุ่ม "+ เพิ่มแปลงใหม่" บนแดชบอร์ด
 
 **เพิ่มเมื่อ 2026-08-22:** `grant_sealed_bid_auction.sql` — เพิ่มโหมด Sealed-Bid
 แบบเต็มให้ e-Auction (ข้อ 4.4 เดิม) เพิ่มคอลัมน์ `bid_visibility` (nullable
