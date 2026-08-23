@@ -49,8 +49,23 @@
     <div id="successBox" style="display:none; text-align:center;">
       <div style="font-size:40px; margin-bottom:10px;">✅</div>
       <h2 style="font-size:19px; color:var(--green-900); margin-bottom:8px;">ส่งใบสมัครเรียบร้อยแล้ว</h2>
-      <p style="font-size:14px; color:var(--gray-700); margin-bottom:20px;" id="successDetail"></p>
-      <a href="index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">กลับหน้าแรก</a>
+      <p style="font-size:14px; color:var(--gray-700); margin-bottom:16px;" id="successDetail"></p>
+
+      <div style="background:var(--gold-100); border:1px solid var(--gold-500); border-radius:10px; padding:16px; text-align:left; margin-bottom:20px;">
+        <div style="font-weight:700; font-size:13px; color:#a06a00; margin-bottom:8px;">
+          ⚠️ บันทึกรหัสนี้ไว้ให้ดี — ใช้แทนรหัสผ่านสำหรับล็อกอินครั้งถัดไป
+        </div>
+        <div style="font-size:12px; color:var(--gray-700); margin-bottom:10px; line-height:1.5;">
+          ระบบจะไม่แสดงรหัสนี้ให้เห็นอีกหลังจากออกจากหน้านี้ — คัดลอกไปเก็บไว้ในที่ปลอดภัย (เช่น โน้ตในมือถือ) ก่อนกดปุ่มด้านล่าง
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <code id="claimValue" style="flex:1; background:#fff; border:1px solid var(--gray-300); border-radius:6px; padding:8px 10px; font-size:12.5px; word-break:break-all;"></code>
+          <button type="button" class="btn btn-ghost btn-sm" id="copyClaimBtn" style="width:auto; white-space:nowrap;">คัดลอก</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="continueBtn" style="display:none; margin-bottom:10px;">ไปที่แดชบอร์ดของฉัน</button>
+      <a href="index.html" class="btn btn-ghost" id="backHomeLink" style="width:100%; text-align:center; display:block; box-sizing:border-box;">กลับหน้าแรก</a>
     </div>
 
     <div class="divider" id="loginDivider">มีบัญชีอยู่แล้ว?</div>

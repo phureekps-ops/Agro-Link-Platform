@@ -46,6 +46,10 @@ const loginLenderLink = document.getElementById("loginLenderLink");
 const loginBuyerLink = document.getElementById("loginBuyerLink");
 const loginMachineryLink = document.getElementById("loginMachineryLink");
 const registerBtn = document.getElementById("registerBtn");
+const claimValueEl = document.getElementById("claimValue");
+const copyClaimBtn = document.getElementById("copyClaimBtn");
+const continueBtn = document.getElementById("continueBtn");
+const backHomeLink = document.getElementById("backHomeLink");
 
 const ORG_TYPE_LABEL = {
   Lender: "ผู้ปล่อยกู้", Buyer: "ผู้รับซื้อผลผลิต", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
@@ -109,44 +113,65 @@ registerForm.addEventListener("submit", async (e) => {
       return;
     }
 
-    if (orgType === "Lender") {
-      localStorage.setItem("agrolink_lender_session", JSON.stringify(body));
-      window.location.href = "lender/dashboard.html";
-      return;
-    }
-    if (orgType === "Buyer") {
-      localStorage.setItem("agrolink_buyer_session", JSON.stringify(body));
-      window.location.href = "buyer/dashboard.html";
-      return;
-    }
-    if (orgType === "InputSupplier") {
-      localStorage.setItem("agrolink_inputsupplier_session", JSON.stringify(body));
-      window.location.href = "inputsupplier/dashboard.html";
-      return;
-    }
-    if (orgType === "VillageFund") {
-      localStorage.setItem("agrolink_villagefund_session", JSON.stringify(body));
-      window.location.href = "villagefund/dashboard.html";
-      return;
-    }
-    if (MACHINERY_ORG_TYPES.includes(orgType)) {
-      localStorage.setItem("agrolink_machinery_session", JSON.stringify(body));
-      window.location.href = "machinery/dashboard.html";
-      return;
-    }
+    // Added 2026-08-23: which portal (if any) this org_type redirects to,
+    // and under which localStorage key its session is stored — same
+    // mapping as before, just no longer an immediate redirect. We now
+    // ALWAYS stop here and show the claim first (see successBox below);
+    // the org only moves on to their dashboard once they click "ไปที่
+    // แดชบอร์ดของฉัน", by which point they've had a chance to copy the
+    // sub claim that is their only way back in later (see
+    // src/routes/auth.js's org-register comment for why this matters).
+    const PORTAL_BY_ORG_TYPE = {
+      Lender: { sessionKey: "agrolink_lender_session", dashboardUrl: "lender/dashboard.html" },
+      Buyer: { sessionKey: "agrolink_buyer_session", dashboardUrl: "buyer/dashboard.html" },
+      InputSupplier: { sessionKey: "agrolink_inputsupplier_session", dashboardUrl: "inputsupplier/dashboard.html" },
+      VillageFund: { sessionKey: "agrolink_villagefund_session", dashboardUrl: "villagefund/dashboard.html" },
+    };
+    const portal = PORTAL_BY_ORG_TYPE[orgType] || (MACHINERY_ORG_TYPES.includes(orgType)
+      ? { sessionKey: "agrolink_machinery_session", dashboardUrl: "machinery/dashboard.html" }
+      : null);
 
-    // No dedicated portal yet for this org_type — show a plain confirmation.
     registerForm.style.display = "none";
     loginDivider.style.display = "none";
     loginLenderLink.style.display = "none";
     loginBuyerLink.style.display = "none";
     loginMachineryLink.style.display = "none";
-    successDetail.textContent =
-      `"${orgName}" (${ORG_TYPE_LABEL[orgType] || orgType}) อยู่ระหว่างการตรวจสอบ (KYB) ` +
-      "เจ้าหน้าที่ผู้ดูแลระบบจะตรวจสอบและติดต่อกลับเมื่ออนุมัติแล้ว";
+
+    successDetail.textContent = portal
+      ? `"${orgName}" (${ORG_TYPE_LABEL[orgType] || orgType}) อยู่ระหว่างการตรวจสอบ (KYB) — เมื่อเจ้าหน้าที่อนุมัติแล้ว ท่านจะเห็นข้อมูลเต็มรูปแบบในแดชบอร์ด`
+      : `"${orgName}" (${ORG_TYPE_LABEL[orgType] || orgType}) อยู่ระหว่างการตรวจสอบ (KYB) ` +
+        "เจ้าหน้าที่ผู้ดูแลระบบจะตรวจสอบและติดต่อกลับเมื่ออนุมัติแล้ว";
+
+    claimValueEl.textContent = body.external_subject_claim || "(ไม่พบรหัส — กรุณาติดต่อผู้ดูแลระบบ)";
+
+    if (portal) {
+      localStorage.setItem(portal.sessionKey, JSON.stringify(body));
+      continueBtn.style.display = "";
+      backHomeLink.style.display = "none";
+      continueBtn.onclick = () => { window.location.href = portal.dashboardUrl; };
+    } else {
+      continueBtn.style.display = "none";
+      backHomeLink.style.display = "";
+    }
+
     successBox.style.display = "block";
   } catch (err) {
     showError("สมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     registerBtn.disabled = false;
   }
+});
+
+copyClaimBtn.addEventListener("click", async () => {
+  const value = claimValueEl.textContent;
+  try {
+    await navigator.clipboard.writeText(value);
+    copyClaimBtn.textContent = "คัดลอกแล้ว!";
+  } catch (err) {
+    // Clipboard API can be blocked (older browser, insecure context, denied
+    // permission) — the code is already visible and selectable in the box
+    // above, so fall back to just telling the org to select it manually
+    // rather than failing silently.
+    copyClaimBtn.textContent = "คัดลอกไม่ได้ — เลือกคัดลอกเอง";
+  }
+  setTimeout(() => { copyClaimBtn.textContent = "คัดลอก"; }, 2500);
 });

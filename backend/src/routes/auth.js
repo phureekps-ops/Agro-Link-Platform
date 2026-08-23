@@ -330,6 +330,21 @@ router.post('/org-register', async (req, res, next) => {
       subject_id: orgId,
       org_type: orgType,
       kyb_status: 'Pending',
+      // Added 2026-08-23: previously this mock OIDC "sub claim" was minted
+      // and stored (see generateOrgAuthSubjectId() above) but never once
+      // returned to the caller — the frontend silently stashed the session
+      // JWT in localStorage and moved on. That JWT expires (JWT_EXPIRES_IN,
+      // default 8h), and the org has no real password — POST /auth/login
+      // (see below) requires re-presenting this EXACT claim string to sign
+      // in again. With no way to see it, an org that logs out, switches
+      // browsers, or just waits out the session was permanently locked out
+      // of an account Platform Ops had already approved. Returning it here
+      // lets the frontend show it once, right after registration, with an
+      // explicit "save this" prompt (see frontend/js/register-provider.js).
+      // This is still not a real credential (no hashing, no rotation,
+      // whoever holds the string gets in) — just closing the "there is
+      // literally no way back in" gap while the mock-OIDC design stands.
+      external_subject_claim: authSubjectId,
     });
   } catch (err) {
     if (err.code === UNIQUE_VIOLATION) {
