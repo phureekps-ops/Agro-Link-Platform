@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แม่แบบวงจรการผลิตสากล — AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html / about.html so the header feels like one site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo-img { height: 44px; width: auto; display: block; }
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-links a.active-link { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+    }
+    .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-row:last-child a:last-child { border-bottom: none; }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 40px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+
+  /* CYCLE OVERVIEW STRIP */
+  .cycle-nav { padding: 28px 0 8px; }
+  .cycle-nav-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 4px; }
+  .cycle-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13.5px; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    padding: 8px 16px; border-radius: 999px; transition: background .15s ease, border-color .15s ease;
+  }
+  .cycle-chip:hover { background: rgba(255,255,255,.18); border-color: var(--gold); }
+  .cycle-chip .num { color: var(--gold); font-weight: 800; }
+  .cycle-arrow { color: rgba(255,255,255,.35); font-size: 15px; padding: 0 2px; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+
+  /* COMPONENT DETAIL BLOCKS */
+  .detail-list { padding: 20px 0 80px; display: flex; flex-direction: column; gap: 24px; }
+  .detail-block {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 32px 36px; position: relative; scroll-margin-top: 84px;
+  }
+  .detail-num {
+    position: absolute; top: 24px; right: 28px; font-size: 44px; font-weight: 800;
+    color: var(--green-light);
+  }
+  .detail-block .icn {
+    width: 46px; height: 46px; border-radius: 12px; background: var(--gold-light); color: var(--gold);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px;
+  }
+  .detail-block h3 { font-size: 21px; margin-bottom: 4px; }
+  .detail-block .en-name { display: block; font-size: 13.5px; font-weight: 700; color: var(--muted); margin-bottom: 18px; }
+  .detail-block h4 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--green);
+    margin: 18px 0 6px;
+  }
+  .detail-block h4:first-of-type { margin-top: 20px; }
+  .detail-block p { font-size: 15px; color: var(--text); }
+
+  /* FOOTER — identical to index.html / about.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+          <a href="frontend/index.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">เข้าสู่ระบบเกษตรกร</a>
+        </div>
+        <button class="nav-toggle">☰</button>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="about.html">เกี่ยวกับเรา</a>
+        <a href="index.html#concept" class="active-link">แนวคิดหลัก</a>
+        <a href="index.html#how">วิธีการทำงาน</a>
+        <a href="index.html#knowledge">คลังความรู้</a>
+        <a href="index.html#prices">ราคาสินค้า</a>
+      </div>
+      <div class="nav-row">
+        <a href="index.html#weather">พยากรณ์อากาศ</a>
+        <a href="index.html#roadmap">แผนสินค้า</a>
+        <a href="index.html#audience">สำหรับใคร</a>
+        <a href="index.html#contact">ติดต่อ</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-diagram-project"></i> แนวคิดหลัก — เจาะลึก</div>
+    <h1 class="section-title">แม่แบบวงจรการผลิตสากล<br>(Universal Production-Cycle Template)</h1>
+    <p class="section-sub">โครงสร้างเดียวที่เชื่อมบัญชีหน่วยผลิต แผนงาน บริการ สินเชื่อ การเตือนภัย และการหักบัญชี เข้าเป็นวงจรเดียวกัน แล้วนำกลับมาใช้ซ้ำได้กับสินค้าเกษตรทุกชนิด — ตั้งแต่ข้าว ทุเรียน กุ้ง ไปจนถึงโคนม</p>
+  </div>
+  <div class="container cycle-nav">
+    <div class="cycle-nav-row">
+      <a href="#unit-account" class="cycle-chip"><span class="num">01</span> บัญชีหน่วยผลิต</a>
+      <span class="cycle-arrow">→</span>
+      <a href="#stage-calendar" class="cycle-chip"><span class="num">02</span> ปฏิทินระยะ</a>
+      <span class="cycle-arrow">→</span>
+      <a href="#service-marketplace" class="cycle-chip"><span class="num">03</span> ตลาดบริการ</a>
+      <span class="cycle-arrow">→</span>
+      <a href="#tranche-credit" class="cycle-chip"><span class="num">04</span> สินเชื่อเป็นงวด</a>
+      <span class="cycle-arrow">→</span>
+      <a href="#early-warning" class="cycle-chip"><span class="num">05</span> เตือนภัยร่วม</a>
+      <span class="cycle-arrow">→</span>
+      <a href="#auto-settlement" class="cycle-chip"><span class="num">06</span> หักบัญชีอัตโนมัติ</a>
+      <span class="cycle-arrow">↻</span>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <h2>ทำไมต้องมี "แม่แบบ"</h2>
+    <p>เกษตรกรไทยผลิตสินค้าที่หลากหลายมาก แต่ปัญหาเชิงโครงสร้างที่ซ้ำกันในแทบทุกสินค้ามีอยู่สี่เรื่องหลัก: ไม่มีบัญชีหน่วยผลิตที่เป็นทางการไว้อ้างอิงสิทธิ์และประวัติ ขาดปฏิทินการผลิตที่ใช้วางแผนล่วงหน้าและตรวจสอบย้อนหลังได้ บริการแต่ละขั้นตอน เช่น เตรียมดิน พ่นยา เก็บเกี่ยว ขนส่ง แปรรูป กระจัดกระจายจนหาผู้ให้บริการที่เหมาะสมได้ยาก และการเข้าถึงแหล่งทุนมักมาในรูปเงินก้อนที่ตรวจสอบการใช้จริงไม่ได้ ทำให้มีความเสี่ยงทั้งฝั่งผู้ให้กู้และผู้กู้</p>
+    <p>AgroLink จึงออกแบบ "แม่แบบวงจรการผลิต" ขึ้นมาหนึ่งชุด โดยแยกส่วนที่ "เปลี่ยนตามชนิดสินค้า" ออกจากส่วนที่ "เหมือนกันทุกสินค้า" อย่างชัดเจน สิ่งที่เปลี่ยนคือพารามิเตอร์ เช่น ระยะเวลาของแต่ละขั้นตอน ชนิดบริการที่ต้องใช้ในแต่ละระยะ และตัวชี้วัดเตือนภัยที่เกี่ยวข้อง ส่วนโครงสร้างข้อมูลและกระบวนการเบื้องหลังทั้งหมดเหมือนกัน ไม่ว่าจะเป็นนาข้าว สวนทุเรียน บ่อกุ้ง หรือฟาร์มโคนม ผลคือเมื่อจะเพิ่มสินค้าใหม่เข้าระบบ ทีมงานเพียงกำหนดชุดพารามิเตอร์ของสินค้านั้น โดยไม่ต้องพัฒนาระบบขึ้นใหม่ทั้งหมด</p>
+  </div>
+</section>
+
+<section id="detail" class="prose-section alt" style="padding-bottom:0;">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:0;">
+      <div class="eyebrow"><i class="fa-solid fa-list-ol"></i> 6 องค์ประกอบของแม่แบบ</div>
+      <h2 class="section-title">แต่ละองค์ประกอบทำหน้าที่อะไร และเชื่อมกันอย่างไร</h2>
+      <p class="section-sub">แต่ละส่วนออกแบบให้ส่งต่อข้อมูลและเงื่อนไขให้กันเป็นทอด ๆ ครบหนึ่งรอบแล้ววนกลับไปเริ่มรอบใหม่ได้ทันที</p>
+    </div>
+
+    <div class="detail-list">
+
+      <article id="unit-account" class="detail-block reveal in">
+        <span class="detail-num">01</span>
+        <div class="icn"><i class="fa-solid fa-map-location-dot"></i></div>
+        <h3>บัญชีหน่วยผลิต</h3>
+        <span class="en-name">Production Unit Account</span>
+        <h4>คืออะไร</h4>
+        <p>หนึ่งบัญชีต่อแปลงนา สวน คอก หรือบ่อ ต่อหนึ่งรอบการผลิต บันทึกพิกัดที่ตั้ง ขนาดพื้นที่หรือจำนวนสัตว์ ชนิดสินค้า และเชื่อมโยงประวัติของรอบก่อนหน้า เช่น ผลผลิตที่เคยได้ ปัญหาที่เคยเกิด และผู้ให้บริการที่เคยใช้งาน</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>เป็นกุญแจอ้างอิงเดียวที่ทุกส่วนของแม่แบบผูกเข้าด้วยกัน หากไม่มีบัญชีนี้ ข้อมูลแผนการผลิต การใช้บริการ สินเชื่อ และการหักบัญชี จะแยกกระจัดกระจายเหมือนระบบเดิมที่ตรวจสอบย้อนกลับไม่ได้</p>
+        <h4>เชื่อมต่อขั้นถัดไป</h4>
+        <p>เมื่อเปิดบัญชีหน่วยผลิตใหม่สำหรับรอบการผลิตใหม่ ระบบจะดึงปฏิทินระยะที่เหมาะกับชนิดสินค้านั้นมาผูกให้อัตโนมัติ</p>
+      </article>
+
+      <article id="stage-calendar" class="detail-block reveal in">
+        <span class="detail-num">02</span>
+        <div class="icn"><i class="fa-solid fa-calendar-days"></i></div>
+        <h3>แผนการผลิต / ปฏิทินระยะ</h3>
+        <span class="en-name">Stage Calendar</span>
+        <h4>คืออะไร</h4>
+        <p>ระบบกำหนดขั้นตอนและกรอบเวลาของสินค้าแต่ละชนิดให้โดยอัตโนมัติ เช่น ข้าว: เตรียมดิน → หว่าน/ดำ → ดูแลรักษา → เก็บเกี่ยว หรือกุ้ง: เตรียมบ่อ → ปล่อยลูกกุ้ง → ให้อาหาร → จับ แต่ละระยะมีเป้าหมาย ระยะเวลาโดยประมาณ และรายการบริการหรือปัจจัยการผลิตที่มักต้องใช้ในระยะนั้น</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ทำให้ทุกฝ่ายที่เกี่ยวข้อง ไม่ว่าจะเป็นเกษตรกร ผู้ให้บริการ ผู้ให้สินเชื่อ หรือหน่วยงานภาครัฐ เห็นภาพเดียวกันว่าขณะนี้อยู่ระยะไหน ควรทำอะไรต่อ และคาดว่าจะเก็บเกี่ยวหรือจับได้เมื่อไร</p>
+        <h4>เชื่อมต่อขั้นถัดไป</h4>
+        <p>ปฏิทินระยะเป็นตัวกำหนดว่าจะเปิดตลาดบริการของขั้นตอนใดเมื่อไร และเป็นเงื่อนไขหลักที่ใช้ปลดล็อกสินเชื่อแต่ละงวด</p>
+      </article>
+
+      <article id="service-marketplace" class="detail-block reveal in">
+        <span class="detail-num">03</span>
+        <div class="icn"><i class="fa-solid fa-store"></i></div>
+        <h3>ตลาดบริการเฉพาะขั้นตอน</h3>
+        <span class="en-name">Stage-Specific Service Marketplace</span>
+        <h4>คืออะไร</h4>
+        <p>แทนที่เกษตรกรจะต้องหาแรงงาน เครื่องจักร หรือปัจจัยการผลิตเองแบบกระจัดกระจาย ระบบจับคู่ผู้ผลิตกับผู้ให้บริการที่ตรงกับระยะปัจจุบันของแปลงหรือบ่อ เช่น โดรนพ่นยา รถเกี่ยว รถขนส่ง หรือห้องเย็น ด้วยการจับคู่แบบ AI Matching โดยพิจารณาพื้นที่ใกล้เคียง คิวที่ว่าง และคะแนนความน่าเชื่อถือของผู้ให้บริการ</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ลดเวลาค้นหา ลดการพึ่งพาคนกลางที่ไม่โปร่งใส และสร้างข้อมูลธุรกรรมที่ตรวจสอบได้ว่าใครทำงานอะไร เมื่อไร และในราคาเท่าไร</p>
+        <h4>เชื่อมต่อขั้นถัดไป</h4>
+        <p>การใช้บริการแต่ละครั้งถูกบันทึกเป็นหลักฐานว่า "งานเสร็จจริงแล้ว" ซึ่งใช้ปลดล็อกงวดสินเชื่อถัดไป และเก็บไว้เป็นข้อมูลประกอบการหักบัญชีเมื่อขายผลผลิต</p>
+      </article>
+
+      <article id="tranche-credit" class="detail-block reveal in">
+        <span class="detail-num">04</span>
+        <div class="icn"><i class="fa-solid fa-sack-dollar"></i></div>
+        <h3>สินเชื่อเป็นงวดตรวจสอบได้จริง</h3>
+        <span class="en-name">Verifiable Tranche-Based Credit</span>
+        <h4>คืออะไร</h4>
+        <p>ผู้ให้สินเชื่อไม่ปล่อยเงินก้อนเดียวตั้งแต่ต้น แต่ปลดล็อกเป็นงวดตามระยะในปฏิทินการผลิต โดยเบิกใช้เป็นบริการหรือปัจจัยการผลิตผ่านตลาดบริการโดยตรง เช่น ค่าเช่ารถไถหรือค่าปุ๋ย มากกว่าจะโอนเป็นเงินสดเข้าบัญชี และปลดล็อกงวดถัดไปก็ต่อเมื่อมีหลักฐานว่างวดก่อนหน้าใช้จริงและถึงระยะที่กำหนดจริง</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ลดความเสี่ยงที่เงินจะถูกใช้ผิดวัตถุประสงค์ ผู้ให้กู้เห็นความคืบหน้าจริงตลอดรอบการผลิต ส่วนเกษตรกรก็ได้ต้นทุนทางการเงินที่ต่ำลง เพราะความเสี่ยงของผู้ให้กู้ลดลงตามไปด้วย</p>
+        <h4>เชื่อมต่อขั้นถัดไป</h4>
+        <p>ทุกงวดที่เบิกใช้จะเชื่อมกับรายรับที่คาดว่าจะได้ตอนขายผลผลิต ซึ่งจะถูกหักคืนอัตโนมัติที่จุดขายในภายหลัง และหากเกิดเหตุการณ์เตือนภัย เงื่อนไขของงวดจะถูกทบทวนหรือปรับใหม่ตามความเหมาะสม</p>
+      </article>
+
+      <article id="early-warning" class="detail-block reveal in">
+        <span class="detail-num">05</span>
+        <div class="icn"><i class="fa-solid fa-tower-broadcast"></i></div>
+        <h3>ระบบเตือนภัยร่วม</h3>
+        <span class="en-name">Shared Early-Warning System</span>
+        <h4>คืออะไร</h4>
+        <p>เชื่อมข้อมูลภาครัฐและแหล่งข้อมูลสาธารณะที่เกี่ยวข้องกับสินค้านั้น ๆ เช่น สภาพอากาศ โรคระบาด ราคาตลาด หรือปริมาณน้ำ เข้ากับบัญชีหน่วยผลิตที่อยู่ในพื้นที่หรือช่วงเวลาที่มีความเสี่ยง แล้วแจ้งเตือนทุกฝ่ายที่เกี่ยวข้องพร้อมกันในเวลาเดียวกัน ทั้งเกษตรกร ผู้ให้บริการ และผู้ให้สินเชื่อ</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ทำให้ทุกฝ่ายเห็นสถานการณ์เดียวกันแบบเรียลไทม์ ลดข้อพิพาทที่มักเกิดจากการ "ไม่รู้ก่อน" และช่วยให้ตัดสินใจร่วมกันได้เร็วขึ้น เช่น เลื่อนกำหนดเก็บเกี่ยว หรือปรับแผนสินเชื่อล่วงหน้า</p>
+        <h4>เชื่อมต่อขั้นถัดไป</h4>
+        <p>เหตุการณ์เตือนภัยที่กระทบขั้นตอนใดขั้นตอนหนึ่งจะย้อนกลับไปปรับปฏิทินระยะและเงื่อนไขสินเชื่อโดยอัตโนมัติหรือกึ่งอัตโนมัติ เพื่อให้แผนยังสอดคล้องกับสถานการณ์จริง</p>
+      </article>
+
+      <article id="auto-settlement" class="detail-block reveal in">
+        <span class="detail-num">06</span>
+        <div class="icn"><i class="fa-solid fa-scale-balanced"></i></div>
+        <h3>หักบัญชีอัตโนมัติ</h3>
+        <span class="en-name">Automatic Settlement</span>
+        <h4>คืออะไร</h4>
+        <p>เมื่อขายผลผลิตที่จุดขาย เช่น โรงสี ล้ง ตลาดกลาง หรือผู้รับซื้อ ระบบจะกระทบยอดหนี้คงค้างของบัญชีหน่วยผลิตนั้นโดยอัตโนมัติ หักคืนต้นทุนหรือสินเชื่อที่เบิกไปตามงวด แล้วโอนยอดสุทธิที่เหลือให้ผู้ผลิตทันที พร้อมประวัติการหักที่ตรวจสอบย้อนหลังได้ทุกรายการ (Audit Trail)</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ปิดวงจรให้ครบโดยไม่ต้องให้เกษตรกรเดินไปจ่ายหนี้เองหลังขายแล้ว ลดปัญหาการเบี้ยวหนี้ และทำให้ผู้ให้สินเชื่อมั่นใจมากพอที่จะลดอัตราดอกเบี้ยลงได้ในระยะยาว</p>
+        <h4>เชื่อมต่อขั้นถัดไป</h4>
+        <p>ยอดและประวัติจากขั้นตอนนี้จะกลายเป็นส่วนหนึ่งของประวัติบัญชีหน่วยผลิต ซึ่งใช้ประกอบการพิจารณาสินเชื่อและวางแผนในรอบการผลิตถัดไป ปิดวงจรที่หมุนต่อไปได้เรื่อย ๆ</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <h2>ทำไมต้องเรียกว่า "สากล" (Universal)</h2>
+    <p>เพราะโครงสร้างข้อมูลและกระบวนการทั้งหกส่วน คือ บัญชี แผน บริการ สินเชื่อ เตือนภัย และหักบัญชี เหมือนกันในทุกสินค้าเกษตร สิ่งที่เปลี่ยนไปตามชนิดสินค้ามีเพียงพารามิเตอร์ เช่น ระยะเวลาของแต่ละขั้น ชนิดบริการที่ต้องใช้ในแต่ละระยะ และตัวชี้วัดเตือนภัยที่เกี่ยวข้อง เมื่อ AgroLink จะขยายไปยังสินค้าใหม่ เช่น ปาล์มน้ำมัน โคเนื้อ หรือผลไม้ส่งออก ทีมงานจึงเพิ่มเฉพาะชุดพารามิเตอร์ของสินค้านั้นเข้าไปในแม่แบบเดิม แทนที่จะต้องพัฒนาระบบขึ้นใหม่ทั้งหมด ทำให้ขยายสินค้าใหม่ได้เร็ว และยังใช้งานได้กับผู้ใช้กลุ่มเดิมทั้งเกษตรกร สหกรณ์ ผู้ให้บริการ และผู้ให้สินเชื่อ โดยไม่ต้องเรียนรู้ระบบใหม่</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container section-head reveal">
+    <h2 class="section-title">พร้อมเริ่มรอบการผลิตแรกของคุณแล้วหรือยัง</h2>
+    <p class="section-sub">ดูว่าสินค้าใดใช้แม่แบบนี้แล้วบ้าง หรือเริ่มสมัครใช้งานเพื่อเปิดบัญชีหน่วยผลิตแรกของคุณ</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="index.html#roadmap" class="btn btn-outline">ดูแผนสินค้าที่รองรับ</a>
+      <a href="index.html#contact" class="btn btn-primary">สมัครใช้งาน</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark">🌿</span>AgroLink</div>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
+      </div>
+      <div>
+        <h5>แพลตฟอร์ม</h5>
+        <ul>
+          <li><a href="index.html#concept">แนวคิดหลัก</a></li>
+          <li><a href="production-cycle-template.html">แม่แบบวงจรการผลิต (รายละเอียด)</a></li>
+          <li><a href="index.html#how">วิธีการทำงาน</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>ผู้ใช้งาน</h5>
+        <ul>
+          <li><a href="index.html#audience">เกษตรกร</a></li>
+          <li><a href="index.html#audience">สหกรณ์</a></li>
+          <li><a href="index.html#audience">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#audience">ผู้ให้สินเชื่อ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>องค์กร</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="index.html#partners">พันธมิตร</a></li>
+          <li><a href="index.html#contact">ติดต่อเรา</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span>สร้างบนแกนกลาง Galaxy Core</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>

@@ -192,6 +192,8 @@
   .tpl-card .icn { width: 44px; height: 44px; border-radius: 10px; background: var(--gold); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 14px; }
   .tpl-card h4 { font-size: 16.5px; color: #fff; margin-bottom: 8px; }
   .tpl-card p { font-size: 13.8px; color: #C8DBD1; }
+  a.tpl-card { display: block; text-decoration: none; color: inherit; transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease, background .18s ease; }
+  a.tpl-card:hover { border-color: var(--gold); background: rgba(255,255,255,.1); box-shadow: 0 10px 24px rgba(0,0,0,.3); transform: translateY(-2px); }
 
   /* HOW IT WORKS */
   .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; position: relative; }
@@ -422,12 +424,12 @@
       <p class="section-sub">หัวใจของ AgroLink ไม่ใช่เพียงตลาดกลางซื้อขาย แต่คือระบบที่เชื่อมโยงบริการทุกขั้นตอนของการผลิตเข้ากับสินเชื่อและการเตือนภัย ใช้ซ้ำได้กับสินค้าเกษตรทุกชนิด</p>
     </div>
     <div class="tpl-grid reveal">
-      <div class="tpl-card"><span class="tpl-num">01</span><div class="icn"><i class="fa-solid fa-map-location-dot"></i></div><h4>บัญชีหน่วยผลิต</h4><p>หนึ่งบัญชีต่อแปลง/คอก/บ่อ ต่อรอบการผลิต บันทึกพิกัด ขนาด ชนิดสินค้า และประวัติย้อนหลัง</p></div>
-      <div class="tpl-card"><span class="tpl-num">02</span><div class="icn"><i class="fa-solid fa-calendar-days"></i></div><h4>แผนการผลิต/ปฏิทินระยะ</h4><p>กำหนดขั้นตอนและกรอบเวลาเฉพาะของสินค้าแต่ละชนิดโดยอัตโนมัติ</p></div>
-      <div class="tpl-card"><span class="tpl-num">03</span><div class="icn"><i class="fa-solid fa-store"></i></div><h4>ตลาดบริการเฉพาะขั้นตอน</h4><p>จับคู่ผู้ผลิตกับผู้ให้บริการที่เหมาะกับแต่ละขั้นตอนด้วย AI Matching</p></div>
-      <div class="tpl-card"><span class="tpl-num">04</span><div class="icn"><i class="fa-solid fa-sack-dollar"></i></div><h4>สินเชื่อเป็นงวดตรวจสอบได้จริง</h4><p>เบิกใช้เป็นบริการ/ปัจจัยการผลิต ไม่ใช่เงินสด ปลดล็อกทีละงวดเมื่อยืนยันความจริงแล้ว</p></div>
-      <div class="tpl-card"><span class="tpl-num">05</span><div class="icn"><i class="fa-solid fa-tower-broadcast"></i></div><h4>ระบบเตือนภัยร่วม</h4><p>เชื่อมข้อมูลภาครัฐที่เกี่ยวข้องกับสินค้านั้นให้ทุกฝ่ายเห็นสถานการณ์จริงพร้อมกัน</p></div>
-      <div class="tpl-card"><span class="tpl-num">06</span><div class="icn"><i class="fa-solid fa-scale-balanced"></i></div><h4>หักบัญชีอัตโนมัติ</h4><p>กระทบยอดหนี้และโอนยอดสุทธิให้ผู้ผลิตทันทีที่จุดขาย พร้อม Audit Trail</p></div>
+      <a class="tpl-card" href="production-cycle-template.html#unit-account"><span class="tpl-num">01</span><div class="icn"><i class="fa-solid fa-map-location-dot"></i></div><h4>บัญชีหน่วยผลิต</h4><p>หนึ่งบัญชีต่อแปลง/คอก/บ่อ ต่อรอบการผลิต บันทึกพิกัด ขนาด ชนิดสินค้า และประวัติย้อนหลัง</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#stage-calendar"><span class="tpl-num">02</span><div class="icn"><i class="fa-solid fa-calendar-days"></i></div><h4>แผนการผลิต/ปฏิทินระยะ</h4><p>กำหนดขั้นตอนและกรอบเวลาเฉพาะของสินค้าแต่ละชนิดโดยอัตโนมัติ</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#service-marketplace"><span class="tpl-num">03</span><div class="icn"><i class="fa-solid fa-store"></i></div><h4>ตลาดบริการเฉพาะขั้นตอน</h4><p>จับคู่ผู้ผลิตกับผู้ให้บริการที่เหมาะกับแต่ละขั้นตอนด้วย AI Matching</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#tranche-credit"><span class="tpl-num">04</span><div class="icn"><i class="fa-solid fa-sack-dollar"></i></div><h4>สินเชื่อเป็นงวดตรวจสอบได้จริง</h4><p>เบิกใช้เป็นบริการ/ปัจจัยการผลิต ไม่ใช่เงินสด ปลดล็อกทีละงวดเมื่อยืนยันความจริงแล้ว</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#early-warning"><span class="tpl-num">05</span><div class="icn"><i class="fa-solid fa-tower-broadcast"></i></div><h4>ระบบเตือนภัยร่วม</h4><p>เชื่อมข้อมูลภาครัฐที่เกี่ยวข้องกับสินค้านั้นให้ทุกฝ่ายเห็นสถานการณ์จริงพร้อมกัน</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#auto-settlement"><span class="tpl-num">06</span><div class="icn"><i class="fa-solid fa-scale-balanced"></i></div><h4>หักบัญชีอัตโนมัติ</h4><p>กระทบยอดหนี้และโอนยอดสุทธิให้ผู้ผลิตทันทีที่จุดขาย พร้อม Audit Trail</p></a>
     </div>
   </div>
 </section>
@@ -726,6 +728,7 @@
         <h5>แพลตฟอร์ม</h5>
         <ul>
           <li><a href="#concept">แนวคิดหลัก</a></li>
+          <li><a href="production-cycle-template.html">แม่แบบวงจรการผลิต (รายละเอียด)</a></li>
           <li><a href="#how">วิธีการทำงาน</a></li>
           <li><a href="#roadmap">แผนขยายสินค้า</a></li>
           <li><a href="#features">จุดเด่น</a></li>
