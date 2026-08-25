@@ -4199,6 +4199,206 @@ document.getElementById("farmer360RosterSection").addEventListener("click", asyn
   }
 });
 
+// ============================================================
+// Group Buy (รวมออเดอร์ประมูลร่วมของสหกรณ์) — see GROUP_BUY_ARCHITECTURE.md
+// and backend/src/routes/groupbuy.js. Reuses RFQ_CATEGORY_LABEL_TH (defined
+// above alongside the RFQ section) since group_buy.category shares the
+// exact same domain as procurement.rfq.category.
+// ============================================================
+const GROUP_BUY_STATUS_LABEL_TH = {
+  collecting: "กำลังรวบรวมความต้องการ",
+  converted: "แปลงเป็นประมูลแล้ว",
+  cancelled: "ยกเลิกแล้ว",
+};
+const GROUP_BUY_STATUS_BADGE_CLASS = {
+  collecting: "status-active",
+  converted: "status-approved",
+  cancelled: "status-declined",
+};
+
+function groupBuyProgressLine(gb) {
+  const total = Number(gb.total_requested_qty || 0).toLocaleString("th-TH");
+  const unit = escapeHtml(gb.target_unit || "หน่วย");
+  if (gb.min_total_qty) {
+    const min = Number(gb.min_total_qty).toLocaleString("th-TH");
+    return `ยอดรวมตอนนี้ ${total} / ขั้นต่ำที่ตั้งไว้ ${min} ${unit}`;
+  }
+  return `ยอดรวมตอนนี้ ${total} ${unit}`;
+}
+
+function groupBuyBrowseCard(gb) {
+  const badgeClass = GROUP_BUY_STATUS_BADGE_CLASS[gb.status] || "status-pending";
+  return `
+    <div class="item-card" data-group-buy-id="${gb.group_buy_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(gb.product_description)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(GROUP_BUY_STATUS_LABEL_TH[gb.status] || gb.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(RFQ_CATEGORY_LABEL_TH[gb.category] || gb.category)} · เปิดโดย ${escapeHtml(gb.initiator_org_name || "-")}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">${groupBuyProgressLine(gb)}</div>
+      <div class="detail-line muted">ปิดรับสมัครเข้าร่วมภายใน ${thaiDate(gb.closes_at)} · ${gb.participant_count || 0} สหกรณ์เข้าร่วมแล้ว</div>
+      <div class="action-row" style="display:flex; gap:8px; align-items:center;">
+        <input type="number" min="0.01" step="0.01" placeholder="ปริมาณที่ต้องการ" data-group-buy-qty-input="${gb.group_buy_id}" style="max-width:160px;" />
+        <button type="button" class="btn btn-primary btn-sm" data-group-buy-join="${gb.group_buy_id}">เข้าร่วม</button>
+      </div>
+    </div>
+  `;
+}
+
+function groupBuyMineCard(gb) {
+  const badgeClass = GROUP_BUY_STATUS_BADGE_CLASS[gb.status] || "status-pending";
+  const roleTags = [
+    gb.is_mine ? "เปิดโดยฉัน" : null,
+    gb.is_lead ? "สหกรณ์หัวขบวน" : null,
+    gb.my_participation_status === "joined" ? "เข้าร่วมแล้ว" : null,
+    gb.my_participation_status === "withdrawn" ? "ถอนตัวแล้ว" : null,
+  ].filter(Boolean).join(" · ");
+
+  let actions = "";
+  if (gb.status === "collecting" && gb.my_participation_status === "joined") {
+    actions = `<div class="action-row"><button type="button" class="btn btn-decline btn-sm" data-group-buy-withdraw="${gb.group_buy_id}">ถอนตัว</button></div>`;
+  } else if (gb.status === "converted" && gb.is_lead) {
+    actions = `<div class="action-row"><button type="button" class="btn btn-primary btn-sm" data-group-buy-settle="${gb.group_buy_id}">แบ่งต้นทุนคืนสหกรณ์ผู้ร่วมรอบ</button></div>`;
+  }
+
+  return `
+    <div class="item-card" data-group-buy-id="${gb.group_buy_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(gb.product_description)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(GROUP_BUY_STATUS_LABEL_TH[gb.status] || gb.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(RFQ_CATEGORY_LABEL_TH[gb.category] || gb.category)}${roleTags ? " · " + escapeHtml(roleTags) : ""}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">${groupBuyProgressLine(gb)}</div>
+      ${gb.my_requested_qty ? `<div class="detail-line muted">ปริมาณที่ฉันแจ้งไว้: ${Number(gb.my_requested_qty).toLocaleString("th-TH")} ${escapeHtml(gb.target_unit || "")}</div>` : ""}
+      ${gb.status === "converted" ? `<div class="detail-line muted">สหกรณ์หัวขบวน: ${escapeHtml(gb.lead_org_name || "-")}</div>` : ""}
+      <div class="detail-line muted">${gb.status === "collecting" ? "ปิดรับสมัครภายใน" : "เปิดเมื่อ"} ${thaiDate(gb.status === "collecting" ? gb.closes_at : gb.created_at)}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadGroupBuyBrowse() {
+  const el = document.getElementById("groupBuyBrowseSection");
+  try {
+    const list = await AgroLinkCoopAPI.get("/procurement/group-buys?status=collecting");
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ยังไม่มีรอบที่เปิดอยู่ — เปิดรอบแรกได้ด้านบน</div>`
+      : list.map(groupBuyBrowseCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรอบที่เปิดอยู่ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadGroupBuyMine() {
+  const el = document.getElementById("groupBuyMineSection");
+  try {
+    const list = await AgroLinkCoopAPI.get("/procurement/group-buys/mine");
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ยังไม่มีรอบของท่าน — เปิดรอบใหม่หรือเข้าร่วมรอบที่เปิดอยู่ด้านบน</div>`
+      : list.map(groupBuyMineCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดรอบของฉันไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshGroupBuys() {
+  await Promise.all([loadGroupBuyBrowse(), loadGroupBuyMine()]);
+}
+
+document.getElementById("groupBuyPostForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("groupBuyPostSubmitBtn");
+  const closesAtValue = document.getElementById("groupBuyClosesAtInput").value;
+  if (!closesAtValue) {
+    toast("กรุณาเลือกวัน-เวลาปิดรับสมัคร", true);
+    return;
+  }
+  const closesAtDate = new Date(closesAtValue);
+  if (Number.isNaN(closesAtDate.getTime()) || closesAtDate.getTime() <= Date.now()) {
+    toast("วัน-เวลาปิดรับสมัครต้องเป็นเวลาในอนาคต", true);
+    return;
+  }
+  const payload = {
+    category: document.getElementById("groupBuyCategorySelect").value,
+    product_description: document.getElementById("groupBuyProductDescInput").value.trim(),
+    target_unit: document.getElementById("groupBuyTargetUnitInput").value.trim() || null,
+    min_total_qty: document.getElementById("groupBuyMinQtyInput").value ? Number(document.getElementById("groupBuyMinQtyInput").value) : null,
+    closes_at: closesAtDate.toISOString(),
+  };
+  if (!payload.product_description) {
+    toast("กรุณาระบุสินค้าที่ต้องการรวมซื้อ", true);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/procurement/group-buys", payload);
+    toast("เปิดรอบรวมออเดอร์เรียบร้อยแล้ว");
+    document.getElementById("groupBuyPostForm").reset();
+    await refreshGroupBuys();
+  } catch (err) {
+    toast("เปิดรอบไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("groupBuyBrowseSection").addEventListener("click", async (e) => {
+  const joinBtn = e.target.closest("[data-group-buy-join]");
+  if (!joinBtn) return;
+  const groupBuyId = joinBtn.dataset.groupBuyJoin;
+  const qtyInput = document.querySelector(`[data-group-buy-qty-input="${groupBuyId}"]`);
+  const qty = qtyInput ? Number(qtyInput.value) : NaN;
+  if (!Number.isFinite(qty) || qty <= 0) {
+    toast("กรุณากรอกปริมาณที่ต้องการ", true);
+    return;
+  }
+  joinBtn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/procurement/group-buys/${groupBuyId}/join`, { requested_qty: qty });
+    toast("เข้าร่วมรอบเรียบร้อยแล้ว");
+    await refreshGroupBuys();
+  } catch (err) {
+    toast("เข้าร่วมไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    joinBtn.disabled = false;
+  }
+});
+
+document.getElementById("groupBuyMineSection").addEventListener("click", async (e) => {
+  const withdrawBtn = e.target.closest("[data-group-buy-withdraw]");
+  const settleBtn = e.target.closest("[data-group-buy-settle]");
+
+  if (withdrawBtn) {
+    const groupBuyId = withdrawBtn.dataset.groupBuyWithdraw;
+    if (!confirm("ยืนยันถอนตัวจากรอบนี้?")) return;
+    withdrawBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/procurement/group-buys/${groupBuyId}/withdraw`, {});
+      toast("ถอนตัวเรียบร้อยแล้ว");
+      await refreshGroupBuys();
+    } catch (err) {
+      toast("ถอนตัวไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      withdrawBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (settleBtn) {
+    const groupBuyId = settleBtn.dataset.groupBuySettle;
+    if (!confirm("ยืนยันแบ่งต้นทุนคืนสหกรณ์ผู้ร่วมรอบ? ระบบจะโอนเงินจากบัญชีของแต่ละสหกรณ์เข้าบัญชีของท่านทันทีตามสัดส่วนที่แจ้งไว้ — ต้องชำระใบแจ้งหนี้ให้ซัพพลายเออร์เรียบร้อยแล้วเท่านั้น")) return;
+    settleBtn.disabled = true;
+    try {
+      const result = await AgroLinkCoopAPI.post(`/procurement/group-buys/${groupBuyId}/settle`, {});
+      const paidCount = result.lines.filter((l) => l.status === "paid").length;
+      const failedCount = result.lines.filter((l) => l.status === "failed").length;
+      toast(`แบ่งต้นทุนสำเร็จ ${paidCount} ราย${failedCount > 0 ? ` (ล้มเหลว ${failedCount} ราย — ตรวจสอบบัญชีของสหกรณ์ที่ล้มเหลว)` : ""}`, failedCount > 0);
+      await refreshGroupBuys();
+    } catch (err) {
+      toast("แบ่งต้นทุนไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      settleBtn.disabled = false;
+    }
+  }
+});
+
 async function init() {
   const session = AgroLinkCoopAPI.requireSessionOrRedirect();
   if (!session) return;
@@ -4236,6 +4436,7 @@ async function init() {
   loadCoopProducts();
   refreshCoopOrders();
   refreshRfq();
+  refreshGroupBuys();
   loadFarmer360Roster();
 }
 

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — รวมออเดอร์ประมูลร่วมของสหกรณ์ (Group Buy)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🤝</span><span>AgroLink Platform — รวมออเดอร์ประมูลร่วมของสหกรณ์</span></div>
+    <div class="who">
+      <span class="name">ผู้ดูแลระบบ</span>
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับแดชบอร์ดผู้ดูแลระบบ</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      สหกรณ์เปิดรอบและเข้าร่วมกันเองในพอร์ทัลสหกรณ์ — หน้าที่ของทีมงาน AgroLink คือ เมื่อรอบใดปิดรับสมัคร (ถึงกำหนดเวลา หรือยอดรวมถึงขั้นต่ำที่ตั้งไว้แล้ว)
+      ให้เลือก "สหกรณ์หัวขบวน" จากรายชื่อผู้เข้าร่วม แล้วกดแปลงรอบนั้นเป็นการประมูลซื้อ (e-Auction) ก้อนเดียวให้ซัพพลายเออร์แข่งราคากัน —
+      สหกรณ์หัวขบวนคือฝ่ายที่จะเซ็นสัญญา/รับของ/จ่ายเงินให้ซัพพลายเออร์ก่อน แล้วเรียกเก็บส่วนแบ่งต้นทุนคืนจากสหกรณ์อื่นภายหลังผ่านระบบ —
+      ดูรายละเอียดการออกแบบเต็มได้ที่ GROUP_BUY_ARCHITECTURE.md ในโค้ดของโครงการ
+    </p>
+
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="groupBuyStatusFilter">สถานะ</label>
+        <select id="groupBuyStatusFilter">
+          <option value="collecting">กำลังรวบรวมความต้องการ</option>
+          <option value="converted">แปลงเป็นประมูลแล้ว</option>
+          <option value="cancelled">ยกเลิกแล้ว</option>
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+    <div id="groupBuyListSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/group-buys.js"></script>
+</body>
+</html>

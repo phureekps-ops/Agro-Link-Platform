@@ -2095,6 +2095,25 @@ and the live `agrolink_test` database — not unit tests against mocks:
   the org (see "Cooperative Collection Station Portal" / M13 Logistics
   below) — a Logistics org with no linked carrier yet sees an empty
   dashboard, same as e.g. a fresh Lender org with no applications yet.
+- Group Buy (รวมออเดอร์ประมูลร่วมของสหกรณ์) shipped 2026-08-25
+  (`grant_group_buy.sql`, `src/routes/groupbuy.js`, plus the platform-ops
+  "convert" endpoints added to `src/routes/admin.js` — see
+  `GROUP_BUY_ARCHITECTURE.md` at the project root for the full design).
+  Cooperatives pool a requested quantity of an input product (e.g. bulk
+  fertilizer) into a round before it closes; Platform Ops then picks a
+  "lead cooperative" per round and converts the pooled total into one
+  ordinary `procurement.rfq` + `procurement.auction` — the entire
+  RFQ→e-Auction→Contract→PO→GRN→Invoice→Payment pipeline downstream of
+  that point is completely unmodified. The lead org fronts the invoice
+  payment and then triggers a settlement step that reimburses itself from
+  every other participant proportional to their declared quantity, via
+  `ledger.transfer_funds()` — the exact same money-movement primitive
+  `procurement.distribute_revenue_share()` already uses, just reversed in
+  direction. Deliberately NOT built this pass (see the architecture doc's
+  MVP-scope table): multi-drop-point delivery (goods ship to the lead
+  org's single location only, redistribution to other cooperatives happens
+  outside the system), and any deposit/penalty for a participant who joins
+  a round and later doesn't pay its settlement share.
 - Farmer Portal, Lender Portal, Buyer Portal, Platform Ops, the
   Machinery/Drying-Yard Portal, the Cooperative Portal, the VillageFund
   Portal, and the Logistics Portal are all now built end-to-end (backend +

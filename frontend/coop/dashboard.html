@@ -653,6 +653,56 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+    <div class="section-title" style="margin-top:22px;">🤝 รวมออเดอร์ประมูลร่วม (Group Buy)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      รวมปริมาณความต้องการซื้อกับสหกรณ์อื่นก่อน แล้วให้ทีมงาน AgroLink แปลงเป็นการประมูลซื้อ (e-Auction) ก้อนเดียวเพื่อให้ผู้จำหน่ายแข่งราคากันในปริมาณมาก —
+      ทีมงาน AgroLink เป็นผู้เลือก "สหกรณ์หัวขบวน" ที่จะเซ็นสัญญา/รับของ/จ่ายเงินให้ซัพพลายเออร์ก่อน แล้วสหกรณ์อื่นค่อยโอนส่วนแบ่งต้นทุนคืนภายหลัง —
+      การส่งของในรอบแรกส่งที่สหกรณ์หัวขบวนจุดเดียว สหกรณ์อื่นมารับต่อเอง
+    </p>
+
+    <div class="section-title" style="margin-top:18px; font-size:16px;">➕ เปิดรอบใหม่</div>
+    <form id="groupBuyPostForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="groupBuyCategorySelect">หมวดหมู่</label>
+          <select id="groupBuyCategorySelect" required>
+            <option value="input_product">ปัจจัยการผลิต</option>
+            <option value="produce">ผลผลิตทางการเกษตร</option>
+            <option value="processed_good">สินค้าแปรรูป</option>
+            <option value="machinery_service">บริการเครื่องจักรกล</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="groupBuyProductDescInput">สินค้าที่ต้องการรวมซื้อ</label>
+          <input type="text" id="groupBuyProductDescInput" placeholder="เช่น ปุ๋ยยูเรีย 46-0-0" required />
+        </div>
+        <div class="field">
+          <label for="groupBuyTargetUnitInput">หน่วยนับ</label>
+          <input type="text" id="groupBuyTargetUnitInput" placeholder="เช่น กระสอบ, ตัน" />
+        </div>
+        <div class="field">
+          <label for="groupBuyMinQtyInput">ปริมาณขั้นต่ำรวม (ถ้ามี)</label>
+          <input type="number" id="groupBuyMinQtyInput" min="0.01" step="0.01" placeholder="เช่น 20" />
+        </div>
+        <div class="field">
+          <label for="groupBuyClosesAtInput">วัน-เวลาปิดรับสมัครเข้าร่วม</label>
+          <input type="datetime-local" id="groupBuyClosesAtInput" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="groupBuyPostSubmitBtn">เปิดรอบ</button>
+    </form>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">🔍 รอบที่เปิดอยู่ (เข้าร่วมได้)</div>
+    <div id="groupBuyBrowseSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📋 รอบของฉัน (เปิดเอง/เข้าร่วม)</div>
+    <div id="groupBuyMineSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
     <div class="section-title" style="margin-top:22px;">💰 กระจายรายได้คืนสมาชิก</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       เมื่อใบแจ้งหนี้จากการขายล็อตผลผลิต (ที่ท่านเสนอราคา/ประมูลโดยระบุล็อต) ได้รับการชำระแล้ว

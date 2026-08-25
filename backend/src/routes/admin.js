@@ -1683,4 +1683,195 @@ router.post('/service-listings/:id/unfeature', async (req, res, next) => {
   }
 });
 
+// ============================================================
+// Group Buy (รวมออเดอร์ประมูลร่วมของสหกรณ์) — platform-ops side. See
+// src/routes/groupbuy.js for the cooperative-facing endpoints (open a
+// round, join, withdraw, settle) and GROUP_BUY_ARCHITECTURE.md for the
+// full design. The user explicitly decided (2026-08-25) that AgroLink
+// staff pick/approve the "lead cooperative" per round rather than an
+// automatic rule (e.g. largest quantity) — that decision is what makes
+// this a platform-ops action instead of something the round's initiator
+// or any participant can trigger themselves.
+// ============================================================
+
+/**
+ * GET /admin/group-buys?status= — same aggregate shape as GET
+ * /procurement/group-buys (groupbuy.js) so the two list views stay
+ * visually consistent, plus this is the queue platform-ops actually works
+ * from: a round sitting in 'collecting' past its closes_at (or already at
+ * min_total_qty) is "ready to convert" and needs a lead org picked.
+ */
+router.get('/group-buys', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  if (status && !['collecting', 'converted', 'cancelled'].includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ['collecting', 'converted', 'cancelled'] });
+  }
+
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows: gbRows } = await client.query(
+        `SELECT gb.group_buy_id, gb.category, gb.product_description, gb.target_unit, gb.min_total_qty,
+                gb.opens_at, gb.closes_at, gb.status, gb.lead_org_id, gb.converted_rfq_id, gb.created_at,
+                io.org_name AS initiator_org_name,
+                lo.org_name AS lead_org_name,
+                COALESCE(SUM(p.requested_qty) FILTER (WHERE p.status = 'joined'), 0) AS total_requested_qty,
+                COUNT(*) FILTER (WHERE p.status = 'joined')::int AS participant_count
+           FROM procurement.group_buy gb
+           JOIN identity.organization io ON io.org_id = gb.initiator_org_id
+           LEFT JOIN identity.organization lo ON lo.org_id = gb.lead_org_id
+           LEFT JOIN procurement.group_buy_participant p ON p.group_buy_id = gb.group_buy_id
+          WHERE ($1::text IS NULL OR gb.status = $1)
+          GROUP BY gb.group_buy_id, io.org_name, lo.org_name
+          ORDER BY gb.created_at DESC`,
+        [status || null],
+      );
+      return gbRows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/group-buys/:id — detail + full participant roster (org name,
+ * requested qty) so platform-ops has what it needs to pick a lead org —
+ * e.g. whoever requested the largest quantity, or whoever platform-ops
+ * already trusts with settlement float — without a separate lookup.
+ */
+router.get('/group-buys/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows: gbRows } = await client.query(
+        `SELECT gb.*, io.org_name AS initiator_org_name, lo.org_name AS lead_org_name
+           FROM procurement.group_buy gb
+           JOIN identity.organization io ON io.org_id = gb.initiator_org_id
+           LEFT JOIN identity.organization lo ON lo.org_id = gb.lead_org_id
+          WHERE gb.group_buy_id = $1`,
+        [id],
+      );
+      if (gbRows.length === 0) return { notFound: true };
+
+      const { rows: participants } = await client.query(
+        `SELECT p.participant_id, p.org_id, o.org_name, p.requested_qty, p.status, p.joined_at, p.withdrawn_at
+           FROM procurement.group_buy_participant p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE p.group_buy_id = $1
+          ORDER BY p.requested_qty DESC`,
+        [id],
+      );
+      return { groupBuy: gbRows[0], participants };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'group_buy_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/group-buys/:id/convert — close the round, appoint a lead
+ * org, and create the RFQ+Auction pair from the pooled quantity. Reuses
+ * the exact same tables POST /procurement/rfqs and POST /procurement/
+ * auctions in procurement.js write to — deliberately re-implemented here
+ * (rather than calling into procurement.js's route handlers, which are
+ * closures bound to req/res, not exported functions) with the identical
+ * shape, so everything downstream (bidding, close, contract, PO, GRN,
+ * invoice, payment) behaves exactly as it does for any other RFQ/Auction.
+ */
+router.post('/group-buys/:id/convert', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { lead_org_id: leadOrgId, closes_at: closesAt, bid_visibility: bidVisibilityRaw } = req.body || {};
+
+  if (!leadOrgId) return res.status(400).json({ error: 'lead_org_id_required' });
+  const closesAtDate = closesAt ? new Date(closesAt) : null;
+  if (!closesAtDate || Number.isNaN(closesAtDate.getTime()) || closesAtDate.getTime() <= Date.now()) {
+    return res.status(400).json({ error: 'invalid_closes_at', detail: 'must be a valid future timestamp' });
+  }
+  // Sealed-bid is the recommended default for a group buy specifically —
+  // suppliers competing for one large pooled order have the strongest
+  // incentive to shade their price toward what they think a competitor
+  // would bid, which is exactly what sealed-bid (no live price feed
+  // during the auction) is meant to counter. See grant_sealed_bid_auction.
+  // sql for what 'sealed' actually changes vs. the 'live' default.
+  const bidVisibility = bidVisibilityRaw === undefined || bidVisibilityRaw === null ? 'sealed' : bidVisibilityRaw;
+  if (!['live', 'sealed'].includes(bidVisibility)) {
+    return res.status(400).json({ error: 'invalid_bid_visibility', valid: ['live', 'sealed'] });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const gb = await client.query(
+        'SELECT * FROM procurement.group_buy WHERE group_buy_id = $1 FOR UPDATE',
+        [id],
+      );
+      if (gb.rows.length === 0) return { notFound: true };
+      if (gb.rows[0].status !== 'collecting') return { wrongStatus: gb.rows[0].status };
+
+      const leadCheck = await client.query(
+        `SELECT 1 FROM procurement.group_buy_participant WHERE group_buy_id = $1 AND org_id = $2 AND status = 'joined'`,
+        [id, leadOrgId],
+      );
+      if (leadCheck.rows.length === 0) return { leadNotAParticipant: true };
+
+      const { rows: totalRows } = await client.query(
+        `SELECT COALESCE(SUM(requested_qty), 0) AS total_qty
+           FROM procurement.group_buy_participant WHERE group_buy_id = $1 AND status = 'joined'`,
+        [id],
+      );
+      const totalQty = Number(totalRows[0].total_qty);
+      if (totalQty <= 0) return { noParticipants: true };
+
+      const rfqRes = await client.query(
+        `INSERT INTO procurement.rfq
+           (requester_subject_type, requester_subject_id, title, category, description, quantity, quantity_unit)
+         VALUES ('organization', $1, $2, $3, $4, $5, $6)
+         RETURNING rfq_id`,
+        [
+          leadOrgId,
+          `รวมออเดอร์ประมูลร่วม: ${gb.rows[0].product_description}`,
+          gb.rows[0].category,
+          `สร้างอัตโนมัติจากรอบรวมออเดอร์ ${id} — ปริมาณรวมจากสหกรณ์ที่เข้าร่วมทั้งหมด`,
+          totalQty,
+          gb.rows[0].target_unit,
+        ],
+      );
+      const rfqId = rfqRes.rows[0].rfq_id;
+
+      const auctionRes = await client.query(
+        `INSERT INTO procurement.auction (rfq_id, closes_at, bid_visibility)
+         VALUES ($1, $2, $3)
+         RETURNING auction_id, rfq_id, starts_at, closes_at, status, bid_visibility`,
+        [rfqId, closesAtDate.toISOString(), bidVisibility],
+      );
+
+      await client.query(
+        `UPDATE procurement.group_buy
+            SET status = 'converted', lead_org_id = $2, converted_rfq_id = $3,
+                converted_by_subject_id = $4, updated_at = now()
+          WHERE group_buy_id = $1`,
+        [id, leadOrgId, rfqId, subjectId],
+      );
+
+      await logAccess(client, 'write', 'procurement.group_buy', id);
+      await logAccess(client, 'write', 'procurement.rfq', rfqId);
+      return { rfqId, auction: auctionRes.rows[0] };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'group_buy_not_found' });
+    if (result.wrongStatus) return res.status(409).json({ error: 'group_buy_not_collecting', current_status: result.wrongStatus });
+    if (result.leadNotAParticipant) return res.status(400).json({ error: 'lead_org_must_be_a_joined_participant' });
+    if (result.noParticipants) return res.status(409).json({ error: 'no_joined_participants' });
+    return res.status(201).json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

@@ -27,6 +27,13 @@ const storageRouter = require('./routes/storage');
 // on the same endpoints, gated per-handler), so its own prefix rather
 // than sharing any one portal's mount.
 const procurementRouter = require('./routes/procurement');
+// groupbuy.js — Group Buy (รวมออเดอร์ประมูลร่วมของสหกรณ์, see
+// GROUP_BUY_ARCHITECTURE.md). Shares the '/procurement' prefix with
+// procurement.js above (same "more than one router on one prefix" idiom
+// fertilizer.js uses with farmer.js on '/farmer') rather than growing
+// procurement.js further or inventing a separate prefix for what is
+// really just a collection layer in front of the same RFQ/Auction tables.
+const groupBuyRouter = require('./routes/groupbuy');
 // farmer360.js — Farmer 360° View (see FARMER_360_ARCHITECTURE.md).
 // Generic across ANY verified organization (same "own prefix, not
 // portal-scoped" reasoning as procurement.js above) — used by the
@@ -105,6 +112,7 @@ app.use('/gov', governmentRouter);
 // subject-type agnostic and not owned by any one portal.
 app.use('/storage', storageRouter);
 app.use('/procurement', procurementRouter);
+app.use('/procurement', groupBuyRouter);
 app.use('/farmer360', farmer360Router);
 app.use('/villagefund', villageFundRouter);
 app.use('/logistics', logisticsRouter);

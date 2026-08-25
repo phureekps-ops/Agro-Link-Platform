@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (47 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (48 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -170,7 +170,30 @@ grant_ledger_revenue_segregation.sql
 grant_sealed_bid_auction.sql
 grant_farmer_plot_registration.sql
 grant_logistics_portal.sql
+grant_group_buy.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-25:** `grant_group_buy.sql` — เพิ่มฟีเจอร์ "รวมออเดอร์
+ประมูลร่วมของสหกรณ์" (Group Buy) ให้หลายสหกรณ์รวมปริมาณความต้องการซื้อปัจจัย
+การผลิต (เช่น แม่ปุ๋ย) เข้าด้วยกันก่อน แล้วให้ทีมงาน AgroLink แปลงยอดรวมเป็น
+RFQ+e-Auction ก้อนเดียวให้ผู้จำหน่ายแข่งราคากัน — เป็น "ชั้นรวบรวมออเดอร์" ที่
+วางไว้หน้าเส้นทาง RFQ→e-Auction→Contract→PO→GRN→Invoice→Payment เดิมทั้งหมด
+(`grant_rfq_marketplace.sql`/`grant_b2b_commerce_engine.sql`/
+`grant_b2b_commerce_engine_phase3.sql`) โดยไม่แก้โค้ด/ตารางเดิมแม้แต่บรรทัด
+เดียว เพิ่มตารางใหม่ 4 ตาราง (`procurement.group_buy`,
+`group_buy_participant`, `group_buy_settlement_plan`,
+`group_buy_settlement_line`) และฟังก์ชันใหม่ 2 ตัวสำหรับแบ่งต้นทุนคืน
+สหกรณ์หัวขบวนผ่าน `ledger.transfer_funds()` เดิม (รูปแบบเดียวกับฟังก์ชัน
+กระจายรายได้ `procurement.distribute_revenue_share()` ใน
+`grant_b2b_commerce_engine_phase3.sql` แค่กลับทิศทางเงิน) **ต้องรันหลัง**
+`grant_rfq_marketplace.sql`, `grant_b2b_commerce_engine.sql`, และ
+`grant_b2b_commerce_engine_phase3.sql` เท่านั้น (อ้างถึงตาราง
+`procurement.rfq`/`auction`/`invoice` ที่ต้องมีอยู่ก่อน) รันเป็นไฟล์สุดท้าย
+ในลำดับนี้ก็เพียงพอ ดูรายละเอียดสถาปัตยกรรมเต็มที่ `GROUP_BUY_ARCHITECTURE.md`
+ที่ root ของโปรเจกต์ ฝั่งหน้าเว็บมีส่วนใหม่ "🤝 รวมออเดอร์ประมูลร่วม" ใน
+`frontend/coop/dashboard.html` (เปิดรอบ/เข้าร่วม/ถอนตัว/แบ่งต้นทุนคืน) และ
+หน้าแอดมินใหม่ `frontend/admin/group-buys.html` (เลือกสหกรณ์หัวขบวน + กด
+แปลงเป็นประมูล — ทีมงาน AgroLink เป็นผู้ทำขั้นตอนนี้ ไม่ใช่สหกรณ์เอง)
 
 **เพิ่มเมื่อ 2026-08-23 (บ่าย):** `grant_logistics_portal.sql` — สร้างพอร์ทัลใหม่
 ให้องค์กรประเภท "Logistics" (โลจิสติกส์/ขนส่งทั่วไป) ที่สมัครสมาชิกเองผ่านหน้า
