@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auction Place — ตลาดประมูลกุ้งสด | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html / coop-portal.html so the header feels like one site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo-img { height: 44px; width: auto; display: block; }
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-links a.active-link { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+    }
+    .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-row:last-child a:last-child { border-bottom: none; }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 40px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .coming-soon-flag {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
+    font-size: 13px; font-weight: 700; color: var(--green-dark);
+    background: var(--gold); padding: 8px 18px; border-radius: 999px;
+  }
+
+  /* SERVICE OVERVIEW STRIP */
+  .cycle-nav { padding: 28px 0 8px; }
+  .cycle-nav-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+  .cycle-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13.5px; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    padding: 8px 16px; border-radius: 999px; transition: background .15s ease, border-color .15s ease;
+  }
+  .cycle-chip:hover { background: rgba(255,255,255,.18); border-color: var(--gold); }
+  .cycle-chip .num { color: var(--gold); font-weight: 800; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+
+  /* COMPONENT DETAIL BLOCKS */
+  .detail-list { padding: 20px 0 80px; display: flex; flex-direction: column; gap: 24px; }
+  .detail-block {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 32px 36px; position: relative; scroll-margin-top: 84px;
+  }
+  .detail-num {
+    position: absolute; top: 24px; right: 28px; font-size: 44px; font-weight: 800;
+    color: var(--green-light);
+  }
+  .detail-block .icn {
+    width: 46px; height: 46px; border-radius: 12px; background: var(--gold-light); color: var(--gold);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px;
+  }
+  .detail-block h3 { font-size: 21px; margin-bottom: 4px; }
+  .detail-block .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }
+  .detail-block .badge {
+    display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+    background: var(--green-light); color: var(--green);
+  }
+  .detail-block .badge.ext { background: var(--gold-light); color: #8A6D14; }
+  .detail-block h4 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--green);
+    margin: 18px 0 6px;
+  }
+  .detail-block h4:first-of-type { margin-top: 20px; }
+  .detail-block p { font-size: 15px; color: var(--text); }
+
+  .note-block {
+    max-width: 860px; margin: 0 auto 40px; background: var(--gold-light); border: 1px solid #E9D9A0;
+    border-radius: var(--radius); padding: 20px 26px; font-size: 14.5px; color: #6B5410;
+  }
+
+  /* FOOTER — identical to index.html / coop-portal.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ติดต่อสอบถาม</a>
+        </div>
+        <button class="nav-toggle">☰</button>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="about.html">เกี่ยวกับเรา</a>
+        <a href="index.html#concept">แนวคิดหลัก</a>
+        <a href="index.html#how">วิธีการทำงาน</a>
+        <a href="index.html#knowledge">คลังความรู้</a>
+        <a href="index.html#prices">ราคาสินค้า</a>
+      </div>
+      <div class="nav-row">
+        <a href="index.html#weather">พยากรณ์อากาศ</a>
+        <a href="index.html#roadmap">แผนสินค้า</a>
+        <a href="coop-portal.html">พอร์ทัลสหกรณ์</a>
+        <a href="index.html#contact">ติดต่อ</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-gavel"></i> Auction Place</div>
+    <h1 class="section-title">ตลาดประมูลกุ้งสดแบบ Sealed Bid</h1>
+    <p class="section-sub">ตลาดกลางที่เจ้าของบ่อประกาศกุ้งที่พร้อมขาย ให้ผู้ซื้อหลายรายแข่งกันเสนอราคาแบบปิดตามไซส์กุ้ง แล้วเจ้าของบ่อเป็นผู้เลือกผู้ซื้อเองจากราคาและความน่าเชื่อถือ ไม่ใช่ราคาสูงสุดเสมอไป</p>
+    <span class="coming-soon-flag"><i class="fa-solid fa-clock"></i> อยู่ระหว่างออกแบบระบบ — เตรียมเปิดให้บริการ</span>
+  </div>
+  <div class="container cycle-nav">
+    <div class="cycle-nav-row">
+      <a href="#pond-profile" class="cycle-chip"><i class="fa-solid fa-water"></i> ข้อมูลบ่อ + ฟาร์ม</a>
+      <a href="#pre-auction-sampling" class="cycle-chip"><i class="fa-solid fa-ruler-combined"></i> สุ่มตรวจไซส์ก่อนประมูล</a>
+      <a href="#sealed-bid-matrix" class="cycle-chip"><i class="fa-solid fa-table-cells"></i> Sealed Bid หลายไซส์</a>
+      <a href="#farmer-selection" class="cycle-chip"><i class="fa-solid fa-hand-pointer"></i> เจ้าของบ่อเลือกผู้ซื้อ</a>
+      <a href="#final-settlement" class="cycle-chip"><i class="fa-solid fa-scale-balanced"></i> สุ่มจริง + ชำระเงิน</a>
+      <a href="#trust-score" class="cycle-chip"><i class="fa-solid fa-star"></i> คะแนนความน่าเชื่อถือ</a>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <h2>ทำไมการประมูลกุ้งถึงต้องต่างจากปุ๋ยหรือปัจจัยการผลิต</h2>
+    <p>กุ้งเป็นสินค้าที่ "ไม่นิ่ง" — ขนาดจริงเมื่อจับขึ้นมาอาจไม่ตรงกับที่คาดการณ์ไว้ตอนประกาศขาย และราคากุ้งก็ผันผวนตามไซส์อย่างมาก การประมูลแบบราคาเดียวจึงไม่เหมาะ Auction Place จึงออกแบบให้ผู้ซื้อเสนอราคาเป็น "ชุดราคาตามไซส์" ล่วงหน้า แล้วใช้ไซส์ที่ตรวจได้จริงในวันจับเป็นตัวกำหนดราคาที่ชำระจริง ทั้งสองฝ่ายจึงรู้กติกาการจ่ายเงินล่วงหน้าอย่างชัดเจน ไม่ต้องเจรจาใหม่หน้างาน</p>
+  </div>
+</section>
+
+<section id="detail" class="prose-section alt" style="padding-bottom:0;">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:0;">
+      <div class="eyebrow"><i class="fa-solid fa-list-check"></i> กลไกหลักของ Auction Place</div>
+      <h2 class="section-title">6 ขั้นตอนของการประมูลกุ้งหนึ่งรอบ</h2>
+      <p class="section-sub">ระบบนี้อยู่ระหว่างการออกแบบสถาปัตยกรรม เนื้อหาด้านล่างอธิบายกลไกที่วางแผนไว้ ยังไม่ใช่ฟังก์ชันที่เปิดใช้งานจริงในขณะนี้</p>
+    </div>
+
+    <div class="detail-list">
+
+      <article id="pond-profile" class="detail-block reveal in">
+        <span class="detail-num"><i class="fa-solid fa-water" style="font-size:38px;opacity:.15;"></i></span>
+        <div class="icn"><i class="fa-solid fa-water"></i></div>
+        <h3>ข้อมูลบ่อและฟาร์มก่อนเปิดประมูล</h3>
+        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <h4>เจ้าของบ่อทำอะไร</h4>
+        <p>กรอกข้อมูลฟาร์ม (ชื่อฟาร์ม จังหวัด อำเภอ พิกัด) ข้อมูลบ่อและลูกกุ้ง (ชนิดกุ้ง วันลงลูกกุ้ง ความหนาแน่น แหล่งลูกกุ้ง) รวมถึงประวัติการให้อาหารและการใช้ยา/สารต่างๆ ตลอดรอบเลี้ยง แล้วถ่ายรูปกุ้งตามมุมที่ระบบกำหนดก่อนเปิดประมูลทุกครั้ง</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ข้อมูลชุดนี้เป็นฐานของ "คะแนนคุณภาพข้อมูลประมูล" ที่ผู้ซื้อเห็นก่อนตัดสินใจเสนอราคา ยิ่งข้อมูลครบและตรวจสอบย้อนกลับได้มากเท่าไร ผู้ซื้อยิ่งมั่นใจในการเสนอราคาสูงขึ้นเท่านั้น</p>
+        <h4>เชื่อมต่อไปยัง</h4>
+        <p>ระบบจะไม่อนุญาตให้เปิดประมูลจนกว่าข้อมูลชุดนี้จะผ่านเกณฑ์คะแนนคุณภาพขั้นต่ำที่กำหนดไว้</p>
+      </article>
+
+      <article id="pre-auction-sampling" class="detail-block reveal in">
+        <span class="detail-num"><i class="fa-solid fa-ruler-combined" style="font-size:38px;opacity:.15;"></i></span>
+        <div class="icn"><i class="fa-solid fa-ruler-combined"></i></div>
+        <h3>สุ่มตรวจไซส์ก่อนเปิดประมูล</h3>
+        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <h4>เจ้าของบ่อทำอะไร</h4>
+        <p>สุ่มกุ้งอย่างน้อย 5 จุดในบ่อ นับจำนวนตัวและชั่งน้ำหนักแต่ละจุด ระบบคำนวณไซส์เฉลี่ย (จำนวนตัวต่อกิโลกรัม) และให้ "คะแนนความเชื่อมั่นของการสุ่ม" (สูง/กลาง/ต่ำ) ตามจำนวนจุดและความสม่ำเสมอของผลที่ได้</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ไซส์เฉลี่ยที่คำนวณได้นี้เป็นจุดตั้งต้นของตารางราคา 5 ไซส์ที่ผู้ซื้อจะต้องเสนอราคา และคะแนนความเชื่อมั่นช่วยให้ผู้ซื้อประเมินความเสี่ยงของข้อมูลก่อนตัดสินใจ</p>
+        <h4>เชื่อมต่อไปยัง</h4>
+        <p>ไซส์เฉลี่ยที่ได้จะกลายเป็น "ไซส์เป้าหมาย" ตรงกลางของตารางราคา 5 ไซส์ในขั้นตอนถัดไป</p>
+      </article>
+
+      <article id="sealed-bid-matrix" class="detail-block reveal in">
+        <span class="detail-num"><i class="fa-solid fa-table-cells" style="font-size:38px;opacity:.15;"></i></span>
+        <div class="icn"><i class="fa-solid fa-table-cells"></i></div>
+        <h3>ประมูลแบบ Sealed Bid ด้วยตารางราคา 5 ไซส์</h3>
+        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <h4>ผู้ซื้อทำอะไร</h4>
+        <p>ผู้ซื้อไม่ได้เสนอราคาเดียว แต่ต้องเสนอราคาให้ครบทุกไซส์ในตาราง 5 ไซส์รอบไซส์เป้าหมาย (เช่น 40 / 36 / 32 / 28 / 24 ตัวต่อกิโลกรัม) เพราะไม่มีใครรู้ล่วงหน้าว่ากุ้งวันจับจริงจะออกไซส์ไหน ระหว่างประมูลผู้ซื้อจะเห็นเฉพาะสถานะของตัวเอง 🟢 นำ / 🟡 เสมอ / 🔴 แพ้ ต่อไซส์ ไม่เห็นราคาหรือตัวตนของคู่แข่งเลย</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ป้องกันไม่ให้เกิดการไล่ราคากันแบบเปิดเผย (bidding war) ขณะเดียวกันก็ยังกระตุ้นการแข่งขันด้วยสถานะแพ้/ชนะแบบเรียลไทม์ และช่วยให้ทั้งเจ้าของบ่อและผู้ซื้อบริหารความเสี่ยงเรื่องไซส์ได้ตั้งแต่ก่อนซื้อขายจริง</p>
+        <h4>เชื่อมต่อไปยัง</h4>
+        <p>ราคาที่ตกลงไว้ในตารางนี้จะถูกใช้อ้างอิงตอนคำนวณราคาชำระเงินจริงในขั้นตอน "สุ่มจริง + ชำระเงิน" ด้านล่าง</p>
+      </article>
+
+      <article id="farmer-selection" class="detail-block reveal in">
+        <span class="detail-num"><i class="fa-solid fa-hand-pointer" style="font-size:38px;opacity:.15;"></i></span>
+        <div class="icn"><i class="fa-solid fa-hand-pointer"></i></div>
+        <h3>เจ้าของบ่อเป็นผู้ตัดสินใจสุดท้าย</h3>
+        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <h4>เจ้าของบ่อทำอะไร</h4>
+        <p>เมื่อปิดประมูล ระบบไม่ตัดสินผู้ชนะให้อัตโนมัติเหมือนการประมูลซื้อปัจจัยการผลิตทั่วไป แต่จะแสดงรายชื่อผู้ซื้อที่เสนอราคาสูงสุด/ผ่านเกณฑ์ในแต่ละไซส์ พร้อมคะแนนความน่าเชื่อถือ ประวัติการจ่ายเงิน ประวัติการรับกุ้งตรงเวลา และระยะทางจากฟาร์ม ให้เจ้าของบ่อพิจารณาและกดเลือกผู้ซื้อเอง</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ราคาสูงสุดอาจมาพร้อมความเสี่ยง เช่น จ่ายเงินช้าหรือเคยมีปัญหาตอนตรวจรับ การให้เจ้าของบ่อเลือกเองจึงสำคัญกว่าการยึดราคาสูงสุดเป็นเกณฑ์เดียว</p>
+        <h4>เชื่อมต่อไปยัง</h4>
+        <p>เมื่อเลือกผู้ซื้อแล้ว ระบบจะออกสัญญาซื้อขายและกำหนดวันจับจริง เชื่อมต่อกับระบบสัญญา/ใบสั่งซื้อเดิมของ AgroLink</p>
+      </article>
+
+      <article id="final-settlement" class="detail-block reveal in">
+        <span class="detail-num"><i class="fa-solid fa-scale-balanced" style="font-size:38px;opacity:.15;"></i></span>
+        <div class="icn"><i class="fa-solid fa-scale-balanced"></i></div>
+        <h3>สุ่มตรวจไซส์จริงวันจับ แล้วชำระเงินตามไซส์จริง</h3>
+        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <h4>ทั้งสองฝ่ายทำอะไร</h4>
+        <p>วันจับจริงจะสุ่มตรวจกุ้งด้วยวิธีมาตรฐานเดียวกับตอนเปิดประมูล เพื่อยืนยันไซส์จริง แล้วจับคู่กับราคาไซส์ที่ตกลงไว้ล่วงหน้า — ถ้าไซส์จริงไม่ตรงไซส์เป้าหมาย ราคาที่ใช้ชำระคือราคาของไซส์จริงตามตาราง ไม่ใช่ราคาไซส์เป้าหมาย และยอดชำระคำนวณจากน้ำหนักที่ชั่งได้จริงเท่านั้น ไม่ใช่น้ำหนักที่ประมาณการไว้ตอนเปิดประมูล</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ทำให้ทั้งสองฝ่ายรู้กติกาการจ่ายเงินล่วงหน้าอย่างชัดเจน ลดข้อพิพาทหน้างาน และหากไม่ตรงกันจริงๆ ระบบมีขั้นตอนให้เจ้าหน้าที่กลางเข้าตรวจซ้ำได้</p>
+        <h4>เชื่อมต่อไปยัง</h4>
+        <p>ยอดชำระที่คำนวณได้จะออกเป็นใบแจ้งหนี้และชำระผ่านระบบเดียวกับการซื้อขายผลผลิตอื่นของ AgroLink</p>
+      </article>
+
+      <article id="trust-score" class="detail-block reveal in">
+        <span class="detail-num"><i class="fa-solid fa-star" style="font-size:38px;opacity:.15;"></i></span>
+        <div class="icn"><i class="fa-solid fa-star"></i></div>
+        <h3>คะแนนความน่าเชื่อถือของผู้ซื้อและฟาร์ม</h3>
+        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <h4>ระบบทำอะไร</h4>
+        <p>หลังจบการซื้อขายแต่ละครั้ง เจ้าของบ่อให้คะแนนผู้ซื้อ (จ่ายเงินตรงเวลา มารับตรงเวลา มีข้อโต้แย้งหรือไม่) และผู้ซื้อให้คะแนนฟาร์ม (ข้อมูลตรงจริง ไซส์ตรง คุณภาพตรง) คะแนนเหล่านี้สะสมเป็นคะแนนความน่าเชื่อถือที่แสดงให้อีกฝ่ายเห็นก่อนตัดสินใจในรอบถัดไป</p>
+        <h4>ทำไมสำคัญ</h4>
+        <p>ทำให้เจ้าของบ่อเลือกผู้ซื้อได้อย่างมั่นใจแม้ราคาไม่ใช่ตัวเลขสูงสุด และทำให้ผู้ซื้อที่ปฏิบัติตามเงื่อนไขดีได้เปรียบในการเข้าถึงบ่อคุณภาพดีในระยะยาว</p>
+        <h4>เชื่อมต่อไปยัง</h4>
+        <p>คะแนนนี้จะแสดงประกอบการตัดสินใจในหน้าจัดอันดับผู้ซื้อของขั้นตอน "เจ้าของบ่อเลือกผู้ซื้อ" ด้านบน</p>
+      </article>
+
+    </div>
+
+    <div class="note-block reveal in">
+      <strong>หมายเหตุ:</strong> หน้านี้อธิบายแนวคิดและกลไกของ Auction Place ตามสถาปัตยกรรมที่วางแผนไว้ ระบบยังอยู่ระหว่างการออกแบบและพัฒนา ยังไม่เปิดให้ลงทะเบียนบ่อหรือประมูลจริงในขณะนี้ หากสนใจเป็นฟาร์มหรือผู้ซื้อรายแรกๆ เมื่อเปิดให้บริการ ติดต่อเราไว้ล่วงหน้าได้
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container section-head reveal">
+    <h2 class="section-title">สนใจเป็นฟาร์มกุ้งหรือผู้ซื้อรายแรกของ Auction Place</h2>
+    <p class="section-sub">ทิ้งข้อมูลติดต่อไว้ล่วงหน้า เราจะแจ้งเตือนทันทีที่เปิดให้ลงทะเบียนบ่อและเริ่มประมูลจริง</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="index.html#contact" class="btn btn-primary">ติดต่อเราล่วงหน้า</a>
+      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark">🌿</span>AgroLink</div>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
+      </div>
+      <div>
+        <h5>แพลตฟอร์ม</h5>
+        <ul>
+          <li><a href="index.html#concept">แนวคิดหลัก</a></li>
+          <li><a href="production-cycle-template.html">แม่แบบวงจรการผลิต (รายละเอียด)</a></li>
+          <li><a href="auction-place.html">Auction Place</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>ผู้ใช้งาน</h5>
+        <ul>
+          <li><a href="index.html#audience">เกษตรกร</a></li>
+          <li><a href="coop-portal.html">สหกรณ์</a></li>
+          <li><a href="index.html#audience">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#audience">ผู้ให้สินเชื่อ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>องค์กร</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="index.html#partners">พันธมิตร</a></li>
+          <li><a href="index.html#contact">ติดต่อเรา</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span>สร้างบนแกนกลาง Galaxy Core</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>

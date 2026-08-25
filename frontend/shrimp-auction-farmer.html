@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — Auction Place (ประมูลกุ้งสด)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🦐</span><span>AgroLink Platform — Auction Place (ประมูลกุ้งสด)</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      ระบบประมูลกุ้งสดแบบ Sealed Bid — ขั้นตอนนี้เป็นเวอร์ชันแกนหลัก (Phase 1a): กรอกข้อมูลฟาร์ม/บ่อแบบง่าย
+      สุ่มตรวจไซส์ก่อนเปิดประมูล เปิดประมูลให้ผู้ซื้อเสนอราคา 5 ไซส์ ท่านเลือกผู้ซื้อเอง แล้วสุ่มตรวจไซส์จริงวันจับเพื่อคำนวณราคาชำระจริง
+      — การชำระเงินจริงยังทำนอกระบบเหมือนบริการอื่นในพอร์ทัลนี้ ระบบเพียงบันทึกยอดที่ต้องชำระและให้ท่านยืนยันว่าได้รับแล้ว
+    </p>
+
+    <div class="section-title" style="font-size:16px;">🏡 ข้อมูลฟาร์ม</div>
+    <form id="farmProfileForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="farmNameInput">ชื่อฟาร์ม</label>
+          <input type="text" id="farmNameInput" required />
+        </div>
+        <div class="field">
+          <label for="farmProvinceInput">จังหวัด</label>
+          <input type="text" id="farmProvinceInput" required />
+        </div>
+        <div class="field">
+          <label for="farmDistrictInput">อำเภอ</label>
+          <input type="text" id="farmDistrictInput" />
+        </div>
+        <div class="field">
+          <label for="farmPhoneInput">เบอร์โทร</label>
+          <input type="text" id="farmPhoneInput" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="farmProfileSubmitBtn">บันทึกข้อมูลฟาร์ม</button>
+    </form>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">🐟 บ่อกุ้งของฉัน</div>
+    <form id="pondForm" class="panel">
+      <p style="font-size:12.5px; color:var(--gray-500); margin:0 0 10px;">
+        รอบแรกนี้ใช้พิกัดจุดเดียวแทนการวาดขอบเขตบ่อเต็มรูปแบบ เพื่อให้เริ่มใช้งานได้เร็ว
+      </p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="pondSpeciesSelect">ชนิดกุ้ง</label>
+          <select id="pondSpeciesSelect" required>
+            <option value="SHRIMP_VANNAMEI">กุ้งขาวแวนนาไม</option>
+            <option value="SHRIMP_BLACKTIGER">กุ้งกุลาดำ</option>
+            <option value="SHRIMP_OTHER">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pondAreaInput">ขนาดบ่อ (ไร่)</label>
+          <input type="number" id="pondAreaInput" min="0.01" step="0.01" required />
+        </div>
+        <div class="field">
+          <label for="pondSeasonInput">รอบเลี้ยง/ฤดูกาล</label>
+          <input type="text" id="pondSeasonInput" placeholder="เช่น 2026-รอบ1" required />
+        </div>
+        <div class="field">
+          <label for="pondLatInput">พิกัด — ละติจูด</label>
+          <input type="number" id="pondLatInput" step="0.000001" required />
+        </div>
+        <div class="field">
+          <label for="pondLngInput">พิกัด — ลองจิจูด</label>
+          <input type="number" id="pondLngInput" step="0.000001" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="pondSubmitBtn">เพิ่มบ่อ</button>
+    </form>
+    <div id="pondsSection" class="card-list" style="margin-top:14px;">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📏 สุ่มตรวจไซส์ก่อนเปิดประมูล</div>
+    <form id="samplingForm" class="panel">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="samplingPondSelect">เลือกบ่อ</label>
+          <select id="samplingPondSelect" required></select>
+        </div>
+      </div>
+      <div id="samplingPointsContainer"></div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-outline btn-sm" id="addSamplingPointBtn">+ เพิ่มจุดสุ่ม</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="samplingSubmitBtn">บันทึกผลสุ่ม (ขั้นต่ำ 5 จุด)</button>
+      </div>
+    </form>
+    <div id="samplingResultSection" class="card-list" style="margin-top:10px;"></div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📢 เปิดประมูลใหม่</div>
+    <form id="openAuctionForm" class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="auctionPondSelect">เลือกบ่อ</label>
+          <select id="auctionPondSelect" required></select>
+        </div>
+        <div class="field full">
+          <label for="auctionSamplingSelect">เลือกผลสุ่มไซส์ก่อนประมูล (ของบ่อที่เลือก)</label>
+          <select id="auctionSamplingSelect" required></select>
+        </div>
+        <div class="field full">
+          <label for="auctionProductDescInput">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
+          <input type="text" id="auctionProductDescInput" placeholder="เช่น กุ้งขาวแวนนาไม บ่อ 2 ไร่" />
+        </div>
+        <div class="field">
+          <label for="auctionClosesAtInput">วัน-เวลาปิดประมูล</label>
+          <input type="datetime-local" id="auctionClosesAtInput" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="openAuctionSubmitBtn">เปิดประมูล</button>
+    </form>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📋 ประมูลของฉัน</div>
+    <div id="myAuctionsSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div id="auctionDetailSection" class="card-list" style="margin-top:14px;"></div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/shrimp-auction-farmer.js"></script>
+</body>
+</html>

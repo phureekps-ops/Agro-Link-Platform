@@ -48,6 +48,12 @@ const villageFundRouter = require('./routes/villagefund');
 // cooperative's own side of the exact same logistics.* schema.
 const logisticsRouter = require('./routes/logistics');
 
+// aquaculture.js — Auction Place: shrimp sealed-bid forward auction (see
+// SHRIMP_AUCTION_ARCHITECTURE.md). Subject-type agnostic (farmer pond
+// owners open/manage auctions, organization Buyers bid), same reasoning as
+// procurement.js above — its own prefix, not scoped to one portal.
+const aquacultureRouter = require('./routes/aquaculture');
+
 const app = express();
 
 app.use(cors());
@@ -116,6 +122,7 @@ app.use('/procurement', groupBuyRouter);
 app.use('/farmer360', farmer360Router);
 app.use('/villagefund', villageFundRouter);
 app.use('/logistics', logisticsRouter);
+app.use('/aquaculture', aquacultureRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/marketvenue', marketVenueRouter);

@@ -1087,7 +1087,7 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
       if (!gate.ok) return { gate };
 
       const auctionRes = await client.query(
-        `SELECT a.auction_id, a.rfq_id, a.status, a.closes_at, a.bid_visibility, r.category
+        `SELECT a.auction_id, a.rfq_id, a.status, a.closes_at, a.bid_visibility, a.auction_mode, r.category
            FROM procurement.auction a
            JOIN procurement.rfq r ON r.rfq_id = a.rfq_id
           WHERE a.auction_id = $1`,
@@ -1095,6 +1095,17 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
       );
       if (auctionRes.rows.length === 0) return { notFound: true };
       let auction = auctionRes.rows[0];
+
+      // Forward-mode (shrimp/Auction Place) auctions use a completely
+      // different bid shape (multi-size-tier price matrix, no single
+      // bid_price/bid_quantity, no auto-award) — they are bid on via
+      // POST /aquaculture/auctions/:id/bids instead. Reject here rather
+      // than silently accepting a single-price bid that would corrupt the
+      // tier matrix a forward auction depends on. See
+      // SHRIMP_AUCTION_ARCHITECTURE.md section 3.8.
+      if (auction.auction_mode === 'forward') {
+        return { wrongMode: true };
+      }
 
       if (auction.status === 'open' && new Date(auction.closes_at).getTime() <= Date.now()) {
         const fresh = await ensureAuctionSettled(client, auction);
@@ -1153,6 +1164,7 @@ router.post('/auctions/:id/bids', async (req, res, next) => {
       return res.status(403).json({ error: 'organization_subject_required' });
     }
     if (result.notFound) return res.status(404).json({ error: 'auction_not_found' });
+    if (result.wrongMode) return res.status(409).json({ error: 'forward_auction_use_aquaculture_bids_endpoint' });
     if (result.wrongStatus) return res.status(409).json({ error: 'auction_not_open', current_status: result.wrongStatus });
     if (result.notCompetitive) {
       return res.status(409).json({ error: 'bid_not_competitive', current_lowest_bid: result.currentLowest });
@@ -1222,13 +1234,18 @@ router.post('/auctions/:id/close', async (req, res, next) => {
   try {
     const result = await withSessionContext(subject.subjectType, subject.subjectId, async (client) => {
       const auctionRes = await client.query(
-        `SELECT a.auction_id, a.rfq_id, a.status FROM procurement.auction a
+        `SELECT a.auction_id, a.rfq_id, a.status, a.auction_mode FROM procurement.auction a
            JOIN procurement.rfq r ON r.rfq_id = a.rfq_id
           WHERE a.auction_id = $1 AND r.requester_subject_type = $2 AND r.requester_subject_id = $3`,
         [id, subject.subjectType, subject.subjectId],
       );
       if (auctionRes.rows.length === 0) return { notFound: true };
       const auction = auctionRes.rows[0];
+      // Forward-mode (shrimp/Auction Place) auctions never auto-award on
+      // close — the farmer picks the winning buyer manually. Closing one
+      // is handled entirely by aquaculture.js. See
+      // SHRIMP_AUCTION_ARCHITECTURE.md section 3.8.
+      if (auction.auction_mode === 'forward') return { wrongMode: true };
       if (auction.status !== 'open') return { wrongStatus: auction.status };
 
       const closeResult = await closeAndAwardAuction(client, auction);
@@ -1236,6 +1253,7 @@ router.post('/auctions/:id/close', async (req, res, next) => {
     });
 
     if (result.notFound) return res.status(404).json({ error: 'auction_not_found' });
+    if (result.wrongMode) return res.status(409).json({ error: 'forward_auction_use_aquaculture_close_endpoint' });
     if (result.wrongStatus) return res.status(409).json({ error: 'auction_not_open', current_status: result.wrongStatus });
     // Include contract_id when the close produced an award — mirrors POST
     // /rfqs/:id/quotes/:quoteId/accept's response shape (which returns the

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — Auction Place (ประมูลกุ้งสด)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🦐</span><span>AgroLink Platform — Auction Place (ประมูลกุ้งสด)</span></div>
+    <div class="who">
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 20px;">
+      ประมูลซื้อกุ้งสดแบบ Sealed Bid — เสนอราคาให้ครบทุกไซส์ในตาราง 5 ไซส์ (ห้ามเว้นไซส์ใดไซส์หนึ่ง) เพราะราคาที่ใช้ชำระจริง
+      จะอ้างอิงไซส์ที่ตรวจได้จริงในวันจับ ไม่ใช่ไซส์เป้าหมายที่ประกาศไว้ตอนเปิดประมูล ท่านจะเห็นเฉพาะสถานะของตัวเอง (นำ/เสมอ/แพ้)
+      ไม่เห็นราคาหรือตัวตนของคู่แข่งรายอื่น
+    </p>
+
+    <div class="section-title" style="font-size:16px;">🔍 ประมูลที่เปิดอยู่</div>
+    <div id="openAuctionsSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div id="auctionDetailSection" class="card-list" style="margin-top:14px;"></div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📋 ประมูลของฉัน</div>
+    <div id="myAuctionsSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/shrimp-auction.js"></script>
+</body>
+</html>
