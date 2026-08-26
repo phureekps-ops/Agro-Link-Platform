@@ -154,6 +154,27 @@
     border-radius: var(--radius); padding: 20px 26px; font-size: 14.5px; color: #6B5410;
   }
 
+  /* AUCTION-TYPE COMPARISON (Forward vs Reverse) */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+  @media (max-width: 860px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-card {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 30px 30px 28px; display: flex; flex-direction: column;
+  }
+  .compare-card .icn { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
+  .compare-card.forward .icn { background: var(--gold-light); color: var(--gold); }
+  .compare-card.reverse .icn { background: var(--green-light); color: var(--green); }
+  .compare-card h3 { font-size: 20px; margin-bottom: 2px; }
+  .compare-card .tagline { font-size: 13.5px; color: var(--muted); margin-bottom: 14px; }
+  .compare-card .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .compare-card .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .compare-card.forward .badge { background: var(--gold-light); color: #8A6D14; }
+  .compare-card.reverse .badge { background: var(--green-light); color: var(--green); }
+  .compare-card h4 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy); margin: 14px 0 5px; }
+  .compare-card h4:first-of-type { margin-top: 0; }
+  .compare-card p { font-size: 14.5px; color: var(--text); }
+  .compare-card .btn { margin-top: 20px; align-self: flex-start; }
+
   /* FOOTER — identical to index.html / coop-portal.html */
   footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
   .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
@@ -207,7 +228,7 @@
     <div class="eyebrow"><i class="fa-solid fa-gavel"></i> Auction Place</div>
     <h1 class="section-title">ตลาดประมูลกุ้งสดแบบ Sealed Bid</h1>
     <p class="section-sub">ตลาดกลางที่เจ้าของบ่อประกาศกุ้งที่พร้อมขาย ให้ผู้ซื้อหลายรายแข่งกันเสนอราคาแบบปิดตามไซส์กุ้ง แล้วเจ้าของบ่อเป็นผู้เลือกผู้ซื้อเองจากราคาและความน่าเชื่อถือ ไม่ใช่ราคาสูงสุดเสมอไป</p>
-    <span class="coming-soon-flag"><i class="fa-solid fa-clock"></i> อยู่ระหว่างออกแบบระบบ — เตรียมเปิดให้บริการ</span>
+    <span class="coming-soon-flag"><i class="fa-solid fa-circle-check"></i> เปิดใช้งานแกนประมูลหลักแล้ว — ฟีเจอร์เสริม (ถ่ายรูปมาตรฐาน, AI ช่วยตรวจคุณภาพ, คะแนนความน่าเชื่อถือเต็มรูปแบบ) อยู่ระหว่างพัฒนาต่อ</span>
   </div>
   <div class="container cycle-nav">
     <div class="cycle-nav-row">
@@ -228,12 +249,54 @@
   </div>
 </section>
 
+<section id="auction-types" class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:36px;">
+      <div class="eyebrow"><i class="fa-solid fa-arrows-up-down"></i> รู้จักระบบประมูลของ AgroLink</div>
+      <h2 class="section-title">ประมูล 2 ทิศทาง: "ขาย" (Forward) และ "ซื้อ" (Reverse)</h2>
+      <p class="section-sub">AgroLink ใช้กลไก "ประมูล" เป็นแกนกลางเดียวกัน แต่เปิดให้ใช้งานได้ 2 ทิศทางตรงข้ามกัน ขึ้นอยู่กับว่าใครเป็นผู้เปิดประมูลและราคาวิ่งไปทางไหน — เข้าใจความต่างของทั้งสองแบบก่อน แล้วเลือกเข้าใช้งานจากปุ่มด้านล่างได้ทันที</p>
+    </div>
+
+    <div class="compare-grid">
+
+      <div class="compare-card forward reveal in">
+        <div class="icn"><i class="fa-solid fa-fish"></i></div>
+        <h3>Forward Auction — ประมูลขาย</h3>
+        <div class="tagline">ราคาวิ่งขึ้น (bid UP) · ตัวอย่างที่ใช้งานจริง: ประมูลกุ้งสด</div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว — แกนประมูลกุ้ง</span></div>
+        <h4>ใครเปิดประมูล</h4>
+        <p>ฝั่ง "ผู้ขาย" เป็นผู้เปิด — สำหรับกุ้งคือเจ้าของบ่อ ประกาศล็อตกุ้งที่พร้อมจับพร้อมไซส์เป้าหมายที่สุ่มตรวจไว้ล่วงหน้า</p>
+        <h4>กลไกราคา</h4>
+        <p>ผู้ซื้อหลายรายแข่งกันเสนอราคา "สูงขึ้น" แบบปิด (sealed) ต่อ 1 ตาราง 5 ไซส์รอบไซส์เป้าหมาย เห็นเฉพาะสถานะของตัวเอง 🟢นำ/🟡เสมอ/🔴แพ้ ไม่เห็นราคาคู่แข่ง</p>
+        <h4>ใครเป็นผู้ตัดสิน</h4>
+        <p>เมื่อปิดประมูล ระบบ<strong>ไม่</strong>ตัดสินผู้ชนะอัตโนมัติ — เจ้าของบ่อเป็นผู้พิจารณาและเลือกผู้ซื้อเอง จากราคาที่เสนอประกอบกับความน่าเชื่อถือ ไม่ใช่ราคาสูงสุดเสมอไป จากนั้นสุ่มตรวจไซส์จริงวันจับเพื่อคำนวณราคาชำระจริง</p>
+        <a href="shrimp-auction-farmer.html" class="btn btn-gold">🦐 ประมูลขายกุ้ง</a>
+      </div>
+
+      <div class="compare-card reverse reveal in">
+        <div class="icn"><i class="fa-solid fa-gavel"></i></div>
+        <h3>Reverse Auction — ประมูลซื้อ</h3>
+        <div class="tagline">ราคาวิ่งลง (bid DOWN) · ตัวอย่างที่ใช้งานจริง: ประมูลซื้อแม่ปุ๋ยของสหกรณ์</div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว — e-Auction เดิมของแพลตฟอร์ม</span></div>
+        <h4>ใครเปิดประมูล</h4>
+        <p>ฝั่ง "ผู้ซื้อ" เป็นผู้เปิด — เช่น สหกรณ์ที่ต้องการซื้อแม่ปุ๋ยปริมาณมากให้สมาชิกทั้งกลุ่ม ประกาศความต้องการ (RFQ) แล้วเปิดเป็นประมูลแข่งราคา</p>
+        <h4>กลไกราคา</h4>
+        <p>ผู้ขาย/ซัพพลายเออร์หลายรายแข่งกันเสนอราคา "ต่ำลง" ทีละราคา ผู้เสนอราคาต่ำสุด ณ เวลาปิดประมูลเป็นผู้ชนะ</p>
+        <h4>ใครเป็นผู้ตัดสิน</h4>
+        <p>ระบบตัดสินอัตโนมัติทันทีที่ปิดประมูล — ผู้เสนอราคาต่ำสุดชนะและออกสัญญาซื้อขายให้อัตโนมัติ ไม่ต้องรอผู้ซื้อเลือกเอง</p>
+        <a href="coop-portal.html" class="btn btn-primary">🌾 ประมูลซื้อปุ๋ย</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <section id="detail" class="prose-section alt" style="padding-bottom:0;">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:0;">
       <div class="eyebrow"><i class="fa-solid fa-list-check"></i> กลไกหลักของ Auction Place</div>
-      <h2 class="section-title">6 ขั้นตอนของการประมูลกุ้งหนึ่งรอบ</h2>
-      <p class="section-sub">ระบบนี้อยู่ระหว่างการออกแบบสถาปัตยกรรม เนื้อหาด้านล่างอธิบายกลไกที่วางแผนไว้ ยังไม่ใช่ฟังก์ชันที่เปิดใช้งานจริงในขณะนี้</p>
+      <h2 class="section-title">6 ขั้นตอนของการประมูลกุ้งหนึ่งรอบ (Forward Auction)</h2>
+      <p class="section-sub">5 ขั้นตอนแรกเปิดใช้งานจริงแล้วผ่านปุ่ม "ประมูลขายกุ้ง" ด้านบน ส่วนขั้นตอนคะแนนความน่าเชื่อถือยังอยู่ระหว่างพัฒนาในเฟสถัดไป</p>
     </div>
 
     <div class="detail-list">
@@ -242,20 +305,20 @@
         <span class="detail-num"><i class="fa-solid fa-water" style="font-size:38px;opacity:.15;"></i></span>
         <div class="icn"><i class="fa-solid fa-water"></i></div>
         <h3>ข้อมูลบ่อและฟาร์มก่อนเปิดประมูล</h3>
-        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว (แบบฟอร์มพื้นฐาน)</span></div>
         <h4>เจ้าของบ่อทำอะไร</h4>
-        <p>กรอกข้อมูลฟาร์ม (ชื่อฟาร์ม จังหวัด อำเภอ พิกัด) ข้อมูลบ่อและลูกกุ้ง (ชนิดกุ้ง วันลงลูกกุ้ง ความหนาแน่น แหล่งลูกกุ้ง) รวมถึงประวัติการให้อาหารและการใช้ยา/สารต่างๆ ตลอดรอบเลี้ยง แล้วถ่ายรูปกุ้งตามมุมที่ระบบกำหนดก่อนเปิดประมูลทุกครั้ง</p>
+        <p>กรอกข้อมูลฟาร์ม (ชื่อฟาร์ม จังหวัด อำเภอ เบอร์โทร) แล้วลงทะเบียนบ่อ (ชนิดกุ้ง พื้นที่บ่อ รอบการเลี้ยง และพิกัด GPS ของบ่อ) ผ่านแบบฟอร์มง่ายๆ — เวอร์ชันนี้ยังไม่รวมการวาดขอบเขตบ่อบนแผนที่ ประวัติการให้อาหาร/ใช้ยา และการถ่ายรูปมาตรฐาน ซึ่งเป็นฟีเจอร์เสริมที่วางแผนไว้ในเฟสถัดไป</p>
         <h4>ทำไมสำคัญ</h4>
-        <p>ข้อมูลชุดนี้เป็นฐานของ "คะแนนคุณภาพข้อมูลประมูล" ที่ผู้ซื้อเห็นก่อนตัดสินใจเสนอราคา ยิ่งข้อมูลครบและตรวจสอบย้อนกลับได้มากเท่าไร ผู้ซื้อยิ่งมั่นใจในการเสนอราคาสูงขึ้นเท่านั้น</p>
+        <p>ข้อมูลบ่อคือสิ่งที่ผูกทุกอย่างเข้าด้วยกัน — การสุ่มตรวจไซส์ ประมูล และการชำระเงิน ล้วนอ้างอิงกลับมาที่บ่อเดียวกันนี้เสมอ</p>
         <h4>เชื่อมต่อไปยัง</h4>
-        <p>ระบบจะไม่อนุญาตให้เปิดประมูลจนกว่าข้อมูลชุดนี้จะผ่านเกณฑ์คะแนนคุณภาพขั้นต่ำที่กำหนดไว้</p>
+        <p>ต้องลงทะเบียนบ่อก่อน จึงจะสุ่มตรวจไซส์และเปิดประมูลของบ่อนั้นได้ในขั้นตอนถัดไป</p>
       </article>
 
       <article id="pre-auction-sampling" class="detail-block reveal in">
         <span class="detail-num"><i class="fa-solid fa-ruler-combined" style="font-size:38px;opacity:.15;"></i></span>
         <div class="icn"><i class="fa-solid fa-ruler-combined"></i></div>
         <h3>สุ่มตรวจไซส์ก่อนเปิดประมูล</h3>
-        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว</span></div>
         <h4>เจ้าของบ่อทำอะไร</h4>
         <p>สุ่มกุ้งอย่างน้อย 5 จุดในบ่อ นับจำนวนตัวและชั่งน้ำหนักแต่ละจุด ระบบคำนวณไซส์เฉลี่ย (จำนวนตัวต่อกิโลกรัม) และให้ "คะแนนความเชื่อมั่นของการสุ่ม" (สูง/กลาง/ต่ำ) ตามจำนวนจุดและความสม่ำเสมอของผลที่ได้</p>
         <h4>ทำไมสำคัญ</h4>
@@ -268,7 +331,7 @@
         <span class="detail-num"><i class="fa-solid fa-table-cells" style="font-size:38px;opacity:.15;"></i></span>
         <div class="icn"><i class="fa-solid fa-table-cells"></i></div>
         <h3>ประมูลแบบ Sealed Bid ด้วยตารางราคา 5 ไซส์</h3>
-        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว</span></div>
         <h4>ผู้ซื้อทำอะไร</h4>
         <p>ผู้ซื้อไม่ได้เสนอราคาเดียว แต่ต้องเสนอราคาให้ครบทุกไซส์ในตาราง 5 ไซส์รอบไซส์เป้าหมาย (เช่น 40 / 36 / 32 / 28 / 24 ตัวต่อกิโลกรัม) เพราะไม่มีใครรู้ล่วงหน้าว่ากุ้งวันจับจริงจะออกไซส์ไหน ระหว่างประมูลผู้ซื้อจะเห็นเฉพาะสถานะของตัวเอง 🟢 นำ / 🟡 เสมอ / 🔴 แพ้ ต่อไซส์ ไม่เห็นราคาหรือตัวตนของคู่แข่งเลย</p>
         <h4>ทำไมสำคัญ</h4>
@@ -281,26 +344,26 @@
         <span class="detail-num"><i class="fa-solid fa-hand-pointer" style="font-size:38px;opacity:.15;"></i></span>
         <div class="icn"><i class="fa-solid fa-hand-pointer"></i></div>
         <h3>เจ้าของบ่อเป็นผู้ตัดสินใจสุดท้าย</h3>
-        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว</span></div>
         <h4>เจ้าของบ่อทำอะไร</h4>
-        <p>เมื่อปิดประมูล ระบบไม่ตัดสินผู้ชนะให้อัตโนมัติเหมือนการประมูลซื้อปัจจัยการผลิตทั่วไป แต่จะแสดงรายชื่อผู้ซื้อที่เสนอราคาสูงสุด/ผ่านเกณฑ์ในแต่ละไซส์ พร้อมคะแนนความน่าเชื่อถือ ประวัติการจ่ายเงิน ประวัติการรับกุ้งตรงเวลา และระยะทางจากฟาร์ม ให้เจ้าของบ่อพิจารณาและกดเลือกผู้ซื้อเอง</p>
+        <p>เมื่อปิดประมูล ระบบไม่ตัดสินผู้ชนะให้อัตโนมัติเหมือนการประมูลซื้อปัจจัยการผลิตทั่วไป แต่จะแสดงรายชื่อผู้ซื้อทุกรายพร้อมราคาที่เสนอครบทุกไซส์ (เรียงตามราคาเฉลี่ย) ให้เจ้าของบ่อพิจารณาและกดเลือกผู้ซื้อเอง — คะแนนความน่าเชื่อถือ ประวัติการจ่ายเงิน และระยะทางจากฟาร์ม ยังไม่ใช่ข้อมูลที่แสดงในเวอร์ชันนี้ (อยู่ในฟีเจอร์เสริมด้านล่าง)</p>
         <h4>ทำไมสำคัญ</h4>
         <p>ราคาสูงสุดอาจมาพร้อมความเสี่ยง เช่น จ่ายเงินช้าหรือเคยมีปัญหาตอนตรวจรับ การให้เจ้าของบ่อเลือกเองจึงสำคัญกว่าการยึดราคาสูงสุดเป็นเกณฑ์เดียว</p>
         <h4>เชื่อมต่อไปยัง</h4>
-        <p>เมื่อเลือกผู้ซื้อแล้ว ระบบจะออกสัญญาซื้อขายและกำหนดวันจับจริง เชื่อมต่อกับระบบสัญญา/ใบสั่งซื้อเดิมของ AgroLink</p>
+        <p>เมื่อเลือกผู้ซื้อแล้ว ระบบเปลี่ยนสถานะประมูลเป็น "มีผู้ชนะแล้ว" ทันที ยังไม่ออกสัญญา/ใบสั่งซื้ออัตโนมัติในเวอร์ชันนี้ — ขั้นตอนถัดไปคือสุ่มตรวจไซส์จริงวันจับด้านล่าง</p>
       </article>
 
       <article id="final-settlement" class="detail-block reveal in">
         <span class="detail-num"><i class="fa-solid fa-scale-balanced" style="font-size:38px;opacity:.15;"></i></span>
         <div class="icn"><i class="fa-solid fa-scale-balanced"></i></div>
         <h3>สุ่มตรวจไซส์จริงวันจับ แล้วชำระเงินตามไซส์จริง</h3>
-        <div class="badge-row"><span class="badge ext">อยู่ระหว่างออกแบบ</span></div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว</span></div>
         <h4>ทั้งสองฝ่ายทำอะไร</h4>
-        <p>วันจับจริงจะสุ่มตรวจกุ้งด้วยวิธีมาตรฐานเดียวกับตอนเปิดประมูล เพื่อยืนยันไซส์จริง แล้วจับคู่กับราคาไซส์ที่ตกลงไว้ล่วงหน้า — ถ้าไซส์จริงไม่ตรงไซส์เป้าหมาย ราคาที่ใช้ชำระคือราคาของไซส์จริงตามตาราง ไม่ใช่ราคาไซส์เป้าหมาย และยอดชำระคำนวณจากน้ำหนักที่ชั่งได้จริงเท่านั้น ไม่ใช่น้ำหนักที่ประมาณการไว้ตอนเปิดประมูล</p>
+        <p>วันจับจริงจะสุ่มตรวจกุ้งด้วยวิธีมาตรฐานเดียวกับตอนเปิดประมูล เพื่อยืนยันไซส์จริง แล้วจับคู่กับราคาไซส์ที่ตกลงไว้ล่วงหน้า — ถ้าไซส์จริงไม่ตรงไซส์เป้าหมาย ราคาที่ใช้ชำระคือราคาของไซส์จริงตามตาราง ไม่ใช่ราคาไซส์เป้าหมาย จากนั้นเจ้าของบ่อกรอกน้ำหนักจริงที่ชั่งได้ ระบบจะคำนวณยอดที่ต้องชำระให้อัตโนมัติ</p>
         <h4>ทำไมสำคัญ</h4>
-        <p>ทำให้ทั้งสองฝ่ายรู้กติกาการจ่ายเงินล่วงหน้าอย่างชัดเจน ลดข้อพิพาทหน้างาน และหากไม่ตรงกันจริงๆ ระบบมีขั้นตอนให้เจ้าหน้าที่กลางเข้าตรวจซ้ำได้</p>
+        <p>ทำให้ทั้งสองฝ่ายรู้กติกาการจ่ายเงินล่วงหน้าอย่างชัดเจน ลดข้อพิพาทหน้างาน หากไซส์จริงคลาดเคลื่อนมากจากทุกไซส์ในตาราง ระบบจะตั้งค่าสถานะ "ต้องเจรจาใหม่" ให้ทั้งสองฝ่ายทราบ</p>
         <h4>เชื่อมต่อไปยัง</h4>
-        <p>ยอดชำระที่คำนวณได้จะออกเป็นใบแจ้งหนี้และชำระผ่านระบบเดียวกับการซื้อขายผลผลิตอื่นของ AgroLink</p>
+        <p>ยอดที่คำนวณได้จะถูกบันทึกในระบบให้ทั้งสองฝ่ายเห็นตรงกัน ส่วนการโอนเงินจริงยังทำนอกระบบเช่นเดียวกับบริการอื่นของ AgroLink ที่เกษตรกรเป็นผู้ขาย — เจ้าของบ่อเป็นผู้กดยืนยันในระบบเมื่อได้รับเงินแล้ว</p>
       </article>
 
       <article id="trust-score" class="detail-block reveal in">
@@ -319,18 +382,19 @@
     </div>
 
     <div class="note-block reveal in">
-      <strong>หมายเหตุ:</strong> หน้านี้อธิบายแนวคิดและกลไกของ Auction Place ตามสถาปัตยกรรมที่วางแผนไว้ ระบบยังอยู่ระหว่างการออกแบบและพัฒนา ยังไม่เปิดให้ลงทะเบียนบ่อหรือประมูลจริงในขณะนี้ หากสนใจเป็นฟาร์มหรือผู้ซื้อรายแรกๆ เมื่อเปิดให้บริการ ติดต่อเราไว้ล่วงหน้าได้
+      <strong>หมายเหตุ:</strong> แกนประมูลหลัก (ลงทะเบียนบ่อ, สุ่มตรวจไซส์, ประมูล Sealed Bid, เจ้าของบ่อเลือกผู้ซื้อ, สุ่มจริง + บันทึกยอดชำระ) เปิดใช้งานจริงแล้วผ่านปุ่ม "ประมูลขายกุ้ง" ด้านบน ส่วนฟีเจอร์เสริม (ถ่ายรูปมาตรฐาน 6 มุม, บันทึกอาหาร/ยา/คุณภาพน้ำ, AI ช่วยตรวจคุณภาพ, คะแนนความน่าเชื่อถือเต็มรูปแบบ) ยังอยู่ระหว่างพัฒนาในเฟสถัดไป
     </div>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container section-head reveal">
-    <h2 class="section-title">สนใจเป็นฟาร์มกุ้งหรือผู้ซื้อรายแรกของ Auction Place</h2>
-    <p class="section-sub">ทิ้งข้อมูลติดต่อไว้ล่วงหน้า เราจะแจ้งเตือนทันทีที่เปิดให้ลงทะเบียนบ่อและเริ่มประมูลจริง</p>
+    <h2 class="section-title">พร้อมเริ่มใช้งาน Auction Place แล้ววันนี้</h2>
+    <p class="section-sub">เจ้าของบ่อลงทะเบียนบ่อและเปิดประมูลขายกุ้งได้ทันที ส่วนสหกรณ์ที่ต้องการซื้อแม่ปุ๋ยปริมาณมากเข้าที่พอร์ทัลสหกรณ์เพื่อเริ่มรอบรวมออเดอร์ได้เช่นกัน</p>
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-      <a href="index.html#contact" class="btn btn-primary">ติดต่อเราล่วงหน้า</a>
-      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+      <a href="shrimp-auction-farmer.html" class="btn btn-gold">🦐 ประมูลขายกุ้ง</a>
+      <a href="coop-portal.html" class="btn btn-primary">🌾 ประมูลซื้อปุ๋ย</a>
+      <a href="index.html#contact" class="btn btn-outline">ติดต่อสอบถามเพิ่มเติม</a>
     </div>
   </div>
 </section>
