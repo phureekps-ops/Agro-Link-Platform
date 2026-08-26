@@ -71,8 +71,12 @@ async function loadSuppliersIntoFilter() {
 // this just renders the "⭐ แนะนำ" badge, it does not re-sort anything
 // client-side.
 function productCard(p) {
+  const coverPhotoHtml = p.cover_photo_url
+    ? `<img class="product-cover-photo" src="${p.cover_photo_url}" alt="${escapeHtml(p.product_name)}" />`
+    : "";
   return `
     <div class="item-card" data-listing-id="${p.listing_id}">
+      ${coverPhotoHtml}
       <div class="row">
         <span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
         <span class="badge status-active">${escapeHtml(CATEGORY_LABEL_TH[p.category] || p.category)}</span>

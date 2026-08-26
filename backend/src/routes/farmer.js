@@ -537,7 +537,9 @@ router.get('/products', async (req, res, next) => {
       const result = await client.query(
         `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
                 p.description, p.unit_price, p.price_unit, p.updated_at,
-                (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) AS featured
+                (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) AS featured,
+                (SELECT photo_data_url FROM marketplace.product_photo
+                  WHERE listing_id = p.listing_id ORDER BY created_at ASC LIMIT 1) AS cover_photo_url
            FROM marketplace.product_listing p
            JOIN identity.organization o ON o.org_id = p.org_id
           WHERE ${filters.join(' AND ')}

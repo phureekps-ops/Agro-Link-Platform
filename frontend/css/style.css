@@ -350,6 +350,20 @@ a { color: inherit; }
 }
 .item-card .muted { color: var(--gray-500); font-size: 12px; }
 
+/* Cover photo on a browse-card (e.g. marketplace.html's ตลาดปัจจัยการผลิต) —
+   pulled from marketplace.product_photo's oldest row per listing. Full-bleed
+   at the top of the card, same object-fit/rounding convention as the
+   Machinery Portal's .photo-card img gallery thumbnails below. */
+.item-card .product-cover-photo {
+  display: block;
+  width: calc(100% + 36px);
+  height: 150px;
+  margin: -16px -18px 12px;
+  object-fit: cover;
+  background: var(--gray-300);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
 .empty-state {
   background: #fff;
   border-radius: var(--radius);
