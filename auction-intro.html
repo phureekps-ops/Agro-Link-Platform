@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แนะนำระบบการประมูลสินค้า — Auction Place | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html / coop-portal.html / auction-place.html so the header feels like one site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo-img { height: 44px; width: auto; display: block; }
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-links a.active-link { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+    }
+    .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-row:last-child a:last-child { border-bottom: none; }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+
+  /* AUCTION-TYPE COMPARISON (Forward vs Reverse) */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+  @media (max-width: 860px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-card {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 30px 30px 28px; display: flex; flex-direction: column;
+  }
+  .compare-card .icn { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
+  .compare-card.forward .icn { background: var(--gold-light); color: var(--gold); }
+  .compare-card.reverse .icn { background: var(--green-light); color: var(--green); }
+  .compare-card h3 { font-size: 20px; margin-bottom: 2px; }
+  .compare-card .tagline { font-size: 13.5px; color: var(--muted); margin-bottom: 14px; }
+  .compare-card .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .compare-card .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .compare-card.forward .badge { background: var(--gold-light); color: #8A6D14; }
+  .compare-card.reverse .badge { background: var(--green-light); color: var(--green); }
+  .compare-card h4 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy); margin: 14px 0 5px; }
+  .compare-card h4:first-of-type { margin-top: 0; }
+  .compare-card p { font-size: 14.5px; color: var(--text); }
+  .compare-card .btn { margin-top: 20px; align-self: flex-start; }
+
+  /* SIDE-BY-SIDE SUMMARY TABLE */
+  .summary-table-wrap { overflow-x: auto; margin-top: 8px; }
+  table.summary-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table.summary-table th, table.summary-table td { padding: 14px 18px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border); }
+  table.summary-table th { background: var(--green-light); color: var(--green-dark); font-weight: 800; }
+  table.summary-table td:first-child, table.summary-table th:first-child { color: var(--navy); font-weight: 700; white-space: nowrap; }
+  table.summary-table tr:last-child td { border-bottom: none; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / auction-place.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ติดต่อสอบถาม</a>
+        </div>
+        <button class="nav-toggle">☰</button>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="about.html">เกี่ยวกับเรา</a>
+        <a href="index.html#concept">แนวคิดหลัก</a>
+        <a href="index.html#how">วิธีการทำงาน</a>
+        <a href="index.html#knowledge">คลังความรู้</a>
+        <a href="index.html#prices">ราคาสินค้า</a>
+      </div>
+      <div class="nav-row">
+        <a href="index.html#weather">พยากรณ์อากาศ</a>
+        <a href="index.html#roadmap">แผนสินค้า</a>
+        <a href="coop-portal.html">พอร์ทัลสหกรณ์</a>
+        <a href="index.html#contact">ติดต่อ</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-gavel"></i> Auction Place</div>
+    <h1 class="section-title">แนะนำระบบการประมูลสินค้า</h1>
+    <p class="section-sub">AgroLink มีกลไก "ประมูล" เป็นแกนกลางเดียวที่นำไปใช้ได้ 2 ทิศทางตรงข้ามกัน — ประมูลขาย (Forward) สำหรับสินค้าที่ผู้ผลิตเป็นผู้เปิดขาย เช่น กุ้งสด และประมูลซื้อ (Reverse) สำหรับปัจจัยการผลิตที่ผู้ซื้อรวมกันเปิดประมูลหาซัพพลายเออร์ เช่น แม่ปุ๋ย ทำความเข้าใจความต่างของทั้งสองแบบที่นี่ ก่อนเลือกเข้าใช้งานระบบจริง</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <h2>ทำไม AgroLink ถึงมีระบบประมูล 2 แบบ</h2>
+    <p>สินค้าเกษตรแต่ละชนิดมีจุดที่ "อ่อนไหวต่อราคา" ต่างกัน กุ้งสดเป็นสินค้าที่เจ้าของบ่อ (ผู้ขาย) ต้องหาผู้ซื้อที่ให้ราคาดีที่สุดสำหรับล็อตที่พร้อมจับ ในขณะที่ปัจจัยการผลิตอย่างแม่ปุ๋ยเป็นสิ่งที่ผู้ซื้อ (เช่น สหกรณ์) ต้องการซื้อในราคาถูกที่สุดจากซัพพลายเออร์หลายราย AgroLink จึงใช้กลไกประมูลเดียวกันเป็นแกนกลาง แต่เปิดให้ทำงานได้ทั้ง 2 ทิศทาง ให้เหมาะกับว่าใครเป็นฝ่ายที่ต้องแข่งขันเพื่อได้ราคาที่ดีที่สุด</p>
+  </div>
+</section>
+
+<section id="auction-types" class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:36px;">
+      <div class="eyebrow"><i class="fa-solid fa-arrows-up-down"></i> เปรียบเทียบกลไก</div>
+      <h2 class="section-title">ประมูล 2 ทิศทาง: "ขาย" (Forward) และ "ซื้อ" (Reverse)</h2>
+      <p class="section-sub">เข้าใจความต่างของทั้งสองแบบก่อน แล้วเลือกเข้าใช้งานระบบจริงจากปุ่มในการ์ดด้านล่างได้ทันที</p>
+    </div>
+
+    <div class="compare-grid">
+
+      <div class="compare-card forward reveal in">
+        <div class="icn"><i class="fa-solid fa-fish"></i></div>
+        <h3>Forward Auction — ประมูลขาย</h3>
+        <div class="tagline">ราคาวิ่งขึ้น (bid UP) · ตัวอย่างที่ใช้งานจริง: ประมูลกุ้งสด</div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว — แกนประมูลกุ้ง</span></div>
+        <h4>ใครเปิดประมูล</h4>
+        <p>ฝั่ง "ผู้ขาย" เป็นผู้เปิด — สำหรับกุ้งคือเจ้าของบ่อ ประกาศล็อตกุ้งที่พร้อมจับพร้อมไซส์เป้าหมายที่สุ่มตรวจไว้ล่วงหน้า</p>
+        <h4>กลไกราคา</h4>
+        <p>ผู้ซื้อหลายรายแข่งกันเสนอราคา "สูงขึ้น" แบบปิด (sealed) ต่อ 1 ตาราง 5 ไซส์รอบไซส์เป้าหมาย เห็นเฉพาะสถานะของตัวเอง 🟢นำ/🟡เสมอ/🔴แพ้ ไม่เห็นราคาคู่แข่ง</p>
+        <h4>ใครเป็นผู้ตัดสิน</h4>
+        <p>เมื่อปิดประมูล ระบบ<strong>ไม่</strong>ตัดสินผู้ชนะอัตโนมัติ — เจ้าของบ่อเป็นผู้พิจารณาและเลือกผู้ซื้อเอง จากราคาที่เสนอประกอบกับความน่าเชื่อถือ ไม่ใช่ราคาสูงสุดเสมอไป จากนั้นสุ่มตรวจไซส์จริงวันจับเพื่อคำนวณราคาชำระจริง</p>
+        <a href="auction-place.html" class="btn btn-gold">🦐 ประมูลขายกุ้ง</a>
+      </div>
+
+      <div class="compare-card reverse reveal in">
+        <div class="icn"><i class="fa-solid fa-gavel"></i></div>
+        <h3>Reverse Auction — ประมูลซื้อ</h3>
+        <div class="tagline">ราคาวิ่งลง (bid DOWN) · ตัวอย่างที่ใช้งานจริง: ประมูลซื้อแม่ปุ๋ยของสหกรณ์</div>
+        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว — e-Auction เดิมของแพลตฟอร์ม</span></div>
+        <h4>ใครเปิดประมูล</h4>
+        <p>ฝั่ง "ผู้ซื้อ" เป็นผู้เปิด — เช่น สหกรณ์ที่ต้องการซื้อแม่ปุ๋ยปริมาณมากให้สมาชิกทั้งกลุ่ม ประกาศความต้องการ (RFQ) แล้วเปิดเป็นประมูลแข่งราคา</p>
+        <h4>กลไกราคา</h4>
+        <p>ผู้ขาย/ซัพพลายเออร์หลายรายแข่งกันเสนอราคา "ต่ำลง" ทีละราคา ผู้เสนอราคาต่ำสุด ณ เวลาปิดประมูลเป็นผู้ชนะ</p>
+        <h4>ใครเป็นผู้ตัดสิน</h4>
+        <p>ระบบตัดสินอัตโนมัติทันทีที่ปิดประมูล — ผู้เสนอราคาต่ำสุดชนะและออกสัญญาซื้อขายให้อัตโนมัติ ไม่ต้องรอผู้ซื้อเลือกเอง</p>
+        <a href="coop-portal.html" class="btn btn-primary">🌾 ประมูลซื้อปุ๋ย</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:28px;">
+      <h2 class="section-title" style="font-size:26px;">สรุปความต่างแบบย่อ</h2>
+    </div>
+    <div class="summary-table-wrap reveal in">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Forward Auction (ประมูลขาย)</th>
+            <th>Reverse Auction (ประมูลซื้อ)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ผู้เปิดประมูล</td>
+            <td>ผู้ขาย (เจ้าของบ่อ)</td>
+            <td>ผู้ซื้อ (สหกรณ์/องค์กร)</td>
+          </tr>
+          <tr>
+            <td>ทิศทางราคา</td>
+            <td>วิ่งขึ้น — แข่งกันเสนอราคาสูง</td>
+            <td>วิ่งลง — แข่งกันเสนอราคาต่ำ</td>
+          </tr>
+          <tr>
+            <td>ผู้ตัดสินผู้ชนะ</td>
+            <td>เจ้าของบ่อเลือกเอง (ไม่ auto-award)</td>
+            <td>ระบบตัดสินอัตโนมัติเมื่อปิดประมูล</td>
+          </tr>
+          <tr>
+            <td>รูปแบบการเสนอราคา</td>
+            <td>ตารางราคา 5 ไซส์ (sealed bid)</td>
+            <td>ราคาเดียว แข่งขันแบบเปิด/ปิดตามประเภท</td>
+          </tr>
+          <tr>
+            <td>ตัวอย่างที่ใช้งานจริง</td>
+            <td>ประมูลกุ้งสด (Auction Place)</td>
+            <td>ประมูลซื้อแม่ปุ๋ยของสหกรณ์ (Group Buy → e-Auction)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container section-head reveal">
+    <h2 class="section-title">เลือกเข้าใช้งานระบบประมูลที่ตรงกับท่าน</h2>
+    <p class="section-sub">เป็นเจ้าของบ่อกุ้งที่ต้องการเปิดประมูลขาย หรือเป็นสหกรณ์ที่ต้องการรวมออเดอร์ซื้อแม่ปุ๋ย — เลือกได้จากปุ่มด้านล่าง</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="auction-place.html" class="btn btn-gold">🦐 ประมูลขายกุ้ง</a>
+      <a href="coop-portal.html" class="btn btn-primary">🌾 ประมูลซื้อปุ๋ย</a>
+      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark">🌿</span>AgroLink</div>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
+      </div>
+      <div>
+        <h5>แพลตฟอร์ม</h5>
+        <ul>
+          <li><a href="index.html#concept">แนวคิดหลัก</a></li>
+          <li><a href="production-cycle-template.html">แม่แบบวงจรการผลิต (รายละเอียด)</a></li>
+          <li><a href="auction-intro.html">Auction Place</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>ผู้ใช้งาน</h5>
+        <ul>
+          <li><a href="index.html#audience">เกษตรกร</a></li>
+          <li><a href="coop-portal.html">สหกรณ์</a></li>
+          <li><a href="index.html#audience">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#audience">ผู้ให้สินเชื่อ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>องค์กร</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="index.html#partners">พันธมิตร</a></li>
+          <li><a href="index.html#contact">ติดต่อเรา</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span>สร้างบนแกนกลาง Galaxy Core</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
