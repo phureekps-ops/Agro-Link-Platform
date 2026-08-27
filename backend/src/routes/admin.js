@@ -1874,4 +1874,176 @@ router.post('/group-buys/:id/convert', async (req, res, next) => {
   }
 });
 
+
+// ============================================================================
+// ระบบเติมทุนหมุนเวียนสหกรณ์ (Cooperative Working Capital Top-Up) — 2026-08-27
+// ฝั่งแอดมิน: อนุมัติ/ปฏิเสธคำขอวงเงินจากแหล่งทุนภายนอก + ประเมินธรรมาภิบาล +
+// จัดการไดเรกทอรีแหล่งทุน — ตั้งใจแยกจากฝั่งสหกรณ์ (coopcollection.js) เพื่อไม่
+// ให้สหกรณ์รับรองวงเงิน/ธรรมาภิบาลของตัวเองได้ฝ่ายเดียว (ดูหมายเหตุขอบเขตใน
+// backend/db/grant_cooperative_working_capital_topup.sql)
+// ============================================================================
+
+/**
+ * GET /admin/capital-topup/applications?status=Submitted — คิวคำขอวงเงินจาก
+ * ทุกสหกรณ์ (ค่าเริ่มต้นไม่กรอง แสดงทุกสถานะ)
+ */
+router.get('/capital-topup/applications', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  const VALID = ['Submitted', 'UnderReview', 'Approved', 'Rejected', 'Withdrawn'];
+  if (status && !VALID.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: VALID });
+  }
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      let filter = '';
+      if (status) { params.push(status); filter = 'WHERE a.status = $1'; }
+      const result = await client.query(
+        `SELECT a.application_id, a.org_id, o.org_name, a.purpose, a.amount_requested, a.term_months,
+                a.purpose_note, a.status, a.approved_amount, a.approved_interest_rate_daily_bps,
+                a.approved_tenor_months, a.decision_note, a.submitted_at, a.decided_at,
+                s.source_name, s.source_type,
+                sc.score AS score_at_submission, sc.grade AS grade_at_submission, sc.reasons AS score_reasons
+           FROM credit.cooperative_funding_application a
+           JOIN identity.organization o ON o.org_id = a.org_id
+           JOIN credit.external_funding_source s ON s.funding_source_id = a.funding_source_id
+           LEFT JOIN credit.cooperative_credit_score_snapshot sc ON sc.snapshot_id = a.score_snapshot_id
+           ${filter}
+          ORDER BY a.submitted_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'credit.cooperative_funding_application', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/capital-topup/applications/:id/decide
+ * Body: { decision: 'Approved'|'Rejected', approved_amount?, interest_rate_daily_bps?, approved_tenor_months?, decision_note? }
+ *
+ * บันทึกผลการเจรจากับแหล่งทุนภายนอกที่เกิดขึ้นนอกระบบ (ดูหมายเหตุขอบเขตหัวไฟล์
+ * migration) — เมื่ออนุมัติ ระบบสร้างวงเงินใช้งานจริงให้ทันทีผ่าน
+ * credit.decide_funding_application()
+ */
+router.post('/capital-topup/applications/:id/decide', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { decision, approved_amount: approvedAmount, interest_rate_daily_bps: interestRateDailyBps,
+    approved_tenor_months: approvedTenorMonths, decision_note: decisionNote } = req.body || {};
+
+  if (!['Approved', 'Rejected'].includes(decision)) {
+    return res.status(400).json({ error: 'invalid_decision' });
+  }
+  if (decision === 'Approved' && !(Number(approvedAmount) > 0)) {
+    return res.status(400).json({ error: 'approved_amount_required' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'SELECT credit.decide_funding_application($1, $2, $3, $4, $5, $6, $7) AS facility_id',
+        [id, decision, decision === 'Approved' ? approvedAmount : null,
+          interestRateDailyBps || 0, approvedTenorMonths || null, decisionNote || null, subjectId],
+      );
+      await logAccess(client, 'write', 'credit.cooperative_funding_application', id);
+      return rows[0];
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/capital-topup/funding-sources — ไดเรกทอรีแหล่งทุนภายนอกทั้งหมด
+ * (รวมที่ปิดใช้งานแล้ว เพื่อให้แอดมินจัดการได้ครบ)
+ */
+router.get('/capital-topup/funding-sources', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        'SELECT funding_source_id, source_name, source_type, contact_note, is_active, created_at FROM credit.external_funding_source ORDER BY source_type, source_name',
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/capital-topup/funding-sources — เพิ่มแหล่งทุนภายนอกรายใหม่
+ * (เมื่อมีการเจรจาจริงกับสถาบันการเงินรายใดรายหนึ่ง)
+ */
+router.post('/capital-topup/funding-sources', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { source_name: sourceName, source_type: sourceType, contact_note: contactNote } = req.body || {};
+  const VALID_TYPES = ['BAAC', 'CommercialBank', 'SavingsCoop', 'CreditUnion', 'Fintech', 'ImpactFund', 'Other'];
+  if (!sourceName || !VALID_TYPES.includes(sourceType)) {
+    return res.status(400).json({ error: 'invalid_funding_source_input', valid_types: VALID_TYPES });
+  }
+  try {
+    const row = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'INSERT INTO credit.external_funding_source (source_name, source_type, contact_note) VALUES ($1, $2, $3) RETURNING funding_source_id',
+        [sourceName, sourceType, contactNote || null],
+      );
+      return rows[0];
+    });
+    return res.status(201).json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/cooperatives/:id/governance-assessment
+ * POST /admin/cooperatives/:id/governance-assessment  Body: { no_material_findings, notes? }
+ *
+ * ผลประเมินธรรมาภิบาลที่แอดมิน/เจ้าหน้าที่ AgroLink บันทึกด้วยมือ ใช้เป็นปัจจัย
+ * หนึ่งใน AgroLink Cooperative Credit Score (ดูหมายเหตุขอบเขตหัวไฟล์ migration
+ * ว่าทำไมยังไม่เชื่อมข้อมูลจริงจากกรมส่งเสริมสหกรณ์)
+ */
+router.get('/cooperatives/:id/governance-assessment', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const row = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'SELECT no_material_findings, notes, assessed_by, assessed_at FROM credit.cooperative_governance_assessment WHERE org_id = $1',
+        [id],
+      );
+      return rows[0] || null;
+    });
+    return res.json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/cooperatives/:id/governance-assessment', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { no_material_findings: noMaterialFindings, notes } = req.body || {};
+  if (typeof noMaterialFindings !== 'boolean') {
+    return res.status(400).json({ error: 'no_material_findings_required_boolean' });
+  }
+  try {
+    await withSessionContext('platform', subjectId, async (client) => {
+      await client.query('SELECT credit.upsert_governance_assessment($1, $2, $3, $4)', [id, noMaterialFindings, notes || null, subjectId]);
+      await logAccess(client, 'write', 'credit.cooperative_governance_assessment', id);
+    });
+    return res.json({ ok: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

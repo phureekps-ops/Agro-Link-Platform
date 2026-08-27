@@ -4399,6 +4399,404 @@ document.getElementById("groupBuyMineSection").addEventListener("click", async (
   }
 });
 
+// ============================================================
+// ระบบเติมทุนหมุนเวียนสหกรณ์ (Cooperative Working Capital Top-Up) — 2026-08-27
+// ฝั่งหน้าจอสหกรณ์ เรียก endpoint ใหม่ใน backend/src/routes/coopcollection.js
+// (ดูหมายเหตุขอบเขตในคอมเมนต์หัวไฟล์
+// backend/db/grant_cooperative_working_capital_topup.sql — AgroLink ไม่ใช่
+// ผู้ปล่อยกู้เอง แหล่งทุนภายนอกเป็นไดเรกทอรีอ้างอิง การอนุมัติ/ปฏิเสธคำขอและ
+// ผลประเมินธรรมาภิบาลเป็นสิทธิ์ของแอดมินเท่านั้น)
+// ============================================================
+const CAPITAL_TOPUP_PURPOSE_LABEL_TH = {
+  member_onlending: "ปล่อยกู้ต่อสมาชิก",
+  procurement_working_capital: "ทุนหมุนเวียนรับซื้อผลผลิต",
+};
+const CAPITAL_TOPUP_STATUS_LABEL_TH = {
+  Submitted: "ยื่นคำขอแล้ว",
+  UnderReview: "อยู่ระหว่างพิจารณา",
+  Approved: "อนุมัติแล้ว",
+  Rejected: "ถูกปฏิเสธ",
+  Withdrawn: "ถอนคำขอแล้ว",
+};
+const CAPITAL_TOPUP_STATUS_BADGE_CLASS = {
+  Submitted: "status-pending",
+  UnderReview: "status-manual_review",
+  Approved: "status-approved",
+  Rejected: "status-declined",
+  Withdrawn: "status-declined",
+};
+const FUNDING_SOURCE_TYPE_LABEL_TH = {
+  BAAC: "ธ.ก.ส.",
+  CommercialBank: "ธนาคารพาณิชย์",
+  SavingsCoop: "สหกรณ์ออมทรัพย์",
+  CreditUnion: "สหกรณ์เครดิตยูเนี่ยน",
+  Fintech: "Fintech",
+  ImpactFund: "กองทุนเพื่อสังคม",
+  Other: "อื่นๆ",
+};
+
+let fundingSourcesCache = [];
+let eligibleLotsCache = [];
+
+function scoreFactorRow(label, value, unit, sub) {
+  return `
+    <div class="detail-line" style="display:flex; justify-content:space-between; gap:8px;">
+      <span>${escapeHtml(label)}${sub ? ` <span class="muted">(${escapeHtml(sub)})</span>` : ""}</span>
+      <span style="font-weight:700;">${value === null || value === undefined ? "-" : escapeHtml(String(value))}${value !== null && value !== undefined && unit ? unit : ""}</span>
+    </div>
+  `;
+}
+
+function renderCreditScore(s) {
+  const el = document.getElementById("creditScoreSection");
+  if (!s) {
+    el.innerHTML = `<div class="empty-state">คำนวณคะแนนไม่สำเร็จ</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="row" style="display:flex; align-items:center; gap:14px; margin-bottom:14px;">
+      <div class="value" style="font-size:34px; font-weight:700; color:var(--green-900);">${s.score}<span style="font-size:16px; color:var(--gray-500);">/100</span></div>
+      <span class="badge tier-${escapeHtml(s.grade)}" style="font-size:15px; padding:6px 14px;">เกรด ${escapeHtml(s.grade)}</span>
+    </div>
+    ${scoreFactorRow("การเติบโตของ GMV (90 วัน)", s.f1_gmv_growth_score, " คะแนน", s.gmv_growth_pct !== null ? `เติบโต ${s.gmv_growth_pct}%` : "ยังไม่มีข้อมูลเปรียบเทียบ")}
+    ${scoreFactorRow("สัดส่วนสมาชิก Active", s.f2_member_activity_score, " คะแนน", s.active_member_ratio_pct !== null ? `${s.active_member_ratio_pct}%` : null)}
+    ${scoreFactorRow("ประวัติชำระคืนตรงเวลา", s.f3_repayment_track_score, " คะแนน", s.repayment_on_time_rate_pct !== null ? `${s.repayment_on_time_rate_pct}%` : "ยังไม่มีประวัติ")}
+    ${scoreFactorRow("อายุการใช้งานแพลตฟอร์ม", s.f4_tenure_score, " คะแนน", `${s.tenure_quarters} ไตรมาส`)}
+    ${scoreFactorRow("สัญญาณธรรมาภิบาล", s.f5_governance_score, " คะแนน", s.governance_evaluated ? "ประเมินแล้ว" : "ยังไม่ประเมิน")}
+    <div class="section-title" style="margin-top:14px; font-size:14px;">เหตุผลประกอบ</div>
+    <ul style="margin:6px 0 0; padding-left:20px; font-size:13px; color:var(--gray-500);">
+      ${(s.reasons || []).map((r) => `<li>${escapeHtml(r)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+async function loadCreditScore() {
+  try {
+    const s = await AgroLinkCoopAPI.get("/coop/capital-topup/score");
+    renderCreditScore(s);
+  } catch (err) {
+    document.getElementById("creditScoreSection").innerHTML = `<div class="empty-state">โหลดคะแนนไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadFundingSources() {
+  const sel = document.getElementById("fundingSourceSelect");
+  try {
+    fundingSourcesCache = await AgroLinkCoopAPI.get("/coop/capital-topup/funding-sources");
+    sel.innerHTML = fundingSourcesCache.length === 0
+      ? `<option value="">ยังไม่มีแหล่งทุนในระบบ — ติดต่อแอดมิน</option>`
+      : fundingSourcesCache.map((s) => `<option value="${s.funding_source_id}">${escapeHtml(s.source_name)} (${escapeHtml(FUNDING_SOURCE_TYPE_LABEL_TH[s.source_type] || s.source_type)})</option>`).join("");
+  } catch (err) {
+    sel.innerHTML = `<option value="">โหลดแหล่งทุนไม่สำเร็จ</option>`;
+  }
+}
+
+function fundingApplicationCard(a) {
+  const badgeClass = CAPITAL_TOPUP_STATUS_BADGE_CLASS[a.status] || "status-pending";
+  const withdrawable = ["Submitted", "UnderReview"].includes(a.status);
+  return `
+    <div class="item-card" data-application-id="${a.application_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(CAPITAL_TOPUP_PURPOSE_LABEL_TH[a.purpose] || a.purpose)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(CAPITAL_TOPUP_STATUS_LABEL_TH[a.status] || a.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(a.source_name)} (${escapeHtml(FUNDING_SOURCE_TYPE_LABEL_TH[a.source_type] || a.source_type)})</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">ขอวงเงิน ${thb(a.amount_requested)} บาท · ${a.term_months} เดือน</div>
+      ${a.score_at_submission !== null && a.score_at_submission !== undefined ? `<div class="detail-line muted">คะแนน ณ วันที่ยื่น: ${a.score_at_submission}/100 (เกรด ${escapeHtml(a.grade_at_submission)})</div>` : ""}
+      ${a.purpose_note ? `<div class="detail-line muted">${escapeHtml(a.purpose_note)}</div>` : ""}
+      ${a.status === "Approved" ? `<div class="detail-line" style="color:var(--green-900);">อนุมัติ ${thb(a.approved_amount)} บาท · ${a.approved_tenor_months || "-"} เดือน · ดอกเบี้ย ${a.approved_interest_rate_daily_bps || 0} bps/วัน</div>` : ""}
+      ${a.decision_note ? `<div class="detail-line muted">หมายเหตุการพิจารณา: ${escapeHtml(a.decision_note)}</div>` : ""}
+      <div class="detail-line muted">ยื่นเมื่อ ${thaiDate(a.submitted_at)}${a.decided_at ? ` · ตัดสินใจเมื่อ ${thaiDate(a.decided_at)}` : ""}</div>
+      ${withdrawable ? `<div class="action-row"><button type="button" class="btn btn-decline btn-sm" data-withdraw-application="${a.application_id}">ถอนคำขอ</button></div>` : ""}
+    </div>
+  `;
+}
+
+async function loadFundingApplications() {
+  const el = document.getElementById("fundingApplicationsSection");
+  try {
+    const list = await AgroLinkCoopAPI.get("/coop/capital-topup/applications");
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ยังไม่มีคำขอวงเงิน — ใช้ฟอร์มด้านบนเพื่อยื่นคำขอแรก</div>`
+      : list.map(fundingApplicationCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำขอวงเงินไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("fundingApplicationForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fundingSourceId = document.getElementById("fundingSourceSelect").value;
+  const purpose = document.getElementById("fundingPurposeSelect").value;
+  const amount = document.getElementById("fundingAmountInput").value;
+  const term = document.getElementById("fundingTermInput").value;
+  const note = document.getElementById("fundingNoteInput").value.trim();
+
+  if (!fundingSourceId) {
+    toast("กรุณาเลือกแหล่งทุน", true);
+    return;
+  }
+  if (!(Number(amount) > 0) || !(Number(term) > 0)) {
+    toast("กรุณากรอกวงเงินและระยะเวลาให้ถูกต้อง", true);
+    return;
+  }
+
+  const btn = document.getElementById("fundingApplicationSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/capital-topup/applications", {
+      funding_source_id: fundingSourceId,
+      purpose,
+      amount_requested: Number(amount),
+      term_months: Number(term),
+      purpose_note: note || undefined,
+    });
+    toast("ยื่นคำขอวงเงินเรียบร้อยแล้ว");
+    document.getElementById("fundingApplicationForm").reset();
+    await loadFundingApplications();
+  } catch (err) {
+    toast("ยื่นคำขอไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("fundingApplicationsSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-withdraw-application]");
+  if (!btn) return;
+  const applicationId = btn.dataset.withdrawApplication;
+  btn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/capital-topup/applications/${applicationId}/withdraw`, {});
+    toast("ถอนคำขอเรียบร้อยแล้ว");
+    await loadFundingApplications();
+  } catch (err) {
+    toast("ถอนคำขอไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    btn.disabled = false;
+  }
+});
+
+async function loadEligibleLots() {
+  try {
+    eligibleLotsCache = await AgroLinkCoopAPI.get("/coop/capital-topup/eligible-lots");
+  } catch (err) {
+    eligibleLotsCache = [];
+  }
+}
+
+function eligibleLotsOptions() {
+  if (eligibleLotsCache.length === 0) {
+    return `<option value="">ไม่มีล็อตที่เบิกวงเงินได้</option>`;
+  }
+  return eligibleLotsCache.map((l) => `<option value="${l.lot_id}">${escapeHtml(l.commodity_code)} เกรด ${escapeHtml(l.quality_grade || "-")} · มูลค่า ${thb(l.lot_value)} บาท (${l.lot_id.slice(0, 8)})</option>`).join("");
+}
+
+function drawdownRow(d) {
+  const flags = [
+    d.is_stale ? `<span class="badge status-declined">⚠️ ค้างสต๊อกนาน ${d.days_held} วัน</span>` : null,
+    d.is_price_drop ? `<span class="badge status-declined">📉 ราคาตลาดตก</span>` : null,
+  ].filter(Boolean).join(" ");
+  return `
+    <div class="item-card" data-drawdown-id="${d.drawdown_id}" style="margin-top:8px;">
+      <div class="row">
+        <span class="title">${escapeHtml(d.commodity_code)} เกรด ${escapeHtml(d.quality_grade || "-")}</span>
+        <span class="badge ${d.status === "outstanding" ? "status-pending" : "status-approved"}">${d.status === "outstanding" ? "ค้างชำระ" : "คืนครบแล้ว"}</span>
+      </div>
+      <div class="detail-line">เบิก ${thb(d.drawn_amount)} บาท · คืนแล้ว ${thb(d.repaid_amount)} บาท · คงเหลือ ${thb(d.drawn_amount - d.repaid_amount)} บาท</div>
+      <div class="detail-line muted">เบิกเมื่อ ${thaiDate(d.drawn_at)} · ถือครอง ${d.days_held} วัน</div>
+      ${flags ? `<div class="detail-line">${flags}</div>` : ""}
+      ${d.status === "outstanding" ? `
+        <div class="action-row" style="display:flex; gap:8px; align-items:center;">
+          <input type="number" min="0.01" step="0.01" placeholder="จำนวนเงินที่คืน" data-repay-amount-for="${d.drawdown_id}" style="max-width:160px;" />
+          <button type="button" class="btn btn-primary btn-sm" data-repay-drawdown="${d.drawdown_id}">บันทึกการคืนเงิน</button>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+async function renderProcurementFacilityDetail(facilityId) {
+  try {
+    const result = await AgroLinkCoopAPI.get(`/coop/capital-topup/facilities/${facilityId}/lots`);
+    const lotsHtml = result.lots.length === 0
+      ? `<div class="empty-state">ยังไม่มีล็อตที่เบิกวงเงินภายใต้วงเงินนี้</div>`
+      : result.lots.map(drawdownRow).join("");
+    return `
+      <div class="action-row" style="display:flex; gap:8px; align-items:center; margin:10px 0;">
+        <select data-draw-lot-select-for="${facilityId}" style="max-width:280px;">${eligibleLotsOptions()}</select>
+        <button type="button" class="btn btn-primary btn-sm" data-draw-lot-for="${facilityId}">เบิกวงเงินสำหรับล็อตนี้</button>
+      </div>
+      ${lotsHtml}
+    `;
+  } catch (err) {
+    return `<div class="empty-state">โหลดรายการล็อตไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function memberOnlendingLineRow(l) {
+  return `
+    <div class="item-card" style="margin-top:8px;">
+      <div class="row">
+        <span class="title">วงเงินย่อย ${l.credit_line_id.slice(0, 8)}</span>
+        <span class="badge ${l.line_status === "active" ? "status-active" : "status-pending"}">${escapeHtml(l.line_status)}</span>
+      </div>
+      <div class="detail-line">วงเงิน ${thb(l.credit_limit)} บาท · เบิกไปแล้ว ${l.drawdown_count} ครั้ง</div>
+      <div class="detail-line">ค้างชำระ ${thb(l.outstanding_amount)} บาท · คืนแล้ว ${thb(l.repaid_amount)} บาท</div>
+    </div>
+  `;
+}
+
+async function renderMemberOnlendingDetail(facilityId) {
+  try {
+    const result = await AgroLinkCoopAPI.get(`/coop/capital-topup/facilities/${facilityId}/member-onlending`);
+    if (!result.lines || result.lines.length === 0) {
+      return `<div class="empty-state">ยังไม่มีวงเงินย่อยที่เชื่อมกับวงเงินนี้ — ใช้เมนู "เครดิตในระบบเบิกจ่ายเป็นงวด" เพื่อสร้างวงเงินย่อยและผูกกับวงเงินนี้</div>`;
+    }
+    return result.lines.map(memberOnlendingLineRow).join("");
+  } catch (err) {
+    return `<div class="empty-state">โหลด Roll-up รายงานไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function fundingFacilityCard(f) {
+  const remaining = Number(f.facility_limit) - Number(f.drawn_outstanding);
+  return `
+    <div class="item-card" data-facility-id="${f.facility_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(CAPITAL_TOPUP_PURPOSE_LABEL_TH[f.purpose] || f.purpose)}</span>
+        <span class="badge ${f.status === "active" ? "status-active" : "status-declined"}">${escapeHtml(f.status)}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(f.source_name)} (${escapeHtml(FUNDING_SOURCE_TYPE_LABEL_TH[f.source_type] || f.source_type)})</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">วงเงิน ${thb(f.facility_limit)} บาท · ใช้ไปแล้ว ${thb(f.drawn_outstanding)} บาท · คงเหลือ ${thb(remaining)} บาท</div>
+      <div class="detail-line muted">เปิดเมื่อ ${thaiDate(f.opened_at)} · ดอกเบี้ย ${f.interest_rate_daily_bps || 0} bps/วัน · ${f.tenor_months || "-"} เดือน</div>
+      <div class="action-row">
+        <button type="button" class="btn btn-ghost btn-sm" data-view-facility="${f.facility_id}" data-purpose="${f.purpose}">ดูรายละเอียดการใช้เงิน</button>
+      </div>
+      <div data-facility-detail-for="${f.facility_id}"></div>
+    </div>
+  `;
+}
+
+async function loadFundingFacilities() {
+  const el = document.getElementById("fundingFacilitiesSection");
+  try {
+    const list = await AgroLinkCoopAPI.get("/coop/capital-topup/facilities");
+    el.innerHTML = list.length === 0
+      ? `<div class="empty-state">ยังไม่มีวงเงินที่ได้รับอนุมัติ — ยื่นคำขอด้านบนแล้วรอเจ้าหน้าที่ AgroLink พิจารณา</div>`
+      : list.map(fundingFacilityCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดวงเงินไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("fundingFacilitiesSection").addEventListener("click", async (e) => {
+  const viewBtn = e.target.closest("[data-view-facility]");
+  const drawBtn = e.target.closest("[data-draw-lot-for]");
+  const repayBtn = e.target.closest("[data-repay-drawdown]");
+
+  if (viewBtn) {
+    const facilityId = viewBtn.dataset.viewFacility;
+    const purpose = viewBtn.dataset.purpose;
+    const detailEl = document.querySelector(`[data-facility-detail-for="${facilityId}"]`);
+    if (detailEl.dataset.expanded === "true") {
+      detailEl.innerHTML = "";
+      detailEl.dataset.expanded = "false";
+      viewBtn.textContent = "ดูรายละเอียดการใช้เงิน";
+      return;
+    }
+    viewBtn.disabled = true;
+    try {
+      detailEl.innerHTML = purpose === "member_onlending"
+        ? await renderMemberOnlendingDetail(facilityId)
+        : await renderProcurementFacilityDetail(facilityId);
+      detailEl.dataset.expanded = "true";
+      viewBtn.textContent = "ซ่อนรายละเอียด";
+    } finally {
+      viewBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (drawBtn) {
+    const facilityId = drawBtn.dataset.drawLotFor;
+    const select = document.querySelector(`[data-draw-lot-select-for="${facilityId}"]`);
+    const lotId = select ? select.value : "";
+    if (!lotId) {
+      toast("กรุณาเลือกล็อตที่จะเบิกวงเงิน", true);
+      return;
+    }
+    drawBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/capital-topup/facilities/${facilityId}/lots/${lotId}/draw`, {});
+      toast("เบิกวงเงินเรียบร้อยแล้ว");
+      await loadEligibleLots();
+      const detailEl = document.querySelector(`[data-facility-detail-for="${facilityId}"]`);
+      detailEl.innerHTML = await renderProcurementFacilityDetail(facilityId);
+      await loadFundingFacilities();
+    } catch (err) {
+      toast("เบิกวงเงินไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    } finally {
+      drawBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (repayBtn) {
+    const drawdownId = repayBtn.dataset.repayDrawdown;
+    const input = document.querySelector(`[data-repay-amount-for="${drawdownId}"]`);
+    const amount = input ? input.value : "";
+    if (!(Number(amount) > 0)) {
+      toast("กรุณากรอกจำนวนเงินที่คืน", true);
+      return;
+    }
+    const facilityCard = repayBtn.closest("[data-facility-id]");
+    const facilityId = facilityCard ? facilityCard.dataset.facilityId : null;
+    repayBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.post(`/coop/capital-topup/drawdowns/${drawdownId}/repay`, { amount: Number(amount) });
+      toast("บันทึกการคืนเงินเรียบร้อยแล้ว");
+      if (facilityId) {
+        const detailEl = document.querySelector(`[data-facility-detail-for="${facilityId}"]`);
+        detailEl.innerHTML = await renderProcurementFacilityDetail(facilityId);
+      }
+      await loadFundingFacilities();
+    } catch (err) {
+      toast("บันทึกการคืนเงินไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    } finally {
+      repayBtn.disabled = false;
+    }
+  }
+});
+
+async function loadGovernance() {
+  const el = document.getElementById("governanceAssessmentSection");
+  try {
+    const g = await AgroLinkCoopAPI.get("/coop/capital-topup/governance");
+    if (!g) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีการประเมินธรรมาภิบาลจากเจ้าหน้าที่ AgroLink</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="row" style="display:flex; align-items:center; gap:10px;">
+        <span class="badge ${g.no_material_findings ? "status-active" : "status-declined"}">${g.no_material_findings ? "ไม่พบข้อบกพร่องสำคัญ" : "พบข้อบกพร่องที่ต้องติดตาม"}</span>
+      </div>
+      ${g.notes ? `<div class="detail-line" style="margin-top:8px;">${escapeHtml(g.notes)}</div>` : ""}
+      <div class="detail-line muted" style="margin-top:6px;">ประเมินเมื่อ ${thaiDate(g.assessed_at)}</div>
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดผลประเมินธรรมาภิบาลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshCapitalTopup() {
+  loadCreditScore();
+  loadFundingSources();
+  loadFundingApplications();
+  await loadEligibleLots();
+  loadFundingFacilities();
+  loadGovernance();
+}
+
 async function init() {
   const session = AgroLinkCoopAPI.requireSessionOrRedirect();
   if (!session) return;
@@ -4438,6 +4836,7 @@ async function init() {
   refreshRfq();
   refreshGroupBuys();
   loadFarmer360Roster();
+  refreshCapitalTopup();
 }
 
 init();

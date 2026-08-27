@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ระบบเติมทุนหมุนเวียนสหกรณ์ (Capital Top-Up)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🔄</span><span>AgroLink Platform — ระบบเติมทุนหมุนเวียนสหกรณ์</span></div>
+    <div class="who">
+      <span class="name">ผู้ดูแลระบบ</span>
+      <a href="dashboard.html" class="logout-btn" style="text-decoration:none;">กลับแดชบอร์ดผู้ดูแลระบบ</a>
+      <a href="cooperatives.html" class="logout-btn" style="text-decoration:none;">จัดการสหกรณ์</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      สหกรณ์ยื่นคำขอวงเงินจากแหล่งทุนภายนอกผ่านพอร์ทัลสหกรณ์ โดยอ้างอิง AgroLink Cooperative Credit Score — หน้าที่ของทีมงาน AgroLink คือบันทึกผล
+      การเจรจาจริงกับแหล่งทุนภายนอกที่เกิดขึ้นนอกระบบ (อนุมัติ/ปฏิเสธ) ดูแลไดเรกทอรีแหล่งทุน และประเมินธรรมาภิบาลของแต่ละสหกรณ์ (ที่หน้า "จัดการสหกรณ์")
+      — <strong>หมายเหตุขอบเขต:</strong> AgroLink ไม่ใช่ผู้ปล่อยกู้เอง เป็นเพียงผู้จัดทำข้อมูลประกอบการตัดสินใจของแหล่งทุนภายนอกเท่านั้น
+    </p>
+
+    <div class="section-title">📑 คิวคำขอวงเงินจากสหกรณ์</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="applicationStatusFilter">กรองตามสถานะ</label>
+        <select id="applicationStatusFilter">
+          <option value="Submitted">ยื่นคำขอแล้ว (รอพิจารณา)</option>
+          <option value="UnderReview">อยู่ระหว่างพิจารณา</option>
+          <option value="Approved">อนุมัติแล้ว</option>
+          <option value="Rejected">ถูกปฏิเสธ</option>
+          <option value="Withdrawn">ถอนคำขอแล้ว</option>
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+    <div id="applicationQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอวงเงิน…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">🏦 ไดเรกทอรีแหล่งทุนภายนอก</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      รายชื่ออ้างอิงเท่านั้น — ไม่ใช่การเชื่อมต่อ API กับแหล่งทุนจริง เพิ่มรายชื่อใหม่เมื่อมีการเจรจาจริงกับสถาบันการเงินรายใดรายหนึ่งแล้ว
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="createFundingSourceForm" class="form-grid">
+        <div class="field full">
+          <label for="fsNameInput">ชื่อแหล่งทุน</label>
+          <input type="text" id="fsNameInput" placeholder="เช่น ธ.ก.ส. สาขาลับแล" required />
+        </div>
+        <div class="field">
+          <label for="fsTypeSelect">ประเภท</label>
+          <select id="fsTypeSelect" required>
+            <option value="BAAC">ธ.ก.ส.</option>
+            <option value="CommercialBank">ธนาคารพาณิชย์</option>
+            <option value="SavingsCoop">สหกรณ์ออมทรัพย์</option>
+            <option value="CreditUnion">สหกรณ์เครดิตยูเนี่ยน</option>
+            <option value="Fintech">Fintech</option>
+            <option value="ImpactFund">กองทุนเพื่อสังคม</option>
+            <option value="Other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="fsContactNoteInput">ข้อมูลติดต่อ/หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="fsContactNoteInput" />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="createFundingSourceBtn" style="max-width:220px;">เพิ่มแหล่งทุน</button>
+    </div>
+    <div id="fundingSourceListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดแหล่งทุน…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/capital-topup.js"></script>
+</body>
+</html>

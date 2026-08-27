@@ -3629,4 +3629,379 @@ router.post('/products/orders/:id/fulfill', async (req, res, next) => {
   }
 });
 
+
+// ============================================================================
+// ระบบเติมทุนหมุนเวียนสหกรณ์ (Cooperative Working Capital Top-Up) — 2026-08-27
+// ต่อยอดจากเอกสารออกแบบ "AgroLink Cooperative Credit Scoring And Monitoring
+// System Design" — ดูหมายเหตุขอบเขตทั้งหมดที่หัวไฟล์
+// backend/db/grant_cooperative_working_capital_topup.sql การอนุมัติ/ปฏิเสธ
+// คำขอวงเงินและการประเมินธรรมาภิบาลอยู่ในสิทธิ์ของแอดมินเท่านั้น (ดู admin.js)
+// — สหกรณ์ทำได้แค่ยื่นคำขอ/ถอนคำขอของตัวเอง และบันทึกการเบิก-คืนวงเงินที่อนุมัติ
+// แล้วเท่านั้น เพื่อไม่ให้สหกรณ์รับรองวงเงินภายนอกของตัวเองได้ฝ่ายเดียว
+// ============================================================================
+
+/**
+ * GET /coop/capital-topup/score — AgroLink Cooperative Credit Score แบบ
+ * เรียลไทม์ (คำนวณสดทุกครั้ง ไม่มี cache) พร้อมปัจจัยย่อย 5 ตัวและเหตุผล
+ * ประกอบที่อธิบายได้ (ดู credit.compute_cooperative_credit_score())
+ */
+router.get('/capital-topup/score', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query('SELECT * FROM credit.compute_cooperative_credit_score($1)', [subjectId]);
+      return rows[0];
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/capital-topup/funding-sources — ไดเรกทอรีแหล่งทุนภายนอกที่ยื่น
+ * ขอวงเงินได้ (อ่านอย่างเดียว — แอดมินเป็นผู้ดูแลรายชื่อ)
+ */
+router.get('/capital-topup/funding-sources', async (req, res, next) => {
+  try {
+    const result = await withSessionContext('organization', req.subject.subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT funding_source_id, source_name, source_type, contact_note
+           FROM credit.external_funding_source WHERE is_active = true ORDER BY source_type, source_name`,
+      );
+      return rows;
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/capital-topup/applications — คำขอวงเงินทั้งหมดที่สหกรณ์นี้เคยยื่น
+ */
+router.get('/capital-topup/applications', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT a.application_id, a.purpose, a.amount_requested, a.term_months, a.purpose_note,
+                a.status, a.approved_amount, a.approved_interest_rate_daily_bps, a.approved_tenor_months,
+                a.decision_note, a.submitted_at, a.decided_at,
+                s.source_name, s.source_type,
+                sc.score AS score_at_submission, sc.grade AS grade_at_submission
+           FROM credit.cooperative_funding_application a
+           JOIN credit.external_funding_source s ON s.funding_source_id = a.funding_source_id
+           LEFT JOIN credit.cooperative_credit_score_snapshot sc ON sc.snapshot_id = a.score_snapshot_id
+          WHERE a.org_id = $1
+          ORDER BY a.submitted_at DESC`,
+        [subjectId],
+      );
+      return rows;
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/capital-topup/applications — ยื่นคำขอวงเงินใหม่ไปยังแหล่งทุน
+ * ภายนอกหนึ่งราย (ยื่นได้หลายรายพร้อมกัน — เรียกซ้ำได้หลายครั้งคนละแหล่งทุน)
+ */
+router.post('/capital-topup/applications', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { funding_source_id: fundingSourceId, purpose, amount_requested: amountRequested, term_months: termMonths, purpose_note: purposeNote } = req.body || {};
+  if (!fundingSourceId || !['member_onlending', 'procurement_working_capital'].includes(purpose)
+    || !(Number(amountRequested) > 0) || !(Number(termMonths) > 0)) {
+    return res.status(400).json({ error: 'invalid_application_input' });
+  }
+  try {
+    const applicationId = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'SELECT credit.submit_funding_application($1, $2, $3, $4, $5, $6) AS application_id',
+        [subjectId, fundingSourceId, purpose, amountRequested, termMonths, purposeNote || null],
+      );
+      await logAccess(client, 'write', 'credit.cooperative_funding_application', rows[0].application_id);
+      return rows[0].application_id;
+    });
+    return res.status(201).json({ application_id: applicationId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/capital-topup/applications/:id/withdraw — ถอนคำขอของตัวเอง
+ * (ทำได้เฉพาะตอนยังไม่มีผลการพิจารณา — Submitted/UnderReview เท่านั้น)
+ */
+router.post('/capital-topup/applications/:id/withdraw', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE credit.cooperative_funding_application
+            SET status = 'Withdrawn', updated_at = now()
+          WHERE application_id = $1 AND org_id = $2 AND status IN ('Submitted', 'UnderReview')
+          RETURNING application_id`,
+        [id, subjectId],
+      );
+      return rows[0] || null;
+    });
+    if (!result) {
+      return res.status(409).json({ error: 'application_not_withdrawable' });
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/capital-topup/facilities — วงเงินภายนอกที่อนุมัติแล้วทั้งหมด
+ * พร้อมยอดใช้ไป/คงเหลือ (รวมทั้งสองวัตถุประสงค์)
+ */
+router.get('/capital-topup/facilities', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT f.facility_id, f.purpose, f.facility_limit, f.interest_rate_daily_bps, f.tenor_months,
+                f.status, f.opened_at, f.closed_at, s.source_name, s.source_type,
+                COALESCE((
+                  SELECT SUM(d.drawn_amount - d.repaid_amount) FROM credit.cooperative_procurement_drawdown d
+                   WHERE d.facility_id = f.facility_id AND d.status = 'outstanding'
+                ), 0) + COALESCE((
+                  SELECT SUM(cd.principal_amount) FROM credit.credit_line cl
+                    JOIN credit.credit_drawdown cd ON cd.credit_line_id = cl.credit_line_id
+                   WHERE cl.funding_facility_id = f.facility_id AND cd.status = 'outstanding'
+                ), 0) AS drawn_outstanding
+           FROM credit.cooperative_funding_facility f
+           JOIN credit.external_funding_source s ON s.funding_source_id = f.funding_source_id
+          WHERE f.org_id = $1
+          ORDER BY f.opened_at DESC`,
+        [subjectId],
+      );
+      return rows;
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/capital-topup/facilities/:id/member-onlending — Roll-up Report
+ * สำหรับวงเงินประเภทปล่อยกู้ต่อสมาชิก (เอกสารออกแบบ §7.1) — ใช้ credit_line/
+ * credit_drawdown เดิมที่ตั้ง funding_facility_id ชี้มาที่วงเงินนี้ ไม่เปิดเผย
+ * ชื่อสมาชิกรายบุคคลเกินจำเป็น (แสดงเฉพาะรหัสวงเงินและยอด)
+ */
+router.get('/capital-topup/facilities/:id/member-onlending', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const facility = await client.query(
+        `SELECT facility_id FROM credit.cooperative_funding_facility WHERE facility_id = $1 AND org_id = $2 AND purpose = 'member_onlending'`,
+        [id, subjectId],
+      );
+      if (facility.rows.length === 0) return { notFound: true };
+
+      const { rows } = await client.query(
+        `SELECT cl.credit_line_id, cl.credit_limit, cl.status AS line_status,
+                COUNT(cd.drawdown_id)::int AS drawdown_count,
+                COALESCE(SUM(cd.principal_amount) FILTER (WHERE cd.status = 'outstanding'), 0) AS outstanding_amount,
+                COALESCE(SUM(cd.principal_amount) FILTER (WHERE cd.status = 'repaid'), 0) AS repaid_amount
+           FROM credit.credit_line cl
+           LEFT JOIN credit.credit_drawdown cd ON cd.credit_line_id = cl.credit_line_id
+          WHERE cl.funding_facility_id = $1
+          GROUP BY cl.credit_line_id, cl.credit_limit, cl.status
+          ORDER BY cl.created_at DESC`,
+        [id],
+      );
+      return { lines: rows };
+    });
+    if (result.notFound) {
+      return res.status(404).json({ error: 'facility_not_found' });
+    }
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/capital-topup/eligible-lots — ล็อตผลผลิตของสหกรณ์นี้ที่ยังไม่เคย
+ * เบิกวงเงินทุนหมุนเวียน (ใช้เลือกตอนกดเบิกวงเงินสำหรับล็อตใหม่)
+ */
+router.get('/capital-topup/eligible-lots', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `SELECT l.lot_id, l.commodity_code, l.quality_grade, l.status, l.created_at,
+                COALESCE(SUM(d.total_amount) FILTER (WHERE d.status IN ('accepted','settled')), 0) AS lot_value
+           FROM produce.lot l
+           LEFT JOIN produce.delivery d ON d.lot_id = l.lot_id
+          WHERE l.buyer_org_id = $1
+            AND NOT EXISTS (SELECT 1 FROM credit.cooperative_procurement_drawdown pd WHERE pd.lot_id = l.lot_id)
+          GROUP BY l.lot_id, l.commodity_code, l.quality_grade, l.status, l.created_at
+         HAVING COALESCE(SUM(d.total_amount) FILTER (WHERE d.status IN ('accepted','settled')), 0) > 0
+          ORDER BY l.created_at DESC`,
+        [subjectId],
+      );
+      return rows;
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/capital-topup/facilities/:id/lots — ล็อตที่เบิกวงเงินไปแล้วภายใต้
+ * วงเงินทุนหมุนเวียนรับซื้อผลผลิตนี้ พร้อมอายุการค้างสต๊อกจริง (วันนี้ - วันที่
+ * เบิก) และสัญญาณราคาตกเทียบราคารับซื้อเฉลี่ยของตลาดปัจจุบัน (เอกสารออกแบบ
+ * §7.2 ข้อ 3 และ 5)
+ */
+router.get('/capital-topup/facilities/:id/lots', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const staleDaysThreshold = Number(req.query.stale_days_threshold) > 0 ? Number(req.query.stale_days_threshold) : 45;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const facility = await client.query(
+        `SELECT facility_id FROM credit.cooperative_funding_facility WHERE facility_id = $1 AND org_id = $2 AND purpose = 'procurement_working_capital'`,
+        [id, subjectId],
+      );
+      if (facility.rows.length === 0) return { notFound: true };
+
+      const { rows } = await client.query(
+        `SELECT pd.drawdown_id, pd.lot_id, pd.drawn_amount, pd.repaid_amount, pd.status,
+                pd.drawn_at, pd.first_repaid_at, pd.fully_repaid_at,
+                l.commodity_code, l.quality_grade,
+                GREATEST(0, EXTRACT(DAY FROM (now() - pd.drawn_at))::int) AS days_held,
+                del.avg_purchase_unit_price,
+                mkt.avg_market_price
+           FROM credit.cooperative_procurement_drawdown pd
+           JOIN produce.lot l ON l.lot_id = pd.lot_id
+           LEFT JOIN LATERAL (
+             SELECT AVG(d.unit_price) AS avg_purchase_unit_price
+               FROM produce.delivery d
+              WHERE d.lot_id = pd.lot_id AND d.status IN ('accepted', 'settled')
+           ) del ON true
+           LEFT JOIN LATERAL (
+             SELECT AVG(q.quoted_price) AS avg_market_price
+               FROM marketplace.buy_price_quote q
+              WHERE q.grade_code = l.quality_grade AND q.is_active = true
+           ) mkt ON true
+          WHERE pd.facility_id = $1
+          ORDER BY pd.drawn_at DESC`,
+        [id],
+      );
+
+      const lots = rows.map((r) => ({
+        ...r,
+        is_stale: r.status === 'outstanding' && r.days_held >= staleDaysThreshold,
+        is_price_drop: r.status === 'outstanding' && r.avg_market_price !== null
+          && Number(r.avg_market_price) < Number(r.avg_purchase_unit_price),
+      }));
+      return { lots, stale_days_threshold: staleDaysThreshold };
+    });
+    if (result.notFound) {
+      return res.status(404).json({ error: 'facility_not_found' });
+    }
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/capital-topup/facilities/:id/lots/:lotId/draw — เบิกวงเงินสำหรับ
+ * ล็อตที่รับซื้อจริงแล้ว (จำนวนเงินคำนวณอัตโนมัติจากยอดส่งมอบจริงในล็อตนั้น)
+ */
+router.post('/capital-topup/facilities/:id/lots/:lotId/draw', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id, lotId } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const facility = await client.query(
+        'SELECT facility_id FROM credit.cooperative_funding_facility WHERE facility_id = $1 AND org_id = $2',
+        [id, subjectId],
+      );
+      if (facility.rows.length === 0) return { notFound: true };
+
+      const { rows } = await client.query(
+        'SELECT credit.draw_procurement_facility_for_lot($1, $2) AS drawdown_id',
+        [id, lotId],
+      );
+      await logAccess(client, 'write', 'credit.cooperative_procurement_drawdown', rows[0].drawdown_id);
+      return { drawdown_id: rows[0].drawdown_id };
+    });
+    if (result.notFound) {
+      return res.status(404).json({ error: 'facility_not_found' });
+    }
+    return res.status(201).json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/capital-topup/drawdowns/:drawdownId/repay — บันทึกยอดคืนวงเงิน
+ * (บางส่วน/เต็มจำนวน) เมื่อขายผลผลิตในล็อตนั้นได้จริง
+ */
+router.post('/capital-topup/drawdowns/:drawdownId/repay', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { drawdownId } = req.params;
+  const { amount } = req.body || {};
+  if (!(Number(amount) > 0)) {
+    return res.status(400).json({ error: 'invalid_repay_amount' });
+  }
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const owned = await client.query(
+        `SELECT pd.drawdown_id FROM credit.cooperative_procurement_drawdown pd
+           JOIN credit.cooperative_funding_facility f ON f.facility_id = pd.facility_id
+          WHERE pd.drawdown_id = $1 AND f.org_id = $2`,
+        [drawdownId, subjectId],
+      );
+      if (owned.rows.length === 0) return { notFound: true };
+
+      await client.query('SELECT credit.repay_procurement_drawdown($1, $2)', [drawdownId, amount]);
+      await logAccess(client, 'write', 'credit.cooperative_procurement_drawdown', drawdownId);
+      return { ok: true };
+    });
+    if (result.notFound) {
+      return res.status(404).json({ error: 'drawdown_not_found' });
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/capital-topup/governance — สถานะการประเมินธรรมาภิบาลของสหกรณ์
+ * นี้ (อ่านอย่างเดียว — แอดมินเท่านั้นที่บันทึกผลได้ ดู admin.js เพื่อป้องกัน
+ * การรับรองตัวเอง)
+ */
+router.get('/capital-topup/governance', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'SELECT no_material_findings, notes, assessed_by, assessed_at FROM credit.cooperative_governance_assessment WHERE org_id = $1',
+        [subjectId],
+      );
+      return rows[0] || null;
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

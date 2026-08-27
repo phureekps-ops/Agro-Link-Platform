@@ -193,11 +193,78 @@ async function loadCooperativeDetail(orgId) {
         <div style="font-weight:700; margin-top:16px; margin-bottom:8px;">สิทธิ์การเข้าถึงที่มอบให้ (ระดับองค์กร)</div>
         ${rolesHtml || `<div class="detail-line muted">ยังไม่มีสิทธิ์ที่มอบให้</div>`}
       </div>
+
+      <div class="panel" style="margin-top:14px;">
+        <div style="font-weight:700; margin-bottom:8px;">🌱 ผลประเมินธรรมาภิบาล (AgroLink Cooperative Credit Score)</div>
+        <p style="font-size:12px; color:var(--gray-500); margin:0 0 10px;">
+          ใช้เป็นหนึ่งใน 5 ปัจจัยของคะแนนความน่าเชื่อถือสหกรณ์ — ประเมินด้วยมือโดยเจ้าหน้าที่ AgroLink เท่านั้น
+          (ยังไม่เชื่อมข้อมูลจริงจากกรมส่งเสริมสหกรณ์ รอข้อตกลงเชื่อมข้อมูลอย่างเป็นทางการ)
+        </p>
+        <div id="governanceAssessmentPanel"><div class="loading-line">กำลังโหลด…</div></div>
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field">
+            <label for="governanceFindingsSelect-${c.org_id}">ผลการประเมิน</label>
+            <select id="governanceFindingsSelect-${c.org_id}">
+              <option value="true">ไม่พบข้อบกพร่องสำคัญ</option>
+              <option value="false">พบข้อบกพร่องที่ต้องติดตาม</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="governanceNotesInput-${c.org_id}">หมายเหตุประกอบการประเมิน</label>
+            <textarea id="governanceNotesInput-${c.org_id}" rows="2"></textarea>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-save-governance="${c.org_id}" style="max-width:260px;">บันทึกผลประเมิน</button>
+      </div>
     `;
+    await loadGovernanceAssessment(orgId);
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดรายละเอียดไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
 }
+
+// ---------- ผลประเมินธรรมาภิบาล (ใช้ในคะแนนความน่าเชื่อถือสหกรณ์) ----------
+async function loadGovernanceAssessment(orgId) {
+  const el = document.getElementById("governanceAssessmentPanel");
+  if (!el) return;
+  try {
+    const g = await AgroLinkAdminAPI.get(`/admin/cooperatives/${orgId}/governance-assessment`);
+    if (!g) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีการประเมิน — ใช้ฟอร์มด้านล่างเพื่อบันทึกผลประเมินแรก</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="row" style="display:flex; align-items:center; gap:10px;">
+        <span class="badge ${g.no_material_findings ? "status-active" : "status-declined"}">${g.no_material_findings ? "ไม่พบข้อบกพร่องสำคัญ" : "พบข้อบกพร่องที่ต้องติดตาม"}</span>
+      </div>
+      ${g.notes ? `<div class="detail-line" style="margin-top:6px;">${escapeHtml(g.notes)}</div>` : ""}
+      <div class="detail-line muted" style="margin-top:4px;">ประเมินเมื่อ ${thaiDate(g.assessed_at)}</div>
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดผลประเมินไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("cooperativeDetailSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-save-governance]");
+  if (!btn) return;
+  const orgId = btn.dataset.saveGovernance;
+  const noMaterialFindings = document.getElementById(`governanceFindingsSelect-${orgId}`).value === "true";
+  const notes = document.getElementById(`governanceNotesInput-${orgId}`).value.trim();
+  btn.disabled = true;
+  try {
+    await AgroLinkAdminAPI.post(`/admin/cooperatives/${orgId}/governance-assessment`, {
+      no_material_findings: noMaterialFindings,
+      notes: notes || undefined,
+    });
+    toast("บันทึกผลประเมินธรรมาภิบาลเรียบร้อยแล้ว");
+    await loadGovernanceAssessment(orgId);
+  } catch (err) {
+    toast("บันทึกผลประเมินไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 // ---------- เริ่มต้น ----------
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkAdminAPI.logout());
