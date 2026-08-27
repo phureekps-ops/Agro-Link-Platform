@@ -212,7 +212,7 @@ NULL ผ่านเสมอ) **ต้องรันหลัง** `grant_rfq_
 `grant_b2b_commerce_engine.sql` เท่านั้น (ALTER ตาราง `procurement.auction`/
 `auction_bid` ที่ต้องมีอยู่ก่อน) ดูรายละเอียดสถาปัตยกรรมเต็มที่
 `SHRIMP_AUCTION_ARCHITECTURE.md` ที่ root ของโปรเจกต์ ฝั่งหน้าเว็บมีหน้าใหม่
-`auction-place.html`/`auction-intro.html` ที่ root และหน้าใน
+`frontend/auction-place.html`/`frontend/auction-intro.html` และหน้าใน
 `frontend/shrimp-auction-farmer.html`/`frontend/buyer/shrimp-auction.html`
 
 **เพิ่มเมื่อ 2026-08-25:** `grant_group_buy.sql` — เพิ่มฟีเจอร์ "รวมออเดอร์

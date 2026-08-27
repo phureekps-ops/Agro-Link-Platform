@@ -40,7 +40,7 @@ const AgroLinkAPI = (() => {
   function requireSessionOrRedirect() {
     const session = getSession();
     if (!session || !session.access_token) {
-      window.location.href = "index.html";
+      window.location.href = "login.html";
       return null;
     }
     return session;
@@ -98,7 +98,7 @@ const AgroLinkAPI = (() => {
 
   function logout() {
     clearSession();
-    window.location.href = "index.html";
+    window.location.href = "login.html";
   }
 
   /**
@@ -120,7 +120,7 @@ const AgroLinkAPI = (() => {
 
     if (res.status === 401) {
       clearSession();
-      window.location.href = "index.html?reason=session_expired";
+      window.location.href = "login.html?reason=session_expired";
       throw new Error("session_expired");
     }
 
