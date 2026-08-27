@@ -171,7 +171,49 @@ grant_sealed_bid_auction.sql
 grant_farmer_plot_registration.sql
 grant_logistics_portal.sql
 grant_group_buy.sql
+grant_shrimp_auction.sql
+grant_input_credit_line.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-27:** `grant_input_credit_line.sql` — เพิ่มฟีเจอร์ "เครดิต
+ร้านค้าปัจจัยการผลิต" (Input-Supplier Trade Credit) ให้ผู้ให้กู้ (Lender) ที่ได้
+อนุมัติวงเงินสินเชื่อหมุนเวียนล่วงหน้าให้เกษตรกรรายหนึ่งไว้แล้ว (`credit.
+credit_line`) จ่ายเงินแทนเกษตรกรให้ผู้ขายปัจจัยการผลิตทันทีที่ผู้ขายยืนยัน
+ออเดอร์ (หักค่าธรรมเนียมแพลตฟอร์ม 1.5% จากยอดที่ผู้ขายได้รับ ผ่านบัญชี
+`fee_revenue`) แล้วให้เกษตรกรผ่อนชำระคืนผู้ให้กู้ทีหลังพร้อมดอกเบี้ยที่คิดจาก
+จำนวนวันที่ค้างจริงต่อยอดที่เบิกแต่ละครั้ง (`credit.credit_drawdown`) — ถูกกว่า
+การกู้เป็นก้อนเดียวเพราะดอกเบี้ยไม่คิดจากวงเงินทั้งก้อนหรือวันที่ยังไม่ได้ใช้เงิน
+เพิ่มคอลัมน์ `payment_status` ให้ `marketplace.product_order` เป็นครั้งแรก
+(ค่าเริ่มต้น `unpaid` — ออเดอร์ที่ไม่ได้ใช้เครดิตไลน์ยังคงจ่ายเงินกันเองนอกระบบ
+เหมือนเดิมทุกประการ ไม่กระทบออเดอร์เก่า) **ต้องรันหลัง** `grant_b2b_commerce_
+engine_phase3.sql` เท่านั้น (อ้างถึงตาราง `procurement.invoice` สำหรับช่องทาง
+เบิกเครดิตผ่านใบแจ้งหนี้ที่ยังไม่ได้เปิดใช้งานในรอบนี้ — ดูคอมเมนต์หัวไฟล์)
+**ข้อควรระวังก่อนใช้งานจริง:** ต้องมีบัญชี `ledger.account` ประเภท
+`fee_revenue`/`platform` อยู่ในระบบก่อน ไม่งั้นฟังก์ชัน `credit.draw_credit_
+for_order()` จะ error ตอนใช้งานจริง (ไม่ error ตอนรัน migration นี้) — ถ้ายังไม่มี
+ให้รัน `INSERT INTO ledger.account (account_type, owner_type, currency)
+VALUES ('fee_revenue', 'platform', 'THB');` เพิ่มอีกครั้งเดียว ดูรายละเอียด
+เต็มที่คอมเมนต์หัวไฟล์ migration นี้เอง ฝั่งหน้าเว็บ (UI ให้ผู้ให้กู้ออกวงเงิน,
+ปุ่ม "จ่ายด้วยเครดิต" ในหน้าออเดอร์เกษตรกร, และหน้าดูยอดค้างชำระ) ยังไม่ได้
+สร้างในรอบนี้ — มีแค่ backend/API พร้อมใช้งาน
+
+**เพิ่มเมื่อ 2026-08-25 (ค่ำ):** `grant_shrimp_auction.sql` — เพิ่มแกนหลักของ
+"Auction Place" (ประมูลขายกุ้งสดแบบ Sealed-Bid) สร้าง schema ใหม่
+`aquaculture` ทั้งหมด (`farm_profile`, `sampling_event`/`sampling_point` สำหรับ
+สุ่มตรวจไซส์ก่อนประมูล, `shrimp_auction`, `auction_size_tier` สำหรับตาราง 5
+ไซส์ที่ประมูลพร้อมกัน, `harvest_settlement` สำหรับคำนวณยอดชำระจริงวันจับ) และ
+ตารางใหม่ `procurement.auction_bid_tier` (ราคาที่เสนอต่อไซส์ย่อยแต่ละไซส์ ภายใน
+1 ประมูล) เป็นการเพิ่ม "โหมด Forward" (ผู้ขาย/เจ้าของบ่อเปิดประมูล ราคาวิ่งขึ้น)
+ให้กลไกประมูลที่มีอยู่เดิมซึ่งเดิมรองรับแค่โหมด Reverse (ผู้ซื้อเปิด ราคาวิ่งลง)
+รวมถึง `ALTER TABLE procurement.auction_bid ALTER COLUMN bid_price DROP NOT
+NULL` (บิดโหมด Forward ประมูลเป็นตารางหลายไซส์ ไม่มีราคาเดียว จึงต้องเปิดให้
+เป็น NULL ได้ — ปลอดภัยกับแถวโหมด Reverse เดิมเพราะ CHECK constraint มองว่า
+NULL ผ่านเสมอ) **ต้องรันหลัง** `grant_rfq_marketplace.sql` และ
+`grant_b2b_commerce_engine.sql` เท่านั้น (ALTER ตาราง `procurement.auction`/
+`auction_bid` ที่ต้องมีอยู่ก่อน) ดูรายละเอียดสถาปัตยกรรมเต็มที่
+`SHRIMP_AUCTION_ARCHITECTURE.md` ที่ root ของโปรเจกต์ ฝั่งหน้าเว็บมีหน้าใหม่
+`auction-place.html`/`auction-intro.html` ที่ root และหน้าใน
+`frontend/shrimp-auction-farmer.html`/`frontend/buyer/shrimp-auction.html`
 
 **เพิ่มเมื่อ 2026-08-25:** `grant_group_buy.sql` — เพิ่มฟีเจอร์ "รวมออเดอร์
 ประมูลร่วมของสหกรณ์" (Group Buy) ให้หลายสหกรณ์รวมปริมาณความต้องการซื้อปัจจัย
