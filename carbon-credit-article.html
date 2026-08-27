@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ข้าวคาร์บอนต่ำ และคาร์บอนเครดิต | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html / coop-portal.html / auction-place.html / auction-intro.html */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo-img { height: 44px; width: auto; display: block; }
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-links a.active-link { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+    }
+    .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-row:last-child a:last-child { border-bottom: none; }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+
+  /* STAT ROW (AWD impact figures) */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 8px; }
+  @media (max-width: 860px) { .stat-grid { grid-template-columns: 1fr; } }
+  .stat-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 22px; text-align: center; }
+  .stat-card .num { font-size: 32px; font-weight: 800; color: var(--green); display: block; margin-bottom: 8px; }
+  .stat-card .label { font-size: 13.8px; color: var(--muted); line-height: 1.5; }
+
+  /* T-VER INFO CARDS */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 26px; }
+  .info-card h4 { font-size: 15.5px; margin-bottom: 10px; color: var(--navy); }
+  .info-card p { font-size: 14.3px; color: var(--text); margin-bottom: 0; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / auction-place.html / auction-intro.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ติดต่อสอบถาม</a>
+        </div>
+        <button class="nav-toggle">☰</button>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="about.html">เกี่ยวกับเรา</a>
+        <a href="index.html#concept">แนวคิดหลัก</a>
+        <a href="index.html#how">วิธีการทำงาน</a>
+        <a href="index.html#knowledge">คลังความรู้</a>
+        <a href="index.html#prices">ราคาสินค้า</a>
+      </div>
+      <div class="nav-row">
+        <a href="index.html#weather">พยากรณ์อากาศ</a>
+        <a href="index.html#roadmap">แผนสินค้า</a>
+        <a href="coop-portal.html">พอร์ทัลสหกรณ์</a>
+        <a href="index.html#contact">ติดต่อ</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-seedling"></i> คลังความรู้ · ข้าวคาร์บอนต่ำ</div>
+    <h1 class="section-title">ข้าวคาร์บอนต่ำ และคาร์บอนเครดิต</h1>
+    <p class="section-sub">ทำความเข้าใจว่าทำไมนาข้าวจึงเกี่ยวข้องกับก๊าซเรือนกระจก เทคนิค "เปียกสลับแห้ง" (AWD) ช่วยลดการปล่อยก๊าซได้อย่างไร และคาร์บอนเครดิตที่ซื้อขายได้จริงเกิดขึ้นจากกลไกแบบไหน — ก่อนเข้าใช้เครื่องมือบันทึกข้อมูลจริงของ AgroLink</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <h2>ทำไมนาข้าวถึงเป็นแหล่งปล่อยก๊าซมีเทนที่สำคัญ</h2>
+    <p>นาข้าวแบบทำน้ำขังตลอดฤดูปลูก (continuous flooding) สร้างสภาวะไร้ออกซิเจนในดิน ซึ่งเหมาะกับแบคทีเรียกลุ่มที่ผลิตก๊าซมีเทน (methanogens) ในการย่อยสลายอินทรียวัตถุ ก๊าซมีเทนที่เกิดขึ้นจึงถูกปล่อยออกจากแปลงนาอย่างต่อเนื่องตลอดฤดูปลูก</p>
+    <p>ในภาพรวมระดับโลก การปลูกข้าวแบบทำน้ำขังคิดเป็นสัดส่วนราวร้อยละ 11 ของการปล่อยก๊าซมีเทนทั้งหมด หรือประมาณ 1 พันล้านตันต่อปี และก๊าซมีเทนมีศักยภาพในการกักเก็บความร้อนสูงกว่าก๊าซคาร์บอนไดออกไซด์ราว 85 เท่า เมื่อคำนวณในกรอบเวลา 20 ปี นาข้าวจึงเป็นหนึ่งในเป้าหมายสำคัญของความพยายามลดก๊าซเรือนกระจกภาคเกษตรทั่วโลก รวมถึงในประเทศไทยที่มีพื้นที่นาข้าวขนาดใหญ่</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:36px;">
+      <div class="eyebrow"><i class="fa-solid fa-droplet"></i> เทคนิคหลัก</div>
+      <h2 class="section-title">เปียกสลับแห้ง (Alternate Wetting and Drying, AWD)</h2>
+      <p class="section-sub">แทนที่จะขังน้ำในแปลงตลอดฤดู เทคนิค AWD ปล่อยให้น้ำในแปลงแห้งลงถึงระดับหนึ่งก่อนสูบน้ำกลับเข้าแปลงใหม่ วนเป็นรอบๆ ตลอดฤดูปลูก</p>
+    </div>
+    <div class="prose-block" style="margin-bottom:34px;">
+      <p>วิธีวัดที่ใช้กันทั่วไปคือการปักท่อวัดระดับน้ำ (มักเป็นท่อ PVC เจาะรู) ลงในดินบริเวณแปลงนา แล้วสังเกตระดับน้ำผ่านท่อ เมื่อระดับน้ำลดลงถึงจุดที่กำหนด (แนวทางที่ใช้กันทั่วไปอยู่ที่ประมาณ 15 ซม. ต่ำกว่าผิวดิน แล้วแต่ชนิดดินและคำแนะนำในแต่ละพื้นที่) จึงสูบน้ำกลับเข้าแปลงจนท่วมขังอีกครั้ง แล้ววนซ้ำไปเรื่อยๆ ยกเว้นช่วงวิกฤต เช่น ช่วงออกดอก ที่ยังต้องรักษาระดับน้ำให้สม่ำเสมอตามปกติ การปล่อยให้ดินแห้งเป็นระยะแบบนี้จะรบกวนวงจรของแบคทีเรียที่ผลิตมีเทน ทำให้ปริมาณก๊าซมีเทนที่ปล่อยออกมาลดลงอย่างมีนัยสำคัญ โดยไม่ต้องเปลี่ยนพันธุ์ข้าวหรือวิธีปลูกอื่นๆ</p>
+    </div>
+    <div class="stat-grid reveal in">
+      <div class="stat-card"><span class="num">20–50%</span><span class="label">มีเทนลดลง เทียบกับแปลงขังน้ำตลอดฤดู (บางงานวิจัยรายงานสูงถึง ~70% เมื่อใช้ร่วมกับแนวทางลดก๊าซเรือนกระจกอื่น)</span></div>
+      <div class="stat-card"><span class="num">30–40%</span><span class="label">ปริมาณน้ำชลประทานที่ประหยัดได้โดยประมาณต่อฤดูปลูก</span></div>
+      <div class="stat-card"><span class="num">ใกล้เคียงเดิม</span><span class="label">ผลผลิตต่อไร่ หากทำตามขั้นตอนถูกต้องและไม่ปล่อยแล้งเกินในช่วงวิกฤตของต้นข้าว</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <h2 class="section-title" style="font-size:26px;">จากการลดมีเทน สู่ "คาร์บอนเครดิต" ที่ซื้อขายได้จริง</h2>
+    </div>
+    <div class="prose-block">
+      <p>การลดก๊าซเรือนกระจกจะกลายเป็น "คาร์บอนเครดิต" ที่ซื้อขายได้จริง ก็ต่อเมื่อผ่านกระบวนการวัด รายงาน และทวนสอบ (Measurement, Reporting, Verification — MRV) ตามระเบียบวิธี (methodology) ที่หน่วยงานรับรองยอมรับ โดย 1 คาร์บอนเครดิตเทียบเท่ากับก๊าซเรือนกระจกที่ลดหรือหลีกเลี่ยงได้จริง 1 ตันคาร์บอนไดออกไซด์เทียบเท่า (tCO2e) ในระดับสากลมีระเบียบวิธีสำหรับนาข้าวโดยเฉพาะ เช่น VCS VM0042 และ VM51 ของ Verra และระเบียบวิธี Methane Emission Reduction in Rice Cultivation ของ Gold Standard ซึ่งล้วนใช้หลักการเปรียบเทียบการปล่อยก๊าซจากแปลงที่ทำ AWD กับแปลงอ้างอิงที่ขังน้ำตามปกติ (baseline) เพื่อคำนวณส่วนต่างที่ลดได้จริง</p>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-landmark"></i> กลไกในประเทศไทย</div>
+      <h2 class="section-title">โครงการ T-VER โดย อบก. (TGO)</h2>
+      <p class="section-sub">กลไกคาร์บอนเครดิตภาคสมัครใจของไทย ที่เกษตรกร กลุ่มเกษตรกร หรือสหกรณ์ที่ทำนาแบบลดก๊าซเรือนกระจกสามารถเข้าร่วมได้</p>
+    </div>
+    <div class="info-grid reveal in">
+      <div class="info-card">
+        <h4>T-VER คืออะไร</h4>
+        <p>T-VER (Thailand Voluntary Emission Reduction Program) คือโครงการลดก๊าซเรือนกระจกภาคสมัครใจของไทย พัฒนาและบริหารโดยองค์การบริหารจัดการก๊าซเรือนกระจก (องค์การมหาชน) หรือ อบก./TGO ผู้ที่ลดก๊าซเรือนกระจกได้จริงตามระเบียบวิธีที่ อบก. รับรอง สามารถขึ้นทะเบียนโครงการและขอออกคาร์บอนเครดิต (T-VER) เพื่อซื้อขายในตลาดคาร์บอนภาคสมัครใจภายในประเทศได้</p>
+      </div>
+      <div class="info-card">
+        <h4>ขั้นตอนโดยสรุป</h4>
+        <p>ต้องขึ้นทะเบียนโครงการกับ อบก. ภายใต้ระเบียบวิธีที่ได้รับอนุมัติ เก็บข้อมูลตามรอบ (เช่น บันทึกระดับน้ำ AWD ต่อรอบปลูก) แล้วผ่านการตรวจสอบและทวนสอบ (validation/verification) โดยผู้ประเมินภายนอกที่ อบก. ขึ้นทะเบียนไว้ ก่อนจะได้รับคาร์บอนเครดิตที่ซื้อขายได้จริง โดยทั่วไปเกษตรกรรายย่อยมักเข้าร่วมผ่านการรวมกลุ่ม เช่น สหกรณ์ หรือผู้พัฒนาโครงการ (project developer) แทนการยื่นเรื่องเดี่ยว เนื่องจากมีต้นทุนการทวนสอบต่อโครงการ</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <div class="note-block">
+      <strong>ข้อควรทราบเกี่ยวกับเครื่องมือของ AgroLink:</strong> ระบบ "ยืนยันการปลูกข้าวคาร์บอนต่ำ (AWD)" ของ AgroLink เป็นเครื่องมือ<strong>บันทึกและประเมินภายในแพลตฟอร์มเท่านั้น</strong> ใช้สำหรับบันทึกรอบเปียกสลับแห้งของแต่ละแปลง แล้วส่งให้ทีมงาน Platform Ops ตรวจสอบเบื้องต้น เพื่อประเมินปริมาณคาร์บอนเครดิตที่แปลงอาจมีสิทธิ์ได้รับ <strong>ระบบนี้ไม่ใช่การขึ้นทะเบียนคาร์บอนเครดิตจริงกับหน่วยงานใด</strong> การขอคาร์บอนเครดิตที่ซื้อขายได้จริงต้องยื่นเรื่องแยกต่างหากกับหน่วยงานรับรอง เช่น อบก./TGO ภายใต้โครงการ T-VER
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container section-head reveal">
+    <h2 class="section-title">เริ่มบันทึกรอบปลูกข้าวคาร์บอนต่ำของท่าน</h2>
+    <p class="section-sub">เกษตรกรที่ทำนาข้าวและต้องการเริ่มบันทึกรอบเปียกสลับแห้ง (AWD) เพื่อประเมินคาร์บอนเครดิตเบื้องต้น สามารถเข้าใช้งานเครื่องมือของ AgroLink ได้ทันที (ต้องเข้าสู่ระบบเกษตรกรก่อน)</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="frontend/carbon-credit.html" class="btn btn-gold">🌾 เริ่มบันทึกรอบปลูก AWD</a>
+      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark">🌿</span>AgroLink</div>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
+      </div>
+      <div>
+        <h5>แพลตฟอร์ม</h5>
+        <ul>
+          <li><a href="index.html#concept">แนวคิดหลัก</a></li>
+          <li><a href="production-cycle-template.html">แม่แบบวงจรการผลิต (รายละเอียด)</a></li>
+          <li><a href="auction-intro.html">Auction Place</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>ผู้ใช้งาน</h5>
+        <ul>
+          <li><a href="index.html#audience">เกษตรกร</a></li>
+          <li><a href="coop-portal.html">สหกรณ์</a></li>
+          <li><a href="index.html#audience">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#audience">ผู้ให้สินเชื่อ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>องค์กร</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="index.html#partners">พันธมิตร</a></li>
+          <li><a href="index.html#contact">ติดต่อเรา</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span>สร้างบนแกนกลาง Galaxy Core</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
