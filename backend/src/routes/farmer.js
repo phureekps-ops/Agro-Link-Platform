@@ -691,4 +691,194 @@ router.post('/orders/:id/cancel', async (req, res, next) => {
   }
 });
 
+// Platform fee taken out of what the supplier receives when a purchase is
+// funded through a credit line — a flat percentage of the transaction, per
+// product decision (2026-08-27). Not yet configurable per-lender/per-tier;
+// a single platform-wide constant is an honest MVP starting point rather
+// than building a policy table nobody asked for yet.
+const CREDIT_LINE_PLATFORM_FEE_PERCENT = 1.5;
+
+/**
+ * GET /farmer/credit-lines — this farmer's own standing revolving credit
+ * lines (one per lender that has extended one), with how much is currently
+ * drawn down vs. still available to spend.
+ */
+router.get('/credit-lines', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT cl.credit_line_id, cl.lender_org_id, o.org_name AS lender_name,
+                cl.credit_limit, cl.interest_rate_daily_bps, cl.tenor_days, cl.status, cl.created_at,
+                COALESCE(d.outstanding_total, 0) AS outstanding_total,
+                cl.credit_limit - COALESCE(d.outstanding_total, 0) AS available_credit
+           FROM credit.credit_line cl
+           JOIN identity.organization o ON o.org_id = cl.lender_org_id
+           LEFT JOIN (
+                SELECT credit_line_id, SUM(principal_amount) AS outstanding_total
+                  FROM credit.credit_drawdown WHERE status = 'outstanding' GROUP BY credit_line_id
+              ) d ON d.credit_line_id = cl.credit_line_id
+          WHERE cl.farmer_id = $1
+          ORDER BY cl.created_at DESC`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'credit.credit_line', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/credit-line-drawdowns?status=outstanding — every purchase
+ * this farmer has funded through any of their credit lines, across every
+ * lender, so the repayment screen can show everything owed in one list.
+ */
+router.get('/credit-line-drawdowns', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status) { params.push(status); filter = 'AND d.status = $2'; }
+
+      const result = await client.query(
+        `SELECT d.drawdown_id, d.credit_line_id, o.org_name AS lender_name,
+                po.product_name, po.order_id,
+                d.principal_amount, d.platform_fee_amount, d.interest_rate_daily_bps,
+                d.drawn_at, d.due_date, d.status, d.repaid_amount, d.repaid_at,
+                ROUND(d.principal_amount * (d.interest_rate_daily_bps / 10000.0) *
+                      GREATEST(0, (CURRENT_DATE - d.drawn_at::date)), 2) AS interest_accrued_to_date,
+                d.principal_amount + ROUND(d.principal_amount * (d.interest_rate_daily_bps / 10000.0) *
+                      GREATEST(0, (CURRENT_DATE - d.drawn_at::date)), 2) AS total_due_today
+           FROM credit.credit_drawdown d
+           JOIN credit.credit_line cl ON cl.credit_line_id = d.credit_line_id
+           JOIN identity.organization o ON o.org_id = cl.lender_org_id
+           LEFT JOIN marketplace.product_order po ON po.order_id = d.order_id
+          WHERE cl.farmer_id = $1 ${filter}
+          ORDER BY d.drawn_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'credit.credit_drawdown', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/orders/:id/pay-with-credit-line
+ * Body: { credit_line_id }
+ *
+ * Draws the given credit line to pay the supplier NOW (net of the platform
+ * fee) for an order this farmer already placed and the supplier has
+ * already confirmed — see credit.draw_credit_for_order() in
+ * grant_input_credit_line.sql for the full validation (ownership, credit
+ * line active, order status, available headroom). Ownership of the ORDER
+ * is re-checked here first (WHERE farmer_id = $1), same 404-before-touching
+ * shape as POST /farmer/orders/:id/cancel above — ownership of the CREDIT
+ * LINE itself is re-checked inside the SQL function.
+ */
+router.post('/orders/:id/pay-with-credit-line', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { credit_line_id: creditLineId } = req.body || {};
+
+  if (!creditLineId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['credit_line_id'] });
+  }
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const owned = await client.query(
+        'SELECT order_id FROM marketplace.product_order WHERE farmer_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (owned.rows.length === 0) return { notFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT credit.draw_credit_for_order($1, $2, $3) AS drawdown_id',
+          [id, creditLineId, CREDIT_LINE_PLATFORM_FEE_PERCENT],
+        );
+        await logAccess(client, 'write', 'credit.credit_drawdown', rows[0].drawdown_id);
+        return { drawdownId: rows[0].drawdown_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.businessError) {
+      return res.status(409).json({ error: 'cannot_draw_credit_line', detail: result.businessError });
+    }
+    return res.json({ drawdown_id: result.drawdownId, order_id: id, payment_status: 'paid_via_credit_line' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/credit-line-drawdowns/:id/repay
+ * Body: { unit_id }
+ *
+ * Pays off ONE drawdown in full — principal plus interest accrued to today
+ * — from the named production unit's wallet. credit.repay_drawdown()
+ * computes the exact amount owed itself (see grant_input_credit_line.sql
+ * on why this is full-payoff-only, no partial amount is accepted here).
+ * Ownership of the drawdown is checked via an explicit join through
+ * credit_line.farmer_id before ever calling the SECURITY DEFINER function.
+ */
+router.post('/credit-line-drawdowns/:id/repay', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { unit_id: unitId } = req.body || {};
+
+  if (!unitId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['unit_id'] });
+  }
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const owned = await client.query(
+        `SELECT d.drawdown_id FROM credit.credit_drawdown d
+           JOIN credit.credit_line cl ON cl.credit_line_id = d.credit_line_id
+          WHERE cl.farmer_id = $1 AND d.drawdown_id = $2`,
+        [subjectId, id],
+      );
+      if (owned.rows.length === 0) return { notFound: true };
+
+      try {
+        const { rows } = await client.query(
+          'SELECT credit.repay_drawdown($1, $2) AS repayment_id',
+          [id, unitId],
+        );
+        await logAccess(client, 'write', 'credit.credit_line_repayment', rows[0].repayment_id);
+        return { repaymentId: rows[0].repayment_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'drawdown_not_found' });
+    }
+    if (result.businessError) {
+      return res.status(409).json({ error: 'cannot_repay_drawdown', detail: result.businessError });
+    }
+    return res.json({ repayment_id: result.repaymentId, drawdown_id: id, status: 'repaid' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

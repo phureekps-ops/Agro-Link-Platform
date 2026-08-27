@@ -370,4 +370,131 @@ router.get('/contracts', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /lender/credit-lines
+ * Body: { farmer_id, credit_limit, interest_rate_daily_bps, tenor_days? }
+ *
+ * Issues a NEW standing revolving credit line to a farmer this lender has
+ * already decided to trust for input-purchase financing (see
+ * grant_input_credit_line.sql's file header for why this is a direct
+ * lender-initiated grant, not an auto-scored application like
+ * POST /lender counterparts for one-time loans). credit.issue_credit_line()
+ * still enforces the same risk_tier-D refusal and Lender/active-KYB checks
+ * underwriting.evaluate_application uses, so it raises a business error
+ * (409) rather than a generic 500 when those fail.
+ */
+router.post('/credit-lines', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    farmer_id: farmerId,
+    credit_limit: creditLimit,
+    interest_rate_daily_bps: interestRateDailyBps,
+    tenor_days: tenorDays,
+  } = req.body || {};
+
+  if (!farmerId || creditLimit === undefined || interestRateDailyBps === undefined) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['farmer_id', 'credit_limit', 'interest_rate_daily_bps'],
+    });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT credit.issue_credit_line($1, $2, $3, $4, $5) AS credit_line_id',
+          [farmerId, subjectId, creditLimit, interestRateDailyBps, tenorDays || null],
+        );
+        await logAccess(client, 'write', 'credit.credit_line', rows[0].credit_line_id);
+        return { creditLineId: rows[0].credit_line_id };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) {
+      return res.status(409).json({ error: 'cannot_issue_credit_line', detail: result.businessError });
+    }
+    return res.status(201).json({ credit_line_id: result.creditLineId, status: 'active' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /lender/credit-lines — this lender's own credit-line portfolio, with
+ * the farmer's name and how much of each line is currently drawn down, so
+ * the lender can see exposure at a glance without a separate round trip.
+ */
+router.get('/credit-lines', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT cl.credit_line_id, cl.farmer_id, f.full_name AS farmer_name,
+                cl.credit_limit, cl.interest_rate_daily_bps, cl.tenor_days, cl.status, cl.created_at,
+                COALESCE(d.outstanding_total, 0) AS outstanding_total,
+                cl.credit_limit - COALESCE(d.outstanding_total, 0) AS available_credit
+           FROM credit.credit_line cl
+           JOIN identity.farmer f ON f.farmer_id = cl.farmer_id
+           LEFT JOIN (
+                SELECT credit_line_id, SUM(principal_amount) AS outstanding_total
+                  FROM credit.credit_drawdown WHERE status = 'outstanding' GROUP BY credit_line_id
+              ) d ON d.credit_line_id = cl.credit_line_id
+          WHERE cl.lender_org_id = $1
+          ORDER BY cl.created_at DESC`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'credit.credit_line', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /lender/credit-lines/:id/drawdowns — every purchase funded against
+ * one of this lender's own credit lines, ownership-gated via the explicit
+ * WHERE cl.lender_org_id = $1 join (same "404 before touching another
+ * lender's data" shape as GET /lender/loan-applications/:id).
+ */
+router.get('/credit-lines/:id/drawdowns', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const owned = await client.query(
+        'SELECT credit_line_id FROM credit.credit_line WHERE credit_line_id = $1 AND lender_org_id = $2',
+        [id, subjectId],
+      );
+      if (owned.rows.length === 0) return { notFound: true };
+
+      const rows = await client.query(
+        `SELECT d.drawdown_id, d.order_id, o.product_name, o.org_id AS supplier_org_id, org.org_name AS supplier_name,
+                d.principal_amount, d.platform_fee_amount, d.net_amount_to_supplier,
+                d.interest_rate_daily_bps, d.drawn_at, d.due_date, d.status, d.repaid_amount, d.repaid_at
+           FROM credit.credit_drawdown d
+           LEFT JOIN marketplace.product_order o ON o.order_id = d.order_id
+           LEFT JOIN identity.organization org ON org.org_id = o.org_id
+          WHERE d.credit_line_id = $1
+          ORDER BY d.drawn_at DESC`,
+        [id],
+      );
+      await logAccess(client, 'read', 'credit.credit_drawdown', id);
+      return { drawdowns: rows.rows };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'credit_line_not_found' });
+    }
+    return res.json(result.drawdowns);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;
