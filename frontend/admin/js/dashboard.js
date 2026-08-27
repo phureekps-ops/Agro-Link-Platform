@@ -446,6 +446,89 @@ async function loadAllOrgs() {
 }
 document.getElementById("orgKybFilter").addEventListener("change", () => loadAllOrgs());
 
+// ---------- โมเดลคะแนนเครดิต (Machine Learning) ----------
+// Backs GET /admin/credit-model and POST /admin/credit-model/retrain
+// (src/routes/admin.js) — see grant_credit_model.sql's doc comment for the
+// full design: logistic regression trained on the same 4 factor ratios
+// risk.compute_credit_score() already computes (production/contract/
+// repayment/delivery), gated behind a minimum sample size so an early-
+// stage pilot never activates an unreliable model — below that threshold
+// every farmer keeps being scored by the original fixed-weight formula.
+
+function creditModelStatusCard(active) {
+  if (!active) {
+    return `<div class="empty-state">ยังไม่มีโมเดลที่ฝึกสำเร็จ — เกษตรกรทุกคนยังคงใช้สูตรคำนวณคะแนนแบบเดิม (ถ่วงน้ำหนักคงที่ 30/25/25/20%)</div>`;
+  }
+  const accuracyText = active.training_accuracy !== null && active.training_accuracy !== undefined
+    ? (Number(active.training_accuracy) * 100).toFixed(1) + "%"
+    : "-";
+  return `
+    <div class="item-card">
+      <div class="row"><span class="title">โมเดลที่ใช้งานอยู่ขณะนี้</span><span class="badge status-active">ใช้งานอยู่</span></div>
+      <div class="detail-line">ฝึกเมื่อ ${thaiDate(active.trained_at)}</div>
+      <div class="detail-line">จำนวนข้อมูลที่ใช้ฝึก: ${active.sample_size} ราย (กลุ่มดี ${active.positive_count} · กลุ่มเสี่ยง ${active.negative_count})</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">ความแม่นยำระหว่างฝึก: ${accuracyText}</div>
+    </div>
+  `;
+}
+
+function creditModelHistoryCard(m) {
+  const badge = m.is_active
+    ? `<span class="badge status-active">ใช้งานอยู่</span>`
+    : `<span class="badge status-pending">ไม่ได้ใช้งาน</span>`;
+  const accuracyText = m.training_accuracy !== null && m.training_accuracy !== undefined
+    ? (Number(m.training_accuracy) * 100).toFixed(1) + "%"
+    : "-";
+  return `
+    <div class="item-card">
+      <div class="row"><span class="title">ฝึกเมื่อ ${thaiDate(m.trained_at)}</span>${badge}</div>
+      <div class="detail-line">ข้อมูล ${m.sample_size} ราย (ดี ${m.positive_count} / เสี่ยง ${m.negative_count})</div>
+      <div class="detail-line muted">ความแม่นยำ: ${accuracyText}${m.notes ? " · " + escapeHtml(m.notes) : ""}</div>
+    </div>
+  `;
+}
+
+async function loadCreditModelStatus() {
+  const statusEl = document.getElementById("creditModelStatusSection");
+  const historyEl = document.getElementById("creditModelHistorySection");
+  try {
+    const result = await AgroLinkAdminAPI.get("/admin/credit-model");
+    statusEl.innerHTML = creditModelStatusCard(result.active);
+    historyEl.innerHTML = result.history.length === 0
+      ? `<div class="empty-state">ยังไม่เคยมีการฝึกโมเดล</div>`
+      : result.history.map(creditModelHistoryCard).join("");
+  } catch (err) {
+    statusEl.innerHTML = `<div class="empty-state">โหลดสถานะโมเดลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    historyEl.innerHTML = "";
+  }
+}
+
+document.getElementById("retrainCreditModelBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("retrainCreditModelBtn");
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "กำลังฝึกโมเดล…";
+  try {
+    const result = await AgroLinkAdminAPI.post("/admin/credit-model/retrain", {});
+    if (result.activated) {
+      toast(`ฝึกโมเดลสำเร็จและเปิดใช้งานแล้ว (ข้อมูล ${result.sample_size} ราย)`);
+    } else {
+      toast(
+        `ยังฝึกโมเดลไม่ได้: ข้อมูลไม่พอ (มี ${result.sample_size} ราย ต้องการอย่างน้อย ${result.min_training_samples} ราย `
+        + `และอย่างน้อย ${result.min_per_class} รายต่อกลุ่ม) — ยังคงใช้สูตรเดิมต่อไป`,
+        true,
+      );
+    }
+    await loadCreditModelStatus();
+  } catch (err) {
+    toast("ฝึกโมเดลไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
+
+
 async function refreshAll() {
   await Promise.all([
     loadSummaryAndHealth(), loadKycQueue(), loadKybQueue(), loadRoleRequestQueue(),
@@ -465,3 +548,4 @@ loadAwdQueue();
 loadAwdConfig();
 loadAllFarmers();
 loadAllOrgs();
+loadCreditModelStatus();

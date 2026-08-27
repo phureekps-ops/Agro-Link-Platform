@@ -580,6 +580,117 @@ router.get('/products', async (req, res, next) => {
 });
 
 /**
+ * GET /farmer/products/recommended — "แนะนำสำหรับท่าน" (AI Matching).
+ * Backs a "recommended for you" section on marketplace.html. This is a
+ * legitimate multi-factor CONTENT-BASED scoring/ranking system — NOT deep
+ * learning or an LLM — computed fresh on every request in pure SQL against
+ * the same live data GET /farmer/products already reads (no offline
+ * training step, unlike risk.credit_model — see grant_credit_model.sql).
+ * Every candidate listing gets a match_score in [0, 1] from three signals:
+ *
+ *   40% region match          — does the farmer's identity.farmer.
+ *                                region_code appear in the supplier's
+ *                                partner.vendor_profile.service_regions? A
+ *                                supplier that has never set a service area
+ *                                gets a neutral 0.5, not a penalty.
+ *   30% price competitiveness — this listing's price vs. the average price
+ *                                of other active listings in the same
+ *                                category. At-or-below average scores 1.0,
+ *                                falling linearly to 0 at double the
+ *                                average. No comparable data (only listing
+ *                                in its category) gets a neutral 0.5.
+ *   30% reliability            — this supplier's historical order success
+ *                                rate: fulfilled / (fulfilled + rejected)
+ *                                product_order rows. Pending/cancelled rows
+ *                                are excluded from both sides. No terminal
+ *                                history yet gets a neutral 0.5, not a
+ *                                penalty for being new.
+ *
+ * Re-uses the exact same base filters as GET /farmer/products above
+ * (is_active, InputSupplier role verification, the coop-catalog audience
+ * safety net) so a supplier that wouldn't show up in the normal browse
+ * list never shows up here either.
+ *
+ * Query: category? (see PRODUCT_CATEGORIES), limit? (default 10, max 50)
+ */
+router.get('/products/recommended', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { category } = req.query;
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
+
+  if (category && !PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: PRODUCT_CATEGORIES });
+  }
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId, PRODUCT_CATEGORIES];
+      const filters = [
+        'p.is_active = true',
+        `p.category = ANY($${params.length})`,
+        "(o.org_type <> 'Cooperative' OR p.category <> 'other')",
+        `EXISTS (
+           SELECT 1 FROM identity.organization_role r
+            WHERE r.org_id = o.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
+         )`,
+      ];
+      if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
+      params.push(limit);
+      const limitPlaceholder = `$${params.length}`;
+
+      const result = await client.query(
+        `WITH farmer_region AS (
+           SELECT region_code FROM identity.farmer WHERE farmer_id = $1
+         ),
+         reliability AS (
+           SELECT org_id,
+                  count(*) FILTER (WHERE status = 'fulfilled') AS success_count,
+                  count(*) FILTER (WHERE status IN ('fulfilled', 'rejected')) AS terminal_count
+             FROM marketplace.product_order
+            GROUP BY org_id
+         )
+         SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
+                p.description, p.unit_price, p.price_unit, p.updated_at,
+                (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) AS featured,
+                (SELECT photo_data_url FROM marketplace.product_photo
+                  WHERE listing_id = p.listing_id ORDER BY created_at ASC LIMIT 1) AS cover_photo_url,
+                ROUND((
+                  0.4 * (CASE
+                           WHEN COALESCE(cardinality(vp.service_regions), 0) = 0 THEN 0.5
+                           WHEN fr.region_code = ANY(vp.service_regions) THEN 1.0
+                           ELSE 0.0
+                         END)
+                + 0.3 * COALESCE(LEAST(1.0, GREATEST(0.0,
+                    1 - (p.unit_price - cat_avg.avg_price) / NULLIF(cat_avg.avg_price, 0)
+                  )), 0.5)
+                + 0.3 * (CASE WHEN COALESCE(rel.terminal_count, 0) = 0 THEN 0.5
+                              ELSE rel.success_count::numeric / rel.terminal_count END)
+                )::numeric, 4) AS match_score
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = p.org_id
+           CROSS JOIN farmer_region fr
+           LEFT JOIN reliability rel ON rel.org_id = p.org_id
+           LEFT JOIN LATERAL (
+             SELECT AVG(p2.unit_price) AS avg_price
+               FROM marketplace.product_listing p2
+              WHERE p2.category = p.category AND p2.is_active = true AND p2.listing_id <> p.listing_id
+           ) cat_avg ON true
+          WHERE ${filters.join(' AND ')}
+          ORDER BY match_score DESC, p.updated_at DESC
+          LIMIT ${limitPlaceholder}`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * POST /farmer/orders
  * Body: { listing_id, quantity }
  *

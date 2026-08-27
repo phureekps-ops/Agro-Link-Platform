@@ -18,6 +18,7 @@ const fertilizerRouter = require('./routes/fertilizer');
 const fertilizerMixingRouter = require('./routes/fertilizermixing');
 const carbonRouter = require('./routes/carbon');
 const farmerMachineryRouter = require('./routes/farmermachinery');
+const farmerVenueRouter = require('./routes/farmervenue');
 const coopCollectionRouter = require('./routes/coopcollection');
 const governmentRouter = require('./routes/government');
 const storageRouter = require('./routes/storage');
@@ -98,6 +99,12 @@ app.use('/farmer', carbonRouter);
 // prefix pattern as above; no path collision with the other four farmer
 // route files (none of them define a /machinery-* sub-path).
 app.use('/farmer', farmerMachineryRouter);
+// farmervenue.js — farmer-facing "หาที่ขายสินค้า" browsing/booking routes,
+// restored after being accidentally deleted with no replacement in commit
+// 6be68c3 (see that file's own header comment). Same shared '/farmer'
+// prefix pattern as farmermachinery.js above; no path collision (no other
+// farmer route file defines a /venue-* sub-path).
+app.use('/farmer', farmerVenueRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
 // coopcollection.js — M09 Collection & Quality station for cooperatives

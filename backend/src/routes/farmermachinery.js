@@ -79,6 +79,105 @@ router.get('/machinery-providers', async (req, res, next) => {
 });
 
 /**
+ * GET /farmer/machinery-providers/recommended — "แนะนำสำหรับท่าน" (AI
+ * Matching). Same legitimate multi-factor CONTENT-BASED scoring/ranking
+ * system as GET /farmer/products/recommended (see that route's doc comment
+ * in farmer.js for the full rationale) — NOT deep learning, computed fresh
+ * on every request in pure SQL:
+ *
+ *   40% region match          — vendor_profile.service_regions vs the
+ *                                farmer's region_code (neutral 0.5 if the
+ *                                provider never declared a service area —
+ *                                no org currently has a way to set this for
+ *                                a machinery role, so this factor is always
+ *                                neutral today, same honest degradation as
+ *                                before rather than a bug introduced here).
+ *   30% price competitiveness — this rate vs. the average price of other
+ *                                active listings sharing the same
+ *                                service_type (neutral 0.5 if no comparable
+ *                                price data).
+ *   30% reliability            — Accepted / (Accepted + Declined)
+ *                                machinery_booking rows for this provider
+ *                                (neutral 0.5 with no terminal history yet).
+ *
+ * Re-uses the exact same base filters as GET /farmer/machinery-providers
+ * above, so a provider that wouldn't show up in the normal browse list
+ * never shows up here either.
+ *
+ * Query: service_type? (see the five values above), limit? (default 10, max 50)
+ */
+router.get('/machinery-providers/recommended', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { service_type: serviceType } = req.query;
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
+
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [subjectId, MACHINERY_ORG_TYPES];
+      const filters = [
+        'sl.is_active = true',
+        'sl.service_key IS NOT NULL',
+        "o.kyb_status = 'Verified'",
+        `EXISTS (
+           SELECT 1 FROM identity.organization_role r
+            WHERE r.org_id = sl.org_id AND r.role_type = ANY($2) AND r.status = 'Verified'
+         )`,
+      ];
+      if (serviceType) { params.push(serviceType); filters.push(`sl.service_type = $${params.length}`); }
+      params.push(limit);
+      const limitPlaceholder = `$${params.length}`;
+
+      const result = await client.query(
+        `WITH farmer_region AS (
+           SELECT region_code FROM identity.farmer WHERE farmer_id = $1
+         ),
+         reliability AS (
+           SELECT org_id,
+                  count(*) FILTER (WHERE status = 'Accepted') AS success_count,
+                  count(*) FILTER (WHERE status IN ('Accepted', 'Declined')) AS terminal_count
+             FROM marketplace.machinery_booking
+            GROUP BY org_id
+         )
+         SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
+                sl.description AS label_th, sl.unit_price, sl.price_unit,
+                (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) AS featured,
+                ROUND((
+                  0.4 * (CASE
+                           WHEN COALESCE(cardinality(vp.service_regions), 0) = 0 THEN 0.5
+                           WHEN fr.region_code = ANY(vp.service_regions) THEN 1.0
+                           ELSE 0.0
+                         END)
+                + 0.3 * COALESCE(LEAST(1.0, GREATEST(0.0,
+                    1 - (sl.unit_price - type_avg.avg_price) / NULLIF(type_avg.avg_price, 0)
+                  )), 0.5)
+                + 0.3 * (CASE WHEN COALESCE(rel.terminal_count, 0) = 0 THEN 0.5
+                              ELSE rel.success_count::numeric / rel.terminal_count END)
+                )::numeric, 4) AS match_score
+           FROM marketplace.service_listing sl
+           JOIN identity.organization o ON o.org_id = sl.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = sl.org_id
+           CROSS JOIN farmer_region fr
+           LEFT JOIN reliability rel ON rel.org_id = sl.org_id
+           LEFT JOIN LATERAL (
+             SELECT AVG(sl2.unit_price) AS avg_price
+               FROM marketplace.service_listing sl2
+              WHERE sl2.service_type = sl.service_type AND sl2.is_active = true AND sl2.listing_id <> sl.listing_id
+           ) type_avg ON true
+          WHERE ${filters.join(' AND ')}
+          ORDER BY match_score DESC, sl.service_type
+          LIMIT ${limitPlaceholder}`,
+        params,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * POST /farmer/machinery-bookings
  * Body: { listing_id, preferred_date, quantity_note?, farmer_note? }
  *

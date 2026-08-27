@@ -47,9 +47,12 @@ const BOOKING_STATUS_BADGE_CLASS = {
 // listings first — this just renders the "⭐ แนะนำ" badge, it does not
 // re-sort anything client-side.
 function providerCard(p) {
+  const matchBadge = p.match_score !== undefined && p.match_score !== null
+    ? `<span class="badge status-active" style="background:var(--gold-100, #fff6dd); color:var(--gold-700, #8a6d1a);">ตรงกับท่าน ${Math.round(p.match_score * 100)}%</span>`
+    : "";
   return `
     <div class="item-card" data-listing-id="${p.listing_id}">
-      <div class="row"><span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.org_name)}</span></div>
+      <div class="row"><span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.org_name)}</span>${matchBadge}</div>
       ${p.featured ? `<div class="detail-line"><span class="badge status-approved">⭐ แนะนำ</span></div>` : ""}
       <div class="detail-line">${escapeHtml(p.label_th)}</div>
       <div class="detail-line muted">ราคา: ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit || "")}</div>
@@ -58,6 +61,25 @@ function providerCard(p) {
       </div>
     </div>
   `;
+}
+
+/**
+ * "แนะนำสำหรับท่าน" — GET /farmer/machinery-providers/recommended. Same
+ * providerCard renderer as the main browse list (now match_score-aware),
+ * same booking-form wiring reused via handleBookFromClick below.
+ */
+async function loadRecommendedProviders() {
+  const el = document.getElementById("recommendedProvidersSection");
+  try {
+    const providers = await AgroLinkAPI.get("/farmer/machinery-providers/recommended?limit=6");
+    if (providers.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคำแนะนำในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = providers.map(providerCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำแนะนำไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
 }
 
 async function loadProviders() {
@@ -78,7 +100,7 @@ async function loadProviders() {
 
 document.getElementById("serviceTypeFilter").addEventListener("change", () => loadProviders());
 
-document.getElementById("providerListSection").addEventListener("click", (e) => {
+function handleBookFromClick(e) {
   const btn = e.target.closest("[data-book-from]");
   if (!btn) return;
   document.getElementById("bookingListingId").value = btn.dataset.bookFrom;
@@ -86,7 +108,9 @@ document.getElementById("providerListSection").addEventListener("click", (e) => 
   document.getElementById("bookingFormTitle").style.display = "block";
   document.getElementById("bookingForm").style.display = "block";
   document.getElementById("bookingForm").scrollIntoView({ behavior: "smooth", block: "start" });
-});
+}
+document.getElementById("providerListSection").addEventListener("click", handleBookFromClick);
+document.getElementById("recommendedProvidersSection").addEventListener("click", handleBookFromClick);
 
 document.getElementById("bookingCancelBtn").addEventListener("click", () => {
   document.getElementById("bookingFormTitle").style.display = "none";
@@ -184,8 +208,7 @@ document.getElementById("bookingHistorySection").addEventListener("click", async
 
 // ---------- เริ่มต้น ----------
 async function init() {
-  await loadProviders();
-  await loadBookingHistory();
+  await Promise.all([loadProviders(), loadBookingHistory(), loadRecommendedProviders()]);
 }
 
 init();

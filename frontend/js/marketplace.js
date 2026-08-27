@@ -200,12 +200,16 @@ function productCard(p) {
   const coverPhotoHtml = p.cover_photo_url
     ? `<img class="product-cover-photo" src="${p.cover_photo_url}" alt="${escapeHtml(p.product_name)}" />`
     : "";
+  const matchBadge = p.match_score !== undefined && p.match_score !== null
+    ? `<span class="badge status-active" style="background:var(--gold-100, #fff6dd); color:var(--gold-700, #8a6d1a);">ตรงกับท่าน ${Math.round(p.match_score * 100)}%</span>`
+    : "";
   return `
     <div class="item-card" data-listing-id="${p.listing_id}">
       ${coverPhotoHtml}
       <div class="row">
         <span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
         <span class="badge status-active">${escapeHtml(CATEGORY_LABEL_TH[p.category] || p.category)}</span>
+        ${matchBadge}
       </div>
       ${p.featured ? `<div class="detail-line"><span class="badge status-approved">⭐ แนะนำ</span></div>` : ""}
       <div class="detail-line">ผู้จำหน่าย: ${escapeHtml(p.org_name)}</div>
@@ -219,6 +223,26 @@ function productCard(p) {
       </div>
     </div>
   `;
+}
+
+/**
+ * "แนะนำสำหรับท่าน" — GET /farmer/products/recommended. Same productCard
+ * renderer as the main browse list (now match_score-aware), same order
+ * button wiring reused via handleOrderClick below, so a farmer can order
+ * directly from a recommended card.
+ */
+async function loadRecommendedProducts() {
+  const el = document.getElementById("recommendedProductsSection");
+  try {
+    const products = await AgroLinkAPI.get("/farmer/products/recommended?limit=6");
+    if (products.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีคำแนะนำในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = products.map(productCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำแนะนำไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
 }
 
 async function loadProducts() {
@@ -244,7 +268,7 @@ async function loadProducts() {
 document.getElementById("categoryFilter").addEventListener("change", () => loadProducts());
 document.getElementById("supplierFilter").addEventListener("change", () => loadProducts());
 
-document.getElementById("productListSection").addEventListener("click", async (e) => {
+async function handleOrderClick(e) {
   const orderBtn = e.target.closest("[data-order]");
   if (!orderBtn) return;
 
@@ -266,7 +290,9 @@ document.getElementById("productListSection").addEventListener("click", async (e
   } finally {
     orderBtn.disabled = false;
   }
-});
+}
+document.getElementById("productListSection").addEventListener("click", handleOrderClick);
+document.getElementById("recommendedProductsSection").addEventListener("click", handleOrderClick);
 
 // ---------- คำสั่งซื้อของท่าน ----------
 function orderCard(o) {
@@ -365,7 +391,7 @@ async function init() {
   // (e.g. lender/js/dashboard.js loading auctionMineByRfqId before rfqMine).
   await loadCreditLines();
   await loadProductionUnits();
-  await Promise.all([loadProducts(), loadOrderHistory(), loadCreditLineDrawdowns()]);
+  await Promise.all([loadProducts(), loadOrderHistory(), loadCreditLineDrawdowns(), loadRecommendedProducts()]);
 }
 
 init();

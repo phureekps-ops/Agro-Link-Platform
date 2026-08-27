@@ -125,6 +125,23 @@
       <div class="loading-line">กำลังโหลดรายชื่อองค์กร…</div>
     </div>
 
+    <div class="section-title">🧠 โมเดลคะแนนเครดิต (Machine Learning)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      เดิมคะแนนเครดิตเกษตรกรคำนวณจากสูตรถ่วงน้ำหนักคงที่ (30/25/25/20%) — ส่วนนี้ให้ระบบ "ฝึก" โมเดล (logistic regression)
+      จากประวัติสัญญา/การชำระคืนสินเชื่อจริงของเกษตรกรในระบบแทน หากข้อมูลยังไม่พอ (ต้องมีอย่างน้อย 20 ราย และอย่างน้อย 5 รายในแต่ละกลุ่ม "ดี/เสี่ยง")
+      ระบบจะไม่เปิดใช้งานโมเดลใหม่ และเกษตรกรทุกคนจะยังคงใช้สูตรเดิมต่อไปโดยอัตโนมัติ — ไม่มีทางเสียหาย
+    </p>
+    <div id="creditModelStatusSection" class="card-list">
+      <div class="loading-line">กำลังโหลดสถานะโมเดล…</div>
+    </div>
+    <div class="action-row" style="margin:12px 0 20px;">
+      <button type="button" class="btn btn-primary" id="retrainCreditModelBtn">🔄 ฝึกโมเดลใหม่ด้วยข้อมูลล่าสุด</button>
+    </div>
+    <div class="section-title" style="font-size:14px;">ประวัติการฝึกโมเดล</div>
+    <div id="creditModelHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติ…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
