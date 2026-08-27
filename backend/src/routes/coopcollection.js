@@ -4004,4 +4004,217 @@ router.get('/capital-topup/governance', async (req, res, next) => {
   }
 });
 
+
+// ============================================================
+// แค็ตตาล็อกปัจจัยการผลิต (Input Product Catalog) — เรียกดู/สั่งซื้อจากผู้
+// จำหน่ายปัจจัยการผลิต (InputSupplier) — 2026-08-27
+// ใช้โครงสร้างเดิมทั้งหมด (marketplace.product_listing / product_order)
+// แบบเดียวกับ GET /buyer/coop-products* ใน buyer.js — สหกรณ์ในบทบาทนี้เป็น
+// แค่ "ผู้ซื้อ" อีกประเภทหนึ่งของ marketplace.product_order.buyer_org_id
+// ซึ่งเป็น FK ทั่วไปไปยัง identity.organization ไม่จำกัด org_type ในระดับ
+// ฐานข้อมูล — ฝั่งแอปพลิเคชันเป็นผู้กำหนดว่าใครซื้อจากใครได้ผ่าน org_type
+// filter ในแต่ละเส้นทาง (ดู GET /farmer/products และ GET /buyer/coop-
+// products สำหรับอีกสองทิศทางที่มีอยู่แล้ว) ไม่ต้องเพิ่มตาราง/คอลัมน์ใหม่
+// เลยในฟีเจอร์นี้ — สหกรณ์ยังไม่ใช่ผู้ให้กู้/ผู้ชำระเงินแทนสมาชิก การชำระเงิน
+// เป็นเรื่องระหว่างสหกรณ์กับผู้จำหน่ายปัจจัยการผลิตโดยตรง (payment_status
+// เริ่มที่ 'unpaid' เหมือนคำสั่งซื้อทุกประเภท ยังไม่เชื่อมช่องทางชำระเงินจริง)
+// ============================================================
+const INPUT_PRODUCT_CATEGORIES = ['fertilizer_hormone', 'chemical_pesticide', 'equipment', 'other'];
+
+/**
+ * GET /coop/input-suppliers — ผู้จำหน่ายปัจจัยการผลิต (InputSupplier) ที่
+ * ผ่าน KYB แล้วทุกราย พร้อมจำนวนสินค้าที่ยังเปิดขายอยู่ — มิเรอร์ GET
+ * /farmer/input-suppliers ทุกประการ (ดูฟังก์ชันนั้นสำหรับที่มาของดีไซน์)
+ */
+router.get('/input-suppliers', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT o.org_id, o.org_name, COUNT(p.listing_id) FILTER (WHERE p.is_active) AS active_product_count
+           FROM identity.organization o
+           JOIN identity.organization_role r ON r.org_id = o.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
+           LEFT JOIN marketplace.product_listing p ON p.org_id = o.org_id
+          WHERE o.kyb_status = 'Verified'
+          GROUP BY o.org_id, o.org_name
+          ORDER BY o.org_name`,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/input-products?category=&org_id= — เรียกดูแค็ตตาล็อกที่เปิดขาย
+ * อยู่ (is_active=true) ของผู้จำหน่ายปัจจัยการผลิตทุกราย (หรือรายเดียวผ่าน
+ * org_id) — มิเรอร์ GET /buyer/coop-products ทุกประการ ยกเว้นกรอง
+ * org_type='InputSupplier' แทน 'Cooperative' (คนละทิศทางการซื้อขายกัน)
+ */
+router.get('/input-products', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { category, org_id: orgId } = req.query;
+
+  if (category && !INPUT_PRODUCT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: 'invalid_category', valid: INPUT_PRODUCT_CATEGORIES });
+  }
+
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [];
+      const filters = ['p.is_active = true', "o.org_type = 'InputSupplier'"];
+      if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
+      if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
+
+      const result = await client.query(
+        `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
+                p.description, p.unit_price, p.price_unit, p.updated_at,
+                (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) AS featured,
+                (SELECT photo_data_url FROM marketplace.product_photo
+                  WHERE listing_id = p.listing_id ORDER BY created_at ASC LIMIT 1) AS cover_photo_url
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE ${filters.join(' AND ')}
+          ORDER BY (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) DESC,
+                   o.org_name, p.category, p.product_name`,
+        params,
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/input-products/orders
+ * Body: { listing_id, quantity }
+ * บันทึกราคา/ชื่อ/หมวดหมู่ ณ วินาทีที่สั่งซื้อลงใน marketplace.product_order
+ * โดยตรง (เหมือน POST /buyer/coop-products/orders) — buyer_org_id เป็น
+ * req.subject เสมอ ไม่รับจาก body, farmer_id ปล่อยเป็น NULL (CHECK
+ * constraint ของตารางบังคับให้ตั้งค่าอย่างใดอย่างหนึ่งเท่านั้น)
+ */
+router.post('/input-products/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { listing_id: listingId, quantity } = req.body || {};
+
+  if (!listingId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['listing_id', 'quantity'] });
+  }
+  const qty = Number(quantity);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    return res.status(400).json({ error: 'invalid_quantity' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const listing = await client.query(
+        `SELECT p.listing_id, p.org_id, p.category, p.product_name, p.unit_price, p.price_unit
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE p.listing_id = $1 AND p.is_active = true AND o.org_type = 'InputSupplier'`,
+        [listingId],
+      );
+      if (listing.rows.length === 0) return { listingNotFound: true };
+      const l = listing.rows[0];
+      const totalPrice = Math.round(qty * Number(l.unit_price) * 100) / 100;
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.product_order
+           (listing_id, org_id, buyer_org_id, product_name, category, unit_price, price_unit, quantity, total_price)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING order_id, listing_id, org_id, product_name, category, unit_price, price_unit,
+                   quantity, total_price, status, requested_at`,
+        [listingId, l.org_id, subjectId, l.product_name, l.category, l.unit_price, l.price_unit, qty, totalPrice],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', rows[0].order_id);
+      return { order: rows[0] };
+    });
+
+    if (result.listingNotFound) {
+      return res.status(404).json({ error: 'product_not_found' });
+    }
+    return res.status(201).json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/input-products/orders?status=... — ประวัติคำสั่งซื้อของสหกรณ์
+ * นี้ทั้งหมด ข้ามผู้จำหน่ายทุกราย
+ */
+router.get('/input-products/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const params = [subjectId];
+      let filter = '';
+      if (status) { params.push(status); filter = 'AND o.status = $2'; }
+
+      const result = await client.query(
+        `SELECT o.order_id, o.org_id, supplier.org_name AS supplier_org_name, o.product_name, o.category,
+                o.unit_price, o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.payment_status, o.requested_at, o.decided_at, o.fulfilled_at
+           FROM marketplace.product_order o
+           JOIN identity.organization supplier ON supplier.org_id = o.org_id
+          WHERE o.buyer_org_id = $1 ${filter}
+          ORDER BY o.requested_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'marketplace.product_order', subjectId);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /coop/input-products/orders/:id/cancel — ยกเลิกคำสั่งซื้อของตัวเอง
+ * ได้เฉพาะตอนยังเป็นสถานะ requested เท่านั้น (ก่อนผู้จำหน่ายตอบรับ) — กติกา
+ * เดียวกับ POST /farmer/orders/:id/cancel และ POST /buyer/coop-products/
+ * orders/:id/cancel
+ */
+router.post('/input-products/orders/:id/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.product_order WHERE buyer_org_id = $1 AND order_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'requested') return { wrongStatus: existing.rows[0].status };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.product_order
+            SET status = 'cancelled', updated_at = now()
+          WHERE buyer_org_id = $1 AND order_id = $2
+          RETURNING order_id, status`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.product_order', id);
+      return { order: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'order_not_found' });
+    }
+    if (result.wrongStatus) {
+      return res.status(409).json({ error: 'order_not_requested', current_status: result.wrongStatus });
+    }
+    return res.json(result.order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
 module.exports = router;

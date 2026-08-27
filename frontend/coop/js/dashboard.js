@@ -2808,6 +2808,182 @@ handleCoopOrderActionClick(document.getElementById("coopOrderHistorySection"));
 // portal is always an organization, so the quoting UI is always shown
 // here; the farmer-facing standalone rfq.html hides it instead.
 // ============================================================
+// ============================================================
+// แค็ตตาล็อกปัจจัยการผลิต (Input Product Catalog) — ฝั่งเรียกดู/สั่งซื้อของ
+// สหกรณ์ — 2026-08-27
+// มิเรอร์รูปแบบของ frontend/js/marketplace.js (ตลาดปัจจัยการผลิตฝั่งเกษตรกร)
+// แต่ตัดส่วนแนะนำสินค้าอัตโนมัติ ตัวกรองพื้นที่ให้บริการ และการจ่ายด้วยวงเงิน
+// สินเชื่อหมุนเวียนออก (สหกรณ์ยังไม่มีวงเงินสินเชื่อแบบนั้นในระบบ) เรียก
+// เอนด์พอยต์ /coop/input-* ที่ backend/src/routes/coopcollection.js เพิ่มไว้
+// ============================================================
+const INPUT_PRODUCT_CATEGORY_LABEL_TH = {
+  fertilizer_hormone: "ปุ๋ย/ฮอร์โมน",
+  chemical_pesticide: "สารเคมีและยาปราบศัตรูพืช",
+  equipment: "อุปกรณ์การเกษตร",
+  other: "อื่นๆ",
+};
+
+const INPUT_ORDER_STATUS_LABEL_TH = {
+  requested: "รอการยืนยันจากผู้จำหน่าย",
+  confirmed: "ยืนยันแล้ว (รอส่งมอบ)",
+  fulfilled: "ส่งมอบแล้ว",
+  rejected: "ผู้จำหน่ายปฏิเสธ",
+  cancelled: "ยกเลิกแล้ว",
+};
+const INPUT_ORDER_STATUS_BADGE_CLASS = {
+  requested: "status-pending",
+  confirmed: "status-approved",
+  fulfilled: "status-completed",
+  rejected: "status-declined",
+  cancelled: "status-declined",
+};
+
+async function loadInputSuppliersIntoFilter() {
+  const select = document.getElementById("inputSupplierFilter");
+  try {
+    const suppliers = await AgroLinkCoopAPI.get("/coop/input-suppliers");
+    suppliers.forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = s.org_id;
+      opt.textContent = `${s.org_name} (${s.active_product_count} รายการ)`;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    // ไม่ร้ายแรง — ตัวเลือก "ผู้จำหน่ายทั้งหมด" ยังทำงานได้โดยไม่มีรายชื่อ
+  }
+}
+
+function inputProductCard(p) {
+  const coverPhotoHtml = p.cover_photo_url
+    ? `<img class="product-cover-photo" src="${p.cover_photo_url}" alt="${escapeHtml(p.product_name)}" />`
+    : "";
+  return `
+    <div class="item-card" data-listing-id="${p.listing_id}">
+      ${coverPhotoHtml}
+      <div class="row">
+        <span class="title">${p.featured ? "⭐ " : ""}${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
+        <span class="badge status-active">${escapeHtml(INPUT_PRODUCT_CATEGORY_LABEL_TH[p.category] || p.category)}</span>
+      </div>
+      ${p.featured ? `<div class="detail-line"><span class="badge status-approved">⭐ แนะนำ</span></div>` : ""}
+      <div class="detail-line">ผู้จำหน่าย: ${escapeHtml(p.org_name)}</div>
+      ${p.description ? `<div class="detail-line muted">${escapeHtml(p.description)}</div>` : ""}
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">
+        ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit)}
+      </div>
+      <div class="action-row">
+        <input type="number" class="order-qty-input" data-input-qty-for="${p.listing_id}" min="0.01" step="0.01" value="1" style="max-width:120px;" />
+        <button type="button" class="btn btn-primary btn-sm" data-input-order="${p.listing_id}">สั่งซื้อ</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadInputProducts() {
+  const el = document.getElementById("inputProductListSection");
+  const category = document.getElementById("inputCategoryFilter").value;
+  const orgId = document.getElementById("inputSupplierFilter").value;
+  try {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (orgId) params.set("org_id", orgId);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const products = await AgroLinkCoopAPI.get(`/coop/input-products${query}`);
+    if (products.length === 0) {
+      el.innerHTML = `<div class="empty-state">ไม่พบสินค้าตามเงื่อนไขที่เลือก</div>`;
+      return;
+    }
+    el.innerHTML = products.map(inputProductCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดสินค้าไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("inputCategoryFilter").addEventListener("change", () => loadInputProducts());
+document.getElementById("inputSupplierFilter").addEventListener("change", () => loadInputProducts());
+
+document.getElementById("inputProductListSection").addEventListener("click", async (e) => {
+  const orderBtn = e.target.closest("[data-input-order]");
+  if (!orderBtn) return;
+
+  const listingId = orderBtn.dataset.inputOrder;
+  const qtyInput = document.querySelector(`[data-input-qty-for="${listingId}"]`);
+  const quantity = Number(qtyInput ? qtyInput.value : 0);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    toast("กรุณาระบุจำนวนที่มากกว่า 0", true);
+    return;
+  }
+
+  orderBtn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post("/coop/input-products/orders", { listing_id: listingId, quantity });
+    toast("สั่งซื้อเรียบร้อยแล้ว รอผู้จำหน่ายยืนยัน");
+    await loadInputOrderHistory();
+  } catch (err) {
+    toast("สั่งซื้อไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    orderBtn.disabled = false;
+  }
+});
+
+function inputOrderCard(o) {
+  const badgeClass = INPUT_ORDER_STATUS_BADGE_CLASS[o.status] || "status-pending";
+  const badge = `<span class="badge ${badgeClass}">${escapeHtml(INPUT_ORDER_STATUS_LABEL_TH[o.status] || o.status)}</span>`;
+  const cancelBtn = o.status === "requested"
+    ? `<div class="action-row"><button type="button" class="btn btn-decline btn-sm" data-cancel-input-order="${o.order_id}">ยกเลิกคำสั่งซื้อ</button></div>`
+    : "";
+
+  return `
+    <div class="item-card" data-order-id="${o.order_id}">
+      <div class="row"><span class="title">${escapeHtml(o.product_name)} — ${escapeHtml(o.supplier_org_name)}</span>${badge}</div>
+      <div class="detail-line">${escapeHtml(INPUT_PRODUCT_CATEGORY_LABEL_TH[o.category] || o.category)} · จำนวน ${Number(o.quantity).toLocaleString("th-TH")} x ${Number(o.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(o.price_unit)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">รวม ${Number(o.total_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+      ${o.decided_reason ? `<div class="detail-line muted">เหตุผลจากผู้จำหน่าย: ${escapeHtml(o.decided_reason)}</div>` : ""}
+      <div class="detail-line muted">สั่งซื้อเมื่อ ${thaiDate(o.requested_at)}</div>
+      ${cancelBtn}
+    </div>
+  `;
+}
+
+async function loadInputOrderHistory() {
+  const el = document.getElementById("inputOrderHistorySection");
+  const status = document.getElementById("inputOrderStatusFilter").value;
+  try {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const orders = await AgroLinkCoopAPI.get(`/coop/input-products/orders${query}`);
+    if (orders.length === 0) {
+      el.innerHTML = `<div class="empty-state">สหกรณ์ยังไม่เคยสั่งซื้อปัจจัยการผลิต</div>`;
+      return;
+    }
+    el.innerHTML = orders.map(inputOrderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("inputOrderStatusFilter").addEventListener("change", () => loadInputOrderHistory());
+
+document.getElementById("inputOrderHistorySection").addEventListener("click", async (e) => {
+  const cancelBtn = e.target.closest("[data-cancel-input-order]");
+  if (!cancelBtn) return;
+
+  const orderId = cancelBtn.dataset.cancelInputOrder;
+  cancelBtn.disabled = true;
+  try {
+    await AgroLinkCoopAPI.post(`/coop/input-products/orders/${orderId}/cancel`, {});
+    toast("ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว");
+    await loadInputOrderHistory();
+  } catch (err) {
+    toast("ยกเลิกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    cancelBtn.disabled = false;
+  }
+});
+
+async function refreshInputCatalog() {
+  await loadInputSuppliersIntoFilter();
+  await Promise.all([loadInputProducts(), loadInputOrderHistory()]);
+}
+
+
 const RFQ_CATEGORY_LABEL_TH = {
   input_product: "ปัจจัยการผลิต",
   produce: "ผลผลิตทางการเกษตร",
@@ -4870,6 +5046,7 @@ async function init() {
   loadRegistrationDocument();
   loadCoopProducts();
   refreshCoopOrders();
+  refreshInputCatalog();
   refreshRfq();
   refreshGroupBuys();
   loadFarmer360Roster();
