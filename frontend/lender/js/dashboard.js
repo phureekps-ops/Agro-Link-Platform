@@ -390,7 +390,27 @@ function farmer360RosterCard(r) {
       <div class="detail-line muted">${relationshipTypeLabel(r.relationship_type)} · เป็นลูกค้าตั้งแต่ ${thaiDate(r.joined_at)}</div>
       <div class="action-row">
         <button type="button" class="btn btn-ghost btn-sm" data-view360="${r.farmer_id}">ดูข้อมูล 360°</button>
+        <button type="button" class="btn btn-primary btn-sm" data-toggle-issue-credit-line="${r.farmer_id}">🏦 ออกวงเงินสินเชื่อ</button>
         <button type="button" class="btn btn-decline btn-sm" data-unlink-farmer="${r.farmer_id}">เลิกเป็นลูกค้า</button>
+      </div>
+      <div data-issue-credit-line-form-container="${r.farmer_id}" style="display:none; margin-top:8px;">
+        <div class="form-grid">
+          <div class="field">
+            <label>วงเงินสูงสุด (บาท)</label>
+            <input type="number" min="1" step="0.01" data-cl-limit="${r.farmer_id}" placeholder="เช่น 20000" />
+          </div>
+          <div class="field">
+            <label>ดอกเบี้ยต่อวัน (% ต่อวัน)</label>
+            <input type="number" min="0.001" step="0.001" value="0.05" data-cl-interest="${r.farmer_id}" />
+          </div>
+          <div class="field">
+            <label>ระยะเวลาเบิกแต่ละครั้ง (วัน)</label>
+            <input type="number" min="1" step="1" value="30" data-cl-tenor="${r.farmer_id}" />
+          </div>
+        </div>
+        <div class="action-row">
+          <button type="button" class="btn btn-primary btn-sm" data-submit-issue-credit-line="${r.farmer_id}">ยืนยันออกวงเงิน</button>
+        </div>
       </div>
       <div data-detail-for="${r.farmer_id}"></div>
     </div>
@@ -414,6 +434,60 @@ async function loadFarmer360Roster() {
 document.getElementById("farmer360RosterSection").addEventListener("click", async (e) => {
   const viewBtn = e.target.closest("[data-view360]");
   const unlinkBtn = e.target.closest("[data-unlink-farmer]");
+  const toggleCreditBtn = e.target.closest("[data-toggle-issue-credit-line]");
+  const submitCreditBtn = e.target.closest("[data-submit-issue-credit-line]");
+
+  if (toggleCreditBtn) {
+    const farmerId = toggleCreditBtn.dataset.toggleIssueCreditLine;
+    const container = document.querySelector(`[data-issue-credit-line-form-container="${farmerId}"]`);
+    if (!container) return;
+    const isHidden = container.style.display === "none";
+    container.style.display = isHidden ? "block" : "none";
+    toggleCreditBtn.textContent = isHidden ? "ยกเลิก" : "🏦 ออกวงเงินสินเชื่อ";
+    return;
+  }
+
+  if (submitCreditBtn) {
+    const farmerId = submitCreditBtn.dataset.submitIssueCreditLine;
+    const limitInput = document.querySelector(`[data-cl-limit="${farmerId}"]`);
+    const interestInput = document.querySelector(`[data-cl-interest="${farmerId}"]`);
+    const tenorInput = document.querySelector(`[data-cl-tenor="${farmerId}"]`);
+    const creditLimit = Number(limitInput ? limitInput.value : 0);
+    const interestPercent = Number(interestInput ? interestInput.value : 0);
+    const tenorDays = Number(tenorInput ? tenorInput.value : 0);
+
+    if (!Number.isFinite(creditLimit) || creditLimit <= 0) {
+      toast("กรุณากรอกวงเงินสูงสุดที่มากกว่า 0", true);
+      return;
+    }
+    if (!Number.isFinite(interestPercent) || interestPercent <= 0) {
+      toast("กรุณากรอกอัตราดอกเบี้ยต่อวันที่มากกว่า 0", true);
+      return;
+    }
+    // Backend stores interest as integer basis-points/day — 1% = 100 bps —
+    // so the human-friendly "% ต่อวัน" input is converted here, once, right
+    // before it leaves the browser.
+    const interestRateDailyBps = Math.round(interestPercent * 100);
+
+    submitCreditBtn.disabled = true;
+    try {
+      await AgroLinkLenderAPI.post("/lender/credit-lines", {
+        farmer_id: farmerId,
+        credit_limit: creditLimit,
+        interest_rate_daily_bps: interestRateDailyBps,
+        tenor_days: Number.isFinite(tenorDays) && tenorDays > 0 ? tenorDays : undefined,
+      });
+      toast("ออกวงเงินสินเชื่อเรียบร้อยแล้ว");
+      const container = document.querySelector(`[data-issue-credit-line-form-container="${farmerId}"]`);
+      if (container) container.style.display = "none";
+      await loadCreditLinePortfolio();
+    } catch (err) {
+      toast("ออกวงเงินไม่สำเร็จ: " + ((err.body && err.body.detail) || err.message), true);
+    } finally {
+      submitCreditBtn.disabled = false;
+    }
+    return;
+  }
 
   if (viewBtn) {
     const farmerId = viewBtn.dataset.view360;
@@ -452,6 +526,103 @@ document.getElementById("farmer360RosterSection").addEventListener("click", asyn
   }
 });
 
+// ---------- วงเงินสินเชื่อหมุนเวียน (Trade Credit) ----------
+// See grant_input_credit_line.sql — a standing, pre-approved revolving line
+// this lender extends to one of its farmer "customers" (roster above). A
+// farmer draws it down one purchase at a time from the marketplace; this
+// lender only ever sees the resulting exposure/portfolio here, it never
+// initiates a drawdown itself.
+const CREDIT_LINE_STATUS_LABEL_TH = {
+  active: "ใช้งานอยู่",
+  suspended: "ระงับชั่วคราว",
+  closed: "ปิดแล้ว",
+};
+const CREDIT_LINE_STATUS_BADGE_CLASS = {
+  active: "status-active",
+  suspended: "status-pending",
+  closed: "status-declined",
+};
+const CREDIT_DRAWDOWN_STATUS_LABEL_TH = {
+  outstanding: "ค้างชำระ",
+  repaid: "ชำระแล้ว",
+};
+
+function thaiDateOnly(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function creditLineCard(cl) {
+  const badgeClass = CREDIT_LINE_STATUS_BADGE_CLASS[cl.status] || "status-pending";
+  return `
+    <div class="item-card" data-credit-line-id="${cl.credit_line_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(cl.farmer_name)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(CREDIT_LINE_STATUS_LABEL_TH[cl.status] || cl.status)}</span>
+      </div>
+      <div class="detail-line">วงเงิน ${thb(cl.credit_limit)} บาท · ดอกเบี้ย ${(cl.interest_rate_daily_bps / 100).toFixed(3)}% ต่อวัน · เบิกได้ครั้งละไม่เกิน ${cl.tenor_days} วัน</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">เบิกใช้แล้ว ${thb(cl.outstanding_total)} บาท · คงเหลือให้เบิก ${thb(cl.available_credit)} บาท</div>
+      <div class="detail-line muted">ออกวงเงินเมื่อ ${thaiDate(cl.created_at)}</div>
+      <div class="action-row">
+        <button type="button" class="btn btn-ghost btn-sm" data-toggle-drawdowns="${cl.credit_line_id}">ดูรายการเบิกใช้</button>
+      </div>
+      <div data-drawdowns-container="${cl.credit_line_id}" style="display:none;"></div>
+    </div>
+  `;
+}
+
+function lenderDrawdownRow(d) {
+  const isOutstanding = d.status === "outstanding";
+  return `
+    <div class="item-card" style="margin-top:8px;">
+      <div class="row">
+        <span class="title">${escapeHtml(d.product_name || "รายการเบิกใช้")}${d.supplier_name ? " · " + escapeHtml(d.supplier_name) : ""}</span>
+        <span class="badge ${isOutstanding ? "status-pending" : "status-approved"}">${escapeHtml(CREDIT_DRAWDOWN_STATUS_LABEL_TH[d.status] || d.status)}</span>
+      </div>
+      <div class="detail-line">เงินต้น ${thb(d.principal_amount)} บาท · ค่าธรรมเนียมแพลตฟอร์ม ${thb(d.platform_fee_amount)} บาท · โอนให้ผู้ขาย ${thb(d.net_amount_to_supplier)} บาท</div>
+      <div class="detail-line muted">เบิกเมื่อ ${thaiDate(d.drawn_at)} · ครบกำหนด ${thaiDateOnly(d.due_date)}</div>
+      ${!isOutstanding ? `<div class="detail-line muted">ชำระแล้ว ${thb(d.repaid_amount)} บาท เมื่อ ${thaiDate(d.repaid_at)}</div>` : ""}
+    </div>
+  `;
+}
+
+async function loadCreditLinePortfolio() {
+  const el = document.getElementById("creditLinePortfolioSection");
+  try {
+    const lines = await AgroLinkLenderAPI.get("/lender/credit-lines");
+    el.innerHTML = lines.length === 0
+      ? `<div class="empty-state">ยังไม่มีวงเงินสินเชื่อที่ออกให้ — ออกวงเงินแรกได้จากปุ่ม "🏦 ออกวงเงินสินเชื่อ" บนการ์ดของเกษตรกรที่เป็นลูกค้าของท่านด้านบน</div>`
+      : lines.map(creditLineCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดวงเงินสินเชื่อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("creditLinePortfolioSection").addEventListener("click", async (e) => {
+  const toggleBtn = e.target.closest("[data-toggle-drawdowns]");
+  if (!toggleBtn) return;
+  const creditLineId = toggleBtn.dataset.toggleDrawdowns;
+  const container = document.querySelector(`[data-drawdowns-container="${creditLineId}"]`);
+  if (!container) return;
+  const isHidden = container.style.display === "none";
+  if (!isHidden) {
+    container.style.display = "none";
+    toggleBtn.textContent = "ดูรายการเบิกใช้";
+    return;
+  }
+  container.style.display = "block";
+  toggleBtn.textContent = "ซ่อนรายการเบิกใช้";
+  container.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const drawdowns = await AgroLinkLenderAPI.get(`/lender/credit-lines/${creditLineId}/drawdowns`);
+    container.innerHTML = drawdowns.length === 0
+      ? `<div class="muted" style="font-size:12px; padding:8px 0;">ยังไม่มีรายการเบิกใช้</div>`
+      : drawdowns.map(lenderDrawdownRow).join("");
+  } catch (err) {
+    container.innerHTML = `<div class="muted" style="font-size:12px;">โหลดรายการเบิกใช้ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+});
+
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkLenderAPI.logout());
 
 /**
@@ -482,6 +653,7 @@ async function init() {
   loadApplicationHistory();
   loadContracts();
   loadFarmer360Roster();
+  loadCreditLinePortfolio();
 }
 
 init();

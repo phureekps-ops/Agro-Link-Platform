@@ -628,6 +628,7 @@ router.get('/orders', async (req, res, next) => {
       const result = await client.query(
         `SELECT o.order_id, o.org_id, org.org_name, o.product_name, o.category, o.unit_price,
                 o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.payment_status,
                 o.requested_at, o.decided_at, o.fulfilled_at
            FROM marketplace.product_order o
            JOIN identity.organization org ON org.org_id = o.org_id

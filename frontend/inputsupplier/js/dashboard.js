@@ -109,6 +109,19 @@ const ORDER_STATUS_BADGE_CLASS = {
   cancelled: "status-declined",
 };
 
+// Payment status is new (2026-08-27, Trade Credit feature) — every order
+// defaults to 'unpaid' (the farmer/supplier settle outside the platform,
+// same as always) unless a lender funded it via a credit line, in which
+// case it flips to 'paid_via_credit_line'. See grant_input_credit_line.sql.
+const PAYMENT_STATUS_LABEL_TH = {
+  unpaid: "รอชำระเงินนอกระบบ",
+  paid_via_credit_line: "ชำระผ่านวงเงินสินเชื่อแล้ว",
+};
+const PAYMENT_STATUS_BADGE_CLASS = {
+  unpaid: "status-pending",
+  paid_via_credit_line: "status-approved",
+};
+
 function thaiDate(iso) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -142,6 +155,7 @@ function orderCard(o) {
       <div class="row"><span class="title">${escapeHtml(o.farmer_name)} — ${escapeHtml(o.product_name)}</span>${badge}</div>
       <div class="detail-line">${escapeHtml(CATEGORY_LABEL_TH[o.category] || o.category)} · จำนวน ${Number(o.quantity).toLocaleString("th-TH")} x ${Number(o.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(o.price_unit)}</div>
       <div class="detail-line" style="font-weight:700; color:var(--green-900);">รวม ${Number(o.total_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+      <div class="detail-line">💳 การชำระเงิน: <span class="badge ${PAYMENT_STATUS_BADGE_CLASS[o.payment_status] || "status-pending"}">${escapeHtml(PAYMENT_STATUS_LABEL_TH[o.payment_status] || o.payment_status || "รอชำระเงินนอกระบบ")}</span></div>
       ${o.decided_reason ? `<div class="detail-line muted">เหตุผล: ${escapeHtml(o.decided_reason)}</div>` : ""}
       <div class="detail-line muted">สั่งซื้อเมื่อ ${thaiDate(o.requested_at)}</div>
       ${actions}

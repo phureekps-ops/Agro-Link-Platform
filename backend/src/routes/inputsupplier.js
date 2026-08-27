@@ -480,6 +480,7 @@ router.get('/orders', async (req, res, next) => {
       const result = await client.query(
         `SELECT o.order_id, o.listing_id, o.product_name, o.category, o.unit_price,
                 o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.payment_status,
                 o.requested_at, o.decided_at, o.fulfilled_at, o.farmer_id, f.full_name AS farmer_name
            FROM marketplace.product_order o
            JOIN identity.farmer f ON f.farmer_id = o.farmer_id
@@ -510,6 +511,7 @@ router.get('/orders/:id', async (req, res, next) => {
       const { rows } = await client.query(
         `SELECT o.order_id, o.listing_id, o.product_name, o.category, o.unit_price,
                 o.price_unit, o.quantity, o.total_price, o.status, o.decided_reason,
+                o.payment_status,
                 o.requested_at, o.decided_at, o.fulfilled_at, o.farmer_id, f.full_name AS farmer_name,
                 f.phone AS farmer_phone
            FROM marketplace.product_order o
