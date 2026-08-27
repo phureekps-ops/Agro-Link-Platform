@@ -7,23 +7,112 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../css/style.css" />
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .coop-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  .coop-sidebar {
+    width: 260px; flex: 0 0 260px; background: var(--green-900); color: #fff;
+    display: flex; flex-direction: column; padding: 20px 14px; box-sizing: border-box;
+  }
+  .coop-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; }
+  .coop-sidebar-logo { font-size: 26px; line-height: 1; }
+  .coop-sidebar-brand-name { font-weight: 700; font-size: 16px; }
+  .coop-sidebar-brand-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .coop-nav { flex: 1; overflow-y: auto; }
+  .coop-nav-group { margin-bottom: 16px; }
+  .coop-nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); padding: 0 10px 6px; }
+  .coop-nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13.5px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  }
+  .coop-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .coop-nav-item.active { background: rgba(255,255,255,0.16); color: #fff; font-weight: 600; }
+  .coop-nav-badge { background: var(--gold-500); color: var(--green-900); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .coop-sidebar-footer { font-size: 11px; color: rgba(255,255,255,0.5); padding: 12px 10px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 12px; }
+  .coop-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .coop-breadcrumb { font-size: 14.5px; }
+  .coop-breadcrumb-sep { opacity: 0.5; margin: 0 6px; }
+  @media (max-width: 860px) {
+    .coop-shell { flex-direction: column; }
+    .coop-sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 14px; }
+    .coop-sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 0 10px 0 0; }
+    .coop-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; overflow-y: visible; }
+    .coop-nav-group { margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .coop-nav-group-title { display: none; }
+    .coop-sidebar-footer { display: none; }
+  }
+</style>
 </head>
+
 <body>
-  <header class="app-header">
-    <div class="brand"><span>🏢</span><span>AgroLink Platform — พอร์ทัลสหกรณ์ (จุดรับซื้อผลผลิต)</span></div>
-    <div class="who">
-      <span class="name" id="orgName">กำลังโหลด…</span>
-      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
-    </div>
-  </header>
+  <div class="coop-shell">
+    <aside class="coop-sidebar">
+      <div class="coop-sidebar-brand">
+        <span class="coop-sidebar-logo">🏢</span>
+        <div>
+          <div class="coop-sidebar-brand-name">AgroLink</div>
+          <div class="coop-sidebar-brand-sub">พอร์ทัลสหกรณ์</div>
+        </div>
+      </div>
+      <nav class="coop-nav">
+        <div class="coop-nav-group">
+          <div class="coop-nav-group-title">ภาพรวม</div>
+          <button type="button" class="coop-nav-item active" data-page="overview">📊 ภาพรวมสหกรณ์</button>
+        </div>
+        <div class="coop-nav-group">
+          <div class="coop-nav-group-title">การรับซื้อและผลผลิต</div>
+          <button type="button" class="coop-nav-item" data-page="collection">🚚 การรับซื้อ &amp; ล็อต</button>
+          <button type="button" class="coop-nav-item" data-page="warehouse">🏬 คลังสินค้า/ลานตาก</button>
+          <button type="button" class="coop-nav-item" data-page="processing">🏭 การแปรรูปผลผลิต</button>
+          <button type="button" class="coop-nav-item" data-page="logistics">🚛 การขนส่ง</button>
+        </div>
+        <div class="coop-nav-group">
+          <div class="coop-nav-group-title">ตลาดและจัดซื้อ</div>
+          <button type="button" class="coop-nav-item" data-page="marketplace">🛒 แค็ตตาล็อก &amp; คำสั่งซื้อ</button>
+          <button type="button" class="coop-nav-item" data-page="procurement">📢 จัดซื้อ &amp; ประมูล</button>
+        </div>
+        <div class="coop-nav-group">
+          <div class="coop-nav-group-title">การเงิน</div>
+          <button type="button" class="coop-nav-item" data-page="finance">💰 การเงิน &amp; เติมทุนหมุนเวียน <span class="coop-nav-badge">ใหม่</span></button>
+        </div>
+        <div class="coop-nav-group">
+          <div class="coop-nav-group-title">สมาชิกและองค์กร</div>
+          <button type="button" class="coop-nav-item" data-page="members">🔍 ข้อมูลเกษตรกร (Farmer 360°)</button>
+          <button type="button" class="coop-nav-item" data-page="org-staff">👤 องค์กร &amp; เจ้าหน้าที่</button>
+        </div>
+        <div class="coop-nav-group">
+          <div class="coop-nav-group-title">ภาครัฐ</div>
+          <button type="button" class="coop-nav-item" data-page="government">🏛️ ประตูเชื่อมต่อภาครัฐ</button>
+        </div>
+      </nav>
+      <div class="coop-sidebar-footer">
+        ข้อมูลบนหน้านี้คำนวณจากธุรกรรมจริงบนแพลตฟอร์ม — ยังไม่เชื่อมกับระบบบัญชี/ธนาคารภายนอก
+      </div>
+    </aside>
+    <div class="coop-main">
+      <header class="app-header">
+        <div class="brand coop-breadcrumb">
+          <span>พอร์ทัลสหกรณ์</span><span class="coop-breadcrumb-sep">/</span><span id="coopBreadcrumbCurrent">ภาพรวมสหกรณ์</span>
+        </div>
+        <div class="who">
+          <span class="name" id="orgName">กำลังโหลด…</span>
+          <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+        </div>
+      </header>
 
-  <div class="container" id="mainContainer">
+      <div class="container" id="mainContainer">
 
+      <div class="coop-page" data-page-content="overview">
     <div class="section-title">📊 ภาพรวม</div>
     <div id="summarySection" class="summary-grid">
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="finance" style="display:none;">
     <div class="section-title">💰 แดชบอร์ดการเงิน (สำหรับผู้บริหารสหกรณ์)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       สรุปสถานะการเงินแบบ real-time จากฐานบัญชีคู่ (Ledger) ที่มีอยู่แล้ว — หมายเหตุขอบเขต: ยังไม่แสดงตัวเลข "ลูกหนี้"
@@ -107,6 +196,9 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="collection" style="display:none;">
     <div class="section-title">🚚 การรับซื้อที่ต้องดำเนินการ</div>
     <div id="deliveryReviewQueueSection" class="card-list">
       <div class="loading-line">กำลังโหลดรายการรับซื้อ…</div>
@@ -177,6 +269,25 @@
       <div class="loading-line">กำลังโหลดล็อต…</div>
     </div>
 
+    <div class="section-title">📋 ประวัติการรับซื้อทั้งหมด</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="deliveryStatusFilter">กรองตามสถานะ</label>
+        <select id="deliveryStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="delivered">รับซื้อแล้ว (รอตรวจคุณภาพ)</option>
+          <option value="accepted">ตรวจคุณภาพผ่านแล้ว (รอชำระเงิน)</option>
+          <option value="rejected">ไม่ผ่านการตรวจคุณภาพ</option>
+          <option value="settled">ชำระเงินแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="deliveryHistorySection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติการรับซื้อ…</div>
+    </div>
+      </div>
+
+      <div class="coop-page" data-page-content="warehouse" style="display:none;">
     <div class="section-title">🏬 คลังสินค้า/ลานตาก (Warehouse)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       ติดตามว่าล็อตแต่ละล็อตอยู่ที่ตำแหน่งจัดเก็บใด ความชื้นเปลี่ยนแปลงอย่างไรระหว่างตาก และคลัง/ตำแหน่งจัดเก็บแต่ละแห่งใช้พื้นที่ไปเท่าไร —
@@ -217,6 +328,9 @@
       <div class="loading-line">กำลังโหลดล็อตในคลัง…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="processing" style="display:none;">
     <div class="section-title">🏭 การแปรรูปผลผลิต (Processing)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       แปรรูปล็อตที่รวบรวมไว้ (สี/อบแห้ง/คัดแยก/บรรจุ) ให้เป็นผลผลิตสำเร็จรูป พร้อมติดตามผลผลิตที่ได้เทียบกับวัตถุดิบ (yield) และ
@@ -270,6 +384,9 @@
       <div class="loading-line">กำลังโหลดสินค้าสำเร็จรูป…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="logistics" style="display:none;">
     <div class="section-title">🚚 การขนส่ง (Logistics)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       จัดการผู้ขนส่งของสหกรณ์ (รถของสหกรณ์เองหรือผู้รับจ้างขนส่ง) และติดตามการจัดส่งสินค้า (ล็อตดิบหรือสินค้าสำเร็จรูป) ไปยังปลายทาง
@@ -343,6 +460,9 @@
       <div class="loading-line">กำลังโหลดรายการจัดส่ง…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="government" style="display:none;">
     <div class="section-title">🏛️ ประตูเชื่อมต่อภาครัฐ (Government Integration Gateway)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       หมายเหตุขอบเขต: หมวดหมู่ช่องทางด้านล่างเป็น placeholder อ้างอิงกรมส่งเสริมสหกรณ์/กรมตรวจบัญชีสหกรณ์ตามแนวทาง GDX/TGIX ของ DGA เท่านั้น
@@ -438,23 +558,9 @@
       <div class="loading-line">กำลังโหลด Dead-letter Queue…</div>
     </div>
 
-    <div class="section-title">📋 ประวัติการรับซื้อทั้งหมด</div>
-    <div class="filter-bar">
-      <div class="field">
-        <label for="deliveryStatusFilter">กรองตามสถานะ</label>
-        <select id="deliveryStatusFilter">
-          <option value="">ทั้งหมด</option>
-          <option value="delivered">รับซื้อแล้ว (รอตรวจคุณภาพ)</option>
-          <option value="accepted">ตรวจคุณภาพผ่านแล้ว (รอชำระเงิน)</option>
-          <option value="rejected">ไม่ผ่านการตรวจคุณภาพ</option>
-          <option value="settled">ชำระเงินแล้ว</option>
-        </select>
       </div>
-    </div>
-    <div id="deliveryHistorySection" class="card-list">
-      <div class="loading-line">กำลังโหลดประวัติการรับซื้อ…</div>
-    </div>
 
+      <div class="coop-page" data-page-content="org-staff" style="display:none;">
     <div class="section-title">📄 เอกสารจดทะเบียนสหกรณ์</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       แนบไฟล์สแกน/ถ่ายภาพหนังสือรับรองการจดทะเบียนสหกรณ์ (PDF หรือรูปภาพ ไม่เกิน 5MB) เพื่อเก็บไว้เป็นหลักฐานในระบบ —
@@ -508,6 +614,9 @@
       <div class="loading-line">กำลังโหลดรายชื่อเจ้าหน้าที่…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="marketplace" style="display:none;">
     <div class="section-title">🛒 แค็ตตาล็อกผลผลิต/สินค้าแปรรูป</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       ประกาศผลผลิต/สินค้าแปรรูปที่สหกรณ์มีจำหน่าย ให้ผู้รับซื้อ (Buyer Portal) ค้นหาและสั่งซื้อได้ —
@@ -590,6 +699,9 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="procurement" style="display:none;">
     <div class="section-title" style="margin-top:22px;">📢 ตลาดขอใบเสนอราคา (RFP/RFQ)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       ประกาศความต้องการซื้อสินค้า/บริการให้สมาชิกทุกพอร์ทัลในระบบ AgroLink แข่งขันเสนอราคาเข้ามา
@@ -776,6 +888,9 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="coop-page" data-page-content="members" style="display:none;">
     <div class="section-title" style="margin-top:22px;">🔍 ข้อมูลเกษตรกรรอบด้าน (Farmer 360°)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       ดูข้อมูลรวมของเกษตรกรที่เป็นสมาชิกสหกรณ์ท่าน — สมาชิกภาพกับหน่วยงานอื่น (สหกรณ์อื่น/กองทุนหมู่บ้าน/ผู้ปล่อยกู้),
@@ -802,7 +917,10 @@
     <div id="farmer360RosterSection" class="card-list">
       <div class="loading-line">กำลังโหลด…</div>
     </div>
+      </div>
 
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>

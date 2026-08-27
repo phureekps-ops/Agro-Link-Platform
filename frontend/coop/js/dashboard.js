@@ -1,3 +1,40 @@
+// ============================================================
+// การนำทางแบบแถบข้าง (Sidebar) — UI-only, ไม่แตะตรรกะโหลดข้อมูลเดิมเลย
+// ทุก section เดิมยังคงถูกโหลดข้อมูลตามปกติตอน init() เหมือนเดิมทั้งหมด
+// ปุ่มด้านข้างแค่ show/hide ว่าจะให้ page ไหนแสดงอยู่บนจอเท่านั้น
+// ============================================================
+const COOP_PAGE_BREADCRUMB_TH = {
+  overview: "ภาพรวมสหกรณ์",
+  collection: "การรับซื้อ &amp; ล็อต",
+  warehouse: "คลังสินค้า/ลานตาก",
+  processing: "การแปรรูปผลผลิต",
+  logistics: "การขนส่ง",
+  marketplace: "แค็ตตาล็อก &amp; คำสั่งซื้อ",
+  procurement: "จัดซื้อ &amp; ประมูล",
+  finance: "การเงิน &amp; เติมทุนหมุนเวียน",
+  members: "ข้อมูลเกษตรกร (Farmer 360°)",
+  "org-staff": "องค์กร &amp; เจ้าหน้าที่",
+  government: "ประตูเชื่อมต่อภาครัฐ",
+};
+
+function showCoopPage(pageKey) {
+  document.querySelectorAll("[data-page-content]").forEach((el) => {
+    el.style.display = el.dataset.pageContent === pageKey ? "" : "none";
+  });
+  document.querySelectorAll("[data-page]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.page === pageKey);
+  });
+  const crumb = document.getElementById("coopBreadcrumbCurrent");
+  if (crumb) crumb.innerHTML = COOP_PAGE_BREADCRUMB_TH[pageKey] || pageKey;
+  const mainEl = document.querySelector(".coop-main");
+  if (mainEl) mainEl.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll("[data-page]").forEach((btn) => {
+  btn.addEventListener("click", () => showCoopPage(btn.dataset.page));
+});
+
 const toastEl = document.getElementById("toast");
 function toast(message, isError = false) {
   toastEl.textContent = message;
