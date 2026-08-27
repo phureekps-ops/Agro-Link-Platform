@@ -583,10 +583,20 @@ router.get('/coop-directory', async (req, res, next) => {
  * GET /buyer/coop-products?category=&org_id= — browse the ACTIVE catalog
  * across every Verified Cooperative (or one, via org_id). `o.org_type =
  * 'Cooperative'` is a FIXED filter for the same reason GET /farmer/
- * products fixes it to 'InputSupplier' — marketplace.product_listing is
- * shared by both seller directions now, and each browse route must only
- * ever show its own audience's sellers. Featured listings sort first,
- * same live-expiry computation as GET /farmer/products.
+ * products fixes it to an InputSupplier role check — marketplace.
+ * product_listing is shared by both seller directions now, and each
+ * browse route must only ever show its own audience's sellers. On top of
+ * that, `p.category = ANY(COOP_PRODUCT_CATEGORIES)` is ALSO a FIXED
+ * filter (not conditional on the client passing ?category=) — a
+ * Cooperative that has additionally been Verified for the InputSupplier
+ * role (self-requestable via POST /organization/roles, see
+ * grant_organization_roles.sql) can list fertilizer/chemical/equipment
+ * products of its own via /inputsupplier/products, aimed at farmers (see
+ * GET /farmer/products in farmer.js) — without this filter those rows
+ * would still match `o.org_type = 'Cooperative'` and bleed into this
+ * buyer-facing catalog whenever a buyer browses without a category
+ * filter. Featured listings sort first, same live-expiry computation as
+ * GET /farmer/products.
  */
 router.get('/coop-products', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -598,8 +608,8 @@ router.get('/coop-products', async (req, res, next) => {
 
   try {
     const rows = await withSessionContext('organization', subjectId, async (client) => {
-      const params = [];
-      const filters = ['p.is_active = true', "o.org_type = 'Cooperative'"];
+      const params = [COOP_PRODUCT_CATEGORIES];
+      const filters = ['p.is_active = true', "o.org_type = 'Cooperative'", `p.category = ANY($${params.length})`];
       if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
       if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
 
@@ -644,12 +654,16 @@ router.post('/coop-products/orders', async (req, res, next) => {
 
   try {
     const result = await withSessionContext('organization', subjectId, async (client) => {
+      // Same fixed category safety net as GET /buyer/coop-products above
+      // — see that route's doc comment for why this must not depend on
+      // the client-supplied ?category= filter.
       const listing = await client.query(
         `SELECT p.listing_id, p.org_id, p.category, p.product_name, p.unit_price, p.price_unit
            FROM marketplace.product_listing p
            JOIN identity.organization o ON o.org_id = p.org_id
-          WHERE p.listing_id = $1 AND p.is_active = true AND o.org_type = 'Cooperative'`,
-        [listingId],
+          WHERE p.listing_id = $1 AND p.is_active = true AND o.org_type = 'Cooperative'
+            AND p.category = ANY($2)`,
+        [listingId, COOP_PRODUCT_CATEGORIES],
       );
       if (listing.rows.length === 0) return { listingNotFound: true };
       const l = listing.rows[0];

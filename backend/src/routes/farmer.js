@@ -477,13 +477,17 @@ router.get('/input-suppliers', async (req, res, next) => {
   try {
     const rows = await withSessionContext('farmer', subjectId, async (client) => {
       const result = await client.query(
-        `SELECT o.org_id, o.org_name, COUNT(p.listing_id) FILTER (WHERE p.is_active) AS active_product_count
+        `SELECT o.org_id, o.org_name,
+                COUNT(p.listing_id) FILTER (
+                  WHERE p.is_active AND p.category = ANY($1) AND (o.org_type <> 'Cooperative' OR p.category <> 'other')
+                ) AS active_product_count
            FROM identity.organization o
            JOIN identity.organization_role r ON r.org_id = o.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
            LEFT JOIN marketplace.product_listing p ON p.org_id = o.org_id
           WHERE o.kyb_status = 'Verified'
           GROUP BY o.org_id, o.org_name
           ORDER BY o.org_name`,
+        [PRODUCT_CATEGORIES],
       );
       return result.rows;
     });
@@ -509,15 +513,26 @@ router.get('/input-suppliers', async (req, res, next) => {
  * is_featured flag, since that column is never auto-cleared once it
  * expires.
  *
- * `o.org_type = 'InputSupplier'` is a FIXED filter (not client-controlled)
- * — marketplace.product_listing is now also written to by Cooperative
- * orgs (see grant_cooperative_product_catalog.sql / the new /coop/products
- * routes in coopcollection.js) for their own produce/processed-goods
- * catalog aimed at BUYER orgs, not farmers. Without this filter a
- * cooperative's rice listings would start bleeding into this
- * farmer-buys-inputs marketplace, which is a different audience/direction
- * entirely — the cooperative-facing equivalent of this route is
- * GET /buyer/coop-products in buyer.js.
+ * Sellers are gated by an EXISTS check against a VERIFIED 'InputSupplier'
+ * identity.organization_role — NOT identity.organization.org_type — so
+ * this correctly admits any multi-role org holding that role (e.g. a
+ * Cooperative that requested it via POST /organization/roles and got it
+ * approved, per grant_organization_roles.sql), same pattern already used
+ * by GET /farmer/machinery-providers in farmermachinery.js for
+ * multi-role machinery providers. `p.category = ANY(PRODUCT_CATEGORIES)`
+ * is a second, FIXED (not client-controlled) filter on top of that,
+ * because org-level role gating alone is not enough: a Cooperative that
+ * holds BOTH the Cooperative role (for its own produce/processed-goods
+ * catalog aimed at BUYER orgs — see GET /buyer/coop-products in
+ * buyer.js) AND the InputSupplier role would otherwise leak its own rice
+ * listings into this farmer-buys-inputs marketplace just by virtue of
+ * being InputSupplier-Verified. The `o.org_type <> 'Cooperative' OR
+ * p.category <> 'other'` clause further excludes a Cooperative's
+ * 'other'-tagged rows specifically, since 'other' is also a valid
+ * category on the buyer-facing side and nothing on product_listing
+ * records which audience a given 'other' row was meant for — a
+ * Cooperative selling miscellaneous inputs to farmers should list them
+ * under one of the three specific input categories instead.
  */
 router.get('/products', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -529,8 +544,16 @@ router.get('/products', async (req, res, next) => {
 
   try {
     const rows = await withSessionContext('farmer', subjectId, async (client) => {
-      const params = [];
-      const filters = ['p.is_active = true', "o.org_type = 'InputSupplier'"];
+      const params = [PRODUCT_CATEGORIES];
+      const filters = [
+        'p.is_active = true',
+        `p.category = ANY($${params.length})`,
+        "(o.org_type <> 'Cooperative' OR p.category <> 'other')",
+        `EXISTS (
+           SELECT 1 FROM identity.organization_role r
+            WHERE r.org_id = o.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
+         )`,
+      ];
       if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
       if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
 
@@ -581,11 +604,23 @@ router.post('/orders', async (req, res, next) => {
 
   try {
     const result = await withSessionContext('farmer', subjectId, async (client) => {
+      // Same role+category safety net as GET /farmer/products (see that
+      // route's doc comment) — a farmer must never be able to place an
+      // order against a listing this endpoint's own browse route would
+      // not have shown them (e.g. a Cooperative's own produce listing,
+      // reachable only if someone guessed its listing_id).
       const listing = await client.query(
-        `SELECT listing_id, org_id, category, product_name, unit_price, price_unit
-           FROM marketplace.product_listing
-          WHERE listing_id = $1 AND is_active = true`,
-        [listingId],
+        `SELECT p.listing_id, p.org_id, p.category, p.product_name, p.unit_price, p.price_unit
+           FROM marketplace.product_listing p
+           JOIN identity.organization o ON o.org_id = p.org_id
+          WHERE p.listing_id = $1 AND p.is_active = true
+            AND p.category = ANY($2)
+            AND (o.org_type <> 'Cooperative' OR p.category <> 'other')
+            AND EXISTS (
+              SELECT 1 FROM identity.organization_role r
+               WHERE r.org_id = p.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
+            )`,
+        [listingId, PRODUCT_CATEGORIES],
       );
       if (listing.rows.length === 0) return { listingNotFound: true };
       const l = listing.rows[0];

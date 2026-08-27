@@ -2984,6 +2984,435 @@ async function refreshInputCatalog() {
 }
 
 
+// ============================================================
+// ขายปัจจัยการผลิตให้เกษตรกร (Cooperative-as-InputSupplier) — 2026-08-27
+// สหกรณ์ที่ได้รับอนุมัติบทบาทเพิ่มเติม "ผู้จำหน่ายปัจจัยการผลิต"
+// (identity.organization_role, ยื่นขอผ่าน POST /organization/roles — ดู
+// grant_organization_roles.sql) สามารถใช้เอนด์พอยต์ /inputsupplier/*
+// เดิมที่มีอยู่แล้วทั้งหมดได้ทันที เพราะ requireInputSupplierOrg ใน
+// backend/src/routes/inputsupplier.js ตรวจสอบจาก identity.
+// organization_role (รองรับหลายบทบาทต่อองค์กร) ไม่ใช่ identity.
+// organization.org_type (ค่าเดียว ตายตัวตั้งแต่สมัคร) — จึงไม่ต้องเพิ่ม
+// route ใหม่ในฝั่ง backend เลยสำหรับการจัดการสินค้า/คำสั่งซื้อที่นี่
+// (ดูการแก้ไข GET /farmer/products ใน farmer.js และ GET /buyer/
+// coop-products ใน buyer.js ที่ทำคู่กันมา เพื่อกันไม่ให้แค็ตตาล็อกทั้งสอง
+// ทิศทางของสหกรณ์ปนกัน)
+// ============================================================
+
+const INPUT_SELL_CATEGORY_LABEL_TH = {
+  fertilizer_hormone: "ปุ๋ย/ฮอร์โมน",
+  chemical_pesticide: "สารเคมีและยาปราบศัตรูพืช",
+  equipment: "อุปกรณ์การเกษตร",
+  other: "อื่นๆ",
+};
+
+const INPUT_SELL_ORDER_STATUS_LABEL_TH = {
+  requested: "รอการยืนยันจากสหกรณ์",
+  confirmed: "ยืนยันแล้ว (รอส่งมอบ)",
+  fulfilled: "ส่งมอบแล้ว",
+  rejected: "สหกรณ์ปฏิเสธ",
+  cancelled: "เกษตรกรยกเลิกแล้ว",
+};
+const INPUT_SELL_ORDER_STATUS_BADGE_CLASS = {
+  requested: "status-pending",
+  confirmed: "status-approved",
+  fulfilled: "status-completed",
+  rejected: "status-declined",
+  cancelled: "status-declined",
+};
+
+// ---------- สถานะบทบาท "ผู้จำหน่ายปัจจัยการผลิต" ----------
+async function loadInputSupplierRoleStatus() {
+  const el = document.getElementById("inputSupplierRoleStatusSection");
+  const wrap = document.getElementById("inputSellManagementWrap");
+  try {
+    const data = await AgroLinkCoopAPI.get("/organization/roles");
+    const held = data.roles.find((r) => r.role_type === "InputSupplier");
+
+    if (!held) {
+      const canRequest = data.requestable_roles.some((r) => r.role_type === "InputSupplier");
+      el.innerHTML = canRequest
+        ? `<div class="detail-line">สหกรณ์ยังไม่ได้ยื่นขอบทบาท "ผู้จำหน่ายปัจจัยการผลิต" — ต้องยื่นขอและรอ Platform Ops อนุมัติก่อนจึงจะเปิดขายปัจจัยการผลิตให้เกษตรกรได้</div>
+             <div class="action-row"><button type="button" class="btn btn-primary btn-sm" id="requestInputSupplierRoleBtn">ขอรับบทบาทผู้จำหน่ายปัจจัยการผลิต</button></div>`
+        : `<div class="empty-state">สหกรณ์นี้ไม่สามารถขอบทบาท "ผู้จำหน่ายปัจจัยการผลิต" ได้ในขณะนี้</div>`;
+      wrap.style.display = "none";
+      const btn = document.getElementById("requestInputSupplierRoleBtn");
+      if (btn) {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          try {
+            await AgroLinkCoopAPI.post("/organization/roles", { role_type: "InputSupplier" });
+            toast("ยื่นขอบทบาทเรียบร้อยแล้ว รอ Platform Ops อนุมัติ");
+            await loadInputSupplierRoleStatus();
+          } catch (err) {
+            toast("ยื่นขอไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+            btn.disabled = false;
+          }
+        });
+      }
+      return;
+    }
+
+    if (held.status === "Verified") {
+      el.innerHTML = `<div class="detail-line"><span class="badge status-approved">✔ ได้รับอนุมัติแล้ว</span> สหกรณ์เปิดขายปัจจัยการผลิตให้เกษตรกรได้แล้ว</div>`;
+      wrap.style.display = "";
+      refreshInputSell();
+      return;
+    }
+
+    if (held.status === "Pending") {
+      el.innerHTML = `<div class="detail-line"><span class="badge status-pending">รอการอนุมัติ</span> คำขอบทบาท "ผู้จำหน่ายปัจจัยการผลิต" อยู่ระหว่างการพิจารณาโดย Platform Ops ยื่นขอเมื่อ ${thaiDate(held.requested_at)}</div>`;
+      wrap.style.display = "none";
+      return;
+    }
+
+    el.innerHTML = `<div class="detail-line"><span class="badge status-declined">ถูกปฏิเสธ</span> คำขอบทบาทนี้ถูกปฏิเสธ${held.decided_reason ? " — " + escapeHtml(held.decided_reason) : ""}</div>`;
+    wrap.style.display = "none";
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดสถานะบทบาทไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ---------- แบบฟอร์มเพิ่ม/แก้ไขสินค้า ----------
+const inputSellForm = document.getElementById("inputSellForm");
+const inputSellEditingListingIdInput = document.getElementById("inputSellEditingListingId");
+const inputSellSubmitBtn = document.getElementById("inputSellSubmitBtn");
+const inputSellCancelEditBtn = document.getElementById("inputSellCancelEditBtn");
+
+function resetInputSellForm() {
+  inputSellForm.reset();
+  document.getElementById("inputSellPriceUnitInput").value = "บาท/กระสอบ";
+  inputSellEditingListingIdInput.value = "";
+  inputSellSubmitBtn.textContent = "เพิ่มสินค้า";
+  inputSellCancelEditBtn.style.display = "none";
+}
+
+function startEditingInputSellProduct(p) {
+  inputSellEditingListingIdInput.value = p.listing_id;
+  document.getElementById("inputSellCategorySelect").value = p.category;
+  document.getElementById("inputSellProductNameInput").value = p.product_name;
+  document.getElementById("inputSellBrandInput").value = p.brand || "";
+  document.getElementById("inputSellPriceInput").value = p.unit_price;
+  document.getElementById("inputSellPriceUnitInput").value = p.price_unit;
+  document.getElementById("inputSellDescriptionInput").value = p.description || "";
+  inputSellSubmitBtn.textContent = "บันทึกการแก้ไข";
+  inputSellCancelEditBtn.style.display = "inline-block";
+  inputSellForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+inputSellCancelEditBtn.addEventListener("click", () => resetInputSellForm());
+
+inputSellForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const listingId = inputSellEditingListingIdInput.value;
+  const payload = {
+    category: document.getElementById("inputSellCategorySelect").value,
+    product_name: document.getElementById("inputSellProductNameInput").value.trim(),
+    brand: document.getElementById("inputSellBrandInput").value.trim() || null,
+    description: document.getElementById("inputSellDescriptionInput").value.trim() || null,
+    unit_price: Number(document.getElementById("inputSellPriceInput").value),
+    price_unit: document.getElementById("inputSellPriceUnitInput").value.trim() || "บาท/กระสอบ",
+  };
+
+  if (!payload.product_name) {
+    toast("กรุณากรอกชื่อสินค้า", true);
+    return;
+  }
+  if (!Number.isFinite(payload.unit_price) || payload.unit_price <= 0) {
+    toast("กรุณากรอกราคาที่มากกว่า 0", true);
+    return;
+  }
+
+  inputSellSubmitBtn.disabled = true;
+  try {
+    if (listingId) {
+      await AgroLinkCoopAPI.put(`/inputsupplier/products/${listingId}`, payload);
+      toast("บันทึกการแก้ไขสินค้าเรียบร้อยแล้ว");
+    } else {
+      await AgroLinkCoopAPI.post("/inputsupplier/products", payload);
+      toast("เพิ่มสินค้าเรียบร้อยแล้ว");
+    }
+    resetInputSellForm();
+    await loadInputSellProducts();
+  } catch (err) {
+    toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  } finally {
+    inputSellSubmitBtn.disabled = false;
+  }
+});
+
+function inputSellProductPhotoThumb(photo, listingId) {
+  return `
+    <div class="photo-card" data-photo-id="${photo.photo_id}" style="width:80px; height:80px;">
+      <img src="${photo.photo_data_url}" alt="${escapeHtml(photo.caption || "")}" />
+      <button type="button" class="photo-remove" title="ลบรูปภาพ" data-listing-id="${listingId}" data-photo-id="${photo.photo_id}">✕</button>
+    </div>
+  `;
+}
+
+function inputSellProductCard(p) {
+  const photosHtml = (p.photos || []).map((photo) => inputSellProductPhotoThumb(photo, p.listing_id)).join("");
+  return `
+    <div class="item-card" data-listing-id="${p.listing_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(p.product_name)}${p.brand ? " · " + escapeHtml(p.brand) : ""}</span>
+        <span class="badge ${p.is_active ? "status-active" : "status-declined"}">${p.is_active ? "กำลังขาย" : "ปิดการขาย"}</span>
+      </div>
+      <div class="detail-line">${escapeHtml(INPUT_SELL_CATEGORY_LABEL_TH[p.category] || p.category)}</div>
+      ${p.description ? `<div class="detail-line muted">${escapeHtml(p.description)}</div>` : ""}
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">
+        ${Number(p.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.price_unit)}
+      </div>
+
+      <div class="photo-grid" style="grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); margin:10px 0;" data-photo-grid="${p.listing_id}">
+        ${photosHtml || `<div class="muted" style="font-size:12px;">ยังไม่มีรูปภาพสินค้านี้</div>`}
+      </div>
+      <div class="action-row">
+        <input type="file" accept="image/*" data-input-sell-photo-file="${p.listing_id}" style="max-width:220px;" />
+        <button type="button" class="btn btn-sm btn-ghost" data-input-sell-upload-photo="${p.listing_id}">อัปโหลดรูป</button>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="btn btn-sm btn-ghost" data-input-sell-edit="${p.listing_id}">แก้ไข</button>
+        <button type="button" class="btn btn-sm btn-decline" data-input-sell-delete="${p.listing_id}">ปิดการขาย</button>
+      </div>
+    </div>
+  `;
+}
+
+let inputSellProductsCache = [];
+
+async function loadInputSellProductPhotos(listingId) {
+  try {
+    return await AgroLinkCoopAPI.get(`/inputsupplier/products/${listingId}/photos`);
+  } catch (err) {
+    return [];
+  }
+}
+
+async function loadInputSellProducts() {
+  const el = document.getElementById("inputSellProductListSection");
+  const category = document.getElementById("inputSellCategoryFilter").value;
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const query = category ? `?category=${encodeURIComponent(category)}` : "";
+    const products = await AgroLinkCoopAPI.get(`/inputsupplier/products${query}`);
+    if (products.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีสินค้าในแค็ตตาล็อก — เพิ่มสินค้าแรกของสหกรณ์ได้ด้านบน</div>`;
+      inputSellProductsCache = [];
+      return;
+    }
+    const withPhotos = await Promise.all(
+      products.map(async (p) => ({ ...p, photos: await loadInputSellProductPhotos(p.listing_id) })),
+    );
+    inputSellProductsCache = withPhotos;
+    el.innerHTML = withPhotos.map(inputSellProductCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดแค็ตตาล็อกสินค้าไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("inputSellCategoryFilter").addEventListener("change", () => loadInputSellProducts());
+
+document.getElementById("inputSellProductListSection").addEventListener("click", async (e) => {
+  const editBtn = e.target.closest("[data-input-sell-edit]");
+  const deleteBtn = e.target.closest("[data-input-sell-delete]");
+  const uploadBtn = e.target.closest("[data-input-sell-upload-photo]");
+  const removePhotoBtn = e.target.closest(".photo-remove");
+
+  if (editBtn) {
+    const listingId = editBtn.dataset.inputSellEdit;
+    const product = inputSellProductsCache.find((p) => p.listing_id === listingId);
+    if (product) startEditingInputSellProduct(product);
+    return;
+  }
+
+  if (deleteBtn) {
+    const listingId = deleteBtn.dataset.inputSellDelete;
+    deleteBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.del(`/inputsupplier/products/${listingId}`);
+      toast("ปิดการขายสินค้าเรียบร้อยแล้ว");
+      if (inputSellEditingListingIdInput.value === listingId) resetInputSellForm();
+      await loadInputSellProducts();
+    } catch (err) {
+      toast("ปิดการขายไม่สำเร็จ: " + err.message, true);
+      deleteBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (uploadBtn) {
+    const listingId = uploadBtn.dataset.inputSellUploadPhoto;
+    const fileInput = document.querySelector(`input[data-input-sell-photo-file="${listingId}"]`);
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if (!file) {
+      toast("กรุณาเลือกไฟล์รูปภาพ", true);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast("กรุณาเลือกไฟล์รูปภาพเท่านั้น", true);
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast("ไฟล์รูปภาพใหญ่เกินไป (สูงสุด 2MB)", true);
+      return;
+    }
+    uploadBtn.disabled = true;
+    try {
+      const dataUrl = await fileToBase64(file);
+      await AgroLinkCoopAPI.post(`/inputsupplier/products/${listingId}/photos`, {
+        photo_data_url: dataUrl,
+        caption: null,
+      });
+      toast("อัปโหลดรูปภาพเรียบร้อยแล้ว");
+      await loadInputSellProducts();
+    } catch (err) {
+      toast("อัปโหลดรูปภาพไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    } finally {
+      uploadBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (removePhotoBtn) {
+    const listingId = removePhotoBtn.dataset.listingId;
+    const photoId = removePhotoBtn.dataset.photoId;
+    removePhotoBtn.disabled = true;
+    try {
+      await AgroLinkCoopAPI.del(`/inputsupplier/products/${listingId}/photos/${photoId}`);
+      toast("ลบรูปภาพเรียบร้อยแล้ว");
+      await loadInputSellProducts();
+    } catch (err) {
+      toast("ลบรูปภาพไม่สำเร็จ: " + err.message, true);
+      removePhotoBtn.disabled = false;
+    }
+  }
+});
+
+// ---------- คำสั่งซื้อจากเกษตรกร ----------
+function inputSellOrderCard(o) {
+  const badgeClass = INPUT_SELL_ORDER_STATUS_BADGE_CLASS[o.status] || "status-pending";
+  const badge = `<span class="badge ${badgeClass}">${escapeHtml(INPUT_SELL_ORDER_STATUS_LABEL_TH[o.status] || o.status)}</span>`;
+
+  let actions = "";
+  if (o.status === "requested") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-input-sell-confirm-order="${o.order_id}">ยืนยันคำสั่งซื้อ</button>
+      </div>
+      <div class="action-row">
+        <input type="text" class="reject-reason-input" data-input-sell-reject-reason-for="${o.order_id}" placeholder="เหตุผลการปฏิเสธ (ไม่บังคับ)" />
+        <button type="button" class="btn btn-decline btn-sm" data-input-sell-reject-order="${o.order_id}">ปฏิเสธ</button>
+      </div>
+    `;
+  } else if (o.status === "confirmed") {
+    actions = `
+      <div class="action-row">
+        <button type="button" class="btn btn-approve btn-sm" data-input-sell-fulfill-order="${o.order_id}">บันทึกว่าส่งมอบสินค้าแล้ว</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card" data-order-id="${o.order_id}">
+      <div class="row"><span class="title">${escapeHtml(o.farmer_name)} — ${escapeHtml(o.product_name)}</span>${badge}</div>
+      <div class="detail-line">${escapeHtml(INPUT_SELL_CATEGORY_LABEL_TH[o.category] || o.category)} · จำนวน ${Number(o.quantity).toLocaleString("th-TH")} x ${Number(o.unit_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(o.price_unit)}</div>
+      <div class="detail-line" style="font-weight:700; color:var(--green-900);">รวม ${Number(o.total_price).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+      ${o.decided_reason ? `<div class="detail-line muted">เหตุผล: ${escapeHtml(o.decided_reason)}</div>` : ""}
+      <div class="detail-line muted">สั่งซื้อเมื่อ ${thaiDate(o.requested_at)}</div>
+      ${actions}
+    </div>
+  `;
+}
+
+async function loadInputSellOrderReviewQueue() {
+  const el = document.getElementById("inputSellOrderReviewQueueSection");
+  try {
+    const orders = await AgroLinkCoopAPI.get("/inputsupplier/orders?status=action_needed");
+    el.innerHTML = orders.length === 0
+      ? `<div class="empty-state">ไม่มีคำสั่งซื้อที่ต้องดำเนินการในขณะนี้</div>`
+      : orders.map(inputSellOrderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadInputSellOrderHistory() {
+  const el = document.getElementById("inputSellOrderHistorySection");
+  const status = document.getElementById("inputSellOrderStatusFilter").value;
+  try {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const orders = await AgroLinkCoopAPI.get(`/inputsupplier/orders${query}`);
+    el.innerHTML = orders.length === 0
+      ? `<div class="empty-state">ยังไม่มีคำสั่งซื้อ</div>`
+      : orders.map(inputSellOrderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดประวัติคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function refreshInputSell() {
+  await Promise.all([loadInputSellProducts(), loadInputSellOrderReviewQueue(), loadInputSellOrderHistory()]);
+}
+
+document.getElementById("inputSellOrderStatusFilter").addEventListener("change", () => loadInputSellOrderHistory());
+
+function handleInputSellOrderActionClick(container) {
+  container.addEventListener("click", async (e) => {
+    const confirmBtn = e.target.closest("[data-input-sell-confirm-order]");
+    const rejectBtn = e.target.closest("[data-input-sell-reject-order]");
+    const fulfillBtn = e.target.closest("[data-input-sell-fulfill-order]");
+
+    if (confirmBtn) {
+      const orderId = confirmBtn.dataset.inputSellConfirmOrder;
+      confirmBtn.disabled = true;
+      try {
+        await AgroLinkCoopAPI.post(`/inputsupplier/orders/${orderId}/confirm`, {});
+        toast("ยืนยันคำสั่งซื้อเรียบร้อยแล้ว");
+        await Promise.all([loadInputSellOrderReviewQueue(), loadInputSellOrderHistory()]);
+      } catch (err) {
+        toast("ยืนยันคำสั่งซื้อไม่สำเร็จ: " + err.message, true);
+        confirmBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (rejectBtn) {
+      const orderId = rejectBtn.dataset.inputSellRejectOrder;
+      const reasonInput = container.querySelector(`[data-input-sell-reject-reason-for="${orderId}"]`);
+      rejectBtn.disabled = true;
+      try {
+        await AgroLinkCoopAPI.post(`/inputsupplier/orders/${orderId}/reject`, {
+          reason: (reasonInput && reasonInput.value.trim()) || null,
+        });
+        toast("ปฏิเสธคำสั่งซื้อเรียบร้อยแล้ว");
+        await Promise.all([loadInputSellOrderReviewQueue(), loadInputSellOrderHistory()]);
+      } catch (err) {
+        toast("ปฏิเสธคำสั่งซื้อไม่สำเร็จ: " + err.message, true);
+        rejectBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (fulfillBtn) {
+      const orderId = fulfillBtn.dataset.inputSellFulfillOrder;
+      fulfillBtn.disabled = true;
+      try {
+        await AgroLinkCoopAPI.post(`/inputsupplier/orders/${orderId}/fulfill`, {});
+        toast("บันทึกการส่งมอบสินค้าเรียบร้อยแล้ว");
+        await Promise.all([loadInputSellOrderReviewQueue(), loadInputSellOrderHistory()]);
+      } catch (err) {
+        toast("บันทึกการส่งมอบไม่สำเร็จ: " + err.message, true);
+        fulfillBtn.disabled = false;
+      }
+    }
+  });
+}
+
+handleInputSellOrderActionClick(document.getElementById("inputSellOrderReviewQueueSection"));
+handleInputSellOrderActionClick(document.getElementById("inputSellOrderHistorySection"));
+
 const RFQ_CATEGORY_LABEL_TH = {
   input_product: "ปัจจัยการผลิต",
   produce: "ผลผลิตทางการเกษตร",
@@ -5047,6 +5476,7 @@ async function init() {
   loadCoopProducts();
   refreshCoopOrders();
   refreshInputCatalog();
+  loadInputSupplierRoleStatus();
   refreshRfq();
   refreshGroupBuys();
   loadFarmer360Roster();
