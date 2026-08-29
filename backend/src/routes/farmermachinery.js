@@ -31,8 +31,9 @@ const MACHINERY_ORG_TYPES = [
  * machinery/drying-yard org, joined with the provider's org_name, so a
  * farmer can compare providers before booking. Optional ?service_type=
  * filter (land_preparation / harvesting / pest_control / transport /
- * drying_storage / straw_processing — the six values RATE_CARD_ITEMS in
- * machinery.js maps its ten service_keys onto). Mirrors GET
+ * drying_storage / straw_processing / other — the seven values RATE_CARD_
+ * ITEMS in machinery.js maps its eleven service_keys onto — 'other' newly
+ * added by grant_machinery_rental_service.sql). Mirrors GET
  * /farmer/fertilizer-mixing-providers'
  * shape, just without the single fixed service_key filter that route uses.
  *

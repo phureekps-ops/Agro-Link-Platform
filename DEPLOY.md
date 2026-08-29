@@ -175,6 +175,7 @@ grant_shrimp_auction.sql
 grant_input_credit_line.sql
 grant_straw_processing_service.sql
 grant_laser_land_leveling_service.sql
+grant_machinery_rental_service.sql
 ```
 
 **เพิ่มเมื่อ 2026-08-29:** `grant_straw_processing_service.sql` — เพิ่ม
@@ -209,6 +210,16 @@ TractorService/DroneService/HarvesterService/TruckService/DryingYardService
 ขยายแค่ CHECK constraint ของ service_key เท่านั้น (ไม่แตะ service_type) —
 ไม่มีตารางใหม่ ไม่มี org_type ใหม่ ไม่มีการแก้ dropdown ตัวกรองใดๆ ในหน้าเว็บ
 เพราะ `land_preparation` มีตัวเลือกตัวกรองอยู่แล้วทั้งฝั่งเกษตรกรและฝั่งแอดมิน
+ดูรายละเอียดที่คอมเมนต์หัวไฟล์ migration นี้เอง
+
+**เพิ่มเมื่อ 2026-08-29 (ดึก):** `grant_machinery_rental_service.sql` — เพิ่ม
+"ให้เช่าเครื่องจักรกลการเกษตร" (machinery_rental) เป็นรายการที่ 11
+ในตารางราคาบริการเครื่องจักรกล (เดิมมี 10 รายการ) ราคาคิดเป็น บาท/วัน —
+ต่างจากรายการอื่นตรงที่เป็นการ "ปล่อยเช่าตัวเครื่อง" เฉยๆ ไม่ใช่บริการแบบมี
+คนขับ/ปฏิบัติงานให้เหมือนรายการอื่น จึงไม่เข้าพวกกับหมวด service_type ที่มีอยู่
+ใดเลย เลยใช้หมวด `other` เดิมที่มีอยู่แล้วแทนการเพิ่มหมวดใหม่ — ขยายแค่ CHECK
+constraint ของ service_key เท่านั้น ไม่มีตารางใหม่ ไม่มี org_type ใหม่ ไม่มีการ
+แก้ dropdown ตัวกรองในหน้าเว็บ (ตัวเลือก "ทั้งหมด" เดิมก็แสดงรายการนี้อยู่แล้ว)
 ดูรายละเอียดที่คอมเมนต์หัวไฟล์ migration นี้เอง
 
 **เพิ่มเมื่อ 2026-08-27:** `grant_input_credit_line.sql` — เพิ่มฟีเจอร์ "เครดิต
