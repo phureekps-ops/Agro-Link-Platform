@@ -466,16 +466,35 @@ router.get('/rice-prices', async (req, res, next) => {
 const PRODUCT_CATEGORIES = ['fertilizer_hormone', 'chemical_pesticide', 'equipment', 'other'];
 
 /**
- * GET /farmer/input-suppliers — every Verified InputSupplier organization,
- * with how many active products it currently has listed, so a farmer can
- * browse "by supplier" before drilling into GET /farmer/products?org_id=.
- * Mirrors GET /farmer/lenders' shape (a small supporting directory endpoint
- * so the frontend never has to hardcode an org_id).
+ * GET /farmer/input-suppliers?province_code= — every Verified InputSupplier
+ * organization, with how many active products it currently has listed, so
+ * a farmer can browse "by supplier" before drilling into GET
+ * /farmer/products?org_id=. Mirrors GET /farmer/lenders' shape (a small
+ * supporting directory endpoint so the frontend never has to hardcode an
+ * org_id).
+ *
+ * Optional province_code (an ISO 3166-2:TH code from frontend/js/
+ * provinces.js's TH_PROVINCES — see PUT /inputsupplier/service-regions'
+ * own doc comment) filters to suppliers who declared that province in
+ * partner.vendor_profile.service_regions. A supplier with an EMPTY
+ * service_regions (never declared any — the default for every org, since
+ * nothing set it until PUT /inputsupplier/service-regions existed) is
+ * treated as "serves everywhere" and always matches, so new suppliers
+ * don't silently vanish from a province-filtered search just for not
+ * having filled this in yet — same neutral-when-unset convention already
+ * used by the AI-matching score below and in farmermachinery.js.
  */
 router.get('/input-suppliers', async (req, res, next) => {
   const { subjectId } = req.subject;
+  const { province_code: provinceCode } = req.query;
   try {
     const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const params = [PRODUCT_CATEGORIES];
+      let provinceFilterClause = '';
+      if (provinceCode) {
+        params.push(provinceCode);
+        provinceFilterClause = `AND (COALESCE(cardinality(vp.service_regions), 0) = 0 OR $${params.length} = ANY(vp.service_regions))`;
+      }
       const result = await client.query(
         `SELECT o.org_id, o.org_name,
                 COUNT(p.listing_id) FILTER (
@@ -483,11 +502,13 @@ router.get('/input-suppliers', async (req, res, next) => {
                 ) AS active_product_count
            FROM identity.organization o
            JOIN identity.organization_role r ON r.org_id = o.org_id AND r.role_type = 'InputSupplier' AND r.status = 'Verified'
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = o.org_id
            LEFT JOIN marketplace.product_listing p ON p.org_id = o.org_id
           WHERE o.kyb_status = 'Verified'
+            ${provinceFilterClause}
           GROUP BY o.org_id, o.org_name
           ORDER BY o.org_name`,
-        [PRODUCT_CATEGORIES],
+        params,
       );
       return result.rows;
     });
@@ -499,9 +520,12 @@ router.get('/input-suppliers', async (req, res, next) => {
 });
 
 /**
- * GET /farmer/products?category=&org_id= — browse the ACTIVE catalog
- * across every Verified InputSupplier (or one, via org_id), joined with the
- * supplier's org_name so a farmer knows who they'd be buying from. Only
+ * GET /farmer/products?category=&org_id=&province_code= — browse the
+ * ACTIVE catalog across every Verified InputSupplier (or one, via org_id,
+ * or narrowed to suppliers serving a given province via province_code —
+ * see GET /farmer/input-suppliers' own doc comment for the exact
+ * semantics), joined with the supplier's org_name so a farmer knows who
+ * they'd be buying from. Only
  * `is_active = true` rows — a deactivated listing (see the deactivate-only
  * note on DELETE /inputsupplier/products/:id) simply stops appearing here,
  * same as a deactivated machinery rate-card item stops appearing priced.
@@ -536,7 +560,7 @@ router.get('/input-suppliers', async (req, res, next) => {
  */
 router.get('/products', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { category, org_id: orgId } = req.query;
+  const { category, org_id: orgId, province_code: provinceCode } = req.query;
 
   if (category && !PRODUCT_CATEGORIES.includes(category)) {
     return res.status(400).json({ error: 'invalid_category', valid: PRODUCT_CATEGORIES });
@@ -556,6 +580,12 @@ router.get('/products', async (req, res, next) => {
       ];
       if (category) { params.push(category); filters.push(`p.category = $${params.length}`); }
       if (orgId) { params.push(orgId); filters.push(`p.org_id = $${params.length}`); }
+      // See GET /farmer/input-suppliers' own doc comment above for the
+      // "empty service_regions = serves everywhere" convention.
+      if (provinceCode) {
+        params.push(provinceCode);
+        filters.push(`(COALESCE(cardinality(vp.service_regions), 0) = 0 OR $${params.length} = ANY(vp.service_regions))`);
+      }
 
       const result = await client.query(
         `SELECT p.listing_id, p.org_id, o.org_name, p.category, p.product_name, p.brand,
@@ -565,6 +595,7 @@ router.get('/products', async (req, res, next) => {
                   WHERE listing_id = p.listing_id ORDER BY created_at ASC LIMIT 1) AS cover_photo_url
            FROM marketplace.product_listing p
            JOIN identity.organization o ON o.org_id = p.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = p.org_id
           WHERE ${filters.join(' AND ')}
           ORDER BY (p.is_featured AND (p.featured_until IS NULL OR p.featured_until > now())) DESC,
                    o.org_name, p.category, p.product_name`,

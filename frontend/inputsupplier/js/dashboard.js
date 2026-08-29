@@ -20,6 +20,52 @@ const CATEGORY_LABEL_TH = {
   other: "อื่นๆ",
 };
 
+// ---------- พื้นที่ให้บริการ (จังหวัด) ----------
+// See GET/PUT /inputsupplier/service-regions (backend/src/routes/
+// inputsupplier.js) — those routes already existed but had no frontend UI
+// using them until now, so an org's service_regions has always sat at its
+// default empty array. service_regions is partner.vendor_profile's text[]
+// of ISO 3166-2:TH province codes (frontend/js/provinces.js's
+// TH_PROVINCES). An empty array means "no restriction declared" — GET
+// /farmer/products and GET /farmer/input-suppliers both treat that as
+// "serves every province" (see those routes' own doc comments), so an org
+// that never touches this section keeps working exactly as before.
+function serviceRegionsCheckboxesHtml(selected) {
+  const selectedSet = new Set(selected || []);
+  return TH_PROVINCES.map(([code, name]) => `
+    <label style="display:inline-flex; align-items:center; gap:6px; width:32%; min-width:150px; margin:0 0 8px; font-size:13px; font-weight:400; vertical-align:top;">
+      <input type="checkbox" value="${code}" ${selectedSet.has(code) ? "checked" : ""} />
+      ${escapeHtml(name)}
+    </label>
+  `).join("");
+}
+
+async function loadServiceRegions() {
+  const el = document.getElementById("serviceRegionsCheckboxes");
+  try {
+    const { service_regions: regions } = await AgroLinkInputSupplierAPI.get("/inputsupplier/service-regions");
+    el.innerHTML = serviceRegionsCheckboxesHtml(regions);
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดพื้นที่ให้บริการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("serviceRegionsSaveBtn").addEventListener("click", async () => {
+  const checked = Array.from(
+    document.querySelectorAll('#serviceRegionsCheckboxes input[type="checkbox"]:checked'),
+  ).map((cb) => cb.value);
+  const btn = document.getElementById("serviceRegionsSaveBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkInputSupplierAPI.put("/inputsupplier/service-regions", { service_regions: checked });
+    toast("บันทึกพื้นที่ให้บริการเรียบร้อยแล้ว");
+  } catch (err) {
+    toast("บันทึกไม่สำเร็จ: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 /**
  * Replaces the whole dashboard body with a "your KYB application is under
  * review" notice — same shape/reasoning as every other portal's own copy
@@ -1621,6 +1667,7 @@ async function init() {
     return;
   }
 
+  loadServiceRegions();
   loadProducts();
   loadOrderReviewQueue();
   loadOrderHistory();

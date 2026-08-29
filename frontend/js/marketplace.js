@@ -176,17 +176,47 @@ document.getElementById("creditLineDrawdownsSection").addEventListener("click", 
   }
 });
 
+// ---------- จังหวัด (สำหรับตัวกรอง) ----------
+// Populate the province filter from TH_PROVINCES (frontend/js/
+// provinces.js) — same pattern as frontend/js/venue-marketplace.js's own
+// provinceFilter. This dropdown existed in the HTML long before this, but
+// was never wired to anything (no options, no listener, no query param) —
+// this closes that gap end-to-end together with GET /farmer/products?
+// province_code= and GET /farmer/input-suppliers?province_code= on the
+// backend (see those routes' doc comments in farmer.js) and the new
+// "พื้นที่ให้บริการ" section on the InputSupplier dashboard that lets a
+// provider actually declare which provinces they serve.
+const provinceFilterEl = document.getElementById("provinceFilter");
+TH_PROVINCES.forEach(([code, name]) => {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = name;
+  provinceFilterEl.appendChild(opt);
+});
+
 // ---------- ผู้จำหน่าย (สำหรับตัวกรอง) ----------
-async function loadSuppliersIntoFilter() {
+// Re-populated whenever the province filter changes, so the "ผู้จำหน่าย"
+// dropdown only ever lists suppliers that actually serve the selected
+// province (an org with no declared service_regions always shows, per the
+// "serves everywhere" convention — see GET /farmer/input-suppliers).
+async function loadSuppliersIntoFilter(provinceCode) {
   const select = document.getElementById("supplierFilter");
+  const previouslySelected = select.value;
+  select.innerHTML = `<option value="">ทั้งหมด</option>`;
   try {
-    const suppliers = await AgroLinkAPI.get("/farmer/input-suppliers");
+    const query = provinceCode ? `?province_code=${encodeURIComponent(provinceCode)}` : "";
+    const suppliers = await AgroLinkAPI.get(`/farmer/input-suppliers${query}`);
     suppliers.forEach((s) => {
       const opt = document.createElement("option");
       opt.value = s.org_id;
       opt.textContent = `${s.org_name} (${s.active_product_count} รายการ)`;
       select.appendChild(opt);
     });
+    // Keep the previous selection only if it's still a valid option after
+    // the province change narrowed (or widened) the list.
+    if (previouslySelected && Array.from(select.options).some((o) => o.value === previouslySelected)) {
+      select.value = previouslySelected;
+    }
   } catch (err) {
     // Non-fatal — the "ทั้งหมด" option still works without the list.
   }
@@ -249,10 +279,12 @@ async function loadProducts() {
   const el = document.getElementById("productListSection");
   const category = document.getElementById("categoryFilter").value;
   const orgId = document.getElementById("supplierFilter").value;
+  const provinceCode = document.getElementById("provinceFilter").value;
   try {
     const params = new URLSearchParams();
     if (category) params.set("category", category);
     if (orgId) params.set("org_id", orgId);
+    if (provinceCode) params.set("province_code", provinceCode);
     const query = params.toString() ? `?${params.toString()}` : "";
     const products = await AgroLinkAPI.get(`/farmer/products${query}`);
     if (products.length === 0) {
@@ -267,6 +299,12 @@ async function loadProducts() {
 
 document.getElementById("categoryFilter").addEventListener("change", () => loadProducts());
 document.getElementById("supplierFilter").addEventListener("change", () => loadProducts());
+document.getElementById("provinceFilter").addEventListener("change", () => {
+  // Changing province narrows/widens both the supplier list AND the
+  // product list — re-run both rather than just loadProducts().
+  loadSuppliersIntoFilter(document.getElementById("provinceFilter").value);
+  loadProducts();
+});
 
 async function handleOrderClick(e) {
   const orderBtn = e.target.closest("[data-order]");
@@ -384,7 +422,7 @@ document.getElementById("orderHistorySection").addEventListener("click", async (
 });
 
 async function init() {
-  await loadSuppliersIntoFilter();
+  await loadSuppliersIntoFilter(document.getElementById("provinceFilter").value);
   // creditLinesCache must be populated BEFORE orderCard() renders (it
   // decides whether the "จ่ายด้วยเครดิต" button shows), same
   // load-then-render-dependents ordering used elsewhere in this project

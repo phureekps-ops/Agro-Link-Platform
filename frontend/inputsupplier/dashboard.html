@@ -25,6 +25,16 @@
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
+    <div class="section-title">🗺️ พื้นที่ให้บริการ (จังหวัด)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
+      เลือกจังหวัดที่ร้านค้าของท่านจัดส่ง/ให้บริการถึง — เกษตรกรจะเลือกกรองค้นหาร้านค้าตามจังหวัดได้
+      จากหน้าตลาดปัจจัยการผลิต หากไม่เลือกจังหวัดใดเลย ระบบจะถือว่าร้านค้าของท่านให้บริการทุกจังหวัด
+    </p>
+    <div id="serviceRegionsCheckboxes" style="max-height:220px; overflow-y:auto; border:1px solid #e2e2e2; border-radius:8px; padding:10px; margin-bottom:10px;">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="serviceRegionsSaveBtn" style="max-width:220px; margin-bottom:8px;">บันทึกพื้นที่ให้บริการ</button>
+
     <div class="section-title">🧾 คำสั่งซื้อที่ต้องดำเนินการ</div>
     <div id="orderReviewQueueSection" class="card-list">
       <div class="loading-line">กำลังโหลดคำสั่งซื้อ…</div>
@@ -234,6 +244,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="../js/provinces.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
