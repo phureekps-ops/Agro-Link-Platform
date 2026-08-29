@@ -18,23 +18,49 @@ function thaiDate(iso) {
   return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// ---------- พื้นที่ให้บริการ (จังหวัด) ----------
+// ---------- พื้นที่ให้บริการ (จังหวัด/อำเภอ) ----------
 // See GET/PUT /machinery/service-regions (backend/src/routes/
 // machinery.js, added 2026-08-29) — same shape as GET/PUT /inputsupplier/
 // service-regions, which this section directly mirrors. service_regions
-// is partner.vendor_profile's text[] of ISO 3166-2:TH province codes
-// (frontend/js/provinces.js's TH_PROVINCES). An empty array means "no
+// is partner.vendor_profile's text[] holding a free mix of two kinds of
+// entries: a bare ISO 3166-2:TH province code (frontend/js/provinces.js's
+// TH_PROVINCES, e.g. "TH-50" — serves the WHOLE province) or a
+// province-qualified district code (frontend/js/districts.js's
+// TH_DISTRICTS, e.g. "TH-50-01" — serves only that ONE district; see
+// that file's doc comment for the important caveat that the district
+// list/code scheme was compiled from general knowledge, not a
+// live-verified government source). An empty array means "no
 // restriction declared" — GET /farmer/machinery-providers treats that as
 // "serves every province" (see that route's own doc comment), so an org
 // that never touches this section keeps working exactly as before.
+// Checking a province and checking one of its districts are independent
+// — neither implies nor requires the other.
 function serviceRegionsCheckboxesHtml(selected) {
   const selectedSet = new Set(selected || []);
-  return TH_PROVINCES.map(([code, name]) => `
-    <label style="display:inline-flex; align-items:center; gap:6px; width:32%; min-width:150px; margin:0 0 8px; font-size:13px; font-weight:400; vertical-align:top;">
-      <input type="checkbox" value="${code}" ${selectedSet.has(code) ? "checked" : ""} />
-      ${escapeHtml(name)}
-    </label>
-  `).join("");
+  const districtsByProvince = {};
+  TH_DISTRICTS.forEach(([code, name, provinceCode]) => {
+    if (!districtsByProvince[provinceCode]) districtsByProvince[provinceCode] = [];
+    districtsByProvince[provinceCode].push([code, name]);
+  });
+  return TH_PROVINCES.map(([provinceCode, provinceName]) => {
+    const districts = districtsByProvince[provinceCode] || [];
+    const districtCheckboxesHtml = districts.map(([code, name]) => `
+      <label style="display:inline-flex; align-items:center; gap:6px; width:45%; min-width:130px; margin:0 0 6px; font-size:12px; font-weight:400; vertical-align:top;">
+        <input type="checkbox" value="${code}" ${selectedSet.has(code) ? "checked" : ""} />
+        ${escapeHtml(name)}
+      </label>
+    `).join("");
+    return `
+      <details style="margin-bottom:4px; border-bottom:1px solid #eee; padding-bottom:4px;">
+        <summary style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; padding:4px 0;">
+          <input type="checkbox" value="${provinceCode}" ${selectedSet.has(provinceCode) ? "checked" : ""} onclick="event.stopPropagation()" />
+          <span>${escapeHtml(provinceName)}</span>
+          ${districts.length ? `<span style="font-weight:400; color:#888; font-size:11px;">(${districts.length} อำเภอ)</span>` : ""}
+        </summary>
+        ${districts.length ? `<div style="padding:4px 0 4px 24px;">${districtCheckboxesHtml}</div>` : ""}
+      </details>
+    `;
+  }).join("");
 }
 
 async function loadServiceRegions() {

@@ -58,6 +58,26 @@ TH_PROVINCES.forEach(([code, name]) => {
   provinceFilterEl.appendChild(opt);
 });
 
+// ---------- อำเภอ (สำหรับตัวกรอง) ----------
+// Populated based on the selected province, from TH_DISTRICTS (frontend/
+// js/districts.js) — see that file's own doc comment for an important
+// caveat: this district list and its district_code scheme were compiled
+// from general knowledge, not fetched from a live-verified government
+// dataset (web-fetch tools could not reach the known open datasets — see
+// DEPLOY.md's 2026-08-29 note for this feature). Reset to "ทั้งหมด"
+// whenever the province filter changes.
+const districtFilterEl = document.getElementById("districtFilter");
+function populateDistrictOptions(provinceCode) {
+  districtFilterEl.innerHTML = `<option value="">ทั้งหมด</option>`;
+  if (!provinceCode) return;
+  TH_DISTRICTS.filter(([, , pCode]) => pCode === provinceCode).forEach(([code, name]) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = name;
+    districtFilterEl.appendChild(opt);
+  });
+}
+
 // ---------- ผู้ให้บริการ ----------
 // Backend (GET /farmer/machinery-providers) already sorts featured
 // listings first — this just renders the "⭐ แนะนำ" badge, it does not
@@ -102,10 +122,12 @@ async function loadProviders() {
   const el = document.getElementById("providerListSection");
   const serviceType = document.getElementById("serviceTypeFilter").value;
   const provinceCode = document.getElementById("provinceFilter").value;
+  const districtCode = document.getElementById("districtFilter").value;
   try {
     const params = new URLSearchParams();
     if (serviceType) params.set("service_type", serviceType);
     if (provinceCode) params.set("province_code", provinceCode);
+    if (districtCode) params.set("district_code", districtCode);
     const query = params.toString() ? `?${params.toString()}` : "";
     const providers = await AgroLinkAPI.get(`/farmer/machinery-providers${query}`);
     if (providers.length === 0) {
@@ -119,7 +141,13 @@ async function loadProviders() {
 }
 
 document.getElementById("serviceTypeFilter").addEventListener("change", () => loadProviders());
-document.getElementById("provinceFilter").addEventListener("change", () => loadProviders());
+document.getElementById("provinceFilter").addEventListener("change", () => {
+  // Repopulate the district dropdown for the newly-selected province and
+  // reset it, since a district from the old province no longer applies.
+  populateDistrictOptions(document.getElementById("provinceFilter").value);
+  loadProviders();
+});
+document.getElementById("districtFilter").addEventListener("change", () => loadProviders());
 
 function handleBookFromClick(e) {
   const btn = e.target.closest("[data-book-from]");

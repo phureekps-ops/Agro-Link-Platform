@@ -26,8 +26,31 @@ const MACHINERY_ORG_TYPES = [
 ];
 
 /**
- * GET /farmer/machinery-providers?service_type=&province_code= — every
- * currently-priced rate-card item (marketplace.service_listing,
+ * Builds the "does this org's service_regions cover the requested area"
+ * SQL condition — identical semantics/shape to farmer.js's own
+ * serviceRegionCondition (duplicated here rather than imported, per this
+ * project's existing per-file convention — see MACHINERY_ORG_TYPES's own
+ * comment above for the same reasoning applied elsewhere in this file).
+ * See that function's doc comment in farmer.js for the full "province vs.
+ * province+district vs. no restriction declared" matching semantics.
+ */
+function serviceRegionCondition(params, vpAlias, provinceCode, districtCode) {
+  if (!provinceCode) return null;
+  const emptyClause = `COALESCE(cardinality(${vpAlias}.service_regions), 0) = 0`;
+  if (districtCode) {
+    params.push(provinceCode, districtCode);
+    const provinceParam = `$${params.length - 1}`;
+    const districtParam = `$${params.length}`;
+    return `(${emptyClause} OR ${provinceParam} = ANY(${vpAlias}.service_regions) OR ${districtParam} = ANY(${vpAlias}.service_regions))`;
+  }
+  params.push(provinceCode);
+  const provinceParam = `$${params.length}`;
+  return `(${emptyClause} OR ${provinceParam} = ANY(${vpAlias}.service_regions) OR EXISTS (SELECT 1 FROM unnest(${vpAlias}.service_regions) r WHERE r LIKE ${provinceParam} || '-%'))`;
+}
+
+/**
+ * GET /farmer/machinery-providers?service_type=&province_code=&district_code=
+ * — every currently-priced rate-card item (marketplace.service_listing,
  * service_key IS NOT NULL) from a Verified machinery/drying-yard org,
  * joined with the provider's org_name, so a farmer can compare providers
  * before booking. Optional ?service_type= filter (land_preparation /
@@ -39,13 +62,13 @@ const MACHINERY_ORG_TYPES = [
  * shape, just without the single fixed service_key filter that route uses.
  *
  * Optional province_code (an ISO 3166-2:TH code from frontend/js/
- * provinces.js's TH_PROVINCES — see PUT /machinery/service-regions' own
- * doc comment, added 2026-08-29) narrows to providers who declared that
- * province in partner.vendor_profile.service_regions. A provider with an
- * EMPTY service_regions (the default until PUT /machinery/service-regions
- * existed) is treated as "serves everywhere" and always matches — same
- * neutral-when-unset convention as GET /farmer/input-suppliers in
- * farmer.js and the AI-matching score below.
+ * provinces.js's TH_PROVINCES) and district_code (from frontend/js/
+ * districts.js's TH_DISTRICTS, added 2026-08-29 — always sent together
+ * with its parent province_code by every frontend caller) narrow to
+ * providers whose partner.vendor_profile.service_regions covers that
+ * area — see serviceRegionCondition's own doc comment above for the exact
+ * matching semantics, including the "empty service_regions = serves
+ * everywhere" convention.
  *
  * Featured listings (see grant_featured_listings.sql / the
  * /admin/service-listings routes in admin.js) sort first — `featured` is
@@ -54,7 +77,7 @@ const MACHINERY_ORG_TYPES = [
  */
 router.get('/machinery-providers', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { service_type: serviceType, province_code: provinceCode } = req.query;
+  const { service_type: serviceType, province_code: provinceCode, district_code: districtCode } = req.query;
   try {
     const rows = await withSessionContext('farmer', subjectId, async (client) => {
       const params = [MACHINERY_ORG_TYPES];
@@ -63,10 +86,8 @@ router.get('/machinery-providers', async (req, res, next) => {
         params.push(serviceType);
         filters.push(`sl.service_type = $${params.length}`);
       }
-      if (provinceCode) {
-        params.push(provinceCode);
-        filters.push(`(COALESCE(cardinality(vp.service_regions), 0) = 0 OR $${params.length} = ANY(vp.service_regions))`);
-      }
+      const areaCondition = serviceRegionCondition(params, 'vp', provinceCode, districtCode);
+      if (areaCondition) filters.push(areaCondition);
       const filterClause = filters.length > 0 ? `AND ${filters.join(' AND ')}` : '';
       const result = await client.query(
         `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
