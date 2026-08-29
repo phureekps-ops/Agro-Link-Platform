@@ -30,8 +30,8 @@ const PRODUCT_CATEGORY_LABEL = {
 };
 const SERVICE_TYPE_LABEL = {
   land_preparation: "เตรียมดิน", harvesting: "เก็บเกี่ยว", pest_control: "พ่นยา/กำจัดศัตรูพืช",
-  transport: "ขนส่ง", drying_storage: "ลานตาก/จัดเก็บ", straw_processing: "อัดเม็ด/อัดก้อนฟางข้าว",
-  other: "อื่นๆ",
+  transport: "ขนส่ง", drying_storage: "ลานตาก/จัดเก็บ", fertilizer_mixing: "ผสมปุ๋ยสั่งตัด",
+  straw_processing: "อัดเม็ด/อัดก้อนฟางข้าว", other: "อื่นๆ",
 };
 
 // A listing is "currently featured" only if is_featured AND (no expiry OR
