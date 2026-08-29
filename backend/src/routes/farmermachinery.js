@@ -32,7 +32,7 @@ const MACHINERY_ORG_TYPES = [
  * farmer can compare providers before booking. Optional ?service_type=
  * filter (land_preparation / harvesting / pest_control / transport /
  * drying_storage / straw_processing — the six values RATE_CARD_ITEMS in
- * machinery.js maps its nine service_keys onto). Mirrors GET
+ * machinery.js maps its ten service_keys onto). Mirrors GET
  * /farmer/fertilizer-mixing-providers'
  * shape, just without the single fixed service_key filter that route uses.
  *

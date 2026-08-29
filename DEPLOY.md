@@ -174,6 +174,7 @@ grant_group_buy.sql
 grant_shrimp_auction.sql
 grant_input_credit_line.sql
 grant_straw_processing_service.sql
+grant_laser_land_leveling_service.sql
 ```
 
 **เพิ่มเมื่อ 2026-08-29:** `grant_straw_processing_service.sql` — เพิ่ม
@@ -200,6 +201,15 @@ TractorService/DroneService/HarvesterService/TruckService/DryingYardService
 `frontend/_to_delete/admin-pages-merged-into-dashboard-2026-08-29/` ไม่มีที่
 ใดอ้างอิงไฟล์เดิมเหล่านี้แล้ว (`carbon-assessment-detail.html` ไม่ได้ย้าย —
 ยังคงเป็นหน้าแยกที่เปิดแท็บใหม่จากคิว AWD ตามเดิม)
+
+**เพิ่มเมื่อ 2026-08-29 (ค่ำ):** `grant_laser_land_leveling_service.sql` — เพิ่ม
+"ปรับพื้นที่แปลงนาด้วยระบบเลเซอร์" (laser_land_leveling) เป็นรายการที่ 10
+ในตารางราคาบริการเครื่องจักรกล (เดิมมี 9 รายการ) — เป็นบริการเตรียมดินแบบหนึ่ง
+จึงใช้ service_type เดิมคือ `land_preparation` ที่มีอยู่แล้ว ไม่ต้องเพิ่มหมวดใหม่
+ขยายแค่ CHECK constraint ของ service_key เท่านั้น (ไม่แตะ service_type) —
+ไม่มีตารางใหม่ ไม่มี org_type ใหม่ ไม่มีการแก้ dropdown ตัวกรองใดๆ ในหน้าเว็บ
+เพราะ `land_preparation` มีตัวเลือกตัวกรองอยู่แล้วทั้งฝั่งเกษตรกรและฝั่งแอดมิน
+ดูรายละเอียดที่คอมเมนต์หัวไฟล์ migration นี้เอง
 
 **เพิ่มเมื่อ 2026-08-27:** `grant_input_credit_line.sql` — เพิ่มฟีเจอร์ "เครดิต
 ร้านค้าปัจจัยการผลิต" (Input-Supplier Trade Credit) ให้ผู้ให้กู้ (Lender) ที่ได้

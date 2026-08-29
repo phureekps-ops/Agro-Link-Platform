@@ -28,7 +28,7 @@ router.use(requireAuth, requireOrganizationOrStaff);
  * MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md §5.1 + grant_machinery_service_
  * consolidation.sql) — approving four separate role rows never bought any
  * real access-control distinction downstream, since this portal already
- * grants full access (all nine rate-card items) the moment ANY ONE
+ * grants full access (all ten rate-card items) the moment ANY ONE
  * machinery role is Verified (see requireMachineryOrg below). The four
  * legacy values stay in this array so an org that already holds one of
  * them from before the consolidation keeps working unchanged — this list
@@ -42,12 +42,14 @@ const MACHINERY_ORG_TYPES = [
 ];
 
 /**
- * The nine fixed rate-card line items this portal exposes. Each maps to
+ * The ten fixed rate-card line items this portal exposes. Each maps to
  * exactly one marketplace.service_listing row per org (upserted via
  * service_key), tagged with the service_type value marketplace.service_listing
  * constrains to (land_preparation / harvesting / pest_control / transport /
  * drying_storage / straw_processing — see grant_straw_processing_service.sql
- * for the two straw_processing items, added after the original seven).
+ * for the two straw_processing items, added after the original seven, and
+ * grant_laser_land_leveling_service.sql for the tenth item, which reuses
+ * the existing land_preparation bucket rather than adding an eighth type).
  * label_th is the Thai description stored on the row and shown in
  * responses; price_unit is stored verbatim as marketplace.service_listing.price_unit.
  */
@@ -63,6 +65,12 @@ const RATE_CARD_ITEMS = {
   // service.sql — a provider may own either, both, or neither.
   straw_pelletizing: { service_type: 'straw_processing', label_th: 'อัดเม็ดฟางข้าว', price_unit: 'บาท/ตัน' },
   straw_baling: { service_type: 'straw_processing', label_th: 'อัดก้อนฟางข้าว', price_unit: 'บาท/ก้อน' },
+  // Added by grant_laser_land_leveling_service.sql — reuses the existing
+  // land_preparation service_type bucket (this is fundamentally a
+  // land-prep activity, like plow_rough/rotary_till above) rather than
+  // adding an eighth service_type; only the service_key CHECK constraint
+  // needed widening for this one.
+  laser_land_leveling: { service_type: 'land_preparation', label_th: 'ปรับพื้นที่แปลงนาด้วยระบบเลเซอร์', price_unit: 'บาท/ไร่' },
 };
 const RATE_CARD_KEYS = Object.keys(RATE_CARD_ITEMS);
 
@@ -170,7 +178,7 @@ router.use(requireMachineryOrg);
  */
 
 /**
- * GET /machinery/dashboard — org info plus how many of the nine rate-card
+ * GET /machinery/dashboard — org info plus how many of the ten rate-card
  * items are currently priced, a photo count, and booking counts by status,
  * so the frontend has enough to render a summary without extra round trips.
  */
@@ -226,7 +234,7 @@ router.get('/dashboard', async (req, res, next) => {
 });
 
 /**
- * GET /machinery/rate-card — this org's current prices for all nine fixed
+ * GET /machinery/rate-card — this org's current prices for all ten fixed
  * line items, keyed by service_key, so the frontend can pre-fill the form
  * in one call. Items never priced come back with price: null.
  */
@@ -280,7 +288,7 @@ router.get('/rate-card', async (req, res, next) => {
  * without that risk. GET /machinery/rate-card and the dashboard both filter
  * on is_active accordingly.
  *
- * A provider is never required to price all nine items — most will only
+ * A provider is never required to price all ten items — most will only
  * fill in the ones matching their actual equipment (e.g. a DroneService org
  * likely only sets `spraying`).
  */
