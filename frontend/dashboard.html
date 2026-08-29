@@ -7,6 +7,47 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
+<style>
+  /* Sidebar SPA navigation for the account sections below (ภาพรวม/
+     สมาชิกภาพ/คะแนน/แปลง/สัญญา/สินเชื่อ/แจ้งเตือน) — same structure as
+     coop/dashboard.html's .coop-shell/.coop-sidebar/.coop-nav-item pattern
+     (พอร์ทัลสหกรณ์), requested by the user so this page reads the same
+     way. The header above (portal-switcher links to marketplace.html/
+     machinery-marketplace.html/rfq.html/ฯลฯ, farmer name, logout) is
+     UNCHANGED — those are separate full pages, not merged into this SPA,
+     so they still need their own top-level links rather than becoming
+     sidebar tabs. UI-only below: does not change any data-loading logic —
+     every section still loads its own data on page load exactly as
+     before (see js/dashboard.js's init()), these classes/JS only show/
+     hide which section is currently on screen. */
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .farmer-shell { display: flex; align-items: stretch; }
+  .farmer-sidebar {
+    width: 240px; flex: 0 0 240px; background: var(--green-900); color: #fff;
+    display: flex; flex-direction: column; padding: 20px 14px; box-sizing: border-box;
+  }
+  .farmer-nav { flex: 1; }
+  .farmer-nav-group { margin-bottom: 16px; }
+  .farmer-nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); padding: 0 10px 6px; }
+  .farmer-nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13.5px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  }
+  .farmer-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .farmer-nav-item.active { background: rgba(255,255,255,0.16); color: #fff; font-weight: 600; }
+  .farmer-main { flex: 1; min-width: 0; }
+  .farmer-breadcrumb { font-size: 14.5px; padding: 16px 24px 0; color: var(--gray-500); }
+  .farmer-breadcrumb-sep { opacity: 0.5; margin: 0 6px; }
+  @media (max-width: 860px) {
+    .farmer-shell { flex-direction: column; }
+    .farmer-sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 14px; }
+    .farmer-nav { display: flex; flex-wrap: wrap; gap: 4px; }
+    .farmer-nav-group { margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .farmer-nav-group-title { display: none; }
+  }
+</style>
 </head>
 <body>
   <header class="app-header">
@@ -26,13 +67,48 @@
     </div>
   </header>
 
-  <div class="container">
+  <div class="farmer-shell">
+    <aside class="farmer-sidebar">
+      <nav class="farmer-nav">
+        <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">ภาพรวม</div>
+          <button type="button" class="farmer-nav-item active" data-page="overview">📊 ภาพรวมบัญชี</button>
+        </div>
+        <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">สมาชิกภาพและคะแนน</div>
+          <button type="button" class="farmer-nav-item" data-page="memberships">🏷️ สมาชิกภาพของฉัน</button>
+          <button type="button" class="farmer-nav-item" data-page="credit-score">💳 คะแนนความน่าเชื่อถือ</button>
+        </div>
+        <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">แปลงและสัญญา</div>
+          <button type="button" class="farmer-nav-item" data-page="units">🗺️ แปลง / หน่วยผลิต</button>
+          <button type="button" class="farmer-nav-item" data-page="contracts">📄 สัญญา</button>
+        </div>
+        <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">การเงิน</div>
+          <button type="button" class="farmer-nav-item" data-page="loans">🏦 คำขอสินเชื่อ</button>
+        </div>
+        <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">การแจ้งเตือน</div>
+          <button type="button" class="farmer-nav-item" data-page="notifications">🔔 แจ้งเตือนที่ยังไม่อ่าน</button>
+        </div>
+      </nav>
+    </aside>
+    <div class="farmer-main">
+      <div class="farmer-breadcrumb">
+        <span>หน้าหลักเกษตรกร</span><span class="farmer-breadcrumb-sep">/</span><span id="farmerBreadcrumbCurrent">ภาพรวมบัญชี</span>
+      </div>
 
+      <div class="container">
+
+      <div class="farmer-page" data-page-content="overview">
     <div class="section-title">📊 ภาพรวมบัญชี</div>
     <div id="summarySection" class="summary-grid">
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
+      </div>
 
+      <div class="farmer-page" data-page-content="memberships" style="display:none;">
     <div class="section-title">🏷️ สมาชิกภาพของฉัน</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       หน่วยงาน (สหกรณ์/ผู้ปล่อยกู้/กองทุนหมู่บ้าน ฯลฯ) ที่ท่านเป็นสมาชิก/ลูกค้าอยู่ในขณะนี้ —
@@ -42,7 +118,9 @@
     <div id="membershipsSection" class="card-list">
       <div class="loading-line">กำลังโหลดสมาชิกภาพ…</div>
     </div>
+      </div>
 
+      <div class="farmer-page" data-page-content="credit-score" style="display:none;">
     <div class="section-title">💳 คะแนนความน่าเชื่อถือทางสินเชื่อ</div>
     <div class="two-col">
       <div class="panel" id="scoreLatestPanel">
@@ -52,7 +130,9 @@
         <div class="loading-line">กำลังโหลดประวัติ…</div>
       </div>
     </div>
+      </div>
 
+      <div class="farmer-page" data-page-content="units" style="display:none;">
     <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
       <span>🗺️ แปลง / หน่วยผลิต</span>
       <a href="register-plot.html" class="btn btn-primary" style="width:auto; text-decoration:none; font-size:13px; padding:8px 14px;">+ เพิ่มแปลงใหม่</a>
@@ -60,12 +140,16 @@
     <div id="unitsSection" class="card-list">
       <div class="loading-line">กำลังโหลดข้อมูลแปลง…</div>
     </div>
+      </div>
 
+      <div class="farmer-page" data-page-content="contracts" style="display:none;">
     <div class="section-title">📄 สัญญา</div>
     <div id="contractsSection" class="card-list">
       <div class="loading-line">กำลังโหลดสัญญา…</div>
     </div>
+      </div>
 
+      <div class="farmer-page" data-page-content="loans" style="display:none;">
     <div class="section-title">🏦 คำขอสินเชื่อ</div>
     <div class="two-col">
       <div>
@@ -96,12 +180,17 @@
         </form>
       </div>
     </div>
+      </div>
 
+      <div class="farmer-page" data-page-content="notifications" style="display:none;">
     <div class="section-title">🔔 การแจ้งเตือนที่ยังไม่อ่าน</div>
     <div id="notificationsSection" class="card-list">
       <div class="loading-line">กำลังโหลดการแจ้งเตือน…</div>
     </div>
+      </div>
 
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>

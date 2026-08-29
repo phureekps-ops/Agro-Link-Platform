@@ -1,3 +1,35 @@
+// ============================================================
+// การนำทางแบบแถบข้าง (Sidebar) — UI-only, ไม่แตะตรรกะโหลดข้อมูลเดิมด้านล่าง
+// นี้เลย เหมือนกับ coop/js/dashboard.js ทุกประการ: ทุก section เดิมยังคง
+// ถูกโหลดข้อมูลตามปกติตอนเปิดหน้าเหมือนเดิมทั้งหมด (ดู init() ท้ายไฟล์)
+// ปุ่มด้านข้างแค่ show/hide ว่าจะให้ page ไหนแสดงอยู่บนจอเท่านั้น
+// ============================================================
+const FARMER_PAGE_BREADCRUMB_TH = {
+  overview: "ภาพรวมบัญชี",
+  memberships: "สมาชิกภาพของฉัน",
+  "credit-score": "คะแนนความน่าเชื่อถือ",
+  units: "แปลง / หน่วยผลิต",
+  contracts: "สัญญา",
+  loans: "คำขอสินเชื่อ",
+  notifications: "แจ้งเตือนที่ยังไม่อ่าน",
+};
+
+function showFarmerPage(pageKey) {
+  document.querySelectorAll("[data-page-content]").forEach((el) => {
+    el.style.display = el.dataset.pageContent === pageKey ? "" : "none";
+  });
+  document.querySelectorAll("[data-page]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.page === pageKey);
+  });
+  const crumb = document.getElementById("farmerBreadcrumbCurrent");
+  if (crumb) crumb.textContent = FARMER_PAGE_BREADCRUMB_TH[pageKey] || pageKey;
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll("[data-page]").forEach((btn) => {
+  btn.addEventListener("click", () => showFarmerPage(btn.dataset.page));
+});
+
 const toastEl = document.getElementById("toast");
 function toast(message, isError = false) {
   toastEl.textContent = message;
