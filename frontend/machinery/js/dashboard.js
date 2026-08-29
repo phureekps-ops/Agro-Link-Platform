@@ -18,6 +18,51 @@ function thaiDate(iso) {
   return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+// ---------- พื้นที่ให้บริการ (จังหวัด) ----------
+// See GET/PUT /machinery/service-regions (backend/src/routes/
+// machinery.js, added 2026-08-29) — same shape as GET/PUT /inputsupplier/
+// service-regions, which this section directly mirrors. service_regions
+// is partner.vendor_profile's text[] of ISO 3166-2:TH province codes
+// (frontend/js/provinces.js's TH_PROVINCES). An empty array means "no
+// restriction declared" — GET /farmer/machinery-providers treats that as
+// "serves every province" (see that route's own doc comment), so an org
+// that never touches this section keeps working exactly as before.
+function serviceRegionsCheckboxesHtml(selected) {
+  const selectedSet = new Set(selected || []);
+  return TH_PROVINCES.map(([code, name]) => `
+    <label style="display:inline-flex; align-items:center; gap:6px; width:32%; min-width:150px; margin:0 0 8px; font-size:13px; font-weight:400; vertical-align:top;">
+      <input type="checkbox" value="${code}" ${selectedSet.has(code) ? "checked" : ""} />
+      ${escapeHtml(name)}
+    </label>
+  `).join("");
+}
+
+async function loadServiceRegions() {
+  const el = document.getElementById("serviceRegionsCheckboxes");
+  try {
+    const { service_regions: regions } = await AgroLinkMachineryAPI.get("/machinery/service-regions");
+    el.innerHTML = serviceRegionsCheckboxesHtml(regions);
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดพื้นที่ให้บริการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("serviceRegionsSaveBtn").addEventListener("click", async () => {
+  const checked = Array.from(
+    document.querySelectorAll('#serviceRegionsCheckboxes input[type="checkbox"]:checked'),
+  ).map((cb) => cb.value);
+  const btn = document.getElementById("serviceRegionsSaveBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkMachineryAPI.put("/machinery/service-regions", { service_regions: checked });
+    toast("บันทึกพื้นที่ให้บริการเรียบร้อยแล้ว");
+  } catch (err) {
+    toast("บันทึกไม่สำเร็จ: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // node-pg returns a plain `date` column (preferred_date has no time
 // component) as a full ISO timestamp string once JSON-serialized (e.g.
 // "2026-09-01T00:00:00.000Z") — this trims it back to just the date so the
@@ -389,6 +434,7 @@ async function init() {
     return;
   }
 
+  loadServiceRegions();
   loadBookingReviewQueue();
   loadBookingHistory();
   loadRateCard();

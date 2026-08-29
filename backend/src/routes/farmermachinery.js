@@ -26,16 +26,26 @@ const MACHINERY_ORG_TYPES = [
 ];
 
 /**
- * GET /farmer/machinery-providers — every currently-priced rate-card item
- * (marketplace.service_listing, service_key IS NOT NULL) from a Verified
- * machinery/drying-yard org, joined with the provider's org_name, so a
- * farmer can compare providers before booking. Optional ?service_type=
- * filter (land_preparation / harvesting / pest_control / transport /
- * drying_storage / straw_processing / other — the seven values RATE_CARD_
- * ITEMS in machinery.js maps its eleven service_keys onto — 'other' newly
- * added by grant_machinery_rental_service.sql). Mirrors GET
+ * GET /farmer/machinery-providers?service_type=&province_code= — every
+ * currently-priced rate-card item (marketplace.service_listing,
+ * service_key IS NOT NULL) from a Verified machinery/drying-yard org,
+ * joined with the provider's org_name, so a farmer can compare providers
+ * before booking. Optional ?service_type= filter (land_preparation /
+ * harvesting / pest_control / transport / drying_storage / straw_
+ * processing / other — the seven values RATE_CARD_ITEMS in machinery.js
+ * maps its eleven service_keys onto — 'other' newly added by grant_
+ * machinery_rental_service.sql). Mirrors GET
  * /farmer/fertilizer-mixing-providers'
  * shape, just without the single fixed service_key filter that route uses.
+ *
+ * Optional province_code (an ISO 3166-2:TH code from frontend/js/
+ * provinces.js's TH_PROVINCES — see PUT /machinery/service-regions' own
+ * doc comment, added 2026-08-29) narrows to providers who declared that
+ * province in partner.vendor_profile.service_regions. A provider with an
+ * EMPTY service_regions (the default until PUT /machinery/service-regions
+ * existed) is treated as "serves everywhere" and always matches — same
+ * neutral-when-unset convention as GET /farmer/input-suppliers in
+ * farmer.js and the AI-matching score below.
  *
  * Featured listings (see grant_featured_listings.sql / the
  * /admin/service-listings routes in admin.js) sort first — `featured` is
@@ -44,21 +54,27 @@ const MACHINERY_ORG_TYPES = [
  */
 router.get('/machinery-providers', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { service_type: serviceType } = req.query;
+  const { service_type: serviceType, province_code: provinceCode } = req.query;
   try {
     const rows = await withSessionContext('farmer', subjectId, async (client) => {
       const params = [MACHINERY_ORG_TYPES];
-      let filter = '';
+      const filters = [];
       if (serviceType) {
         params.push(serviceType);
-        filter = 'AND sl.service_type = $2';
+        filters.push(`sl.service_type = $${params.length}`);
       }
+      if (provinceCode) {
+        params.push(provinceCode);
+        filters.push(`(COALESCE(cardinality(vp.service_regions), 0) = 0 OR $${params.length} = ANY(vp.service_regions))`);
+      }
+      const filterClause = filters.length > 0 ? `AND ${filters.join(' AND ')}` : '';
       const result = await client.query(
         `SELECT sl.listing_id, sl.org_id, o.org_name, sl.service_key, sl.service_type,
                 sl.description AS label_th, sl.unit_price, sl.price_unit,
                 (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) AS featured
            FROM marketplace.service_listing sl
            JOIN identity.organization o ON o.org_id = sl.org_id
+           LEFT JOIN partner.vendor_profile vp ON vp.org_id = sl.org_id
           WHERE sl.is_active = true
             AND sl.service_key IS NOT NULL
             AND o.kyb_status = 'Verified'
@@ -66,7 +82,7 @@ router.get('/machinery-providers', async (req, res, next) => {
               SELECT 1 FROM identity.organization_role r
                WHERE r.org_id = sl.org_id AND r.role_type = ANY($1) AND r.status = 'Verified'
             )
-            ${filter}
+            ${filterClause}
           ORDER BY (sl.is_featured AND (sl.featured_until IS NULL OR sl.featured_until > now())) DESC,
                    o.org_name, sl.service_type`,
         params,

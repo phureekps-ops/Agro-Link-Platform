@@ -42,6 +42,22 @@ const BOOKING_STATUS_BADGE_CLASS = {
   Cancelled: "status-declined",
 };
 
+// ---------- จังหวัด (สำหรับตัวกรอง) ----------
+// Populate the province filter from TH_PROVINCES (frontend/js/
+// provinces.js) — same pattern as frontend/js/marketplace.js's own
+// provinceFilter (added 2026-08-29), which closed the identical gap for
+// the InputSupplier marketplace. Wired together with GET /farmer/
+// machinery-providers?province_code= on the backend (see that route's doc
+// comment in farmermachinery.js) and the new "พื้นที่ให้บริการ" section on
+// the machinery/drying-yard provider's own dashboard.
+const provinceFilterEl = document.getElementById("provinceFilter");
+TH_PROVINCES.forEach(([code, name]) => {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = name;
+  provinceFilterEl.appendChild(opt);
+});
+
 // ---------- ผู้ให้บริการ ----------
 // Backend (GET /farmer/machinery-providers) already sorts featured
 // listings first — this just renders the "⭐ แนะนำ" badge, it does not
@@ -85,8 +101,12 @@ async function loadRecommendedProviders() {
 async function loadProviders() {
   const el = document.getElementById("providerListSection");
   const serviceType = document.getElementById("serviceTypeFilter").value;
+  const provinceCode = document.getElementById("provinceFilter").value;
   try {
-    const query = serviceType ? `?service_type=${encodeURIComponent(serviceType)}` : "";
+    const params = new URLSearchParams();
+    if (serviceType) params.set("service_type", serviceType);
+    if (provinceCode) params.set("province_code", provinceCode);
+    const query = params.toString() ? `?${params.toString()}` : "";
     const providers = await AgroLinkAPI.get(`/farmer/machinery-providers${query}`);
     if (providers.length === 0) {
       el.innerHTML = `<div class="empty-state">ยังไม่มีผู้ให้บริการเครื่องจักรกล/ลานตากที่เปิดรับในขณะนี้</div>`;
@@ -99,6 +119,7 @@ async function loadProviders() {
 }
 
 document.getElementById("serviceTypeFilter").addEventListener("change", () => loadProviders());
+document.getElementById("provinceFilter").addEventListener("change", () => loadProviders());
 
 function handleBookFromClick(e) {
   const btn = e.target.closest("[data-book-from]");
