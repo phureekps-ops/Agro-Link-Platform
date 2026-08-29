@@ -173,7 +173,18 @@ grant_logistics_portal.sql
 grant_group_buy.sql
 grant_shrimp_auction.sql
 grant_input_credit_line.sql
+grant_straw_processing_service.sql
 ```
+
+**เพิ่มเมื่อ 2026-08-29:** `grant_straw_processing_service.sql` — เพิ่ม
+"เครื่องอัดเม็ดฟางข้าว" (straw_pelletizing) และ "เครื่องอัดก้อนฟางข้าว"
+(straw_baling) เป็นรายการที่ 8-9 ในตารางราคาบริการเครื่องจักรกล (เดิมมี 7
+รายการ) — ใช้โครงสร้างเดิมทั้งหมด (marketplace.service_listing /
+marketplace.machinery_booking, ผู้ให้บริการกลุ่ม MachineryService/
+TractorService/DroneService/HarvesterService/TruckService/DryingYardService
+เดิม) แค่ขยาย CHECK constraint ของ service_type (เพิ่มหมวดใหม่
+`straw_processing`) และ service_key เท่านั้น ไม่มีตารางใหม่ ไม่มี org_type ใหม่
+ดูรายละเอียดที่คอมเมนต์หัวไฟล์ migration นี้เอง
 
 **เพิ่มเมื่อ 2026-08-27:** `grant_input_credit_line.sql` — เพิ่มฟีเจอร์ "เครดิต
 ร้านค้าปัจจัยการผลิต" (Input-Supplier Trade Credit) ให้ผู้ให้กู้ (Lender) ที่ได้

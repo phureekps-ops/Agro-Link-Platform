@@ -28,7 +28,7 @@ router.use(requireAuth, requireOrganizationOrStaff);
  * MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md §5.1 + grant_machinery_service_
  * consolidation.sql) — approving four separate role rows never bought any
  * real access-control distinction downstream, since this portal already
- * grants full access (all seven rate-card items) the moment ANY ONE
+ * grants full access (all nine rate-card items) the moment ANY ONE
  * machinery role is Verified (see requireMachineryOrg below). The four
  * legacy values stay in this array so an org that already holds one of
  * them from before the consolidation keeps working unchanged — this list
@@ -42,12 +42,13 @@ const MACHINERY_ORG_TYPES = [
 ];
 
 /**
- * The seven fixed rate-card line items this portal exposes. Each maps to
+ * The nine fixed rate-card line items this portal exposes. Each maps to
  * exactly one marketplace.service_listing row per org (upserted via
  * service_key), tagged with the service_type value marketplace.service_listing
- * already constrains to (land_preparation / harvesting / pest_control /
- * transport / drying_storage — all pre-existing values, no widening needed
- * there). label_th is the Thai description stored on the row and shown in
+ * constrains to (land_preparation / harvesting / pest_control / transport /
+ * drying_storage / straw_processing — see grant_straw_processing_service.sql
+ * for the two straw_processing items, added after the original seven).
+ * label_th is the Thai description stored on the row and shown in
  * responses; price_unit is stored verbatim as marketplace.service_listing.price_unit.
  */
 const RATE_CARD_ITEMS = {
@@ -58,6 +59,10 @@ const RATE_CARD_ITEMS = {
   harvesting: { service_type: 'harvesting', label_th: 'เกี่ยวข้าว', price_unit: 'บาท/ไร่' },
   trucking: { service_type: 'transport', label_th: 'ขนส่งด้วยรถบรรทุก', price_unit: 'บาท/ตัน-กม.' },
   drying: { service_type: 'drying_storage', label_th: 'ลานตากข้าว/ตากผลผลิต', price_unit: 'บาท/ตัน' },
+  // Two distinct straw-byproduct machines, added by grant_straw_processing_
+  // service.sql — a provider may own either, both, or neither.
+  straw_pelletizing: { service_type: 'straw_processing', label_th: 'อัดเม็ดฟางข้าว', price_unit: 'บาท/ตัน' },
+  straw_baling: { service_type: 'straw_processing', label_th: 'อัดก้อนฟางข้าว', price_unit: 'บาท/ก้อน' },
 };
 const RATE_CARD_KEYS = Object.keys(RATE_CARD_ITEMS);
 
@@ -165,7 +170,7 @@ router.use(requireMachineryOrg);
  */
 
 /**
- * GET /machinery/dashboard — org info plus how many of the seven rate-card
+ * GET /machinery/dashboard — org info plus how many of the nine rate-card
  * items are currently priced, a photo count, and booking counts by status,
  * so the frontend has enough to render a summary without extra round trips.
  */
@@ -221,7 +226,7 @@ router.get('/dashboard', async (req, res, next) => {
 });
 
 /**
- * GET /machinery/rate-card — this org's current prices for all seven fixed
+ * GET /machinery/rate-card — this org's current prices for all nine fixed
  * line items, keyed by service_key, so the frontend can pre-fill the form
  * in one call. Items never priced come back with price: null.
  */
@@ -275,7 +280,7 @@ router.get('/rate-card', async (req, res, next) => {
  * without that risk. GET /machinery/rate-card and the dashboard both filter
  * on is_active accordingly.
  *
- * A provider is never required to price all seven items — most will only
+ * A provider is never required to price all nine items — most will only
  * fill in the ones matching their actual equipment (e.g. a DroneService org
  * likely only sets `spraying`).
  */
