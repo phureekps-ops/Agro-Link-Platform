@@ -7,24 +7,116 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../css/style.css" />
+<style>
+  /* Sidebar SPA navigation — same structure as coop/dashboard.html's
+     .coop-shell/.coop-sidebar/.coop-nav-item pattern (พอร์ทัลสหกรณ์),
+     requested by Platform Ops so this dashboard reads the same way.
+     UI-only: does not change any data-loading logic below — every
+     section still loads its own data on page load exactly as before,
+     these classes/JS only show/hide which page is currently on screen. */
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .admin-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  .admin-sidebar {
+    width: 260px; flex: 0 0 260px; background: var(--green-900); color: #fff;
+    display: flex; flex-direction: column; padding: 20px 14px; box-sizing: border-box;
+  }
+  .admin-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; }
+  .admin-sidebar-logo { font-size: 26px; line-height: 1; }
+  .admin-sidebar-brand-name { font-weight: 700; font-size: 16px; }
+  .admin-sidebar-brand-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .admin-nav { flex: 1; overflow-y: auto; }
+  .admin-nav-group { margin-bottom: 16px; }
+  .admin-nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); padding: 0 10px 6px; }
+  .admin-nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13.5px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  }
+  .admin-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .admin-nav-item.active { background: rgba(255,255,255,0.16); color: #fff; font-weight: 600; }
+  .admin-sidebar-footer { font-size: 11px; color: rgba(255,255,255,0.5); padding: 12px 10px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 12px; }
+  .admin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .admin-breadcrumb { font-size: 14.5px; }
+  .admin-breadcrumb-sep { opacity: 0.5; margin: 0 6px; }
+  @media (max-width: 860px) {
+    .admin-shell { flex-direction: column; }
+    .admin-sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 14px; }
+    .admin-sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 0 10px 0 0; }
+    .admin-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; overflow-y: visible; }
+    .admin-nav-group { margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .admin-nav-group-title { display: none; }
+    .admin-sidebar-footer { display: none; }
+  }
+</style>
 </head>
+
 <body>
-  <header class="app-header">
-    <div class="brand"><span>🛡️</span><span>AgroLink Platform — พอร์ทัลผู้ดูแลระบบ (Platform Ops)</span></div>
-    <div class="who">
-      <span class="name">ผู้ดูแลระบบ</span>
-      <a href="cooperatives.html" class="logout-btn" style="text-decoration:none;">จัดการสหกรณ์</a>
-      <a href="government-officers.html" class="logout-btn" style="text-decoration:none;">จัดการเจ้าหน้าที่ภาครัฐ</a>
-      <a href="satellite-observations.html" class="logout-btn" style="text-decoration:none;">ข้อมูลดาวเทียม</a>
-      <a href="featured-listings.html" class="logout-btn" style="text-decoration:none;">รายการแนะนำ</a>
-      <a href="group-buys.html" class="logout-btn" style="text-decoration:none;">รวมออเดอร์ประมูลร่วม</a>
-      <a href="capital-topup.html" class="logout-btn" style="text-decoration:none;">เติมทุนหมุนเวียนสหกรณ์</a>
-      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
-    </div>
-  </header>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <span class="admin-sidebar-logo">🛡️</span>
+        <div>
+          <div class="admin-sidebar-brand-name">AgroLink</div>
+          <div class="admin-sidebar-brand-sub">พอร์ทัลผู้ดูแลระบบ</div>
+        </div>
+      </div>
+      <nav class="admin-nav">
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">ภาพรวม</div>
+          <button type="button" class="admin-nav-item active" data-page="overview">📊 ภาพรวม &amp; สุขภาพระบบ</button>
+        </div>
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">คิวอนุมัติ</div>
+          <button type="button" class="admin-nav-item" data-page="approvals">✅ KYC / KYB / บทบาทธุรกิจ</button>
+          <button type="button" class="admin-nav-item" data-page="awd">🌱 คาร์บอนเครดิต (AWD)</button>
+        </div>
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">เกษตรกรและองค์กร</div>
+          <button type="button" class="admin-nav-item" data-page="farmers">🧑‍🌾 เกษตรกรทั้งหมด</button>
+          <button type="button" class="admin-nav-item" data-page="orgs">🏢 องค์กรทั้งหมด</button>
+        </div>
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">ระบบคะแนน</div>
+          <button type="button" class="admin-nav-item" data-page="credit-model">🧠 โมเดลคะแนนเครดิต</button>
+        </div>
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">สหกรณ์และภาครัฐ</div>
+          <button type="button" class="admin-nav-item" data-page="cooperatives">🏢 จัดการสหกรณ์</button>
+          <button type="button" class="admin-nav-item" data-page="gov-officers">🏛️ เจ้าหน้าที่ภาครัฐ</button>
+        </div>
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">ข้อมูลภาคสนาม</div>
+          <button type="button" class="admin-nav-item" data-page="satellite">🛰️ ข้อมูลดาวเทียม</button>
+        </div>
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">ตลาดและโปรโมท</div>
+          <button type="button" class="admin-nav-item" data-page="featured-listings">⭐ รายการแนะนำ</button>
+          <button type="button" class="admin-nav-item" data-page="group-buys">🤝 รวมออเดอร์ประมูลร่วม</button>
+        </div>
+        <div class="admin-nav-group">
+          <div class="admin-nav-group-title">การเงิน</div>
+          <button type="button" class="admin-nav-item" data-page="capital-topup">🔄 เติมทุนหมุนเวียนสหกรณ์</button>
+        </div>
+      </nav>
+      <div class="admin-sidebar-footer">
+        พอร์ทัลผู้ดูแลระบบ (Platform Ops) — ทุกฟีเจอร์รวมอยู่ในหน้าเดียว เช่นเดียวกับพอร์ทัลสหกรณ์
+      </div>
+    </aside>
+    <div class="admin-main">
+      <header class="app-header">
+        <div class="brand admin-breadcrumb">
+          <span>พอร์ทัลผู้ดูแลระบบ</span><span class="admin-breadcrumb-sep">/</span><span id="adminBreadcrumbCurrent">ภาพรวม &amp; สุขภาพระบบ</span>
+        </div>
+        <div class="who">
+          <span class="name">ผู้ดูแลระบบ</span>
+          <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+        </div>
+      </header>
 
-  <div class="container">
+      <div class="container" id="mainContainer">
 
+      <div class="admin-page" data-page-content="overview">
     <div class="section-title">📊 ภาพรวม</div>
     <div id="summarySection" class="summary-grid">
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
@@ -35,25 +127,29 @@
       <div class="loading-line">กำลังโหลดข้อมูลสุขภาพระบบ…</div>
     </div>
     <div id="alertsSection" class="card-list" style="margin-top:14px;"></div>
+      </div>
 
+      <div class="admin-page" data-page-content="approvals" style="display:none;">
     <div class="section-title">🧑‍🌾 คำขอ KYC เกษตรกรที่รออนุมัติ</div>
     <div id="kycQueueSection" class="card-list">
       <div class="loading-line">กำลังโหลดคำขอ KYC…</div>
     </div>
 
-    <div class="section-title">🏢 คำขอ KYB องค์กรที่รออนุมัติ</div>
+    <div class="section-title" style="margin-top:22px;">🏢 คำขอ KYB องค์กรที่รออนุมัติ</div>
     <div id="kybQueueSection" class="card-list">
       <div class="loading-line">กำลังโหลดคำขอ KYB…</div>
     </div>
 
-    <div class="section-title">🧩 คำขอเพิ่มบทบาทธุรกิจที่รออนุมัติ</div>
+    <div class="section-title" style="margin-top:22px;">🧩 คำขอเพิ่มบทบาทธุรกิจที่รออนุมัติ</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       บทบาทธุรกิจเพิ่มเติมที่องค์กร (ซึ่งผ่าน KYB หลักแล้ว) ขอเพิ่มภายหลัง — แยกต่างหากจากคิว KYB ด้านบน ซึ่งเป็นการอนุมัติบทบาทแรกตอนสมัครสมาชิก
     </p>
     <div id="roleRequestQueueSection" class="card-list">
       <div class="loading-line">กำลังโหลดคำขอเพิ่มบทบาทธุรกิจ…</div>
     </div>
+      </div>
 
+      <div class="admin-page" data-page-content="awd" style="display:none;">
     <div class="section-title">🌱 คิวตรวจสอบคาร์บอนเครดิต AWD ที่รอตรวจสอบ</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       รอบปลูกข้าวที่เกษตรกรบันทึกระดับน้ำแบบเปียกสลับแห้ง (AWD) และส่งขอตรวจสอบแล้ว —
@@ -91,7 +187,9 @@
       </form>
       <button type="button" class="btn btn-primary" id="awdConfigSaveBtn" style="max-width:220px; margin-top:10px;">บันทึกเกณฑ์ใหม่ (มีผลกับการประเมินครั้งถัดไป)</button>
     </div>
+      </div>
 
+      <div class="admin-page" data-page-content="farmers" style="display:none;">
     <div class="section-title">📋 เกษตรกรทั้งหมด</div>
     <div class="filter-bar">
       <div class="field">
@@ -108,7 +206,9 @@
     <div id="allFarmersSection" class="card-list">
       <div class="loading-line">กำลังโหลดรายชื่อเกษตรกร…</div>
     </div>
+      </div>
 
+      <div class="admin-page" data-page-content="orgs" style="display:none;">
     <div class="section-title">📋 องค์กรทั้งหมด</div>
     <div class="filter-bar">
       <div class="field">
@@ -124,7 +224,9 @@
     <div id="allOrgsSection" class="card-list">
       <div class="loading-line">กำลังโหลดรายชื่อองค์กร…</div>
     </div>
+      </div>
 
+      <div class="admin-page" data-page-content="credit-model" style="display:none;">
     <div class="section-title">🧠 โมเดลคะแนนเครดิต (Machine Learning)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       เดิมคะแนนเครดิตเกษตรกรคำนวณจากสูตรถ่วงน้ำหนักคงที่ (30/25/25/20%) — ส่วนนี้ให้ระบบ "ฝึก" โมเดล (logistic regression)
@@ -141,7 +243,331 @@
     <div id="creditModelHistorySection" class="card-list">
       <div class="loading-line">กำลังโหลดประวัติ…</div>
     </div>
+      </div>
 
+      <div class="admin-page" data-page-content="cooperatives" style="display:none;">
+    <div class="section-title">➕ จัดตั้งสหกรณ์ใหม่ (Tenant Provisioning)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      สหกรณ์ไม่สามารถสมัครสมาชิกด้วยตนเองผ่านหน้าเว็บสาธารณะได้ (ต่างจากผู้ให้กู้/ผู้รับซื้อ/ผู้ให้บริการเครื่องจักรกล)
+      — ผู้ดูแลระบบเป็นผู้จัดตั้งบัญชีสหกรณ์โดยตรงเท่านั้น ระบบจะยืนยันตัวตน (KYB) และมอบสิทธิ์ผู้ดูแลสหกรณ์ (coop.admin) ให้ทันที
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="createCoopForm" class="form-grid">
+        <div class="field full">
+          <label for="orgName">ชื่อสหกรณ์ (เต็ม)</label>
+          <input type="text" id="orgName" placeholder="เช่น สหกรณ์การเกษตรเมืองลับแล จำกัด" required />
+        </div>
+        <div class="field">
+          <label for="taxId">เลขทะเบียนนิติบุคคล/เลขผู้เสียภาษี</label>
+          <input type="text" id="taxId" required />
+        </div>
+        <div class="field">
+          <label for="provinceSelect">จังหวัด</label>
+          <select id="provinceSelect" required></select>
+        </div>
+        <div class="field">
+          <label for="coopRegNo">เลขทะเบียนสหกรณ์ (ถ้ามี)</label>
+          <input type="text" id="coopRegNo" />
+        </div>
+        <div class="field">
+          <label for="establishedYear">ปีที่จัดตั้ง (ค.ศ.)</label>
+          <input type="number" id="establishedYear" min="1900" max="2100" step="1" />
+        </div>
+        <div class="field">
+          <label for="memberCountReported">จำนวนสมาชิกที่แจ้ง (โดยประมาณ)</label>
+          <input type="number" id="memberCountReported" min="0" step="1" />
+        </div>
+        <div class="field full">
+          <label for="notes">หมายเหตุ (เช่น อ้างอิง Lighthouse Shortlist)</label>
+          <textarea id="notes" rows="2"></textarea>
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="createCoopBtn" style="max-width:260px;">จัดตั้งสหกรณ์</button>
+    </div>
+
+    <div class="section-title">🏢 สหกรณ์ทั้งหมดในระบบ</div>
+    <div id="cooperativesSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อสหกรณ์…</div>
+    </div>
+
+    <div class="section-title" id="coopDetailSectionTitle" style="display:none;">🔍 รายละเอียดสหกรณ์</div>
+    <div id="cooperativeDetailSection" style="display:none;"></div>
+      </div>
+
+      <div class="admin-page" data-page-content="gov-officers" style="display:none;">
+    <div class="section-title">➕ เพิ่มเจ้าหน้าที่ภาครัฐใหม่</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      เจ้าหน้าที่ภาครัฐ (กรมส่งเสริมสหกรณ์/กรมตรวจบัญชีสหกรณ์) มี 2 ระดับสิทธิ์: <strong>ระดับประเทศ (National)</strong> เห็นข้อมูลสหกรณ์ทุกจังหวัด
+      และ <strong>ระดับจังหวัด (Province)</strong> เห็นเฉพาะสหกรณ์ในจังหวัดที่รับผิดชอบ — หลังสร้างบัญชีแล้ว ระบบจะสร้างรหัสเข้าสู่ระบบ (Auth Subject)
+      ให้ท่านนำไปแจ้งเจ้าหน้าที่ท่านนั้นด้วยตนเอง (ยังไม่มีอีเมล/รหัสผ่านจริงในระบบทดลองนี้) — สิทธิ์การใช้งานปัจจุบันเป็นแบบอ่านอย่างเดียว (read-only)
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="createOfficerForm" class="form-grid">
+        <div class="field">
+          <label for="officerFullName">ชื่อ-นามสกุล</label>
+          <input type="text" id="officerFullName" placeholder="เช่น สมชาย ใจดี" required />
+        </div>
+        <div class="field">
+          <label for="officerNationalId">เลขบัตรประชาชน</label>
+          <input type="text" id="officerNationalId" placeholder="เช่น 1234567890123" required />
+        </div>
+        <div class="field">
+          <label for="officerScopeSelect">ระดับสิทธิ์</label>
+          <select id="officerScopeSelect" required>
+            <option value="">-- เลือกระดับสิทธิ์ --</option>
+            <option value="National">ระดับประเทศ (National)</option>
+            <option value="Province">ระดับจังหวัด (Province)</option>
+          </select>
+        </div>
+        <div class="field" id="officerProvinceField" style="display:none;">
+          <label for="officerProvinceSelect">จังหวัดที่รับผิดชอบ</label>
+          <select id="officerProvinceSelect"></select>
+        </div>
+        <div class="field">
+          <label for="officerRoleSelect">บทบาท (gov.*)</label>
+          <select id="officerRoleSelect" required>
+            <option value="">-- เลือกบทบาท --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="officerCreatedBy">ชื่อผู้อนุมัติสร้างบัญชี</label>
+          <input type="text" id="officerCreatedBy" placeholder="เช่น ผู้ดูแลระบบ ก." required />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="createOfficerBtn" style="max-width:260px;">สร้างบัญชีเจ้าหน้าที่</button>
+    </div>
+
+    <div class="section-title">🏛️ เจ้าหน้าที่ภาครัฐทั้งหมดในระบบ</div>
+    <div id="officersSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายชื่อเจ้าหน้าที่…</div>
+    </div>
+
+    <div class="section-title" id="officerDetailSectionTitle" style="display:none;">🔍 รายละเอียดเจ้าหน้าที่</div>
+    <div id="officerDetailSection" style="display:none;"></div>
+      </div>
+
+      <div class="admin-page" data-page-content="satellite" style="display:none;">
+    <div class="section-title">🛰️ บันทึกข้อมูลดาวเทียม/Remote Sensing</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมายเหตุขอบเขต: สภาพแวดล้อมนี้ยังไม่ได้เชื่อมต่อผู้ให้บริการภาพถ่ายดาวเทียมจริง (Sentinel Hub / Google Earth Engine / GISTDA)
+      — ผู้ดูแลระบบป้อนข้อมูลด้วยมือแทนในขั้นนี้ (source_provider = manual) โดยตารางออกแบบให้รองรับการเชื่อมต่อ API จริงในอนาคตได้โดยไม่ต้องแก้ schema
+      ตารางนี้แยกจากข้อมูลดาวเทียมของโมดูลคาร์บอนเครดิต (AWD) ซึ่งใช้เฉพาะสถานะน้ำท่วม/แห้งเท่านั้น
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="observationForm" class="form-grid">
+        <div class="field full">
+          <label for="unitSelect">แปลง/หน่วยผลิต</label>
+          <select id="unitSelect" required>
+            <option value="">-- กำลังโหลดรายชื่อแปลง --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="observationDateInput">วันที่ถ่ายภาพ/สังเกตการณ์</label>
+          <input type="date" id="observationDateInput" required />
+        </div>
+        <div class="field">
+          <label for="observationTypeSelect">ประเภทข้อมูล</label>
+          <select id="observationTypeSelect" required>
+            <option value="">-- เลือกประเภท --</option>
+            <option value="ndvi">ค่าดัชนีพืชพรรณ (NDVI)</option>
+            <option value="crop_health">สุขภาพพืช (Crop Health)</option>
+            <option value="land_cover">การใช้ที่ดิน (Land Cover)</option>
+            <option value="flood_extent">พื้นที่น้ำท่วม (Flood Extent)</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="sourceProviderSelect">แหล่งข้อมูล</label>
+          <select id="sourceProviderSelect">
+            <option value="manual">ป้อนด้วยมือ (Manual)</option>
+            <option value="sentinel1_sar">Sentinel-1 SAR</option>
+            <option value="sentinel2_optical">Sentinel-2 Optical</option>
+            <option value="landsat">Landsat</option>
+            <option value="gistda">GISTDA</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="valueNumericInput">ค่าตัวเลข (ถ้ามี เช่น NDVI -1 ถึง 1)</label>
+          <input type="number" id="valueNumericInput" step="0.0001" placeholder="เช่น 0.72" />
+        </div>
+        <div class="field">
+          <label for="valueLabelInput">ค่าป้ายกำกับ (ถ้ามี เช่น Healthy/Stressed)</label>
+          <input type="text" id="valueLabelInput" placeholder="เช่น Healthy" />
+        </div>
+        <div class="field">
+          <label for="imageRefInput">อ้างอิงรูปภาพ/ไฟล์ (URL หรือรหัสอ้างอิง — ไม่บังคับ)</label>
+          <input type="text" id="imageRefInput" placeholder="เช่น https://..." />
+        </div>
+        <div class="field">
+          <label for="recordedByInput">ชื่อผู้บันทึก</label>
+          <input type="text" id="recordedByInput" placeholder="เช่น ผู้ดูแลระบบ ก." required />
+        </div>
+        <div class="field full">
+          <label for="noteInput">หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="noteInput" />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="observationSubmitBtn" style="max-width:260px;">บันทึกข้อมูล</button>
+    </div>
+
+    <div class="section-title">📋 ประวัติข้อมูลของแปลงที่เลือก</div>
+    <div id="observationsSection" class="card-list">
+      <div class="loading-line">เลือกแปลงด้านบนเพื่อดูประวัติข้อมูล</div>
+    </div>
+      </div>
+
+      <div class="admin-page" data-page-content="featured-listings" style="display:none;">
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      ผู้ให้บริการ/ผู้จำหน่ายชำระค่าโปรโมทกับทีม AgroLink แบบออฟไลน์ (ระบบยังไม่เชื่อมช่องทางชำระเงินออนไลน์) —
+      ผู้ดูแลระบบเป็นผู้เปิด/ปิดสถานะ "แนะนำ" ให้ทีละรายการที่นี่ รายการที่แนะนำจะถูกจัดเรียงขึ้นก่อนและมีตรา "⭐ แนะนำ"
+      กำกับในหน้าค้นหาสินค้าของเกษตรกร
+    </p>
+
+    <div class="section-title">🛒 แค็ตตาล็อกสินค้า (ปัจจัยการผลิต / ผลผลิตสหกรณ์)</div>
+    <div class="panel" style="margin-bottom:24px;">
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field">
+          <label for="productCategoryFilter">หมวดหมู่</label>
+          <select id="productCategoryFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="fertilizer_hormone">ปุ๋ย/ฮอร์โมน</option>
+            <option value="chemical_pesticide">สารเคมี/ยาปราบศัตรูพืช</option>
+            <option value="equipment">อุปกรณ์การเกษตร</option>
+            <option value="produce">ผลผลิตทางการเกษตร (สหกรณ์)</option>
+            <option value="processed_good">สินค้าแปรรูป (สหกรณ์)</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="productFeaturedFilter">สถานะแนะนำ</label>
+          <select id="productFeaturedFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="true">แนะนำอยู่ตอนนี้เท่านั้น</option>
+          </select>
+        </div>
+      </div>
+      <div id="productListingsSection" class="card-list">
+        <div class="loading-line">กำลังโหลด…</div>
+      </div>
+    </div>
+
+    <div class="section-title">🚜 แค็ตตาล็อกบริการ (เครื่องจักรกล/ผสมปุ๋ยสั่งตัด)</div>
+    <div class="panel">
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field">
+          <label for="serviceTypeFilter">ประเภทบริการ</label>
+          <select id="serviceTypeFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="land_preparation">เตรียมดิน</option>
+            <option value="harvesting">เก็บเกี่ยว</option>
+            <option value="pest_control">พ่นยา/กำจัดศัตรูพืช</option>
+            <option value="transport">ขนส่ง</option>
+            <option value="drying_storage">ลานตาก/จัดเก็บ</option>
+            <option value="fertilizer_mixing">ผสมปุ๋ยสั่งตัด</option>
+            <option value="straw_processing">อัดเม็ด/อัดก้อนฟางข้าว</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="serviceFeaturedFilter">สถานะแนะนำ</label>
+          <select id="serviceFeaturedFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="true">แนะนำอยู่ตอนนี้เท่านั้น</option>
+          </select>
+        </div>
+      </div>
+      <div id="serviceListingsSection" class="card-list">
+        <div class="loading-line">กำลังโหลด…</div>
+      </div>
+    </div>
+      </div>
+
+      <div class="admin-page" data-page-content="group-buys" style="display:none;">
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      สหกรณ์เปิดรอบและเข้าร่วมกันเองในพอร์ทัลสหกรณ์ — หน้าที่ของทีมงาน AgroLink คือ เมื่อรอบใดปิดรับสมัคร (ถึงกำหนดเวลา หรือยอดรวมถึงขั้นต่ำที่ตั้งไว้แล้ว)
+      ให้เลือก "สหกรณ์หัวขบวน" จากรายชื่อผู้เข้าร่วม แล้วกดแปลงรอบนั้นเป็นการประมูลซื้อ (e-Auction) ก้อนเดียวให้ซัพพลายเออร์แข่งราคากัน —
+      สหกรณ์หัวขบวนคือฝ่ายที่จะเซ็นสัญญา/รับของ/จ่ายเงินให้ซัพพลายเออร์ก่อน แล้วเรียกเก็บส่วนแบ่งต้นทุนคืนจากสหกรณ์อื่นภายหลังผ่านระบบ —
+      ดูรายละเอียดการออกแบบเต็มได้ที่ GROUP_BUY_ARCHITECTURE.md ในโค้ดของโครงการ
+    </p>
+
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="groupBuyStatusFilter">สถานะ</label>
+        <select id="groupBuyStatusFilter">
+          <option value="collecting">กำลังรวบรวมความต้องการ</option>
+          <option value="converted">แปลงเป็นประมูลแล้ว</option>
+          <option value="cancelled">ยกเลิกแล้ว</option>
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+    <div id="groupBuyListSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+      </div>
+
+      <div class="admin-page" data-page-content="capital-topup" style="display:none;">
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      สหกรณ์ยื่นคำขอวงเงินจากแหล่งทุนภายนอกผ่านพอร์ทัลสหกรณ์ โดยอ้างอิง AgroLink Cooperative Credit Score — หน้าที่ของทีมงาน AgroLink คือบันทึกผล
+      การเจรจาจริงกับแหล่งทุนภายนอกที่เกิดขึ้นนอกระบบ (อนุมัติ/ปฏิเสธ) ดูแลไดเรกทอรีแหล่งทุน และประเมินธรรมาภิบาลของแต่ละสหกรณ์ (ที่หน้า "จัดการสหกรณ์")
+      — <strong>หมายเหตุขอบเขต:</strong> AgroLink ไม่ใช่ผู้ปล่อยกู้เอง เป็นเพียงผู้จัดทำข้อมูลประกอบการตัดสินใจของแหล่งทุนภายนอกเท่านั้น
+    </p>
+
+    <div class="section-title">📑 คิวคำขอวงเงินจากสหกรณ์</div>
+    <div class="filter-bar">
+      <div class="field">
+        <label for="applicationStatusFilter">กรองตามสถานะ</label>
+        <select id="applicationStatusFilter">
+          <option value="Submitted">ยื่นคำขอแล้ว (รอพิจารณา)</option>
+          <option value="UnderReview">อยู่ระหว่างพิจารณา</option>
+          <option value="Approved">อนุมัติแล้ว</option>
+          <option value="Rejected">ถูกปฏิเสธ</option>
+          <option value="Withdrawn">ถอนคำขอแล้ว</option>
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+    <div id="applicationQueueSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำขอวงเงิน…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">🏦 ไดเรกทอรีแหล่งทุนภายนอก</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      รายชื่ออ้างอิงเท่านั้น — ไม่ใช่การเชื่อมต่อ API กับแหล่งทุนจริง เพิ่มรายชื่อใหม่เมื่อมีการเจรจาจริงกับสถาบันการเงินรายใดรายหนึ่งแล้ว
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="createFundingSourceForm" class="form-grid">
+        <div class="field full">
+          <label for="fsNameInput">ชื่อแหล่งทุน</label>
+          <input type="text" id="fsNameInput" placeholder="เช่น ธ.ก.ส. สาขาลับแล" required />
+        </div>
+        <div class="field">
+          <label for="fsTypeSelect">ประเภท</label>
+          <select id="fsTypeSelect" required>
+            <option value="BAAC">ธ.ก.ส.</option>
+            <option value="CommercialBank">ธนาคารพาณิชย์</option>
+            <option value="SavingsCoop">สหกรณ์ออมทรัพย์</option>
+            <option value="CreditUnion">สหกรณ์เครดิตยูเนี่ยน</option>
+            <option value="Fintech">Fintech</option>
+            <option value="ImpactFund">กองทุนเพื่อสังคม</option>
+            <option value="Other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="fsContactNoteInput">ข้อมูลติดต่อ/หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="fsContactNoteInput" />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="createFundingSourceBtn" style="max-width:220px;">เพิ่มแหล่งทุน</button>
+    </div>
+    <div id="fundingSourceListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดแหล่งทุน…</div>
+    </div>
+      </div>
+
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>

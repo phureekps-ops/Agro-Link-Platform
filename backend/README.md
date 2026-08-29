@@ -896,9 +896,12 @@ and no frontend ever surfaced them. **That gap is now closed.**
   (`is_featured AND (featured_until IS NULL OR featured_until > now())`) —
   computed live rather than trusted from the stored flag, since
   `is_featured` is never auto-cleared once `featured_until` passes.
-- `frontend/admin/featured-listings.html` is the management UI (linked
-  from the admin dashboard as "รายการแนะนำ"); `frontend/js/marketplace.js`
-  and `frontend/js/machinery-marketplace.js` render the "⭐ แนะนำ" badge on
+- The management UI lives in `frontend/admin/dashboard.html`'s "⭐
+  รายการแนะนำ" sidebar tab (`js/dashboard.js`'s `initFeaturedListings()` —
+  merged into the single admin dashboard SPA on 2026-08-29, previously its
+  own `featured-listings.html`/`featured-listings.js` page, now archived
+  under `frontend/_to_delete/`); `frontend/js/marketplace.js` and
+  `frontend/js/machinery-marketplace.js` render the "⭐ แนะนำ" badge on
   the farmer-facing side.
 
 ## Cooperative produce/processed-goods catalog (M14.1)

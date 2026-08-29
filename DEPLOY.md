@@ -186,6 +186,21 @@ TractorService/DroneService/HarvesterService/TruckService/DryingYardService
 `straw_processing`) และ service_key เท่านั้น ไม่มีตารางใหม่ ไม่มี org_type ใหม่
 ดูรายละเอียดที่คอมเมนต์หัวไฟล์ migration นี้เอง
 
+**เพิ่มเมื่อ 2026-08-29 (frontend เท่านั้น ไม่มี migration):** ปรับโครงสร้าง
+`frontend/admin/dashboard.html` ให้เป็น sidebar SPA หน้าเดียวแบบเดียวกับ
+`frontend/coop/dashboard.html` (พอร์ทัลสหกรณ์) ตามคำขอของผู้ดูแลระบบ — รวม 6
+หน้าที่เคยแยกกัน (`cooperatives.html`, `government-officers.html`,
+`satellite-observations.html`, `featured-listings.html`, `group-buys.html`,
+`capital-topup.html` พร้อม js คู่กันของแต่ละหน้า) เข้ามาเป็นแท็บ
+`data-page-content` ภายในไฟล์เดียวและ `js/dashboard.js` ไฟล์เดียว — ยูทิลิตี
+ที่ซ้ำกันทุกหน้าเดิม (`session`/`toast`/`escapeHtml`/`thaiDate`/
+`thaiDateTime`) เหลือประกาศครั้งเดียว ส่วนตรรกะโหลดข้อมูลของแต่ละหน้าเดิมไม่
+เปลี่ยนแปลง (โหลดพร้อมกันหมดตอนเปิดหน้า sidebar แค่ show/hide เท่านั้น
+เหมือน coop dashboard) ไฟล์เดิมทั้ง 6 คู่ย้ายไปเก็บไว้ที่
+`frontend/_to_delete/admin-pages-merged-into-dashboard-2026-08-29/` ไม่มีที่
+ใดอ้างอิงไฟล์เดิมเหล่านี้แล้ว (`carbon-assessment-detail.html` ไม่ได้ย้าย —
+ยังคงเป็นหน้าแยกที่เปิดแท็บใหม่จากคิว AWD ตามเดิม)
+
 **เพิ่มเมื่อ 2026-08-27:** `grant_input_credit_line.sql` — เพิ่มฟีเจอร์ "เครดิต
 ร้านค้าปัจจัยการผลิต" (Input-Supplier Trade Credit) ให้ผู้ให้กู้ (Lender) ที่ได้
 อนุมัติวงเงินสินเชื่อหมุนเวียนล่วงหน้าให้เกษตรกรรายหนึ่งไว้แล้ว (`credit.
