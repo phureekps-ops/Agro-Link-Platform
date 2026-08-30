@@ -19,6 +19,7 @@ const ADMIN_PAGE_BREADCRUMB_TH = {
   "featured-listings": "รายการแนะนำ",
   "group-buys": "รวมออเดอร์ประมูลร่วม",
   "capital-topup": "เติมทุนหมุนเวียนสหกรณ์",
+  support: "ข้อความสนับสนุน",
 };
 
 function showAdminPage(pageKey) {
@@ -1753,6 +1754,137 @@ async function initCapitalTopup() {
 }
 
 // ============================================================
+// ข้อความสนับสนุน (Support Chat) — ฝั่งแอดมิน. See grant_support_chat.sql
+// and backend/src/routes/support.js (widget side) / admin.js (this side,
+// /admin/support/*). One continuous conversation per subject (farmer/org/
+// staff/officer), not a ticket-per-issue system — see that migration's
+// header note for why. supportConversationsCache lets re-rendering the
+// list after selecting a thread (to show which card is active) avoid an
+// extra network round trip.
+// ============================================================
+const SUPPORT_SUBJECT_TYPE_LABEL_TH = {
+  farmer: "เกษตรกร",
+  organization: "องค์กร/ผู้ให้บริการ",
+  organization_member: "เจ้าหน้าที่สหกรณ์",
+  government_officer: "เจ้าหน้าที่ภาครัฐ",
+};
+
+let supportSelectedConversationId = null;
+let supportConversationsCache = [];
+
+function supportConversationCard(c) {
+  const isActive = c.conversation_id === supportSelectedConversationId;
+  const label = c.subject_label || "(ไม่ทราบชื่อ)";
+  const subLabel = SUPPORT_SUBJECT_TYPE_LABEL_TH[c.subject_type] || c.subject_type;
+  const orgSuffix = c.member_org_name ? ` · ${escapeHtml(c.member_org_name)}` : "";
+  return `
+    <div class="item-card" data-conversation-id="${c.conversation_id}"
+         style="cursor:pointer; margin-bottom:8px; ${isActive ? "border-color:#2e7d32; background:#f3fbf3;" : ""}">
+      <div class="row">
+        <span class="title">${escapeHtml(label)}</span>
+        ${c.unread_by_admin ? '<span class="badge status-pending">ใหม่</span>' : ""}
+      </div>
+      <div class="detail-line muted">${escapeHtml(subLabel)}${orgSuffix} · ${thaiDate(c.last_message_at)}</div>
+    </div>
+  `;
+}
+
+function renderSupportConversationList() {
+  const el = document.getElementById("supportConversationsSection");
+  if (supportConversationsCache.length === 0) {
+    el.innerHTML = `<div class="empty-state">ยังไม่มีข้อความจากผู้ใช้งาน</div>`;
+    return;
+  }
+  el.innerHTML = supportConversationsCache.map(supportConversationCard).join("");
+}
+
+async function loadSupportConversations() {
+  try {
+    supportConversationsCache = await AgroLinkAdminAPI.get("/admin/support/conversations");
+    renderSupportConversationList();
+  } catch (err) {
+    document.getElementById("supportConversationsSection").innerHTML =
+      `<div class="empty-state">โหลดรายการสนทนาไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function supportMessageBubble(m) {
+  const isAdmin = m.sender_role === "admin";
+  return `
+    <div style="display:flex; ${isAdmin ? "justify-content:flex-end;" : "justify-content:flex-start;"} margin-bottom:8px;">
+      <div style="max-width:72%; padding:8px 12px; border-radius:10px; font-size:13px; ${isAdmin ? "background:#2e7d32; color:#fff;" : "background:#e6e6e6; color:#222;"}">
+        <div style="white-space:pre-wrap; word-wrap:break-word;">${escapeHtml(m.body)}</div>
+        <div style="font-size:11px; opacity:0.7; margin-top:4px;">${thaiDate(m.created_at)}</div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Loads and renders one conversation's thread, sets it as the currently
+ * selected conversation, and re-renders the list from cache (no extra
+ * fetch) so the "ใหม่" badge clears and the active card highlights.
+ * GET /admin/support/conversations/:id/messages marks the conversation
+ * read by admin server-side, which is exactly why the cache is patched
+ * here to match rather than waiting for the next full list poll.
+ */
+async function loadSupportThread(conversationId) {
+  supportSelectedConversationId = conversationId;
+  const el = document.getElementById("supportMessagesSection");
+  el.innerHTML = `<div class="loading-line">กำลังโหลดข้อความ…</div>`;
+  try {
+    const messages = await AgroLinkAdminAPI.get(`/admin/support/conversations/${conversationId}/messages`);
+    el.innerHTML = messages.length === 0
+      ? `<div class="empty-state">ยังไม่มีข้อความ</div>`
+      : messages.map(supportMessageBubble).join("");
+    el.scrollTop = el.scrollHeight;
+    document.getElementById("supportReplyForm").style.display = "flex";
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อความไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+  const cached = supportConversationsCache.find((c) => c.conversation_id === conversationId);
+  if (cached) cached.unread_by_admin = false;
+  renderSupportConversationList();
+}
+
+document.getElementById("supportConversationsSection").addEventListener("click", (e) => {
+  const card = e.target.closest("[data-conversation-id]");
+  if (!card) return;
+  loadSupportThread(card.dataset.conversationId);
+});
+
+document.getElementById("supportReplySendBtn").addEventListener("click", async () => {
+  if (!supportSelectedConversationId) return;
+  const input = document.getElementById("supportReplyInput");
+  const body = input.value.trim();
+  if (!body) return;
+  const btn = document.getElementById("supportReplySendBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkAdminAPI.post(`/admin/support/conversations/${supportSelectedConversationId}/reply`, { message: body });
+    input.value = "";
+    await loadSupportThread(supportSelectedConversationId);
+  } catch (err) {
+    toast("ส่งข้อความไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function initSupport() {
+  await loadSupportConversations();
+}
+
+// Poll every 10s for new/updated conversations, and every 8s for new
+// messages in whichever thread is currently open — an admin actively
+// working this inbox should see a farmer's follow-up message appear
+// without having to click away and back.
+setInterval(loadSupportConversations, 10000);
+setInterval(() => {
+  if (supportSelectedConversationId) loadSupportThread(supportSelectedConversationId);
+}, 8000);
+
+// ============================================================
 // เริ่มต้น — ปุ่มออกจากระบบตัวเดียว (เดิมแต่ละหน้ามีของตัวเอง ตอนนี้เหลือ
 // ปุ่มเดียวใน header จึงลงทะเบียน listener ครั้งเดียว) และเรียกโหลดข้อมูล
 // ของทุก section พร้อมกันตอนเปิดหน้า — เหมือนกับที่ coop/js/dashboard.js
@@ -1780,3 +1912,4 @@ initSatelliteObservations();
 initFeaturedListings();
 initGroupBuys();
 initCapitalTopup();
+initSupport();

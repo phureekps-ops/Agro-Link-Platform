@@ -2331,4 +2331,128 @@ router.post('/credit-model/retrain', async (req, res, next) => {
 });
 
 
+// ============================================================
+// Support Chat — admin (platform) side. See grant_support_chat.sql for
+// the schema and support.js for the widget-side (every non-platform
+// subject) half of this feature. Kept here rather than its own file,
+// same convention as every other platform-only slice in this project
+// (e.g. the /admin/product-listings* / /admin/service-listings* featured-
+// listings routes above) — requirePlatform is already applied to this
+// whole router via the router.use() at the top of this file.
+// ============================================================
+
+/**
+ * GET /admin/support/conversations — every support conversation, newest
+ * activity first. Resolves a human-readable subject_label the same
+ * COALESCE(...)-over-LEFT-JOINs way procurement.js resolves
+ * requester_name for its own polymorphic subject_type/subject_id pair —
+ * extended to all four eligible subject types here (procurement.js only
+ * ever needed farmer/organization).
+ */
+router.get('/support/conversations', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(`
+        SELECT c.conversation_id, c.subject_type, c.subject_id, c.status,
+               c.unread_by_admin, c.last_message_at,
+               COALESCE(f.full_name, o.org_name, om.full_name, g.full_name) AS subject_label,
+               org2.org_name AS member_org_name
+          FROM support.conversation c
+          LEFT JOIN identity.farmer f
+            ON c.subject_type = 'farmer' AND f.farmer_id = c.subject_id
+          LEFT JOIN identity.organization o
+            ON c.subject_type = 'organization' AND o.org_id = c.subject_id
+          LEFT JOIN identity.organization_member om
+            ON c.subject_type = 'organization_member' AND om.member_id = c.subject_id
+          LEFT JOIN identity.organization org2
+            ON om.org_id = org2.org_id
+          LEFT JOIN identity.government_officer g
+            ON c.subject_type = 'government_officer' AND g.officer_id = c.subject_id
+         ORDER BY c.last_message_at DESC
+      `);
+      return result.rows;
+    });
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /admin/support/conversations/:id/messages — full thread, oldest
+ * first. Marks it read BY THE ADMIN (unread_by_admin -> false) as a side
+ * effect — same "GET marks read" convention as GET /support/messages on
+ * the widget side in support.js.
+ */
+router.get('/support/conversations/:id/messages', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const messages = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT message_id, sender_role, body, created_at
+           FROM support.message
+          WHERE conversation_id = $1
+          ORDER BY created_at ASC`,
+        [id],
+      );
+      await client.query(
+        `UPDATE support.conversation SET unread_by_admin = false WHERE conversation_id = $1`,
+        [id],
+      );
+      return result.rows;
+    });
+    res.json(messages);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /admin/support/conversations/:id/reply — body { message } →
+ * appends a sender_role='admin' message and flips unread_by_user=true so
+ * it surfaces back on the original subject's own widget the next time it
+ * polls GET /support/messages. 404s if the conversation_id doesn't exist
+ * (e.g. a stale tab after the conversation somehow disappeared) rather
+ * than silently inserting an orphaned message.
+ */
+router.post('/support/conversations/:id/reply', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const body = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+  if (!body) return res.status(400).json({ error: 'message_required' });
+  if (body.length > 4000) return res.status(400).json({ error: 'message_too_long', max_length: 4000 });
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const conv = await client.query(
+        'SELECT conversation_id FROM support.conversation WHERE conversation_id = $1',
+        [id],
+      );
+      if (conv.rows.length === 0) return { notFound: true };
+
+      const msgResult = await client.query(
+        `INSERT INTO support.message (conversation_id, sender_role, body)
+              VALUES ($1, 'admin', $2)
+         RETURNING message_id, sender_role, body, created_at`,
+        [id, body],
+      );
+      await client.query(
+        `UPDATE support.conversation
+            SET unread_by_user = true, unread_by_admin = false, last_message_at = now(),
+                updated_at = now(), status = 'open'
+          WHERE conversation_id = $1`,
+        [id],
+      );
+      return { message: msgResult.rows[0] };
+    });
+    if (result.notFound) return res.status(404).json({ error: 'conversation_not_found' });
+    res.status(201).json(result.message);
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 module.exports = router;

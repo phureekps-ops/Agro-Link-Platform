@@ -55,6 +55,14 @@ const logisticsRouter = require('./routes/logistics');
 // procurement.js above — its own prefix, not scoped to one portal.
 const aquacultureRouter = require('./routes/aquaculture');
 
+// support.js — Support Chat Widget (see grant_support_chat.sql). Subject-
+// type agnostic (every JWT subject type except 'platform' — farmer,
+// organization, organization_member, government_officer — can message
+// support), same "own prefix, not portal-scoped" reasoning as
+// procurement.js/farmer360.js above. The admin (platform) side lives
+// under /admin/support/* in admin.js instead, not its own prefix.
+const supportRouter = require('./routes/support');
+
 const app = express();
 
 app.use(cors());
@@ -130,6 +138,7 @@ app.use('/farmer360', farmer360Router);
 app.use('/villagefund', villageFundRouter);
 app.use('/logistics', logisticsRouter);
 app.use('/aquaculture', aquacultureRouter);
+app.use('/support', supportRouter);
 app.use('/admin', adminRouter);
 app.use('/machinery', machineryRouter);
 app.use('/marketvenue', marketVenueRouter);

@@ -176,6 +176,7 @@ grant_input_credit_line.sql
 grant_straw_processing_service.sql
 grant_laser_land_leveling_service.sql
 grant_machinery_rental_service.sql
+grant_support_chat.sql
 ```
 
 **เพิ่มเมื่อ 2026-08-29:** `grant_straw_processing_service.sql` — เพิ่ม
@@ -296,6 +297,38 @@ checkbox จังหวัดล้วนๆ เป็นโครงสร้�
 truth ของทั้งฝั่งเกษตรกรและฝั่งผู้ให้บริการ) ไม่มี migration SQL ใดๆ ในรอบนี้
 เพราะ `partner.vendor_profile.service_regions` เป็นคอลัมน์ `text[]` เดิมที่มี
 อยู่แล้ว — เปลี่ยนแค่รูปแบบ string ที่เก็บอยู่ข้างในให้รองรับรหัสอำเภอเพิ่มเท่านั้น
+
+**เพิ่มเมื่อ 2026-08-30:** `grant_support_chat.sql` — เพิ่มฟีเจอร์ "แชทกับ
+ทีมงาน AgroLink" (Support Chat Widget) ตามคำถาม "ทำ Widget บนเว็บ/แอป หรือ
+LINE OA → รับข้อความ/เสียงจากผู้ใช้ ส่งต่อไปยัง Backend ได้ไหม" — คุยกับผู้ใช้
+แล้วตกลงสโคปรอบนี้ไว้ที่: **ทำ Web widget ก่อน** (LINE OA พักไว้ก่อน เพราะต้อง
+มีบัญชี LINE Official Account + Messaging API ของจริง และต้องมี backend ที่
+เข้าถึงได้จากอินเทอร์เน็ตจริงสำหรับรับ webhook ซึ่งยังไม่มีในแซนด์บ็อกซ์นี้),
+**ทำข้อความ (text) ก่อน** (เสียงต้องพึ่ง speech-to-text API ภายนอกที่ยังไม่มี
+key), **ส่งให้แอดมิน/ทีมงานอ่านและตอบเอง** (ไม่ใช่ AI ตอบอัตโนมัติ — ไม่ต้อง
+เชื่อม LLM API เพิ่ม), และ **ใช้กับทุกพอร์ทัล**
+
+เพิ่ม schema ใหม่ `support.conversation` / `support.message` (โครงสร้างแบบ
+polymorphic subject_type/subject_id เดียวกับ `procurement.rfq` — ไม่มี RLS,
+กรองด้วย WHERE clause ตรงๆ ในทุก query เหมือนตาราง marketplace.*/
+procurement.* อื่นๆ ในระบบ) หนึ่งบทสนทนาต่อหนึ่ง subject (เกษตรกร/องค์กร/
+เจ้าหน้าที่สหกรณ์/เจ้าหน้าที่ภาครัฐ — ไม่รวม platform เพราะแอดมินเป็นฝ่ายตอบ
+ไม่ใช่ผู้ส่ง) ไม่ใช่ระบบตั๋วแยกรายเรื่อง
+
+ฝั่ง backend เพิ่มไฟล์ `backend/src/routes/support.js` ใหม่ (mount ที่
+`/support`, subject-type agnostic แบบเดียวกับ `procurement.js`/
+`farmer360.js` — `GET`/`POST /support/messages`) และเพิ่ม route ใหม่ 3 ตัวใน
+`admin.js` เดิม (`GET /admin/support/conversations`,
+`GET /admin/support/conversations/:id/messages`,
+`POST /admin/support/conversations/:id/reply`) ฝั่งหน้าเว็บเพิ่มไฟล์ใหม่
+`frontend/js/support-widget.js` (ปุ่มแชทลอย + กล่องแชท เขียนแบบ self-
+contained ไม่พึ่ง CSS/ตัวแปรของหน้าไหนเลย เพื่อฝังสคริปต์แท็กเดียวกันได้ในทุก
+พอร์ทัล) ฝังไว้ในหน้า `dashboard.html` หลักของทุกพอร์ทัล ยกเว้นพอร์ทัลแอดมิน
+(11 พอร์ทัล: เกษตรกร/ผู้ซื้อ/สหกรณ์/ผสมปุ๋ย/ภาครัฐ/ผู้จำหน่ายปัจจัยการผลิต/
+ผู้ให้กู้/โลจิสติกส์/เครื่องจักรกล/ตลาดกลาง/กองทุนหมู่บ้าน) — หน้าแอดมิน
+(`frontend/admin/dashboard.html`) ได้ section ใหม่ "💬 ข้อความสนับสนุน" แทน
+(รายชื่อสนทนาทางซ้าย + อ่าน/ตอบกลับทางขวา รีเฟรชอัตโนมัติทุก 8-10 วินาที)
+เพราะแอดมินเป็นฝ่ายอ่าน/ตอบ ไม่ใช่ผู้ส่งข้อความแบบเดียวกับพอร์ทัลอื่น
 
 **เพิ่มเมื่อ 2026-08-27:** `grant_input_credit_line.sql` — เพิ่มฟีเจอร์ "เครดิต
 ร้านค้าปัจจัยการผลิต" (Input-Supplier Trade Credit) ให้ผู้ให้กู้ (Lender) ที่ได้
