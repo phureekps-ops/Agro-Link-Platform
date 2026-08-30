@@ -5,26 +5,45 @@
  * a farmer filter down to that level, on top of the province-only filtering
  * added earlier the same day.
  *
- * IMPORTANT PROVENANCE NOTE: unlike TH_PROVINCES (Thailand's official ISO
- * 3166-2:TH codes, ISO-published and stable), Thailand has no official ISO
- * subdivision code at the district level. This list's district_code values
+ * PROVENANCE NOTE: unlike TH_PROVINCES (Thailand's official ISO 3166-2:TH
+ * codes, ISO-published and stable), Thailand has no official ISO subdivision
+ * code at the district level. This list's district_code values
  * (`<province_code>-<NN>`, NN = a locally-invented two-digit sequence, NOT
- * Thailand's own TIS-1099 government geocode) and the full 928-district
- * name list itself were compiled from general knowledge during development
- * (not fetched from a live, verifiable government dataset — the two known
- * machine-readable open datasets found for this were unreachable through
- * this project's web-fetch tooling: GitHub raw/blob content is blocked by
- * this environment's fetch-provenance and robots.txt rules, and Wikipedia's
- * single 878-row sortable table was too large to extract row-by-row through
- * a web-summarization pipeline without real risk of silently dropping or
- * mis-transcribing entries). Treat this list as "best-effort, not an
- * authoritative legal/administrative source" — a missing amphoe (Thailand
- * occasionally creates new ones), a rare misspelling, or an ordering that
- * doesn't match any official code registry are all possible. Total count
- * (928 across 77 provinces, matching the commonly-cited national total) is
- * a sanity check, not proof of row-level accuracy. If a supplier ever reports
- * their district missing or misspelled, fix it directly in this file — it's
- * the single source of truth every page below reads from.
+ * Thailand's own TIS-1099 government geocode) are NOT an official registry
+ * and never will be — that part of this file's design is permanent.
+ *
+ * The NAME list itself was originally compiled from general knowledge (not
+ * fetched from a live source), then cross-checked on 2026-08-30 against
+ * English Wikipedia, province by province (all 77), after confirming via
+ * Thailand's Department of Provincial Administration (DOPA, ข้อมูลทางการ
+ * ปกครองทั่วประเทศ ณ 10 ก.พ. 2568) that the national totals were still
+ * current: 76 mainland provinces + Bangkok = 77, and 878 amphoe + Bangkok's
+ * 50 khet = 928 — unchanged since Bueng Kan became the newest province in
+ * 2554 (2011). The cross-check found ZERO discrepancies across all 77
+ * provinces: no missing districts, no extra ones, and no misspellings in
+ * every name that could be individually confirmed against a Wikipedia
+ * district article or a province page's stated count. Two caveats on that
+ * verification's depth, so this note stays honest about its limits:
+ *   1. Wikipedia's own province-page district TABLES frequently would not
+ *      extract cleanly through the fetch tooling used (large wikitables
+ *      often dropped their data rows, leaving only the prose-stated total
+ *      count) — where that happened, verification fell back to (a) that
+ *      stated count matching this file's row count for the province, plus
+ *      (b) individually fetching a subset of the higher-risk/newer/oddly-
+ *      spelled district names via their own Wikipedia articles. This was
+ *      NOT a character-by-character re-verification of literally every one
+ *      of the 928 rows against a rendered table.
+ *   2. WebFetch's summarizer was observed to occasionally GARBLE Thai-script
+ *      text it returned directly (e.g. rendering วังทอง as "วังท่อง") even
+ *      while getting English romanizations and counts right — so Thai text
+ *      returned raw by a fetch was never trusted on its own; it was always
+ *      cross-checked against the standard English-transliteration name for
+ *      that district first.
+ * Net effect: materially more trustworthy than the original training-
+ * knowledge-only compile, but still not a row-by-row certified match
+ * against an official government table. If a supplier ever reports their
+ * district missing or misspelled, fix it directly in this file — it's the
+ * single source of truth every page below reads from.
  */
 const TH_DISTRICTS = [
   ["TH-10-01", "พระนคร", "TH-10"],
