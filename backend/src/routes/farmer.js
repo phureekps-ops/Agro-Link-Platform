@@ -1095,4 +1095,162 @@ router.post('/credit-line-drawdowns/:id/repay', async (req, res, next) => {
   }
 });
 
+/**
+ * ============================================================================
+ * ⚡ ประกาศรับซื้อด่วน (Flash Buy Campaign) — browse + sell in
+ * ============================================================================
+ * See backend/src/routes/buyer.js's own doc comment on this feature for
+ * the full design (buyer creates a capped-quantity buy announcement;
+ * farmer sells into it; quantity deducts immediately and the campaign
+ * auto-closes once full).
+ *
+ * IMPORTANT — must be shown on every page that displays these prices:
+ * the price is valid ONLY for sales completed through this online system,
+ * NOT usable as a reference/justification for in-person sales at a
+ * collection yard (ลานรับซื้อ) or mill gate (หน้าโรงงาน). Enforced only as
+ * UI copy (see frontend/buy-campaigns.html) — there is nothing in the
+ * database to enforce about an off-platform conversation.
+ */
+
+/**
+ * GET /farmer/buy-campaigns — every currently OPEN campaign, across every
+ * buyer, newest first. A closed campaign (whether auto-closed by filling
+ * or manually closed by the buyer) simply stops appearing here — exactly
+ * like a grade with is_active=false disappearing from GET /farmer/
+ * rice-prices, so a farmer never tries to sell into something that can no
+ * longer accept it.
+ */
+router.get('/buy-campaigns', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT bc.campaign_id, o.org_id, o.org_name,
+                bc.commodity_code, c.name_th AS commodity_name,
+                bc.unit_price, bc.price_unit, bc.quantity_limit_ton, bc.quantity_sold_ton,
+                (bc.quantity_limit_ton - bc.quantity_sold_ton) AS remaining_ton,
+                bc.note, bc.created_at
+           FROM marketplace.buy_campaign bc
+           JOIN identity.organization o ON o.org_id = bc.org_id
+           JOIN registry.commodity_ref c ON c.commodity_code = bc.commodity_code
+          WHERE bc.status = 'open'
+          ORDER BY bc.created_at DESC`,
+      );
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /farmer/buy-campaigns/:id/sell — sell a quantity of this farmer's
+ * own produce into an open campaign. Body: { unit_id, quantity_ton }.
+ *
+ * All the business rules (campaign must still be open, quantity_ton must
+ * not exceed what's left, unit_id must actually belong to this farmer)
+ * live in marketplace.sell_into_buy_campaign() — see
+ * grant_flash_buy_campaign.sql — so this route just calls it and maps its
+ * RAISE EXCEPTION messages to structured 4xx responses, same pattern as
+ * POST /buyer/deliveries/:id/confirm-quality. On success this creates a
+ * normal produce.delivery row (status 'delivered') at the campaign's
+ * price — the farmer still needs to physically deliver the produce, and
+ * the buyer still confirms quality + settles it exactly like any other
+ * spot sale; this endpoint only locks in the price/quantity commitment.
+ */
+router.post('/buy-campaigns/:id/sell', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { unit_id: unitId, quantity_ton: quantityTonRaw } = req.body || {};
+
+  if (!unitId || quantityTonRaw === undefined || quantityTonRaw === null) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['unit_id', 'quantity_ton'] });
+  }
+  const quantityTon = Number(quantityTonRaw);
+  if (!Number.isFinite(quantityTon) || quantityTon <= 0) {
+    return res.status(400).json({ error: 'invalid_quantity_ton' });
+  }
+
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      try {
+        const { rows } = await client.query(
+          'SELECT marketplace.sell_into_buy_campaign($1, $2, $3, $4) AS order_id',
+          [id, subjectId, unitId, quantityTon],
+        );
+        const orderId = rows[0].order_id;
+        const orderRow = await client.query(
+          `SELECT bco.order_id, bco.delivery_id, bco.quantity_ton, bco.unit_price, bco.total_amount,
+                  bc.status AS campaign_status, (bc.quantity_limit_ton - bc.quantity_sold_ton) AS remaining_ton
+             FROM marketplace.buy_campaign_order bco
+             JOIN marketplace.buy_campaign bc ON bc.campaign_id = bco.campaign_id
+            WHERE bco.order_id = $1`,
+          [orderId],
+        );
+        await logAccess(client, 'write', 'marketplace.buy_campaign_order', orderId);
+        return { order: orderRow.rows[0] };
+      } catch (fnErr) {
+        return { businessError: fnErr.message };
+      }
+    });
+
+    if (result.businessError) {
+      const msg = result.businessError;
+      if (msg.includes('ไม่พบประกาศรับซื้อ')) {
+        return res.status(404).json({ error: 'campaign_not_found' });
+      }
+      if (msg.includes('ปิดรับซื้อแล้ว')) {
+        return res.status(409).json({ error: 'campaign_closed' });
+      }
+      if (msg.includes('เกินจำนวนคงเหลือ')) {
+        return res.status(409).json({ error: 'insufficient_remaining_quantity', detail: msg });
+      }
+      if (msg.includes('ไม่ใช่ของเกษตรกรรายนี้')) {
+        return res.status(403).json({ error: 'unit_not_owned' });
+      }
+      return res.status(409).json({ error: 'cannot_sell_into_campaign', detail: msg });
+    }
+
+    return res.status(201).json({ status: result.order.campaign_status === 'closed' ? 'sold_campaign_closed' : 'sold', ...result.order });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/buy-campaigns/my-sales — this farmer's own sell-ins across
+ * every campaign (open or closed), with the linked delivery's real status
+ * joined in, so a farmer can see whether a sale has actually been paid
+ * yet without needing a separate "my deliveries" page (none exists —
+ * produce.delivery has always been buyer-facing only until this feature).
+ */
+router.get('/buy-campaigns/my-sales', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT bco.order_id, bco.campaign_id, bco.quantity_ton, bco.unit_price, bco.total_amount, bco.created_at,
+                o.org_name AS buyer_name, c.name_th AS commodity_name,
+                d.delivery_id, d.status AS delivery_status, d.settled_at
+           FROM marketplace.buy_campaign_order bco
+           JOIN marketplace.buy_campaign bc ON bc.campaign_id = bco.campaign_id
+           JOIN identity.organization o ON o.org_id = bc.org_id
+           JOIN registry.commodity_ref c ON c.commodity_code = bc.commodity_code
+           JOIN produce.delivery d ON d.delivery_id = bco.delivery_id
+          WHERE bco.farmer_id = $1
+          ORDER BY bco.created_at DESC`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'marketplace.buy_campaign_order', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

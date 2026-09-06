@@ -886,7 +886,74 @@ UPDATE` never needs a matching `WHERE` predicate — this was a deliberate
 design choice made specifically to avoid re-triggering that class of bug,
 not an accident.
 
+## Flash Buy Campaign — ประกาศรับซื้อด่วน (จำกัดจำนวน)
+
+Added 2026-09-06 per an explicit product request: a Buyer needs to announce
+a buy price for a commodity capped at a maximum quantity, so they can
+"เร่งซื้อผลผลิตเข้าสต๊อกในช่วงเวลาสั้นๆ" (stock up fast in a short window).
+Once farmers have sold in enough to fill the cap, the campaign closes
+itself automatically and can never reopen — the buyer has to post a brand
+new one to keep buying. This is a genuinely different feature from the
+daily rice-buying-price announcements documented just above: that one is
+an unlimited-quantity standing price board scoped to rice grades only;
+this one is a time-boxed, quantity-capped buying campaign scoped to
+**any** commodity in `registry.commodity_ref` (currently only 3 rows —
+`RICE_JASMINE`, `RICE_PADDY`, `CASSAVA` — see that section above; adding
+more commodities later needs no schema change, just more reference rows).
+
+**Mandatory disclaimer, both sides:** every place this price is shown
+(the buyer's create-campaign form on the Buyer Portal, and the farmer-
+facing `frontend/buy-campaigns.html`) displays a fixed notice that the
+announced price is valid **only** for sales completed through this online
+system — it cannot be used as a reference or bargaining point for an
+in-person sale at a collection yard (ลานรับซื้อ) or mill gate
+(หน้าโรงงาน). This is UI copy only; there is nothing in the database that
+could enforce a rule about an off-platform conversation.
+
+New tables (`grant_flash_buy_campaign.sql`): `marketplace.buy_campaign`
+(one row per announcement — `org_id`, `commodity_code`, `unit_price`,
+`quantity_limit_ton`, `quantity_sold_ton`, `status` `open`/`closed`) and
+`marketplace.buy_campaign_order` (one row per farmer sell-in, linked to
+the `produce.delivery` row it created). No RLS on either — same explicit-
+`WHERE org_id = $1` / `WHERE farmer_id = $1` convention as every other
+`marketplace.*`/`produce.*` table in this codebase.
+
+**Selling mechanism (confirmed via a scoping question before building):**
+when a farmer sells into an open campaign, the system deducts the
+quantity **immediately** — there is no buyer confirm/reject step first,
+matching the buyer's stated need for speed. All of it happens inside one
+new function, `marketplace.sell_into_buy_campaign(campaign_id, farmer_id,
+unit_id, quantity_ton)`: it locks the campaign row (`SELECT ... FOR
+UPDATE`, preventing two farmers from overselling the last bit of
+remaining quantity concurrently), validates the campaign is still open
+and the requested quantity doesn't exceed what's left, checks the given
+`unit_id` really belongs to this farmer, calls the **existing**
+`produce.record_delivery()` (unchanged, see "Buyer Portal" below) to
+create a normal spot-sale delivery at the campaign's price, records the
+fill in `buy_campaign_order`, and updates the running total — auto-
+setting `status = 'closed'` the instant `quantity_sold_ton` reaches
+`quantity_limit_ton`. Selling in this way does **not** replace the normal
+delivery lifecycle — the resulting `produce.delivery` row still starts at
+`delivered` and still needs the buyer to run it through
+`POST /buyer/deliveries/:id/confirm-quality` and `/settle` exactly like
+any other spot sale. This feature only automates the "commit to sell at
+this price, up to this much" step and its quantity bookkeeping.
+
+Routes: `GET/POST /buyer/buy-campaigns` (list own / create),
+`POST /buyer/buy-campaigns/:id/close` (manual early close — not
+explicitly requested, added as a small, low-risk convenience so a buyer
+can back out of a pricing mistake instead of being stuck until it fills
+naturally; behaves identically to an auto-close — cannot reopen either
+way); `GET /farmer/buy-campaigns` (browse every currently open campaign,
+across every buyer), `POST /farmer/buy-campaigns/:id/sell`,
+`GET /farmer/buy-campaigns/my-sales` (this farmer's own sell-in history
+with the linked delivery's real status joined in — the first farmer-
+facing view into `produce.delivery` at all; until now that table was
+buyer-facing only).
+
 ## Featured Listings (Platform-Ops-managed promotion)
+
+
 
 `grant_featured_listings.sql` added `is_featured`/`featured_until` to
 `marketplace.product_listing` and `marketplace.service_listing` some time

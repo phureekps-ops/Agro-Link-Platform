@@ -764,4 +764,166 @@ router.post('/coop-products/orders/:id/cancel', async (req, res, next) => {
   }
 });
 
+/**
+ * ============================================================================
+ * ⚡ ประกาศรับซื้อด่วน (Flash Buy Campaign) — จำกัดจำนวน
+ * ============================================================================
+ * A buyer announces a buy price for a commodity, capped at a maximum
+ * quantity (quantity_limit_ton) — meant for "เร่งซื้อผลผลิตเข้าสต๊อกในช่วง
+ * เวลาสั้นๆ" (fast, short-window stocking). Farmers sell into it from
+ * GET/POST /farmer/buy-campaigns* — each sell-in deducts from the running
+ * total immediately (marketplace.sell_into_buy_campaign(), see
+ * grant_flash_buy_campaign.sql) and the campaign auto-closes the instant
+ * quantity_sold_ton reaches quantity_limit_ton. A buyer can also close one
+ * early via POST .../close (e.g. a pricing mistake, or demand satisfied
+ * some other way) — once closed for either reason, it can never reopen;
+ * the buyer has to post a brand new campaign, exactly as requested.
+ *
+ * IMPORTANT — same notice as the frontend must show: the price announced
+ * here is valid ONLY for sales completed through this online system. It
+ * is NOT a reference/justification for in-person sales at a collection
+ * yard (ลานรับซื้อ) or mill gate (หน้าโรงงาน) — this is a UI-only
+ * disclaimer (buyer-create-form + farmer browse page), not enforced by
+ * the database, since there is nothing in a database to enforce about an
+ * off-platform conversation.
+ *
+ * A campaign's own row never needs an ownership check beyond
+ * `WHERE org_id = $1` — same explicit-WHERE convention as every other
+ * marketplace./produce. table in this codebase (no RLS on either new
+ * table, see the migration's own note on why).
+ */
+
+/**
+ * GET /buyer/buy-campaigns — every campaign THIS buyer has ever posted
+ * (open and closed), newest first, with remaining quantity computed
+ * server-side so the frontend never has to.
+ */
+router.get('/buy-campaigns', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT bc.campaign_id, bc.commodity_code, c.name_th AS commodity_name,
+                bc.unit_price, bc.price_unit, bc.quantity_limit_ton, bc.quantity_sold_ton,
+                (bc.quantity_limit_ton - bc.quantity_sold_ton) AS remaining_ton,
+                bc.status, bc.note, bc.created_at, bc.closed_at
+           FROM marketplace.buy_campaign bc
+           JOIN registry.commodity_ref c ON c.commodity_code = bc.commodity_code
+          WHERE bc.org_id = $1
+          ORDER BY bc.created_at DESC`,
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'marketplace.buy_campaign', subjectId);
+      return result.rows;
+    });
+
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /buyer/buy-campaigns — open a new flash buy campaign.
+ * Body: { commodity_code, unit_price, quantity_limit_ton, price_unit?, note? }
+ */
+router.post('/buy-campaigns', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    commodity_code: commodityCode,
+    unit_price: unitPriceRaw,
+    quantity_limit_ton: quantityLimitRaw,
+    price_unit: priceUnit,
+    note,
+  } = req.body || {};
+
+  if (!commodityCode || unitPriceRaw === undefined || unitPriceRaw === null || quantityLimitRaw === undefined || quantityLimitRaw === null) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['commodity_code', 'unit_price', 'quantity_limit_ton'],
+    });
+  }
+
+  const unitPrice = Number(unitPriceRaw);
+  const quantityLimit = Number(quantityLimitRaw);
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+    return res.status(400).json({ error: 'invalid_unit_price' });
+  }
+  if (!Number.isFinite(quantityLimit) || quantityLimit <= 0) {
+    return res.status(400).json({ error: 'invalid_quantity_limit' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const commodity = await client.query(
+        'SELECT commodity_code FROM registry.commodity_ref WHERE commodity_code = $1',
+        [commodityCode],
+      );
+      if (commodity.rows.length === 0) {
+        return { invalidCommodity: true };
+      }
+
+      const { rows } = await client.query(
+        `INSERT INTO marketplace.buy_campaign (org_id, commodity_code, unit_price, price_unit, quantity_limit_ton, note)
+         VALUES ($1, $2, $3, COALESCE($4, 'บาท/ตัน'), $5, $6)
+         RETURNING campaign_id, status, created_at`,
+        [subjectId, commodityCode, unitPrice, priceUnit || null, quantityLimit, note || null],
+      );
+      await logAccess(client, 'write', 'marketplace.buy_campaign', rows[0].campaign_id);
+      return { campaign: rows[0] };
+    });
+
+    if (result.invalidCommodity) {
+      return res.status(400).json({ error: 'invalid_commodity_code' });
+    }
+    return res.status(201).json(result.campaign);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /buyer/buy-campaigns/:id/close — manually close a still-open
+ * campaign before it fills naturally (e.g. a pricing mistake, or the
+ * buyer got enough stock some other way). Same "must own it, must still
+ * be open" gating as POST /buyer/coop-products/orders/:id/cancel above.
+ * A campaign closed this way behaves identically to one that auto-closed
+ * by filling — it can never reopen; a new campaign is the only way to
+ * keep buying, exactly as requested.
+ */
+router.post('/buy-campaigns/:id/close', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const existing = await client.query(
+        'SELECT status FROM marketplace.buy_campaign WHERE org_id = $1 AND campaign_id = $2',
+        [subjectId, id],
+      );
+      if (existing.rows.length === 0) return { notFound: true };
+      if (existing.rows[0].status !== 'open') return { alreadyClosed: true };
+
+      const { rows } = await client.query(
+        `UPDATE marketplace.buy_campaign
+            SET status = 'closed', closed_at = now()
+          WHERE org_id = $1 AND campaign_id = $2
+          RETURNING campaign_id, status, closed_at`,
+        [subjectId, id],
+      );
+      await logAccess(client, 'write', 'marketplace.buy_campaign', id);
+      return { campaign: rows[0] };
+    });
+
+    if (result.notFound) {
+      return res.status(404).json({ error: 'campaign_not_found' });
+    }
+    if (result.alreadyClosed) {
+      return res.status(409).json({ error: 'campaign_already_closed' });
+    }
+    return res.json(result.campaign);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

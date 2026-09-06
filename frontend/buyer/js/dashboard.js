@@ -348,6 +348,107 @@ document.getElementById("priceQuoteSubmitBtn").addEventListener("click", async (
   }
 });
 
+// ---------- ⚡ ประกาศรับซื้อด่วน (จำกัดจำนวน) ----------
+// See backend/src/routes/buyer.js's own doc comment on this feature.
+// commoditySelect above already loads the same registry.commodity_ref
+// list via loadCommodities() — this is a SEPARATE <select> because the
+// delivery form and the campaign form are independent, unrelated actions
+// that just happen to share the same reference list.
+async function loadCampaignCommodities() {
+  const el = document.getElementById("campaignCommoditySelect");
+  try {
+    const commodities = await AgroLinkBuyerAPI.get("/buyer/commodities");
+    el.innerHTML = `<option value="">-- เลือกชนิดผลผลิต --</option>` +
+      commodities.map((c) => `<option value="${c.commodity_code}">${escapeHtml(c.name_th)}</option>`).join("");
+  } catch (err) {
+    el.innerHTML = `<option value="">โหลดชนิดผลผลิตไม่สำเร็จ</option>`;
+  }
+}
+
+function buyCampaignCard(c) {
+  const isOpen = c.status === "open";
+  const remaining = Number(c.remaining_ton);
+  return `
+    <div class="item-card" data-campaign-id="${c.campaign_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(c.commodity_name)}</span>
+        <span class="badge ${isOpen ? "status-active" : ""}">${isOpen ? "เปิดรับซื้อ" : "ปิดแล้ว"}</span>
+      </div>
+      <div class="detail-line">ราคา: ${thb(c.unit_price)} ${escapeHtml(c.price_unit)}</div>
+      <div class="detail-line">รับซื้อแล้ว: ${thb(c.quantity_sold_ton)} / ${thb(c.quantity_limit_ton)} ตัน (คงเหลือ ${thb(remaining)} ตัน)</div>
+      ${c.note ? `<div class="detail-line muted">หมายเหตุ: ${escapeHtml(c.note)}</div>` : ""}
+      <div class="detail-line muted">เปิดเมื่อ: ${thaiDate(c.created_at)}${c.closed_at ? ` · ปิดเมื่อ: ${thaiDate(c.closed_at)}` : ""}</div>
+      ${isOpen ? `<button type="button" class="btn btn-ghost btn-sm campaign-close-btn" data-campaign-id="${c.campaign_id}" style="margin-top:8px;">ปิดประกาศนี้ก่อนกำหนด</button>` : ""}
+    </div>
+  `;
+}
+
+async function loadBuyCampaignsMine() {
+  const el = document.getElementById("buyCampaignsMineSection");
+  try {
+    const campaigns = await AgroLinkBuyerAPI.get("/buyer/buy-campaigns");
+    el.innerHTML = campaigns.length
+      ? campaigns.map(buyCampaignCard).join("")
+      : `<div class="empty-state">ยังไม่มีประกาศรับซื้อด่วน</div>`;
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดประกาศไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("buyCampaignForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const commodityCode = document.getElementById("campaignCommoditySelect").value;
+  const unitPrice = Number(document.getElementById("campaignUnitPriceInput").value);
+  const quantityLimitTon = Number(document.getElementById("campaignQuantityLimitInput").value);
+  const note = document.getElementById("campaignNoteInput").value.trim();
+
+  if (!commodityCode) {
+    toast("กรุณาเลือกชนิดผลผลิต", true);
+    return;
+  }
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+    toast("กรุณากรอกราคาที่มากกว่า 0", true);
+    return;
+  }
+  if (!Number.isFinite(quantityLimitTon) || quantityLimitTon <= 0) {
+    toast("กรุณากรอกจำนวนสูงสุดที่มากกว่า 0", true);
+    return;
+  }
+
+  const btn = document.getElementById("campaignSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkBuyerAPI.post("/buyer/buy-campaigns", {
+      commodity_code: commodityCode,
+      unit_price: unitPrice,
+      quantity_limit_ton: quantityLimitTon,
+      note: note || undefined,
+    });
+    toast("เปิดประกาศรับซื้อเรียบร้อยแล้ว");
+    document.getElementById("buyCampaignForm").reset();
+    await loadBuyCampaignsMine();
+  } catch (err) {
+    toast("เปิดประกาศไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("buyCampaignsMineSection").addEventListener("click", async (e) => {
+  const btn = e.target.closest(".campaign-close-btn");
+  if (!btn) return;
+  const campaignId = btn.dataset.campaignId;
+  btn.disabled = true;
+  try {
+    await AgroLinkBuyerAPI.post(`/buyer/buy-campaigns/${campaignId}/close`, {});
+    toast("ปิดประกาศเรียบร้อยแล้ว");
+    await loadBuyCampaignsMine();
+  } catch (err) {
+    toast("ปิดประกาศไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+    btn.disabled = false;
+  }
+});
+
 // ---------- พอร์ตสัญญารับซื้อ ----------
 const CONTRACT_STATUS_LABEL_TH = {
   draft: "ร่าง", pending_signature: "รอลงนาม", active: "ดำเนินอยู่",
@@ -1698,6 +1799,8 @@ async function init() {
   loadDeliveryHistory();
   loadProductionUnits();
   loadCommodities();
+  loadCampaignCommodities();
+  loadBuyCampaignsMine();
   loadPriceQuotes();
   loadContracts();
   loadCoopSuppliersIntoFilter();
