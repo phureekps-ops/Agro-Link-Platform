@@ -43,6 +43,22 @@
           หมายเหตุ: ใบสมัครของท่านจะเข้าสู่สถานะ "รอตรวจสอบ (KYB)" ทันที เจ้าหน้าที่ผู้ดูแลระบบจะตรวจสอบและอนุมัติก่อนจึงจะใช้งานได้เต็มรูปแบบ
         </div>
       </div>
+
+      <div id="providerLocationFields" style="display:none;">
+        <div class="field">
+          <label for="providerRegionSelect">จังหวัดที่ตั้งธุรกิจ</label>
+          <select id="providerRegionSelect">
+            <option value="">-- เลือกจังหวัด --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="providerDistrictSelect">อำเภอที่ตั้งธุรกิจ</label>
+          <select id="providerDistrictSelect" disabled>
+            <option value="">-- เลือกจังหวัดก่อน --</option>
+          </select>
+        </div>
+      </div>
+
       <button type="submit" class="btn btn-primary" id="registerBtn">ส่งใบสมัคร</button>
     </form>
 
@@ -75,6 +91,8 @@
     <a href="machinery/index.html" class="btn btn-ghost" id="loginMachineryLink" style="width:100%; text-align:center; display:block; box-sizing:border-box;">เข้าสู่ระบบผู้ให้บริการเครื่องจักรกล/ลานตาก</a>
   </div>
 
+  <script src="js/provinces.js"></script>
+  <script src="js/districts.js"></script>
   <script src="js/register-provider.js"></script>
 </body>
 </html>

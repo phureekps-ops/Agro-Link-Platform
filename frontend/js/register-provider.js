@@ -67,6 +67,68 @@ const ORG_TYPE_LABEL = {
 // longer offers them, in case a future path ever resurrects one.
 const MACHINERY_ORG_TYPES = ["MachineryService", "TractorService", "DroneService", "HarvesterService", "TruckService", "DryingYardService"];
 
+// Added 2026-09-06, three explicit requests in sequence: first Buyer,
+// MachineryService, Logistics, and InputSupplier had to declare their
+// จังหวัด/อำเภอ (province/district) at registration; a follow-up message
+// ("ส่วนผู้ปล่อยกู้/กองทุนหมู่บ้าน/บริการลานตากข้าวให้แจ้งจังหวัดและอำเภอ
+// ด้วย") extended the same requirement to the 3 remaining self-
+// registerable org_types (Lender, VillageFund, DryingYardService) — so
+// this is now simply every org_type offered in orgTypeSelect below, with
+// no exceptions. Derived from ORG_TYPE_LABEL's own keys (rather than
+// hand-listing all 7 a second time) so this list can never silently drift
+// out of sync with the dropdown's real options — see
+// identity.organization's new region_code/district_code columns
+// (grant_org_district.sql) and POST /auth/org-register's matching
+// required-for-every-org_type check in backend/src/routes/auth.js. Same
+// region_code/district_code scheme as frontend/js/register.js (farmer
+// registration): plain text, no DB lookup table, validated only client-
+// side against TH_PROVINCES/TH_DISTRICTS.
+const ORG_TYPES_REQUIRING_LOCATION = Object.keys(ORG_TYPE_LABEL);
+
+const providerLocationFields = document.getElementById("providerLocationFields");
+const providerRegionSelect = document.getElementById("providerRegionSelect");
+const providerDistrictSelect = document.getElementById("providerDistrictSelect");
+const orgTypeSelect = document.getElementById("orgTypeSelect");
+
+providerRegionSelect.innerHTML =
+  `<option value="">-- เลือกจังหวัด --</option>` +
+  TH_PROVINCES.map(([code, name]) => `<option value="${code}">${name}</option>`).join("");
+
+// Cascades from the selected province — same pattern as js/register.js's
+// own populateDistrictOptions (see that file for the full doc comment on
+// TH_DISTRICTS's district_code scheme and provenance).
+function populateProviderDistrictOptions(provinceCode) {
+  if (!provinceCode) {
+    providerDistrictSelect.innerHTML = `<option value="">-- เลือกจังหวัดก่อน --</option>`;
+    providerDistrictSelect.disabled = true;
+    return;
+  }
+  providerDistrictSelect.innerHTML =
+    `<option value="">-- เลือกอำเภอ --</option>` +
+    TH_DISTRICTS.filter(([, , provinceCodeOfRow]) => provinceCodeOfRow === provinceCode)
+      .map(([code, name]) => `<option value="${code}">${name}</option>`)
+      .join("");
+  providerDistrictSelect.disabled = false;
+}
+
+providerRegionSelect.addEventListener("change", () => {
+  populateProviderDistrictOptions(providerRegionSelect.value);
+});
+
+// Shows/hides + toggles required on the จังหวัด/อำเภอ fields the instant
+// the org_type selection changes, rather than only validating at submit —
+// an org picking e.g. "ผู้ปล่อยกู้" should never even see fields that
+// don't apply to that type.
+function updateProviderLocationVisibility() {
+  const needsLocation = ORG_TYPES_REQUIRING_LOCATION.includes(orgTypeSelect.value);
+  providerLocationFields.style.display = needsLocation ? "" : "none";
+  if (!needsLocation) {
+    providerRegionSelect.value = "";
+    populateProviderDistrictOptions("");
+  }
+}
+orgTypeSelect.addEventListener("change", updateProviderLocationVisibility);
+
 function showError(message) {
   errorBox.textContent = message;
   errorBox.classList.add("show");
@@ -82,6 +144,9 @@ registerForm.addEventListener("submit", async (e) => {
   const orgName = document.getElementById("orgNameInput").value.trim();
   const taxId = document.getElementById("taxIdInput").value.trim();
   const orgType = document.getElementById("orgTypeSelect").value;
+  const needsLocation = ORG_TYPES_REQUIRING_LOCATION.includes(orgType);
+  const regionCode = needsLocation ? providerRegionSelect.value : "";
+  const districtCode = needsLocation ? providerDistrictSelect.value : "";
 
   if (!orgName || !taxId || !orgType) {
     showError("กรุณากรอกข้อมูลให้ครบถ้วน");
@@ -91,13 +156,23 @@ registerForm.addEventListener("submit", async (e) => {
     showError("เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก");
     return;
   }
+  if (needsLocation && (!regionCode || !districtCode)) {
+    showError("กรุณาเลือกจังหวัดและอำเภอที่ตั้งธุรกิจ");
+    return;
+  }
 
   registerBtn.disabled = true;
   try {
     const res = await fetch(`${API_BASE}/auth/org-register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ org_name: orgName, tax_id: taxId, org_type: orgType }),
+      body: JSON.stringify({
+        org_name: orgName,
+        tax_id: taxId,
+        org_type: orgType,
+        region_code: regionCode || undefined,
+        district_code: districtCode || undefined,
+      }),
     });
     const body = await res.json().catch(() => ({}));
 

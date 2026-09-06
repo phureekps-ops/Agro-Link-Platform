@@ -1,0 +1,40 @@
+-- ============================================================================
+-- AgroLink Platform — Backend API Gateway: Organization Region/District
+-- ============================================================================
+-- User request (2026-09-06, two messages): "ให้ผู้รับซื้อผลผลิต ผู้ให้บริการ
+-- เครื่องจักรกล ผู้ให้บริการขนส่งลงทะเบียนแจ้งจังหวัดและอำเภอด้วย" followed
+-- by "ผู้ขายปัจจัยการผลิตด้วย" — Buyer, MachineryService, Logistics, and
+-- InputSupplier organizations must declare their จังหวัด/อำเภอ (province/
+-- district) when self-registering via POST /auth/org-register
+-- (frontend/register-provider.html). Every OTHER self-registerable
+-- org_type (Lender, VillageFund, DryingYardService) was NOT named in
+-- either request, so this stays scoped to exactly those 4 types — see
+-- ORG_TYPES_REQUIRING_LOCATION in both src/routes/auth.js and
+-- frontend/js/register-provider.js.
+--
+-- identity.organization had NO geographic column at all before this
+-- (confirmed by reading its DDL directly) — this is a materially
+-- different thing from partner.vendor_profile.service_regions (a
+-- text[] of MANY provinces a vendor already declares it can SERVE/
+-- deliver to, used for coverage filtering e.g. GET /farmer/
+-- input-suppliers?province_code=). region_code/district_code here answer
+-- a different question — "where is this business itself based" — a
+-- SINGLE province + district, exactly the same shape and convention as
+-- identity.farmer.region_code/district_code (grant_farmer_district.sql):
+-- plain text, no FK/lookup table (Thailand has an official ISO 3166-2:TH
+-- code for provinces but no equivalent for districts — see frontend/js/
+-- districts.js's own provenance note), validated only client-side against
+-- TH_PROVINCES/TH_DISTRICTS. Both columns are nullable: every org that
+-- registered before this migration (every seeded org, plus any org_type
+-- outside the 4 above) simply has no location on file, same reasoning as
+-- identity.farmer.district_code being nullable while POST /auth/register
+-- still requires it at the application layer for new farmers.
+--
+-- No new GRANTs needed: agrolink_app already has INSERT/UPDATE on
+-- identity.organization (org-register has worked since before this
+-- migration existed) — Postgres column privileges are table-wide unless a
+-- GRANT named specific columns, and none of the existing ones did.
+-- ============================================================================
+
+ALTER TABLE identity.organization ADD COLUMN IF NOT EXISTS region_code text;
+ALTER TABLE identity.organization ADD COLUMN IF NOT EXISTS district_code text;

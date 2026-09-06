@@ -443,7 +443,51 @@ Every handler calls `audit.log_access()` (action `'read'` or `'write'` — the
 only two values `audit.access_log`'s check constraint allows) inside the
 same session-context-scoped client, after a successful operation.
 
+## Organization region/district at self-registration
+
+Added 2026-09-06 across three explicit requests in sequence. First:
+"ให้ผู้รับซื้อผลผลิต ผู้ให้บริการเครื่องจักรกล ผู้ให้บริการขนส่งลงทะเบียน
+แจ้งจังหวัดและอำเภอด้วย" (Buyer, MachineryService, Logistics), then
+"ผู้ขายปัจจัยการผลิตด้วย" (InputSupplier), then a follow-up widening it to
+everyone else self-registerable: "ส่วนผู้ปล่อยกู้/กองทุนหมู่บ้าน/บริการ
+ลานตากข้าวให้แจ้งจังหวัดและอำเภอด้วย" (Lender, VillageFund,
+DryingYardService). Net result: **every self-registerable `org_type`**
+must now declare its own จังหวัด/อำเภอ (province/district) via
+`POST /auth/org-register` — `ORG_TYPES_REQUIRING_LOCATION` in both
+`src/routes/auth.js` and `frontend/js/register-provider.js` is simply an
+alias for the full `org_type` list (`ORG_SELF_REGISTER_TYPES` /
+`ORG_TYPE_LABEL`'s keys respectively) rather than a hand-picked subset,
+kept as its own named constant so a future org_type that should be
+EXEMPT from this just needs that one line changed to name only the types
+that still need it.
+
+This is a genuinely different thing from `partner.vendor_profile.
+service_regions` (a `text[]` of every province a vendor already declares
+it can *serve/deliver to*, used for coverage filtering, e.g.
+`GET /farmer/input-suppliers?province_code=`). The new
+`identity.organization.region_code`/`district_code` columns
+(`grant_org_district.sql` — unchanged since its first version; the SQL
+itself never depended on which org_types are required to fill it in, only
+`src/routes/auth.js`'s application-layer check does) answer a different
+question — *where the business itself is based* — a single province +
+district, matching `identity.farmer.region_code`/`district_code`'s exact
+shape and convention (plain text, no FK/lookup table, validated only
+client-side against `TH_PROVINCES`/`TH_DISTRICTS`). Both columns stay
+nullable even though every org_type now requires them at the application
+layer: every org that registered before this migration existed still has
+no location on file, and there is nothing sensible to backfill — same
+reasoning as the farmer-side district_code migration.
+
+`frontend/register-provider.html` (the ONE shared self-registration form
+for every provider `org_type`) shows/hides and requires the
+จังหวัด/อำเภอ fields dynamically as soon as the org type dropdown gets
+ANY selection (now true for every option it offers) rather than only
+validating at submit. `POST /auth/org-register` re-validates the same
+rule server-side (`400 missing_required_fields` if any org_type omits
+either field) — never trust client-side toggling alone.
+
 ## Multi-role organizations (an org can hold more than one business role)
+
 
 Real institutions like BAAC or a cooperative do more than one thing at
 once — they lend money, buy produce, sell fertilizer/inputs, and sometimes

@@ -51,6 +51,20 @@ const ORG_SELF_REGISTER_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer', 'VillageFund',
   'MachineryService', 'DryingYardService',
 ];
+
+// Added 2026-09-06, three explicit requests in sequence: first Buyer,
+// MachineryService, Logistics, and InputSupplier had to declare their
+// จังหวัด/อำเภอ at registration; a follow-up message ("ส่วนผู้ปล่อยกู้/
+// กองทุนหมู่บ้าน/บริการลานตากข้าวให้แจ้งจังหวัดและอำเภอด้วย") extended the
+// same requirement to the 3 remaining self-registerable org_types (Lender,
+// VillageFund, DryingYardService) — so this is now simply EVERY
+// self-registerable org_type, with no exceptions. Kept as its own alias
+// (rather than inlining ORG_SELF_REGISTER_TYPES everywhere below) so the
+// two concepts stay readable as separate rules even though they happen to
+// currently be the same list — a future org_type added to
+// ORG_SELF_REGISTER_TYPES without a location requirement would just need
+// this line changed to name only the types that still need it.
+const ORG_TYPES_REQUIRING_LOCATION = ORG_SELF_REGISTER_TYPES;
 const ORG_REGISTER_CONSTRAINT_ERRORS = {
   uq_organization_tax_id: 'tax_id_already_registered',
   organization_auth_subject_id_key: 'subject_claim_collision',
@@ -227,7 +241,15 @@ router.post('/register', async (req, res, next) => {
 
 /**
  * POST /auth/org-register
- * Body: { org_name, tax_id, org_type }
+ * Body: { org_name, tax_id, org_type, region_code?, district_code? }
+ *
+ * region_code/district_code (added 2026-09-06, grant_org_district.sql)
+ * are required for every self-registerable org_type (see
+ * ORG_TYPES_REQUIRING_LOCATION, currently == ORG_SELF_REGISTER_TYPES —
+ * this started scoped to just 4 types and was widened to all of them by a
+ * same-day follow-up request). Same free-text convention as
+ * identity.farmer.region_code/district_code: no FK/lookup table,
+ * validated only client-side.
  *
  * Self-service sign-up for service-provider organizations (lenders, buyers,
  * cooperatives, mills, input suppliers, and farm-machinery/mechanization
@@ -270,7 +292,13 @@ router.post('/register', async (req, res, next) => {
  * catalog, not a rate card — see `src/routes/inputsupplier.js`.
  */
 router.post('/org-register', async (req, res, next) => {
-  const { org_name: orgName, tax_id: taxId, org_type: orgType } = req.body || {};
+  const {
+    org_name: orgName,
+    tax_id: taxId,
+    org_type: orgType,
+    region_code: regionCode,
+    district_code: districtCode,
+  } = req.body || {};
 
   if (!orgName || !taxId || !orgType) {
     return res.status(400).json({
@@ -281,16 +309,23 @@ router.post('/org-register', async (req, res, next) => {
   if (!ORG_SELF_REGISTER_TYPES.includes(orgType)) {
     return res.status(400).json({ error: 'invalid_org_type', valid: ORG_SELF_REGISTER_TYPES });
   }
+  if (ORG_TYPES_REQUIRING_LOCATION.includes(orgType) && (!regionCode || !districtCode)) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['region_code', 'district_code'],
+      detail: `org_type '${orgType}' requires region_code and district_code`,
+    });
+  }
 
   const authSubjectId = generateOrgAuthSubjectId();
 
   try {
     const orgId = await withServiceRole(async (client) => {
       const { rows } = await client.query(
-        `INSERT INTO identity.organization (org_type, org_name, tax_id, kyb_status, auth_subject_id)
-         VALUES ($1, $2, $3, 'Pending', $4)
+        `INSERT INTO identity.organization (org_type, org_name, tax_id, kyb_status, auth_subject_id, region_code, district_code)
+         VALUES ($1, $2, $3, 'Pending', $4, $5, $6)
          RETURNING org_id`,
-        [orgType, orgName, taxId, authSubjectId],
+        [orgType, orgName, taxId, authSubjectId, regionCode || null, districtCode || null],
       );
       const newOrgId = rows[0].org_id;
 
