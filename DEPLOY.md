@@ -177,6 +177,7 @@ grant_straw_processing_service.sql
 grant_laser_land_leveling_service.sql
 grant_machinery_rental_service.sql
 grant_support_chat.sql
+grant_farmer_district.sql
 ```
 
 **เพิ่มเมื่อ 2026-08-29:** `grant_straw_processing_service.sql` — เพิ่ม
@@ -320,6 +321,35 @@ truth ของทั้งฝั่งเกษตรกรและฝั่�
 เปลี่ยนแค่หมายเหตุ provenance ในหัวไฟล์ให้สะท้อนว่าผ่านการตรวจสอบข้ามแหล่งแล้ว
 (ไม่ใช่แค่ความรู้ทั่วไปเฉยๆ เหมือนตอนแรก) ไม่มี migration SQL หรือโค้ดส่วนอื่น
 เปลี่ยนแปลงในรอบนี้
+
+**เพิ่มเมื่อ 2026-09-06:** `grant_farmer_district.sql` — ตามคำขอ
+"ในปุ่มสมัครเป็นเกษตรกรให้เลือกจังหวัดและเลือกอำเภอด้วย" ฟอร์มสมัครสมาชิก
+เกษตรกร (`frontend/register.html`) เดิมมีแค่ dropdown เลือกจังหวัด (บันทึกลง
+`identity.farmer.region_code`) — งานนี้เพิ่ม dropdown เลือกอำเภอที่ cascade
+ตามจังหวัดที่เลือก (ใช้ `TH_DISTRICTS` จาก `frontend/js/districts.js` แบบ
+เดียวกับตัวกรองอำเภอใน marketplace.html/machinery-marketplace.html)
+
+ก่อนเริ่มเขียนโค้ดได้ถามผู้ใช้ว่าต้องการให้อำเภอที่เลือกถูก **บันทึกลง
+ฐานข้อมูลจริง** หรือแค่เป็น UI เฉยๆ — ผู้ใช้เลือก "บันทึกลงฐานข้อมูล" เพราะ
+`identity.farmer` เดิมมีแค่คอลัมน์ระดับจังหวัด (`region_code`) ไม่มีคอลัมน์
+ระดับอำเภอเลย จึงต้องเพิ่ม migration ใหม่ `grant_farmer_district.sql`
+(`ALTER TABLE identity.farmer ADD COLUMN IF NOT EXISTS district_code text`
+— nullable เพราะเกษตรกรที่สมัครไว้ก่อนหน้านี้ไม่มีข้อมูลอำเภอให้ backfill,
+ไม่มี FK/lookup table เหมือน region_code เดิม เพราะไม่มีรหัสอำเภอทางการของ
+ไทยที่เป็นมาตรฐานอยู่แล้ว — ดู provenance note ในหัวไฟล์ `districts.js`)
+
+ฝั่ง backend `POST /auth/register` (`backend/src/routes/auth.js`) รับ
+`district_code` เพิ่มและบังคับเป็น required field เหมือน `region_code`
+เดิม (คืน `400 missing_required_fields` ถ้าขาด) แม้คอลัมน์ในฐานข้อมูลจะ
+เป็น nullable ก็ตาม — INSERT statement เดิมเพิ่มคอลัมน์นี้เข้าไปด้วย
+ไม่ต้องเพิ่ม GRANT ใหม่ (agrolink_app มี INSERT/UPDATE บนทั้งตารางอยู่แล้ว
+จาก grant_farmer_registration.sql/grant_farmer_portal_reads.sql — สิทธิ์
+ระดับตารางครอบคลุมคอลัมน์ใหม่โดยอัตโนมัติ)
+
+**หมายเหตุสำคัญ:** migration นี้ยังไม่ได้รันกับฐานข้อมูลจริงบน Render — ผู้ใช้
+ต้องรันเองผ่าน psql ตามขั้นตอนใน DEPLOY.md ข้อ 5-7 ก่อนฟีเจอร์นี้จะใช้งานได้
+(เหมือน grant_support_chat.sql ก่อนหน้า ที่ตอนแรกทำให้เกิด internal_error
+จนกว่าจะรัน migration)
 
 **เพิ่มเมื่อ 2026-08-30:** `grant_support_chat.sql` — เพิ่มฟีเจอร์ "แชทกับ
 ทีมงาน AgroLink" (Support Chat Widget) ตามคำถาม "ทำ Widget บนเว็บ/แอป หรือ

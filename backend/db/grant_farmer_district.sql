@@ -1,0 +1,36 @@
+-- ============================================================================
+-- AgroLink Platform — Backend API Gateway: Farmer District Column
+-- ============================================================================
+-- Adds อำเภอ (district) selection to the farmer registration form
+-- (frontend/register.html), alongside the จังหวัด (province) select that
+-- already existed there. identity.farmer previously had ONLY a
+-- province-level `region_code` column — there was no district-level field
+-- anywhere on this table, confirmed while scoping this change (02_full_
+-- schema.sql). The user explicitly asked for the district selected in the
+-- registration form to be persisted to the database, not just shown in the
+-- UI (asked via a scoping question on 2026-09-06).
+--
+-- `district_code` follows the exact same convention as `region_code`:
+-- plain text, no FK/lookup table in the database (there is no official
+-- ISO-style code for Thai districts — see frontend/js/districts.js's own
+-- provenance note), validated only client-side against TH_DISTRICTS
+-- (frontend/js/districts.js) and left as free text server-side, same as
+-- region_code already is. Values look like "TH-50-01" (`<province_code>-
+-- <NN>`, matching TH_DISTRICTS's own code scheme).
+--
+-- Nullable (not NOT NULL): every farmer registered before this migration
+-- has no district on file, and there's no sensible value to backfill.
+-- POST /auth/register enforces "required" at the application layer for
+-- NEW registrations (same 400 missing_required_fields shape already used
+-- for full_name/phone/national_id/region_code), which keeps this column
+-- itself flexible for any future bulk-import or admin-side edit path that
+-- may not always have a district on hand.
+--
+-- agrolink_app already has SELECT/INSERT/UPDATE on identity.farmer (see
+-- grant_farmer_portal_reads.sql / grant_farmer_registration.sql / Layer 8)
+-- — Postgres column privileges are table-wide unless a GRANT names specific
+-- columns, and none of those prior grants did, so this new column is
+-- already covered. No new GRANT statements needed.
+-- ============================================================================
+
+ALTER TABLE identity.farmer ADD COLUMN IF NOT EXISTS district_code text;

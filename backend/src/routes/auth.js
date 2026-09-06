@@ -134,7 +134,7 @@ router.post('/login', async (req, res, next) => {
 
 /**
  * POST /auth/register
- * Body: { full_name, phone, national_id, region_code }
+ * Body: { full_name, phone, national_id, region_code, district_code }
  *
  * Creates a new farmer (identity.farmer, status='pending_kyc') and
  * immediately signs them in — matches how most real signup flows behave,
@@ -147,14 +147,28 @@ router.post('/login', async (req, res, next) => {
  * below returns a farmer_id. Once it has one, it sets session context to
  * that brand-new farmer just long enough to log the registration itself via
  * audit.log_access(), on the same client, before releasing.
+ *
+ * `district_code` (added 2026-09-06, grant_farmer_district.sql) is required
+ * here the same way region_code already is, even though the underlying
+ * column is nullable — see that migration's own doc comment for why the
+ * column itself stays nullable while this endpoint still requires it for
+ * every new registration. Same free-text convention as region_code: no
+ * FK/lookup table, validated client-side only against TH_DISTRICTS
+ * (frontend/js/districts.js).
  */
 router.post('/register', async (req, res, next) => {
-  const { full_name: fullName, phone, national_id: nationalId, region_code: regionCode } = req.body || {};
+  const {
+    full_name: fullName,
+    phone,
+    national_id: nationalId,
+    region_code: regionCode,
+    district_code: districtCode,
+  } = req.body || {};
 
-  if (!fullName || !phone || !nationalId || !regionCode) {
+  if (!fullName || !phone || !nationalId || !regionCode || !districtCode) {
     return res.status(400).json({
       error: 'missing_required_fields',
-      required: ['full_name', 'phone', 'national_id', 'region_code'],
+      required: ['full_name', 'phone', 'national_id', 'region_code', 'district_code'],
     });
   }
 
@@ -164,10 +178,10 @@ router.post('/register', async (req, res, next) => {
   try {
     const farmerId = await withServiceRole(async (client) => {
       const { rows } = await client.query(
-        `INSERT INTO identity.farmer (full_name, phone, national_id_hash, region_code, auth_subject_id, status)
-         VALUES ($1, $2, $3, $4, $5, 'pending_kyc')
+        `INSERT INTO identity.farmer (full_name, phone, national_id_hash, region_code, district_code, auth_subject_id, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending_kyc')
          RETURNING farmer_id`,
-        [fullName, phone, nationalIdHash, regionCode, authSubjectId],
+        [fullName, phone, nationalIdHash, regionCode, districtCode, authSubjectId],
       );
       const newFarmerId = rows[0].farmer_id;
 
