@@ -44,6 +44,7 @@ const loginLenderLink = document.getElementById("loginLenderLink");
 const loginBuyerLink = document.getElementById("loginBuyerLink");
 const loginLogisticsLink = document.getElementById("loginLogisticsLink");
 const loginMachineryLink = document.getElementById("loginMachineryLink");
+const loginDryingYardLink = document.getElementById("loginDryingYardLink");
 const registerBtn = document.getElementById("registerBtn");
 const claimValueEl = document.getElementById("claimValue");
 const copyClaimBtn = document.getElementById("copyClaimBtn");
@@ -58,7 +59,9 @@ const ORG_TYPE_LABEL = {
   DryingYardService: "บริการลานตากข้าว",
 };
 
-// The role_types that share the unified "เครื่องจักรกล/ลานตาก" portal —
+// The role_types that share the machinery portal's rate card/routes —
+// note DryingYardService got its OWN frontend portal on 2026-09-12 (see
+// frontend/dryingyard/) even though it still shares this backend group —
 // see src/routes/machinery.js's MACHINERY_ORG_TYPES for the backend side of
 // this same list. 'MachineryService' (2026-08-17) is the only one offered
 // on the dropdown below now — the four individual entries this used to
@@ -204,6 +207,12 @@ registerForm.addEventListener("submit", async (e) => {
       InputSupplier: { sessionKey: "agrolink_inputsupplier_session", dashboardUrl: "inputsupplier/dashboard.html" },
       VillageFund: { sessionKey: "agrolink_villagefund_session", dashboardUrl: "villagefund/dashboard.html" },
       Logistics: { sessionKey: "agrolink_logistics_session", dashboardUrl: "logistics/dashboard.html" },
+      // Split out of the shared machinery portal into its own dedicated
+      // frontend on 2026-09-12 (see frontend/dryingyard/) — listed
+      // explicitly here (ahead of the MACHINERY_ORG_TYPES fallback below)
+      // so a newly-registered DryingYardService org lands on ITS OWN
+      // dashboard rather than the machinery one.
+      DryingYardService: { sessionKey: "agrolink_dryingyard_session", dashboardUrl: "dryingyard/dashboard.html" },
     };
     const portal = PORTAL_BY_ORG_TYPE[orgType] || (MACHINERY_ORG_TYPES.includes(orgType)
       ? { sessionKey: "agrolink_machinery_session", dashboardUrl: "machinery/dashboard.html" }
@@ -215,6 +224,7 @@ registerForm.addEventListener("submit", async (e) => {
     loginBuyerLink.style.display = "none";
     loginLogisticsLink.style.display = "none";
     loginMachineryLink.style.display = "none";
+    loginDryingYardLink.style.display = "none";
 
     successDetail.textContent = portal
       ? `"${orgName}" (${ORG_TYPE_LABEL[orgType] || orgType}) อยู่ระหว่างการตรวจสอบ (KYB) — เมื่อเจ้าหน้าที่อนุมัติแล้ว ท่านจะเห็นข้อมูลเต็มรูปแบบในแดชบอร์ด`

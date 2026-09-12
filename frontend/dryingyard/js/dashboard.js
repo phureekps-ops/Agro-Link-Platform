@@ -20,21 +20,9 @@ function thaiDate(iso) {
 
 // ---------- พื้นที่ให้บริการ (จังหวัด/อำเภอ) ----------
 // See GET/PUT /machinery/service-regions (backend/src/routes/
-// machinery.js, added 2026-08-29) — same shape as GET/PUT /inputsupplier/
-// service-regions, which this section directly mirrors. service_regions
-// is partner.vendor_profile's text[] holding a free mix of two kinds of
-// entries: a bare ISO 3166-2:TH province code (frontend/js/provinces.js's
-// TH_PROVINCES, e.g. "TH-50" — serves the WHOLE province) or a
-// province-qualified district code (frontend/js/districts.js's
-// TH_DISTRICTS, e.g. "TH-50-01" — serves only that ONE district; see
-// that file's doc comment for the important caveat that the district
-// list/code scheme was compiled from general knowledge, not a
-// live-verified government source). An empty array means "no
-// restriction declared" — GET /farmer/machinery-providers treats that as
-// "serves every province" (see that route's own doc comment), so an org
-// that never touches this section keeps working exactly as before.
-// Checking a province and checking one of its districts are independent
-// — neither implies nor requires the other.
+// machinery.js) — this portal shares that same backend endpoint with the
+// machinery portal (see js/api.js's doc comment for why: DryingYardService
+// is one of the five org_types requireMachineryOrg already accepts).
 function serviceRegionsCheckboxesHtml(selected) {
   const selectedSet = new Set(selected || []);
   const districtsByProvince = {};
@@ -98,12 +86,6 @@ function dateOnly(value) {
   return String(value).slice(0, 10);
 }
 
-// Kept covering the four legacy machine-type values even though new orgs
-// only ever get 'MachineryService' now (2026-08-17 consolidation, see
-// src/routes/machinery.js's MACHINERY_ORG_TYPES comment) — d.service_types
-// (below) reflects whichever role_type row(s) THIS org actually holds, and
-// an org that requested one of the four before the consolidation still has
-// that exact row, unmigrated by design.
 const SERVICE_TYPE_LABEL_TH = {
   MachineryService: "ผู้ให้บริการเครื่องจักรกล",
   TractorService: "บริการรถไถ",
@@ -137,23 +119,25 @@ function showKybPendingNotice(orgName, kybStatus) {
 }
 
 /**
- * Same shape as inputsupplier/js/dashboard.js's showRolePendingNotice — the
- * org has cleared entity KYB but doesn't (yet) hold a Verified role from any
- * of the five machinery/drying-yard org_types this portal unifies. The
- * backend reports role_type as the generic 'machinery' here (not a specific
- * org_type), since holding ANY ONE of the five is enough — see
- * requireMachineryOrg's doc comment in src/routes/machinery.js.
+ * Split out of the combined machinery/drying-yard portal on 2026-09-12 —
+ * this copy's wording only ever talks about the "ลานตาก" role, even
+ * though the backend still reports role_type as the generic 'machinery'
+ * (holding ANY ONE of its five recognized org_types is enough — see
+ * requireMachineryOrg's doc comment in src/routes/machinery.js). An org
+ * that holds a machinery-only role rather than DryingYardService can still
+ * technically pass this gate — see js/api.js's doc comment for why that
+ * tradeoff was accepted for this split.
  */
 function showRolePendingNotice(orgName, roleStatus) {
   document.getElementById("orgName").textContent = orgName || "-";
   const body = !roleStatus
     ? {
-        title: "องค์กรของท่านยังไม่มีบทบาทผู้ให้บริการเครื่องจักรกล",
-        detail: "หากต้องการเปิดใช้งานพอร์ทัลนี้ ท่านสามารถส่งคำขอเพิ่มบทบาทได้จากหน้า \"จัดการบทบาทธุรกิจ\" (เลือกได้จากบริการรถไถ โดรน/ฉีดพ่นสารเคมี รถเกี่ยวข้าว หรือรถบรรทุก — บริการลานตากข้าวแยกไปที่พอร์ทัลผู้ให้บริการลานตากแล้ว)",
+        title: "องค์กรของท่านยังไม่มีบทบาทผู้ให้บริการลานตาก",
+        detail: "หากต้องการเปิดใช้งานพอร์ทัลนี้ ท่านสามารถส่งคำขอเพิ่มบทบาท \"บริการลานตากข้าว\" ได้จากหน้า \"จัดการบทบาทธุรกิจ\"",
       }
     : roleStatus === "Rejected"
-    ? { title: "คำขอบทบาทผู้ให้บริการเครื่องจักรกลของท่านถูกปฏิเสธ", detail: "กรุณาติดต่อเจ้าหน้าที่ผู้ดูแลระบบสำหรับข้อมูลเพิ่มเติม" }
-    : { title: "คำขอบทบาทผู้ให้บริการเครื่องจักรกลของท่านอยู่ระหว่างการตรวจสอบ", detail: "เจ้าหน้าที่ผู้ดูแลระบบ (Platform Ops) กำลังตรวจสอบคำขอนี้ — ลองรีเฟรชหน้านี้อีกครั้งภายหลัง" };
+    ? { title: "คำขอบทบาทผู้ให้บริการลานตากของท่านถูกปฏิเสธ", detail: "กรุณาติดต่อเจ้าหน้าที่ผู้ดูแลระบบสำหรับข้อมูลเพิ่มเติม" }
+    : { title: "คำขอบทบาทผู้ให้บริการลานตากของท่านอยู่ระหว่างการตรวจสอบ", detail: "เจ้าหน้าที่ผู้ดูแลระบบ (Platform Ops) กำลังตรวจสอบคำขอนี้ — ลองรีเฟรชหน้านี้อีกครั้งภายหลัง" };
 
   document.getElementById("mainContainer").innerHTML = `
     <div class="empty-state" style="padding:60px 24px;">
@@ -166,13 +150,21 @@ function showRolePendingNotice(orgName, roleStatus) {
 }
 
 // ---------- ภาพรวม ----------
+// "รายการที่ตั้งราคาแล้ว" is intentionally NOT d.priced_items_count /
+// d.total_rate_card_items here — those two numbers still count across all
+// 9 shared machinery/drying-yard rate-card keys (see src/routes/
+// machinery.js's RATE_CARD_ITEMS), because splitting that count out
+// per-portal would need a backend change. This portal only ever shows/
+// edits the single 'drying' key (see loadRateCard below), so the stat card
+// is instead filled in by loadRateCard once it knows that key's own price
+// — see id="pricedItemsStat" below.
 function renderSummary(d) {
   document.getElementById("orgName").textContent = d.org_name || "-";
   const serviceTypesLabel = (d.service_types || []).map((t) => SERVICE_TYPE_LABEL_TH[t] || t).join(", ") || "-";
   document.getElementById("summarySection").innerHTML = `
     <div class="stat-card"><div class="label">สถานะ KYB</div><div class="value" style="font-size:16px;">${escapeHtml(d.kyb_status)}</div></div>
     <div class="stat-card"><div class="label">บทบาทที่ผ่านการตรวจสอบ</div><div class="value" style="font-size:14px;">${escapeHtml(serviceTypesLabel)}</div></div>
-    <div class="stat-card"><div class="label">รายการที่ตั้งราคาแล้ว</div><div class="value">${d.priced_items_count} / ${d.total_rate_card_items}</div></div>
+    <div class="stat-card"><div class="label">ราคาค่าบริการลานตาก</div><div class="value" id="pricedItemsStat">–</div></div>
     <div class="stat-card"><div class="label">รูปภาพที่อัปโหลด</div><div class="value">${d.photo_count}</div></div>
     <div class="stat-card"><div class="label">คำขอจองที่รอดำเนินการ</div><div class="value">${d.pending_bookings_count || 0}</div></div>
   `;
@@ -309,22 +301,31 @@ async function refreshSummary() {
   }
 }
 
-// ---------- ตารางราคาค่าบริการ ----------
-// 'drying' (ลานตากข้าว/ตากผลผลิต) moved to its own portal on 2026-09-12
-// (see frontend/dryingyard/) — excluded here so this portal only ever
-// shows/edits the 8 remaining machinery rate-card keys.
-const EXCLUDED_RATE_CARD_KEYS = ["drying"];
+// ---------- ราคาค่าบริการลานตาก ----------
+// This portal only shows/edits the single 'drying' rate-card key (see the
+// doc comment on renderSummary above) — the other 8 keys in the shared
+// RATE_CARD_ITEMS table belong to the machinery portal instead.
+const DRYING_YARD_SERVICE_KEY = "drying";
 
 async function loadRateCard() {
   const el = document.getElementById("rateCardFormSection");
   try {
     const d = await AgroLinkMachineryAPI.get("/machinery/rate-card");
-    el.innerHTML = d.items.filter((item) => !EXCLUDED_RATE_CARD_KEYS.includes(item.service_key)).map((item) => `
+    const dryingItem = d.items.find((item) => item.service_key === DRYING_YARD_SERVICE_KEY);
+    const pricedStat = document.getElementById("pricedItemsStat");
+    if (pricedStat) {
+      pricedStat.textContent = dryingItem && dryingItem.unit_price !== null ? "ตั้งราคาแล้ว" : "ยังไม่ตั้งราคา";
+    }
+    if (!dryingItem) {
+      el.innerHTML = `<div class="empty-state">ไม่พบรายการราคาค่าบริการลานตาก</div>`;
+      return;
+    }
+    el.innerHTML = `
       <div class="field">
-        <label for="rate-${escapeHtml(item.service_key)}">${escapeHtml(item.label_th)} (${escapeHtml(item.price_unit)})</label>
-        <input type="number" min="0" step="0.01" id="rate-${escapeHtml(item.service_key)}" data-service-key="${escapeHtml(item.service_key)}" value="${item.unit_price !== null ? item.unit_price : ""}" placeholder="ยังไม่ตั้งราคา" />
+        <label for="rate-${escapeHtml(dryingItem.service_key)}">${escapeHtml(dryingItem.label_th)} (${escapeHtml(dryingItem.price_unit)})</label>
+        <input type="number" min="0" step="0.01" id="rate-${escapeHtml(dryingItem.service_key)}" data-service-key="${escapeHtml(dryingItem.service_key)}" value="${dryingItem.unit_price !== null ? dryingItem.unit_price : ""}" placeholder="ยังไม่ตั้งราคา" />
       </div>
-    `).join("");
+    `;
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดตารางราคาไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
@@ -342,7 +343,7 @@ document.getElementById("rateCardSubmitBtn").addEventListener("click", async () 
   btn.disabled = true;
   try {
     await AgroLinkMachineryAPI.put("/machinery/rate-card", { prices });
-    toast("บันทึกตารางราคาเรียบร้อยแล้ว");
+    toast("บันทึกราคาเรียบร้อยแล้ว");
     await Promise.all([loadRateCard(), refreshSummary()]);
   } catch (err) {
     toast("บันทึกไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
@@ -368,7 +369,7 @@ function photoCard(photo) {
       <button type="button" class="photo-remove" title="ลบรูปภาพ" data-photo-id="${photo.photo_id}">✕</button>
       <div class="photo-meta">
         ${photo.caption ? `<div class="photo-caption">${escapeHtml(photo.caption)}</div>` : ""}
-        <div class="detail-line muted">${photo.photo_type === "machinery" ? "เครื่องจักร/อุปกรณ์" : "การให้บริการ"} · ${thaiDate(photo.created_at)}</div>
+        <div class="detail-line muted">${photo.photo_type === "machinery" ? "ลาน/สิ่งอำนวยความสะดวก" : "การให้บริการ"} · ${thaiDate(photo.created_at)}</div>
       </div>
     </div>
   `;

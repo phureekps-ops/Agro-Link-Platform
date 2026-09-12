@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AgroLink — พอร์ทัลผู้ให้บริการเครื่องจักรกล</title>
+<title>AgroLink — พอร์ทัลผู้ให้บริการลานตาก</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
   <header class="app-header">
-    <div class="brand"><span>🚜</span><span>AgroLink Platform — พอร์ทัลผู้ให้บริการเครื่องจักรกล</span></div>
+    <div class="brand"><span>☀️</span><span>AgroLink Platform — พอร์ทัลผู้ให้บริการลานตาก</span></div>
     <div class="who">
       <span class="name" id="orgName">กำลังโหลด…</span>
       <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
@@ -27,8 +27,8 @@
 
     <div class="section-title">🗺️ พื้นที่ให้บริการ (จังหวัด/อำเภอ)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
-      เลือกจังหวัด (หรือคลิกลูกศรเพื่อเลือกเฉพาะบางอำเภอ) ที่ท่านให้บริการเครื่องจักรกลถึง —
-      เกษตรกรจะเลือกกรองค้นหาผู้ให้บริการตามจังหวัด/อำเภอได้จากหน้าเช่า/จองบริการเครื่องจักรกล
+      เลือกจังหวัด (หรือคลิกลูกศรเพื่อเลือกเฉพาะบางอำเภอ) ที่ท่านให้บริการลานตากถึง —
+      เกษตรกรจะเลือกกรองค้นหาผู้ให้บริการตามจังหวัด/อำเภอได้จากหน้าเช่า/จองบริการลานตาก
       หากไม่เลือกจังหวัดใดเลย ระบบจะถือว่าท่านให้บริการทุกจังหวัด
       (การติ๊กทั้งจังหวัดและอำเภอในจังหวัดนั้นพร้อมกันไม่จำเป็น — ติ๊กจังหวัดหมายถึงบริการทั้งจังหวัด
       ส่วนติ๊กเฉพาะบางอำเภอหมายถึงบริการเฉพาะอำเภอนั้น)
@@ -60,13 +60,13 @@
       <div class="loading-line">กำลังโหลดประวัติคำขอจอง…</div>
     </div>
 
-    <div class="section-title">💵 ตารางราคาค่าบริการ</div>
+    <div class="section-title">💵 ราคาค่าบริการลานตาก</div>
     <div class="panel">
       <div id="rateCardFormSection" class="form-grid">
         <div class="loading-line">กำลังโหลดตารางราคา…</div>
       </div>
-      <button type="button" class="btn btn-primary" id="rateCardSubmitBtn" style="max-width:220px; margin-top:12px;">บันทึกตารางราคา</button>
-      <div class="hint" style="margin-top:10px;">ไม่จำเป็นต้องตั้งราคาให้ครบทุกรายการ — เลือกตั้งเฉพาะบริการที่ท่านให้บริการจริง เว้นว่างไว้เพื่อไม่แสดงรายการนั้น</div>
+      <button type="button" class="btn btn-primary" id="rateCardSubmitBtn" style="max-width:220px; margin-top:12px;">บันทึกราคา</button>
+      <div class="hint" style="margin-top:10px;">ตั้งราคาค่าบริการลานตากของท่าน เว้นว่างไว้หากยังไม่ต้องการแสดงราคานี้</div>
     </div>
 
     <div class="section-title">➕ เพิ่มรูปภาพ</div>
@@ -75,13 +75,13 @@
         <div class="field">
           <label for="photoTypeSelect">ประเภทรูปภาพ</label>
           <select id="photoTypeSelect">
-            <option value="machinery">รูปเครื่องจักร/อุปกรณ์</option>
+            <option value="machinery">รูปลาน/สิ่งอำนวยความสะดวก</option>
             <option value="service">รูปการให้บริการ</option>
           </select>
         </div>
         <div class="field">
           <label for="photoCaptionInput">คำอธิบายรูปภาพ (ไม่บังคับ)</label>
-          <input type="text" id="photoCaptionInput" placeholder="เช่น รถไถคูโบต้า M7" />
+          <input type="text" id="photoCaptionInput" placeholder="เช่น ลานตากคอนกรีต ขนาด 2 ไร่" />
         </div>
         <div class="field full">
           <label for="photoFileInput">เลือกไฟล์รูปภาพ (สูงสุด 2MB)</label>

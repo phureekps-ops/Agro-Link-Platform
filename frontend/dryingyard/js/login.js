@@ -38,8 +38,8 @@ loginForm.addEventListener("submit", (e) => {
 const params = new URLSearchParams(window.location.search);
 if (params.get("reason") === "session_expired") {
   showError("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");
-} else if (params.get("reason") === "not_a_machinery_org") {
-  showError("บัญชีนี้ไม่ใช่บัญชีผู้ให้บริการเครื่องจักรกล กรุณาเข้าสู่ระบบด้วยบัญชีที่ถูกต้อง");
+} else if (params.get("reason") === "not_a_dryingyard_org") {
+  showError("บัญชีนี้ไม่ใช่บัญชีผู้ให้บริการลานตาก กรุณาเข้าสู่ระบบด้วยบัญชีที่ถูกต้อง");
 }
 
 // If already logged in, skip straight to the dashboard.
