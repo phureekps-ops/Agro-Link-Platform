@@ -3,54 +3,117 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AgroLink — เข้าสู่ระบบเกษตรกร</title>
+<title>AgroLink — เลือกพอร์ทัลเข้าสู่ระบบ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
+<style>
+  /* Scoped to this page only (via .portal-page) — does not touch the
+     shared .login-card used by farmer-login.html / every portal's own
+     login page, which all stay at the narrower 420px width. */
+  .portal-page .login-card { max-width: 900px; }
+  .portal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+    margin: 4px 0 8px;
+  }
+  .portal-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-300);
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .portal-card:hover { border-color: var(--green-600); background: #fff; transform: translateY(-1px); }
+  .portal-card .icon { font-size: 26px; line-height: 1; flex-shrink: 0; }
+  .portal-card .label { display: block; font-weight: 700; font-size: 14.5px; color: var(--green-900); margin-bottom: 2px; }
+  .portal-card .desc { font-size: 12.5px; color: var(--gray-500); }
+  .portal-card.featured { background: var(--green-100); border-color: var(--green-600); }
+  .portal-card.admin-card { opacity: .82; }
+  .portal-section-label {
+    font-size: 12px; font-weight: 700; color: var(--gray-500);
+    text-transform: uppercase; letter-spacing: .04em;
+    margin: 22px 0 8px;
+  }
+  .portal-section-label:first-of-type { margin-top: 6px; }
+</style>
 </head>
-<body class="login-page">
+<body class="login-page portal-page">
   <div class="login-card">
     <div class="login-brand">
       <span class="leaf">🌾</span>
       <h1>AgroLink Platform</h1>
     </div>
-    <p class="login-sub">พอร์ทัลเกษตรกร — เข้าสู่ระบบเพื่อดูข้อมูลแปลง คะแนนสินเชื่อ สัญญา และคำขอสินเชื่อของท่าน</p>
+    <p class="login-sub">เลือกพอร์ทัลที่ต้องการเข้าสู่ระบบ — แต่ละบทบาทมีหน้าเข้าสู่ระบบและแดชบอร์ดของตัวเอง</p>
 
-    <div id="errorBox" class="error-box"></div>
+    <div class="portal-section-label">เกษตรกร</div>
+    <div class="portal-grid">
+      <a href="farmer-login.html" class="portal-card featured">
+        <span class="icon">🌾</span>
+        <span>
+          <span class="label">เกษตรกร</span>
+          <span class="desc">ดูข้อมูลแปลง คะแนนสินเชื่อ สัญญา และคำขอสินเชื่อ</span>
+        </span>
+      </a>
+    </div>
 
-    <form id="loginForm">
-      <div class="field">
-        <label for="claimInput">รหัสยืนยันตัวตน (จากระบบยืนยันตัวตนกลาง)</label>
-        <input type="text" id="claimInput" placeholder="เช่น oidc|farmer-001" autocomplete="off" required />
-        <div class="hint">
-          หมายเหตุ: ระบบยืนยันตัวตน (OIDC) จริงยังไม่ได้เชื่อมต่อในสภาพแวดล้อมนี้ —
-          ช่องนี้จำลองค่า <code>sub claim</code> ที่ปกติจะมาจากโทเค็นที่ยืนยันตัวตนแล้วจากผู้ให้บริการภายนอก
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ</button>
-    </form>
+    <div class="portal-section-label">ผู้ให้บริการ / สถาบันการเงิน</div>
+    <div class="portal-grid">
+      <a href="buyer/index.html" class="portal-card">
+        <span class="icon">📦</span>
+        <span><span class="label">ผู้รับซื้อผลผลิต</span><span class="desc">รับซื้อผลผลิต ประกาศราคา ประมูล</span></span>
+      </a>
+      <a href="coop/index.html" class="portal-card">
+        <span class="icon">🤝</span>
+        <span><span class="label">สหกรณ์ (จุดรับซื้อผลผลิต)</span><span class="desc">บริการสมาชิกสหกรณ์แบบครบวงจร</span></span>
+      </a>
+      <a href="lender/index.html" class="portal-card">
+        <span class="icon">🏦</span>
+        <span><span class="label">ผู้ปล่อยกู้</span><span class="desc">พิจารณาและติดตามสินเชื่อ</span></span>
+      </a>
+      <a href="villagefund/index.html" class="portal-card">
+        <span class="icon">💰</span>
+        <span><span class="label">กองทุนหมู่บ้าน</span><span class="desc">บริหารเงินกู้กองทุนหมู่บ้าน</span></span>
+      </a>
+      <a href="machinery/index.html" class="portal-card">
+        <span class="icon">🚜</span>
+        <span><span class="label">เครื่องจักรกล / ลานตาก</span><span class="desc">ให้บริการเครื่องจักรกลและลานตากผลผลิต</span></span>
+      </a>
+      <a href="inputsupplier/index.html" class="portal-card">
+        <span class="icon">🌱</span>
+        <span><span class="label">ผู้จำหน่ายปัจจัยการผลิต</span><span class="desc">เมล็ดพันธุ์ ปุ๋ย และปัจจัยการผลิต</span></span>
+      </a>
+      <a href="marketvenue/index.html" class="portal-card">
+        <span class="icon">🏪</span>
+        <span><span class="label">ผู้ให้บริการลานตลาด</span><span class="desc">พื้นที่ซื้อขายและกระจายสินค้า</span></span>
+      </a>
+      <a href="fertilizermixing/index.html" class="portal-card">
+        <span class="icon">⚗️</span>
+        <span><span class="label">ผสมปุ๋ยสั่งตัด</span><span class="desc">บริการผสมปุ๋ยตามค่าวิเคราะห์ดิน</span></span>
+      </a>
+    </div>
 
-    <div class="divider">หรือเข้าสู่ระบบด่วนด้วยบัญชีทดสอบ (Demo)</div>
-    <div class="demo-grid" id="demoGrid"></div>
+    <div class="portal-section-label">หน่วยงาน</div>
+    <div class="portal-grid">
+      <a href="gov/index.html" class="portal-card">
+        <span class="icon">🏛️</span>
+        <span><span class="label">เจ้าหน้าที่ภาครัฐ</span><span class="desc">ติดตามข้อมูลระดับพื้นที่และนโยบาย</span></span>
+      </a>
+      <a href="admin/index.html" class="portal-card admin-card">
+        <span class="icon">⚙️</span>
+        <span><span class="label">ผู้ดูแลระบบ</span><span class="desc">ตั้งค่าและดูแลระบบส่วนกลาง</span></span>
+      </a>
+    </div>
 
     <div class="divider">ยังไม่มีบัญชี?</div>
-    <a href="register.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">สมัครสมาชิกเกษตรกร</a>
-
-    <div class="divider">ผู้ปล่อยกู้ / ผู้รับซื้อผลผลิต / เครื่องจักรกล / ผู้จำหน่ายปัจจัยการผลิต / ลานตลาด / ผสมปุ๋ยสั่งตัด / ผู้ดูแลระบบ?</div>
-    <a href="lender/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ปล่อยกู้</a>
-    <a href="villagefund/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลกองทุนหมู่บ้าน</a>
-    <a href="buyer/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้รับซื้อผลผลิต</a>
-    <a href="machinery/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ให้บริการเครื่องจักรกล/ลานตาก</a>
-    <a href="inputsupplier/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้จำหน่ายปัจจัยการผลิต</a>
-    <a href="marketvenue/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ให้บริการลานตลาด</a>
-    <a href="fertilizermixing/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ให้บริการผสมปุ๋ยสั่งตัด</a>
-    <a href="coop/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลสหกรณ์ (จุดรับซื้อผลผลิต)</a>
-    <a href="gov/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลเจ้าหน้าที่ภาครัฐ</a>
-    <a href="admin/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ดูแลระบบ</a>
+    <a href="register.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">สมัครสมาชิกเกษตรกร</a>
     <a href="register-provider.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">สมัครเป็นผู้ให้บริการ</a>
   </div>
-
-  <script src="js/api.js"></script>
-  <script src="js/login.js"></script>
 </body>
 </html>
