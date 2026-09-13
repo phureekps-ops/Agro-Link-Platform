@@ -14,6 +14,24 @@ router.use(requireAuth, requirePlatform);
 const FARMER_STATUSES = ['pending_kyc', 'active', 'suspended', 'closed'];
 const ORG_KYB_STATUSES = ['Pending', 'Verified', 'Rejected'];
 
+// Added 2026-09-13 — 'FarmerAidFund' (กองทุนสงเคราะห์เกษตรกร) and
+// 'AgriCommunityEnterprise' (วิสาหกิจชุมชนด้านการเกษตร) are "bundle" org_types:
+// unlike every other self-registerable org_type (whose ONE primary role IS
+// its whole business capability), these two cover lending + machinery
+// service + selling inputs + buying produce from day one, per an explicit
+// product decision that approving KYB should open every one of those 4
+// roles in the same click rather than making the org request+wait for each
+// separately via POST /organization/roles. See POST /organizations/:id/kyb-
+// status below for where this is used, and
+// grant_farmer_aid_fund_community_enterprise.sql for the widened
+// org_type/role_type domain this depends on. (Group order — the 5th
+// requested capability — is a frontend-only feature, see frontend/js/
+// group-order-widget.js, with no backend role of its own.)
+const ORG_TYPE_ROLE_BUNDLE = {
+  FarmerAidFund: ['Lender', 'MachineryService', 'InputSupplier', 'Buyer'],
+  AgriCommunityEnterprise: ['Lender', 'MachineryService', 'InputSupplier', 'Buyer'],
+};
+
 // Same "23505" constant + constraint-name-to-error-code mapping idiom as
 // src/routes/auth.js's REGISTER_CONSTRAINT_ERRORS / ORG_REGISTER_CONSTRAINT_
 // ERRORS — this file never needed it before because nothing here INSERTed
@@ -303,12 +321,34 @@ router.post('/organizations/:id/kyb-status', async (req, res, next) => {
         [id, rows[0].org_type, kybStatus, reason || null],
       );
 
+      // Bundle org_types (see ORG_TYPE_ROLE_BUNDLE above) also sync a row
+      // for each of their bundled business roles here, same upsert as the
+      // primary-role row just above — so approving/rejecting KYB moves all
+      // 4 roles together instead of leaving them stuck row-less/Pending.
+      const bundledRoleTypes = ORG_TYPE_ROLE_BUNDLE[rows[0].org_type] || [];
+      for (const bundledRoleType of bundledRoleTypes) {
+        await client.query(
+          `INSERT INTO identity.organization_role (org_id, role_type, status, decided_at, decided_reason)
+           VALUES ($1, $2, $3, now(), $4)
+           ON CONFLICT (org_id, role_type) DO UPDATE
+             SET status = EXCLUDED.status, decided_at = now(), decided_reason = EXCLUDED.decided_reason`,
+          [id, bundledRoleType, kybStatus, reason || null],
+        );
+      }
+
       let activated = false;
       if (kybStatus === 'Verified') {
         const hasVendorProfile = await client.query('SELECT 1 FROM partner.vendor_profile WHERE org_id = $1', [id]);
         if (hasVendorProfile.rows.length > 0) {
           try {
             await client.query('SELECT partner.activate_vendor($1)', [id]);
+            // Bundle org_types: partner.activate_vendor() above only ever
+            // activates role_type = org_type itself, which for these two
+            // types isn't one of the 4 real business roles — activate each
+            // bundled role individually too.
+            for (const bundledRoleType of bundledRoleTypes) {
+              await client.query('SELECT partner.activate_vendor_role($1, $2)', [id, bundledRoleType]);
+            }
             activated = true;
           } catch (activateErr) {
             // Don't fail the whole KYB approval over activation — the org

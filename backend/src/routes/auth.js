@@ -50,6 +50,16 @@ const REGISTER_CONSTRAINT_ERRORS = {
 const ORG_SELF_REGISTER_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer', 'VillageFund',
   'MachineryService', 'DryingYardService',
+  // Added 2026-09-13 — two 'bundle' org_types that each cover several
+  // business functions from day one (lending + machinery service + input
+  // sales + produce buying, per the user's own request), rather than one
+  // function like every org_type above. See
+  // grant_farmer_aid_fund_community_enterprise.sql for the widened
+  // org_type/role_type domain, and admin.js's POST /organizations/:id/kyb-
+  // status for the bundle-grant logic that verifies all four underlying
+  // business roles (Lender/MachineryService/InputSupplier/Buyer) the same
+  // moment KYB is approved for one of these two types.
+  'FarmerAidFund', 'AgriCommunityEnterprise',
 ];
 
 // Added 2026-09-06, three explicit requests in sequence: first Buyer,

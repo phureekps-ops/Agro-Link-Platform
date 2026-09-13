@@ -45,6 +45,8 @@ const loginBuyerLink = document.getElementById("loginBuyerLink");
 const loginLogisticsLink = document.getElementById("loginLogisticsLink");
 const loginMachineryLink = document.getElementById("loginMachineryLink");
 const loginDryingYardLink = document.getElementById("loginDryingYardLink");
+const loginFarmerAidFundLink = document.getElementById("loginFarmerAidFundLink");
+const loginCommunityEnterpriseLink = document.getElementById("loginCommunityEnterpriseLink");
 const registerBtn = document.getElementById("registerBtn");
 const claimValueEl = document.getElementById("claimValue");
 const copyClaimBtn = document.getElementById("copyClaimBtn");
@@ -57,6 +59,8 @@ const ORG_TYPE_LABEL = {
   Logistics: "โลจิสติกส์/ขนส่งทั่วไป",
   MachineryService: "ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)",
   DryingYardService: "บริการลานตากข้าว",
+  FarmerAidFund: "กองทุนสงเคราะห์เกษตรกร",
+  AgriCommunityEnterprise: "วิสาหกิจชุมชนด้านการเกษตร",
 };
 
 // The role_types that share the machinery portal's rate card/routes —
@@ -213,6 +217,14 @@ registerForm.addEventListener("submit", async (e) => {
       // so a newly-registered DryingYardService org lands on ITS OWN
       // dashboard rather than the machinery one.
       DryingYardService: { sessionKey: "agrolink_dryingyard_session", dashboardUrl: "dryingyard/dashboard.html" },
+      // 'Bundle' org_types (see MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md +
+      // grant_farmer_aid_fund_community_enterprise.sql) — each lands on its
+      // own combined dashboard (frontend/farmeraidfund/,
+      // frontend/communityenterprise/) which embeds the SAME real Lender/
+      // MachineryService/InputSupplier/Buyer portals via iframe once KYB
+      // bundle-grants all 4 underlying roles, plus its own Group Order tab.
+      FarmerAidFund: { sessionKey: "agrolink_farmeraidfund_session", dashboardUrl: "farmeraidfund/dashboard.html" },
+      AgriCommunityEnterprise: { sessionKey: "agrolink_communityenterprise_session", dashboardUrl: "communityenterprise/dashboard.html" },
     };
     const portal = PORTAL_BY_ORG_TYPE[orgType] || (MACHINERY_ORG_TYPES.includes(orgType)
       ? { sessionKey: "agrolink_machinery_session", dashboardUrl: "machinery/dashboard.html" }
@@ -225,6 +237,8 @@ registerForm.addEventListener("submit", async (e) => {
     loginLogisticsLink.style.display = "none";
     loginMachineryLink.style.display = "none";
     loginDryingYardLink.style.display = "none";
+    loginFarmerAidFundLink.style.display = "none";
+    loginCommunityEnterpriseLink.style.display = "none";
 
     successDetail.textContent = portal
       ? `"${orgName}" (${ORG_TYPE_LABEL[orgType] || orgType}) อยู่ระหว่างการตรวจสอบ (KYB) — เมื่อเจ้าหน้าที่อนุมัติแล้ว ท่านจะเห็นข้อมูลเต็มรูปแบบในแดชบอร์ด`

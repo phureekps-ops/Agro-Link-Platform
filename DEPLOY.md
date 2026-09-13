@@ -180,6 +180,7 @@ grant_support_chat.sql
 grant_farmer_district.sql
 grant_flash_buy_campaign.sql
 grant_org_district.sql
+grant_farmer_aid_fund_community_enterprise.sql
 ```
 
 **เพิ่มเมื่อ 2026-08-29:** `grant_straw_processing_service.sql` — เพิ่ม
@@ -371,6 +372,36 @@ missing_required_fields` ถ้า 4 ประเภทข้างต้นไ�
 **หมายเหตุสำคัญ:** migration นี้ยังไม่ได้รันกับฐานข้อมูลจริงบน Render —
 ต้องรันเองผ่าน psql ตามขั้นตอนใน DEPLOY.md ข้อ 5-7 ก่อนฟีเจอร์นี้จะใช้งาน
 ได้ (เหมือนทุกครั้งที่ผ่านมา)
+
+**เพิ่มเมื่อ 2026-09-13:** `grant_farmer_aid_fund_community_enterprise.sql` —
+ตามคำขอเพิ่มพอร์ทัลใหม่ 2 ประเภท: กองทุนสงเคราะห์เกษตรกร
+(`FarmerAidFund`) และวิสาหกิจชุมชนด้านการเกษตร (`AgriCommunityEnterprise`) — ทั้งสองเป็น
+"บันดล" org_type ที่ครอบคลุม 4 บทบาททางธุรกิจพร้อมกันตั้งแต่วันแรก: ให้กู้ยืมเงิน
+(Lender), ให้บริการเครื่องจักรกลเกษตร (MachineryService), ขายปัจจัยการผลิตและสินค้าอื่นๆ
+(InputSupplier), และรับซื้อผลผลิต (Buyer) — พร้อมรวมออเดอร์ซื้อสินค้าเกษตร
+(ฟรอนต์เอนด์ล้วน ไม่ต้องมี role ของตัวเอง ดู frontend/js/group-order-widget.js)
+
+ตามคำตอบของผู้ใช้ เมื่อเจ้าหน้าที่อนุมัติ KYB ขององค์กรประเภทใดองค์หนึ่งในสองนี้
+ระบบจะ **เปิดครบทั้ง 4 บทบาทพร้อมกันทันทีในคลิกเดียว** (ไม่ต้องขอเพิ่มทีละบทบาทแบบ
+องค์กรทั่วไป) ตามเอกสาร `MULTI_ROLE_ORGANIZATION_ARCHITECTURE.md` ที่ยืนยันว่าโมเดล "องค์กร
+เดียว หลายบทบาท" มีอยู่แล้ว (`identity.organization_role`) — เพียงขยาย CHECK constraint ของ
+org_type/role_type ให้รองรับ 2 ค่าใหม่นี้ แล้วแก้ `backend/src/routes/admin.js`
+(`ORG_TYPE_ROLE_BUNDLE` map) ให้ KYB approval bundle-grant ทั้ง 4 role พร้อมกัน — ไม่มี
+ตาราง/คอลัมน์ใหม่เลย เป็นการขยาย CHECK domain ล้วนๆ เท่านั้น
+
+หน้าจอสมัครผู้ให้บริการ (`frontend/register-provider.html`) เพิ่ม 2 ตัวเลือกในดรอปดาวน์
+ประเภทธุรกิจ — ต้องแจ้งจังหวัด/อำเภอเหมือนทุก org_type ที่สมัครเองได้ก่อน
+หน้านี้ (grant_org_district.sql) เพิ่มพอร์ทัลใหม่ 2 พอร์ทัล (`frontend/farmeraidfund/`,
+`frontend/communityenterprise/`) แต่ละพอร์ทัลมีแท็บ Loans/Machinery/Inputs/Buyer ที่
+**ฝัง เดียวกัน (embed) พอร์ทัล Lender/MachineryService/InputSupplier/Buyer ที่มีอยู่แล้วโดยตรง
+ผ่าน `<iframe>`** (ไม่ได้เขียน UI ใหม่ซ้ำหรือเปลี่ยนโค้ด backend ของทั้ง 4 พอร์ทัลเดิมเลย)
+โดยล็อกอิน session เดียวกันเข้า localStorage ของทั้ง 4 พอร์ทัลสิบลิงตอน login ดู
+`frontend/farmeraidfund/js/api.js` สำหรับรายละเอียด
+
+**หมายเหตุสำคัญ:** migration นี้ยังไม่ได้รันกับฐานข้อมูลจริงบน Render —
+ต้องรันเองผ่าน psql ตามขั้นตอนใน DEPLOY.md ข้อ 5-7 ก่อนฟีเจอร์นี้จะใช้งาน
+ได้ เช่นเดียวกับทุก migration ก่อนหน้า ต้องรันทั้งกับฐานข้อมูล dev เครื่องที่ใช้
+ทดสอบและฐานข้อมูลจริงบน Render แยกกัน
 
 **เพิ่มเมื่อ 2026-09-06 (รอบที่ 2):** `grant_flash_buy_campaign.sql` —
 ฟีเจอร์ "ประกาศรับซื้อด่วน" ตามคำขอ "ผู้รับซื้อผลผลิตให้สามารถประกาศราคา

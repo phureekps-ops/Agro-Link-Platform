@@ -99,6 +99,7 @@ const ORG_TYPE_LABEL = {
   TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี", HarvesterService: "บริการรถเกี่ยวข้าว",
   TruckService: "บริการรถบรรทุก", DryingYardService: "บริการลานตากข้าว",
   MarketVenue: "ผู้ให้บริการพื้นที่ขายสินค้าเกษตร", FertilizerMixingService: "ผู้ให้บริการผสมปุ๋ยสั่งตัด",
+  FarmerAidFund: "กองทุนสงเคราะห์เกษตรกร", AgriCommunityEnterprise: "วิสาหกิจชุมชนด้านการเกษตร",
 };
 
 // Farmer statuses reuse the same generic badge palette as everywhere else:

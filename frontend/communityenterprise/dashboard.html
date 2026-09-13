@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลวิสาหกิจชุมชนด้านการเกษตร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .hub-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  .hub-sidebar {
+    width: 260px; flex: 0 0 260px; background: var(--green-900); color: #fff;
+    display: flex; flex-direction: column; padding: 20px 14px; box-sizing: border-box;
+  }
+  .hub-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; }
+  .hub-sidebar-logo { font-size: 26px; line-height: 1; }
+  .hub-sidebar-brand-name { font-weight: 700; font-size: 16px; }
+  .hub-sidebar-brand-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .hub-nav { flex: 1; overflow-y: auto; }
+  .hub-nav-group { margin-bottom: 16px; }
+  .hub-nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); padding: 0 10px 6px; }
+  .hub-nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13.5px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  }
+  .hub-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .hub-nav-item.active { background: rgba(255,255,255,0.16); color: #fff; font-weight: 600; }
+  .hub-sidebar-footer { font-size: 11px; color: rgba(255,255,255,0.5); padding: 12px 10px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 12px; }
+  .hub-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .hub-breadcrumb { font-size: 14.5px; }
+  .hub-breadcrumb-sep { opacity: 0.5; margin: 0 6px; }
+  @media (max-width: 860px) {
+    .hub-shell { flex-direction: column; }
+    .hub-sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 14px; }
+    .hub-sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 0 10px 0 0; }
+    .hub-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; overflow-y: visible; }
+    .hub-nav-group { margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .hub-nav-group-title { display: none; }
+    .hub-sidebar-footer { display: none; }
+  }
+
+  /* Overview tab — role status cards */
+  .hub-role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .hub-role-card { background: #fff; border: 1px solid var(--gray-300); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+  .hub-role-card .name { font-weight: 700; font-size: 14.5px; color: var(--green-900); margin-bottom: 6px; }
+  .hub-role-badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .hub-role-badge.Verified { background: var(--green-100); color: var(--green-700); }
+  .hub-role-badge.Pending { background: var(--gold-100); color: #a06a00; }
+  .hub-role-badge.Rejected { background: var(--red-100); color: var(--red-600); }
+
+  /* Embedded-module tabs (Loans/Machinery/Inputs/Buyer) */
+  .hub-embed-note {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    background: var(--green-100); border: 1px solid var(--green-600); border-radius: 10px;
+    padding: 10px 14px; font-size: 12.5px; color: var(--green-900); margin-bottom: 12px;
+  }
+  .hub-embed-note a { color: var(--green-900); font-weight: 700; text-decoration: underline; white-space: nowrap; }
+  .hub-embed-frame {
+    width: 100%; min-height: 70vh; border: 1px solid var(--gray-300); border-radius: var(--radius);
+    background: #fff;
+  }
+</style>
+</head>
+
+<body>
+  <div class="hub-shell">
+    <aside class="hub-sidebar">
+      <div class="hub-sidebar-brand">
+        <span class="hub-sidebar-logo">🏘️</span>
+        <div>
+          <div class="hub-sidebar-brand-name">AgroLink</div>
+          <div class="hub-sidebar-brand-sub">วิสาหกิจชุมชนด้านการเกษตร</div>
+        </div>
+      </div>
+      <nav class="hub-nav">
+        <div class="hub-nav-group">
+          <div class="hub-nav-group-title">ภาพรวม</div>
+          <button type="button" class="hub-nav-item active" data-page="overview">📊 ภาพรวมองค์กร</button>
+        </div>
+        <div class="hub-nav-group">
+          <div class="hub-nav-group-title">บริการทางธุรกิจ</div>
+          <button type="button" class="hub-nav-item" data-page="loans">🏦 สินเชื่อ</button>
+          <button type="button" class="hub-nav-item" data-page="machinery">🚜 บริการเครื่องจักรกล</button>
+          <button type="button" class="hub-nav-item" data-page="inputs">🧪 ขายปัจจัยการผลิต</button>
+          <button type="button" class="hub-nav-item" data-page="buyer">🌾 รับซื้อผลผลิต</button>
+        </div>
+        <div class="hub-nav-group">
+          <div class="hub-nav-group-title">จัดซื้อร่วม</div>
+          <button type="button" class="hub-nav-item" data-page="group-order">🛒 รวมออเดอร์ซื้อสินค้าเกษตร</button>
+        </div>
+      </nav>
+      <div class="hub-sidebar-footer">
+        พอร์ทัลนี้รวม 4 บทบาททางธุรกิจไว้ในที่เดียว — สินเชื่อ/เครื่องจักรกล/ปัจจัยการผลิต/รับซื้อผลผลิต
+        ใช้ระบบหลังบ้านเดียวกับพอร์ทัลเดิมทุกประการ
+      </div>
+    </aside>
+    <div class="hub-main">
+      <header class="app-header">
+        <div class="brand hub-breadcrumb">
+          <span>วิสาหกิจชุมชนด้านการเกษตร</span><span class="hub-breadcrumb-sep">/</span><span id="hubBreadcrumbCurrent">ภาพรวมองค์กร</span>
+        </div>
+        <div class="who">
+          <span class="name" id="orgName">กำลังโหลด…</span>
+          <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+        </div>
+      </header>
+
+      <div class="container" id="mainContainer">
+
+        <div class="hub-page" data-page-content="overview">
+          <div class="section-title">📊 ภาพรวมองค์กร</div>
+          <div id="entityStatusSection" class="card-list">
+            <div class="loading-line">กำลังโหลดสถานะองค์กร…</div>
+          </div>
+
+          <div class="section-title" style="margin-top:22px;">🧩 บทบาททางธุรกิจ</div>
+          <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+            เมื่อเจ้าหน้าที่อนุมัติการตรวจสอบธุรกิจ (KYB) ระบบจะเปิดใช้งานทั้ง 4 บทบาทด้านล่างพร้อมกันในคลิกเดียว
+            ไม่ต้องขอเพิ่มทีละบทบาท
+          </p>
+          <div id="roleStatusSection" class="hub-role-grid">
+            <div class="loading-line">กำลังโหลดสถานะบทบาท…</div>
+          </div>
+        </div>
+
+        <div class="hub-page" data-page-content="loans" style="display:none;">
+          <div class="section-title">🏦 สินเชื่อ</div>
+          <div class="hub-embed-note">
+            <span>โมดูลนี้ใช้ระบบเดียวกับพอร์ทัลผู้ปล่อยกู้ (Lender) — ข้อมูลและการอนุมัติทั้งหมดเป็นข้อมูลจริงชุดเดียวกัน</span>
+            <a href="../lender/dashboard.html" target="_blank" rel="noopener">เปิดแบบเต็มหน้าจอ ↗</a>
+          </div>
+          <iframe class="hub-embed-frame" data-src="../lender/dashboard.html" title="สินเชื่อ (Lender)"></iframe>
+        </div>
+
+        <div class="hub-page" data-page-content="machinery" style="display:none;">
+          <div class="section-title">🚜 บริการเครื่องจักรกล</div>
+          <div class="hub-embed-note">
+            <span>โมดูลนี้ใช้ระบบเดียวกับพอร์ทัลผู้ให้บริการเครื่องจักรกล — ข้อมูลและการจองทั้งหมดเป็นข้อมูลจริงชุดเดียวกัน</span>
+            <a href="../machinery/dashboard.html" target="_blank" rel="noopener">เปิดแบบเต็มหน้าจอ ↗</a>
+          </div>
+          <iframe class="hub-embed-frame" data-src="../machinery/dashboard.html" title="บริการเครื่องจักรกล"></iframe>
+        </div>
+
+        <div class="hub-page" data-page-content="inputs" style="display:none;">
+          <div class="section-title">🧪 ขายปัจจัยการผลิต</div>
+          <div class="hub-embed-note">
+            <span>โมดูลนี้ใช้ระบบเดียวกับพอร์ทัลผู้จำหน่ายปัจจัยการผลิต — ข้อมูลและคำสั่งซื้อทั้งหมดเป็นข้อมูลจริงชุดเดียวกัน</span>
+            <a href="../inputsupplier/dashboard.html" target="_blank" rel="noopener">เปิดแบบเต็มหน้าจอ ↗</a>
+          </div>
+          <iframe class="hub-embed-frame" data-src="../inputsupplier/dashboard.html" title="ขายปัจจัยการผลิต"></iframe>
+        </div>
+
+        <div class="hub-page" data-page-content="buyer" style="display:none;">
+          <div class="section-title">🌾 รับซื้อผลผลิต</div>
+          <div class="hub-embed-note">
+            <span>โมดูลนี้ใช้ระบบเดียวกับพอร์ทัลผู้รับซื้อผลผลิต — ข้อมูลและการรับซื้อทั้งหมดเป็นข้อมูลจริงชุดเดียวกัน</span>
+            <a href="../buyer/dashboard.html" target="_blank" rel="noopener">เปิดแบบเต็มหน้าจอ ↗</a>
+          </div>
+          <iframe class="hub-embed-frame" data-src="../buyer/dashboard.html" title="รับซื้อผลผลิต"></iframe>
+        </div>
+
+        <div class="hub-page" data-page-content="group-order" style="display:none;">
+          <div id="groupOrderWidget"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="../js/support-widget.js"></script>
+  <script src="../js/group-order-widget.js"></script>
+</body>
+</html>
