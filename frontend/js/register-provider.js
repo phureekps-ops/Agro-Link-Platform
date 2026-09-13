@@ -58,7 +58,7 @@ const ORG_TYPE_LABEL = {
   VillageFund: "กองทุนหมู่บ้าน",
   Logistics: "โลจิสติกส์/ขนส่งทั่วไป",
   MachineryService: "ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)",
-  DryingYardService: "บริการลานตากข้าว",
+  DryingYardService: "บริการลานตากข้าว/โกดังและไซโล",
   FarmerAidFund: "กองทุนสงเคราะห์เกษตรกร",
   AgriCommunityEnterprise: "วิสาหกิจชุมชนด้านการเกษตร",
 };

@@ -74,7 +74,7 @@ const ROLE_LABEL_TH = {
   MachineryService: 'ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)',
   TractorService: 'บริการรถไถ', DroneService: 'บริการโดรน/ฉีดพ่นสารเคมี',
   HarvesterService: 'บริการรถเกี่ยวข้าว', TruckService: 'บริการรถบรรทุก',
-  DryingYardService: 'บริการลานตากข้าว',
+  DryingYardService: 'บริการลานตากข้าว/โกดังและไซโล',
   FertilizerMixingService: 'ผู้ให้บริการผสมปุ๋ยสั่งตัด',
 };
 
