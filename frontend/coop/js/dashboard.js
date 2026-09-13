@@ -15,6 +15,7 @@ const COOP_PAGE_BREADCRUMB_TH = {
   members: "ข้อมูลเกษตรกร (Farmer 360°)",
   "org-staff": "องค์กร &amp; เจ้าหน้าที่",
   government: "ประตูเชื่อมต่อภาครัฐ",
+  "group-order": "รวมออเดอร์ซื้อสินค้าเกษตร",
 };
 
 function showCoopPage(pageKey) {

@@ -90,6 +90,10 @@
           <button type="button" class="farmer-nav-item" data-page="loans">🏦 คำขอสินเชื่อ</button>
         </div>
         <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">จัดซื้อร่วม</div>
+          <button type="button" class="farmer-nav-item" data-page="group-order">🛒 รวมออเดอร์ซื้อสินค้าเกษตร</button>
+        </div>
+        <div class="farmer-nav-group">
           <div class="farmer-nav-group-title">การแจ้งเตือน</div>
           <button type="button" class="farmer-nav-item" data-page="notifications">🔔 แจ้งเตือนที่ยังไม่อ่าน</button>
         </div>
@@ -183,6 +187,10 @@
     </div>
       </div>
 
+      <div class="farmer-page" data-page-content="group-order" style="display:none;">
+        <div id="groupOrderWidget"></div>
+      </div>
+
       <div class="farmer-page" data-page-content="notifications" style="display:none;">
     <div class="section-title">🔔 การแจ้งเตือนที่ยังไม่อ่าน</div>
     <div id="notificationsSection" class="card-list">
@@ -199,5 +207,6 @@
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/support-widget.js"></script>
+  <script src="js/group-order-widget.js"></script>
 </body>
 </html>

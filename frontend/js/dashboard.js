@@ -12,6 +12,7 @@ const FARMER_PAGE_BREADCRUMB_TH = {
   contracts: "สัญญา",
   loans: "คำขอสินเชื่อ",
   notifications: "แจ้งเตือนที่ยังไม่อ่าน",
+  "group-order": "รวมออเดอร์ซื้อสินค้าเกษตร",
 };
 
 function showFarmerPage(pageKey) {
