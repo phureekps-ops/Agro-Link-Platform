@@ -185,6 +185,64 @@
   .fb2 { bottom: -20px; left: -18px; }
   @media (max-width: 500px) { .float-badge { position: static; margin-top: 10px; width: fit-content; } }
 
+  /* QUICK CHAT WIDGET */
+  .quick-chat-section { background: var(--cream); padding: 22px 0 0; }
+  .quick-chat-card {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: 0 10px 26px rgba(18,61,43,.06);
+    max-width: 640px; margin: 0 auto; overflow: hidden;
+  }
+  .quick-chat-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; cursor: pointer; user-select: none;
+  }
+  .quick-chat-title { display: flex; align-items: center; gap: 12px; }
+  .quick-chat-icon {
+    flex: none; width: 38px; height: 38px; border-radius: 10px;
+    background: var(--green-light); color: var(--green);
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+  }
+  .quick-chat-title b { display: block; font-size: 14.5px; color: var(--navy); }
+  .quick-chat-title span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .quick-chat-toggle {
+    border: none; background: transparent; color: var(--muted); font-size: 14px;
+    cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center;
+    transition: transform .2s ease;
+  }
+  .quick-chat-card.collapsed .quick-chat-toggle { transform: rotate(180deg); }
+  .quick-chat-body { border-top: 1px solid var(--border); padding: 14px 18px 16px; }
+  .quick-chat-card.collapsed .quick-chat-body { display: none; }
+  .quick-chat-messages {
+    max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 12px; padding-right: 4px;
+  }
+  .qc-msg { max-width: 85%; font-size: 13.5px; line-height: 1.5; padding: 9px 13px; border-radius: 12px; }
+  .qc-msg-bot { background: var(--green-light); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .qc-msg-user { background: var(--green); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .quick-chat-form { display: flex; align-items: center; gap: 8px; }
+  .qc-mic-btn, .qc-send-btn {
+    flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border);
+    background: #fff; color: var(--green); font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .qc-mic-btn:hover { border-color: var(--green); }
+  .qc-mic-btn.recording { background: #C0392B; border-color: #C0392B; color: #fff; animation: qc-pulse 1.2s infinite; }
+  @keyframes qc-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(192,57,43,.35); }
+    50% { box-shadow: 0 0 0 8px rgba(192,57,43,0); }
+  }
+  .qc-send-btn { background: var(--green); border-color: var(--green); color: #fff; }
+  .qc-send-btn:hover { background: var(--green-dark); }
+  .quick-chat-form input[type="text"] {
+    flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 999px;
+    padding: 10px 16px; font-size: 14px; font-family: inherit; outline: none;
+  }
+  .quick-chat-form input[type="text"]:focus { border-color: var(--green); }
+  @media (max-width: 480px) {
+    .quick-chat-title span { display: none; }
+  }
+
   .partner-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #fff; }
   .partner-strip .container { display: flex; align-items: center; gap: 34px; padding: 22px 24px; flex-wrap: wrap; justify-content: center; }
   .partner-strip .label { font-size: 12.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
@@ -386,6 +444,39 @@
     <span>Thailand Agricultural Ecosystem</span>
   </div>
 </div>
+
+<section class="quick-chat-section">
+  <div class="container">
+    <div class="quick-chat-card" id="quickChatCard">
+      <div class="quick-chat-header" id="quickChatHeader">
+        <div class="quick-chat-title">
+          <div class="quick-chat-icon"><i class="fa-solid fa-comment-dots"></i></div>
+          <div>
+            <b>สอบถาม AgroLink</b>
+            <span>พิมพ์หรือพูดคำถามของคุณได้เลย</span>
+          </div>
+        </div>
+        <button type="button" class="quick-chat-toggle" id="quickChatToggle" aria-expanded="true" aria-controls="quickChatBody" aria-label="ย่อ/ขยายช่องแชท">
+          <i class="fa-solid fa-chevron-up"></i>
+        </button>
+      </div>
+      <div class="quick-chat-body" id="quickChatBody">
+        <div class="quick-chat-messages" id="quickChatMessages">
+          <div class="qc-msg qc-msg-bot">สวัสดีค่ะ 👋 มีคำถามเกี่ยวกับ AgroLink ไหมคะ พิมพ์หรือกดไมค์เพื่อพูดได้เลย</div>
+        </div>
+        <form class="quick-chat-form" id="quickChatForm">
+          <button type="button" class="qc-mic-btn" id="qcMicBtn" title="พูดเพื่อพิมพ์" aria-label="พูดเพื่อพิมพ์">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+          <input type="text" id="qcInput" placeholder="พิมพ์ข้อความ..." autocomplete="off" />
+          <button type="submit" class="qc-send-btn" aria-label="ส่งข้อความ">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
 
 <section class="hero">
   <div class="container hero-grid">
@@ -830,6 +921,83 @@
       });
     });
   });
+
+  // quick chat widget (homepage) — UI preview only, not yet wired to the
+  // real authenticated Support Chat backend (see backend/src/routes/support.js).
+  const qcCard = document.getElementById('quickChatCard');
+  const qcHeader = document.getElementById('quickChatHeader');
+  const qcToggle = document.getElementById('quickChatToggle');
+  const qcMessages = document.getElementById('quickChatMessages');
+  const qcForm = document.getElementById('quickChatForm');
+  const qcInput = document.getElementById('qcInput');
+  const qcMicBtn = document.getElementById('qcMicBtn');
+
+  function qcAddMessage(text, from) {
+    const el = document.createElement('div');
+    el.className = 'qc-msg qc-msg-' + from;
+    el.textContent = text;
+    qcMessages.appendChild(el);
+    qcMessages.scrollTop = qcMessages.scrollHeight;
+  }
+
+  if (qcHeader && qcCard && qcToggle) {
+    qcHeader.addEventListener('click', () => {
+      const collapsed = qcCard.classList.toggle('collapsed');
+      qcToggle.setAttribute('aria-expanded', String(!collapsed));
+    });
+  }
+
+  if (qcForm && qcInput) {
+    qcForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = qcInput.value.trim();
+      if (!text) return;
+      qcAddMessage(text, 'user');
+      qcInput.value = '';
+      setTimeout(() => {
+        qcAddMessage('ขอบคุณสำหรับข้อความค่ะ ขณะนี้ระบบแชทเต็มรูปแบบกำลังเปิดให้บริการเร็วๆ นี้ หากท่านเป็นเกษตรกรหรือผู้ให้บริการที่เข้าสู่ระบบแล้ว สามารถแชทกับเจ้าหน้าที่ได้ทันทีในหน้าพอร์ทัลของท่านค่ะ', 'bot');
+      }, 500);
+    });
+  }
+
+  const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (qcMicBtn && SpeechRecognitionImpl) {
+    const recognition = new SpeechRecognitionImpl();
+    recognition.lang = 'th-TH';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    let qcIsRecording = false;
+
+    recognition.addEventListener('result', (event) => {
+      const transcript = event.results[0][0].transcript;
+      qcInput.value = transcript;
+      qcInput.focus();
+    });
+    recognition.addEventListener('end', () => {
+      qcIsRecording = false;
+      qcMicBtn.classList.remove('recording');
+    });
+    recognition.addEventListener('error', () => {
+      qcIsRecording = false;
+      qcMicBtn.classList.remove('recording');
+    });
+
+    qcMicBtn.addEventListener('click', () => {
+      if (qcIsRecording) {
+        recognition.stop();
+        return;
+      }
+      try {
+        recognition.start();
+        qcIsRecording = true;
+        qcMicBtn.classList.add('recording');
+      } catch (err) {
+        qcIsRecording = false;
+      }
+    });
+  } else if (qcMicBtn) {
+    qcMicBtn.style.display = 'none';
+  }
 </script>
 </body>
 </html>
