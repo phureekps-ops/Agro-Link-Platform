@@ -2,6 +2,7 @@ const express = require('express');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireFarmer } = require('../middleware/auth');
+const carbonAggregation = require('../lib/carbonAggregation');
 
 const router = express.Router();
 
@@ -424,6 +425,26 @@ router.get('/carbon/methodology', async (req, res, next) => {
     });
     if (!config) return res.status(503).json({ error: 'no_active_awd_config' });
     return res.json(config);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /farmer/carbon/revenue — Phase 3 (see backend/db/grant_carbon_
+ * module_marketplace.sql). Read-only: a farmer sees only their own
+ * allocated amounts from carbon.revenue_distribution (recipient_type=
+ * 'farmer'), never anyone else's cut and never the org's own cut — there
+ * is no farmer-facing "mark paid" action, only the org that owns the
+ * project can flip payout_status (see coopcarbon.js's own POST
+ * .../revenue/:id/mark-paid for the org side of the same rows).
+ */
+router.get('/carbon/revenue', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, (client) =>
+      carbonAggregation.listDistributionsForFarmer(client, { farmerId: subjectId }));
+    return res.json({ distributions: rows });
   } catch (err) {
     return next(err);
   }

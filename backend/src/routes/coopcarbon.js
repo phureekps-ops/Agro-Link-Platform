@@ -271,4 +271,116 @@ router.get('/projects/:projectId/export', async (req, res, next) => {
   }
 });
 
+// ---------------------------------------------------------------------
+// Phase 3 — Marketplace + Automatic Revenue Sharing (see backend/db/
+// grant_carbon_module_marketplace.sql). Sellers here only create/list/
+// cancel their own listings and see/mark-paid the revenue distributions
+// tied to their own projects — matching a listing to a buyer's order is
+// MANUAL and done by Platform Ops only (backend/src/routes/admin.js's
+// /carbon/marketplace/* routes, via the same shared carbonAggregation.js
+// helper). No real money moves through this platform — payout_status is
+// purely an audit-trail flag the org flips after paying a farmer (or
+// receiving its own cut) through its own existing channels.
+// ---------------------------------------------------------------------
+
+// GET /coop-carbon/listings
+router.get('/listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, (client) =>
+      carbonAggregation.listListingsForOrg(client, { orgId: subjectId }));
+    return res.json({ listings: rows });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// POST /coop-carbon/listings
+// Body: { project_id, listed_credit_tco2e, asking_price_per_tco2e, note? }
+router.post('/listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    project_id: projectId, listed_credit_tco2e: listedCreditTco2e,
+    asking_price_per_tco2e: askingPricePerTco2e, note,
+  } = req.body || {};
+  try {
+    const listing = await withSessionContext('organization', subjectId, async (client) => {
+      const created = await carbonAggregation.createListing(client, {
+        orgId: subjectId, projectId, listedCreditTco2e, askingPricePerTco2e, note, createdBySubjectId: subjectId,
+      });
+      await logAccess(client, 'create', 'carbon_marketplace_listing', created.listing_id);
+      return created;
+    });
+    return res.status(201).json({ listing });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return next(err);
+  }
+});
+
+// POST /coop-carbon/listings/:listingId/cancel
+router.post('/listings/:listingId/cancel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { listingId } = req.params;
+  try {
+    const cancelled = await withSessionContext('organization', subjectId, async (client) => {
+      const ok = await carbonAggregation.cancelListing(client, { orgId: subjectId, listingId });
+      if (ok) await logAccess(client, 'update', 'carbon_marketplace_listing', listingId);
+      return ok;
+    });
+    if (!cancelled) return res.status(404).json({ error: 'listing_not_found_or_not_cancellable' });
+    return res.json({ ok: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /coop-carbon/revenue — every distribution (org's own cut + every
+// farmer's cut) tied to any of this org's projects, so it can see
+// everything it currently owes/has received.
+router.get('/revenue', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, (client) =>
+      carbonAggregation.listDistributionsForOrg(client, { orgId: subjectId }));
+    return res.json({ distributions: rows });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /coop-carbon/projects/:projectId/revenue
+router.get('/projects/:projectId/revenue', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { projectId } = req.params;
+  try {
+    const rows = await withSessionContext('organization', subjectId, (client) =>
+      carbonAggregation.listDistributionsForProject(client, { orgId: subjectId, projectId }));
+    return res.json({ distributions: rows });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return next(err);
+  }
+});
+
+// POST /coop-carbon/revenue/:distributionId/mark-paid — org confirms it has
+// paid a farmer (or received its own cut) outside the platform. Body:
+// { paid_note? }
+router.post('/revenue/:distributionId/mark-paid', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { distributionId } = req.params;
+  const { paid_note: paidNote } = req.body || {};
+  try {
+    const marked = await withSessionContext('organization', subjectId, async (client) => {
+      const ok = await carbonAggregation.markDistributionPaid(client, { orgId: subjectId, distributionId, paidNote });
+      if (ok) await logAccess(client, 'update', 'carbon_revenue_distribution', distributionId);
+      return ok;
+    });
+    if (!marked) return res.status(404).json({ error: 'distribution_not_found_or_already_paid' });
+    return res.json({ ok: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

@@ -72,6 +72,7 @@ const supportRouter = require('./routes/support');
 const coopCarbonRouter = require('./routes/coopcarbon');
 const communityEnterpriseCarbonRouter = require('./routes/communityenterprisecarbon');
 const villageFundCarbonRouter = require('./routes/villagefundcarbon');
+const buyerCarbonRouter = require('./routes/buyercarbon');
 
 const app = express();
 
@@ -149,6 +150,7 @@ app.use('/villagefund', villageFundRouter);
 app.use('/coop-carbon', coopCarbonRouter);
 app.use('/communityenterprise-carbon', communityEnterpriseCarbonRouter);
 app.use('/villagefund-carbon', villageFundCarbonRouter);
+app.use('/buyer-carbon', buyerCarbonRouter);
 app.use('/logistics', logisticsRouter);
 app.use('/aquaculture', aquacultureRouter);
 app.use('/support', supportRouter);

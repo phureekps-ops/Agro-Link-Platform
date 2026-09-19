@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (51 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (52 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -184,7 +184,35 @@ grant_farmer_aid_fund_community_enterprise.sql
 grant_about_content_add_farmer_section.sql
 grant_carbon_module_portal_aggregation.sql
 grant_carbon_module_mrv_evidence.sql
+grant_carbon_module_marketplace.sql
 ```
+
+**เพิ่มเมื่อ 2026-09-19 (ดึก):** `grant_carbon_module_marketplace.sql` —
+Carbon Module เฟส 3 (ตลาดซื้อขาย + แบ่งรายได้อัตโนมัติ) เพิ่มตาราง
+`carbon.marketplace_listing` (ประกาศขายเครดิตของผู้ขาย ผูกกับโครงการที่
+status = registered/credits_issued เท่านั้น), `carbon.marketplace_order`
+(คำสั่งซื้อของผู้ซื้อ องค์กร org_type='Buyer') และ `carbon.revenue_
+distribution` (ยอดจัดสรรรายได้ต่อผู้รับ พร้อม payout_status สำหรับติดตาม
+ว่าจ่ายจริงแล้วหรือยัง — ไม่มีการโอนเงินจริงผ่านแพลตฟอร์ม องค์กรจ่ายเงินให้
+เกษตรกร/รับส่วนของตนเองผ่านช่องทางเดิมแล้วมาทำเครื่องหมายว่าจ่ายแล้วเอง)
+การจับคู่ประกาศขาย↔คำสั่งซื้อทำโดย Platform Ops เท่านั้น (ไม่ใช่ self-serve)
+ผ่านหน้าใหม่ในพอร์ทัลผู้ดูแลระบบ ("🌱 ตลาดคาร์บอนเครดิต") ซึ่งเมื่อยืนยันจับคู่
+ระบบจะคำนวณส่วนแบ่งอัตโนมัติ (รายได้รวม → หักต้นทุนโครงการ → หักค่าธรรมเนียม
+AgroLink ตาม platform_fee_pct ของโครงการ → รายได้สุทธิ → แบ่งเข้ากองเกษตรกร
+ตาม farmer_pool_pct ของโครงการ กระจายตามสัดส่วน allocated_credit_tco2e ของ
+สมาชิกแต่ละคน → ส่วนที่เหลือเข้าองค์กร) การจับคู่ 1 ครั้งขายเต็มจำนวนของ
+ประกาศเท่านั้น ยังไม่รองรับขายบางส่วน (ผู้ขายที่มีเครดิตเหลือต้องลงประกาศแยก) —
+คู่กับ backend route ใหม่ (`backend/src/routes/buyercarbon.js` /buyer-carbon
+สำหรับผู้ซื้อ, endpoint ใหม่ในทั้ง 3 ไฟล์ผู้ขายเดิม coopcarbon.js/
+communityenterprisecarbon.js/villagefundcarbon.js สำหรับลงขาย/ดูรายได้/
+ทำเครื่องหมายจ่ายแล้ว, endpoint ใหม่ `/admin/carbon/marketplace/*` ใน
+admin.js สำหรับจับคู่, endpoint ใหม่ `GET /farmer/carbon/revenue` สำหรับ
+เกษตรกรดูยอดจัดสรรของตน — ทั้งหมดผ่าน shared helper
+`backend/src/lib/carbonAggregation.js`) และหน้าจอใหม่ในวิดเจ็ต
+`frontend/js/carbon-module-widget.js` (ลงขาย/ยกเลิกประกาศ + ดูรายได้/
+ทำเครื่องหมายจ่ายแล้ว), วิดเจ็ตใหม่ `frontend/js/carbon-marketplace-buyer-
+widget.js` (ฝั่งผู้ซื้อใน frontend/buyer/dashboard.html), และส่วนรายได้ใหม่ใน
+`frontend/carbon-credit.html`/`frontend/js/carbon-credit.js` (ฝั่งเกษตรกร)
 
 **เพิ่มเมื่อ 2026-09-19 (ค่ำ):** `grant_carbon_module_mrv_evidence.sql` —
 Carbon Module เฟส 2 (MRV Data Room + เตรียมยื่น T-VER) เพิ่มตาราง

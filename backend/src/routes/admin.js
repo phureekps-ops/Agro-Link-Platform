@@ -3,6 +3,7 @@ const crypto = require('crypto');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requirePlatform } = require('../middleware/auth');
+const carbonAggregation = require('../lib/carbonAggregation');
 
 const router = express.Router();
 
@@ -13,24 +14,6 @@ router.use(requireAuth, requirePlatform);
 
 const FARMER_STATUSES = ['pending_kyc', 'active', 'suspended', 'closed'];
 const ORG_KYB_STATUSES = ['Pending', 'Verified', 'Rejected'];
-
-// Added 2026-09-13 — 'FarmerAidFund' (กองทุนสงเคราะห์เกษตรกร) and
-// 'AgriCommunityEnterprise' (วิสาหกิจชุมชนด้านการเกษตร) are "bundle" org_types:
-// unlike every other self-registerable org_type (whose ONE primary role IS
-// its whole business capability), these two cover lending + machinery
-// service + selling inputs + buying produce from day one, per an explicit
-// product decision that approving KYB should open every one of those 4
-// roles in the same click rather than making the org request+wait for each
-// separately via POST /organization/roles. See POST /organizations/:id/kyb-
-// status below for where this is used, and
-// grant_farmer_aid_fund_community_enterprise.sql for the widened
-// org_type/role_type domain this depends on. (Group order — the 5th
-// requested capability — is a frontend-only feature, see frontend/js/
-// group-order-widget.js, with no backend role of its own.)
-const ORG_TYPE_ROLE_BUNDLE = {
-  FarmerAidFund: ['Lender', 'MachineryService', 'InputSupplier', 'Buyer'],
-  AgriCommunityEnterprise: ['Lender', 'MachineryService', 'InputSupplier', 'Buyer'],
-};
 
 // Same "23505" constant + constraint-name-to-error-code mapping idiom as
 // src/routes/auth.js's REGISTER_CONSTRAINT_ERRORS / ORG_REGISTER_CONSTRAINT_
@@ -321,34 +304,12 @@ router.post('/organizations/:id/kyb-status', async (req, res, next) => {
         [id, rows[0].org_type, kybStatus, reason || null],
       );
 
-      // Bundle org_types (see ORG_TYPE_ROLE_BUNDLE above) also sync a row
-      // for each of their bundled business roles here, same upsert as the
-      // primary-role row just above — so approving/rejecting KYB moves all
-      // 4 roles together instead of leaving them stuck row-less/Pending.
-      const bundledRoleTypes = ORG_TYPE_ROLE_BUNDLE[rows[0].org_type] || [];
-      for (const bundledRoleType of bundledRoleTypes) {
-        await client.query(
-          `INSERT INTO identity.organization_role (org_id, role_type, status, decided_at, decided_reason)
-           VALUES ($1, $2, $3, now(), $4)
-           ON CONFLICT (org_id, role_type) DO UPDATE
-             SET status = EXCLUDED.status, decided_at = now(), decided_reason = EXCLUDED.decided_reason`,
-          [id, bundledRoleType, kybStatus, reason || null],
-        );
-      }
-
       let activated = false;
       if (kybStatus === 'Verified') {
         const hasVendorProfile = await client.query('SELECT 1 FROM partner.vendor_profile WHERE org_id = $1', [id]);
         if (hasVendorProfile.rows.length > 0) {
           try {
             await client.query('SELECT partner.activate_vendor($1)', [id]);
-            // Bundle org_types: partner.activate_vendor() above only ever
-            // activates role_type = org_type itself, which for these two
-            // types isn't one of the 4 real business roles — activate each
-            // bundled role individually too.
-            for (const bundledRoleType of bundledRoleTypes) {
-              await client.query('SELECT partner.activate_vendor_role($1, $2)', [id, bundledRoleType]);
-            }
             activated = true;
           } catch (activateErr) {
             // Don't fail the whole KYB approval over activation — the org
@@ -915,6 +876,105 @@ router.post('/carbon/satellite-observations', async (req, res, next) => {
     }
     return res.status(201).json(result.observation);
   } catch (err) {
+    return next(err);
+  }
+});
+
+// ===========================================================================
+// Carbon Module — Phase 3 Marketplace + Automatic Revenue Sharing (see
+// backend/db/grant_carbon_module_marketplace.sql). Platform Ops is the ONLY
+// side that can match a buyer's order to a seller's listing — sellers
+// (coopcarbon.js / communityenterprisecarbon.js / villagefundcarbon.js) and
+// the buyer (buyercarbon.js) only create/list/cancel their own rows; the
+// actual pairing + revenue-split computation lives in the shared
+// carbonAggregation.matchOrderToListing(), used here under a 'platform'
+// session (not scoped to any one orgId, since Platform Ops sees across all
+// orgs — same withSessionContext('platform', ...) pattern as every other
+// route in this file).
+// ===========================================================================
+
+// GET /admin/carbon/marketplace/listings — all currently open listings.
+router.get('/carbon/marketplace/listings', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, (client) => carbonAggregation.listOpenListings(client));
+    return res.json({ listings: rows });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /admin/carbon/marketplace/orders — all currently pending orders.
+router.get('/carbon/marketplace/orders', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, (client) => carbonAggregation.listPendingOrders(client));
+    return res.json({ orders: rows });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/carbon/marketplace/match
+ * Body: { order_id, listing_id, matched_credit_tco2e, matched_price_per_tco2e, project_cost_baht? }
+ *
+ * Pairs one pending order to one open listing IN FULL (matched_credit_tco2e
+ * must exactly exhaust the listing — see carbonAggregation.js's own header
+ * note on this deliberate no-partial-match scope limitation), computes the
+ * Gross/Net/Farmer-Pool/Org revenue split from the listing's project's own
+ * farmer_pool_pct/platform_fee_pct, and records one carbon.revenue_
+ * distribution row per recipient (the org's own cut + one row per active
+ * project member, split proportionally by allocated_credit_tco2e). No real
+ * money moves — every row starts payout_status='pending' until the org
+ * marks it paid after transferring money through its own channels.
+ */
+router.post('/carbon/marketplace/match', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    order_id: orderId,
+    listing_id: listingId,
+    matched_credit_tco2e: matchedCreditTco2e,
+    matched_price_per_tco2e: matchedPricePerTco2e,
+    project_cost_baht: projectCostBaht,
+  } = req.body || {};
+
+  if (!orderId || !listingId || !matchedCreditTco2e || !matchedPricePerTco2e) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['order_id', 'listing_id', 'matched_credit_tco2e', 'matched_price_per_tco2e'],
+    });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const outcome = await carbonAggregation.matchOrderToListing(client, {
+        orderId, listingId, matchedCreditTco2e, matchedPricePerTco2e, projectCostBaht, matchedBySubjectId: subjectId,
+      });
+      await logAccess(client, 'update', 'carbon_marketplace_order', orderId);
+      return outcome;
+    });
+    return res.status(201).json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return next(err);
+  }
+});
+
+// POST /admin/carbon/marketplace/orders/:orderId/complete — closes an order
+// out once every one of its revenue_distribution rows has been marked paid.
+router.post('/carbon/marketplace/orders/:orderId/complete', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { orderId } = req.params;
+  try {
+    const order = await withSessionContext('platform', subjectId, async (client) => {
+      const updated = await carbonAggregation.completeOrder(client, { orderId });
+      await logAccess(client, 'update', 'carbon_marketplace_order', orderId);
+      return updated;
+    });
+    return res.json({ order });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     return next(err);
   }
 });
@@ -2085,414 +2145,5 @@ router.post('/cooperatives/:id/governance-assessment', async (req, res, next) =>
     return next(err);
   }
 });
-
-
-// ---------- คะแนนเครดิตด้วยโมเดลที่เรียนรู้จากข้อมูลจริง ----------
-// Restored 2026-08-27 — this exact route pair (POST /credit-model/retrain,
-// GET /credit-model) was originally added in commit 70760bc ("AI Maching
-// Scoring") together with grant_credit_model.sql, then accidentally
-// dropped in a later large refactor commit (c1ed7ec) that never touched
-// the SQL side — risk.credit_model / the ML branch inside risk.
-// compute_credit_score() have been sitting in the database schema this
-// whole time with no way to ever populate or activate them. Restoring
-// verbatim (re-verified against the current schema — production.
-// stage_calendar / contract.contract / contract.contract_party / credit.
-// loan_repayment / produce.delivery / registry.production_unit / identity.
-// farmer are all unchanged in shape since that commit) closes that gap:
-// this is what actually lets risk.compute_credit_score() ever take its
-// 'ml_logistic_regression' branch instead of always falling back to
-// 'rule_based_fallback'. See grant_credit_model.sql's own doc comment for
-// the full design rationale (why logistic regression, why gated on a
-// minimum sample size, why the rule-based formula in 02_full_schema.sql's
-// risk.compute_credit_score() is never removed — only optionally
-// overridden when a sufficiently-trained model exists).
-//
-// MIN_TRAINING_SAMPLES / MIN_PER_CLASS are deliberately conservative for
-// an early-stage pilot: below these, POST /admin/credit-model/retrain
-// refuses to activate a new model and reports why, leaving whatever was
-// previously active (or the rule-based formula, if nothing ever trained
-// successfully) untouched.
-const MIN_TRAINING_SAMPLES = 20;
-const MIN_PER_CLASS = 5;
-const CREDIT_MODEL_FEATURE_KEYS = ['production', 'contract', 'repayment', 'delivery'];
-
-/**
- * Computes the mean of an array of numbers, or `fallback` if the array is
- * empty (e.g. a factor no farmer in the training set has any history for).
- */
-function mean(values, fallback) {
-  if (values.length === 0) return fallback;
-  return values.reduce((s, v) => s + v, 0) / values.length;
-}
-
-/**
- * Population standard deviation, with a floor of 1e-6 to avoid a
- * div-by-zero (or a wildly unstable z-score) when every training example
- * happens to share the exact same value for a feature.
- */
-function stdDev(values, meanValue) {
-  if (values.length === 0) return 1;
-  const variance = values.reduce((s, v) => s + (v - meanValue) ** 2, 0) / values.length;
-  return Math.max(Math.sqrt(variance), 1e-6);
-}
-
-function sigmoid(z) {
-  return 1 / (1 + Math.exp(-z));
-}
-
-/**
- * Hand-written gradient-descent logistic regression — deliberately not a
- * library dependency (this stack has never had one; see
- * grant_credit_model.sql's doc comment) — over the 4 already-computed
- * rule-based factor ratios as features, L2-regularized to reduce
- * overfitting on what is likely still a small pilot-stage sample.
- * Returns fitted weights (object keyed by CREDIT_MODEL_FEATURE_KEYS),
- * bias, and training accuracy (fraction of training rows the fitted
- * model classifies correctly at a 0.5 threshold).
- */
-function trainLogisticRegression(featureRows, labels, { epochs = 800, learningRate = 0.15, l2 = 0.02 } = {}) {
-  const n = featureRows.length;
-  const d = CREDIT_MODEL_FEATURE_KEYS.length;
-  let weights = new Array(d).fill(0);
-  let bias = 0;
-
-  for (let epoch = 0; epoch < epochs; epoch += 1) {
-    const gradW = new Array(d).fill(0);
-    let gradB = 0;
-    for (let i = 0; i < n; i += 1) {
-      let z = bias;
-      for (let j = 0; j < d; j += 1) z += featureRows[i][j] * weights[j];
-      const pred = sigmoid(z);
-      const error = pred - labels[i];
-      for (let j = 0; j < d; j += 1) gradW[j] += error * featureRows[i][j];
-      gradB += error;
-    }
-    for (let j = 0; j < d; j += 1) {
-      weights[j] -= learningRate * (gradW[j] / n + l2 * weights[j]);
-    }
-    bias -= learningRate * (gradB / n);
-  }
-
-  let correct = 0;
-  for (let i = 0; i < n; i += 1) {
-    let z = bias;
-    for (let j = 0; j < d; j += 1) z += featureRows[i][j] * weights[j];
-    const predictedLabel = sigmoid(z) >= 0.5 ? 1 : 0;
-    if (predictedLabel === labels[i]) correct += 1;
-  }
-
-  const weightsObj = {};
-  CREDIT_MODEL_FEATURE_KEYS.forEach((key, idx) => { weightsObj[key] = weights[idx]; });
-
-  return { weights: weightsObj, bias, accuracy: n > 0 ? correct / n : null };
-}
-
-/**
- * GET /admin/credit-model — current active model's metadata, or a flag
- * saying nothing has ever been activated (every farmer is still scored by
- * the original rule-based formula in that case). Never returns the raw
- * weights to the frontend beyond what's needed to show training
- * diagnostics — there's nothing sensitive in them, but there's also no UI
- * need to show the actual coefficients.
- */
-router.get('/credit-model', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const active = await client.query(
-        `SELECT model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy, is_active
-           FROM risk.credit_model
-          WHERE is_active = true
-          LIMIT 1`,
-      );
-      const history = await client.query(
-        `SELECT model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy, is_active, notes
-           FROM risk.credit_model
-          ORDER BY trained_at DESC
-          LIMIT 20`,
-      );
-      return { active: active.rows[0] || null, history: history.rows };
-    });
-    return res.json(result);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-/**
- * POST /admin/credit-model/retrain
- *
- * Pulls the SAME 4 factor ratios risk.compute_credit_score() already
- * computes per farmer (production-verification-on-time rate, contract-
- * completion rate, on-time-repayment rate, delivery-settlement rate),
- * fits a logistic regression against a label built from actual contract/
- * repayment outcomes (label = 1 "good" if every terminal contract this
- * farmer has ever had was 'completed' — none 'terminated'/'breached' — AND
- * every recorded repayment was 'paid_on_time'; label = 0 "risky" if either
- * had at least one bad outcome), and — ONLY if the result clears
- * MIN_TRAINING_SAMPLES/MIN_PER_CLASS — deactivates whatever model was
- * previously active and activates this new one.
- *
- * Farmers with NEITHER a terminal contract NOR a repayment record are
- * excluded entirely: there is no credit-relevant outcome to learn from for
- * them (matches risk.compute_credit_score()'s own "no signal → neutral
- * 50.00" treatment — this training step simply never sees them as
- * training examples, same underlying reasoning).
- *
- * Below the minimum thresholds, this is a NO-OP on risk.credit_model
- * (nothing is written) — the response explains why, and every farmer
- * keeps being scored however they were before this call (rule-based, or
- * whatever model was already active).
- */
-router.post('/credit-model/retrain', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const { rows } = await client.query(`
-        WITH per_farmer AS (
-          SELECT
-            f.farmer_id,
-            (SELECT CASE WHEN count(*) = 0 THEN NULL
-                         ELSE 100.0 * count(*) FILTER (WHERE sc.actual_date <= sc.planned_date) / count(*) END
-               FROM production.stage_calendar sc
-               JOIN production.crop_cycle cc ON cc.cycle_id = sc.cycle_id
-               JOIN registry.production_unit pu ON pu.unit_id = cc.unit_id
-              WHERE pu.owner_farmer_id = f.farmer_id AND sc.status = 'verified') AS production_factor,
-            (SELECT count(DISTINCT c.contract_id) FILTER (WHERE c.status IN ('completed','terminated','breached'))
-               FROM contract.contract c
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS contract_total,
-            (SELECT count(DISTINCT c.contract_id) FILTER (WHERE c.status = 'completed')
-               FROM contract.contract c
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS contract_completed,
-            (SELECT count(r.repayment_id)
-               FROM credit.loan_repayment r
-               JOIN contract.contract c ON c.contract_id = r.contract_id
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS repayment_total,
-            (SELECT count(r.repayment_id) FILTER (WHERE r.status = 'paid_on_time')
-               FROM credit.loan_repayment r
-               JOIN contract.contract c ON c.contract_id = r.contract_id
-               JOIN contract.contract_party cp ON cp.contract_id = c.contract_id
-              WHERE cp.party_type = 'farmer' AND cp.party_id = f.farmer_id) AS repayment_on_time,
-            (SELECT CASE WHEN count(*) FILTER (WHERE d.status IN ('settled','rejected')) = 0 THEN NULL
-                         ELSE 100.0 * count(*) FILTER (WHERE d.status = 'settled')
-                              / count(*) FILTER (WHERE d.status IN ('settled','rejected')) END
-               FROM produce.delivery d
-               JOIN registry.production_unit pu ON pu.unit_id = d.unit_id
-              WHERE pu.owner_farmer_id = f.farmer_id) AS delivery_factor
-          FROM identity.farmer f
-        )
-        SELECT farmer_id, production_factor, delivery_factor,
-               contract_total, contract_completed, repayment_total, repayment_on_time,
-               CASE WHEN contract_total > 0 THEN 100.0 * contract_completed / contract_total ELSE NULL END AS contract_factor,
-               CASE WHEN repayment_total > 0 THEN 100.0 * repayment_on_time / repayment_total ELSE NULL END AS repayment_factor
-          FROM per_farmer
-         WHERE COALESCE(contract_total, 0) > 0 OR COALESCE(repayment_total, 0) > 0
-      `);
-
-      const trainingRows = rows.map((r) => ({
-        production: r.production_factor === null ? null : Number(r.production_factor),
-        contract: r.contract_factor === null ? null : Number(r.contract_factor),
-        repayment: r.repayment_factor === null ? null : Number(r.repayment_factor),
-        delivery: r.delivery_factor === null ? null : Number(r.delivery_factor),
-        label: (
-          (Number(r.contract_total) === 0 || Number(r.contract_completed) === Number(r.contract_total))
-          && (Number(r.repayment_total) === 0 || Number(r.repayment_on_time) === Number(r.repayment_total))
-        ) ? 1 : 0,
-      }));
-
-      const sampleSize = trainingRows.length;
-      const positiveCount = trainingRows.filter((r) => r.label === 1).length;
-      const negativeCount = sampleSize - positiveCount;
-
-      if (sampleSize < MIN_TRAINING_SAMPLES || positiveCount < MIN_PER_CLASS || negativeCount < MIN_PER_CLASS) {
-        return {
-          activated: false,
-          sample_size: sampleSize,
-          positive_count: positiveCount,
-          negative_count: negativeCount,
-          min_training_samples: MIN_TRAINING_SAMPLES,
-          min_per_class: MIN_PER_CLASS,
-          reason: 'insufficient_data',
-        };
-      }
-
-      // Per-feature mean/std — imputation mean is over only the farmers
-      // who actually have that factor (production/delivery can be null
-      // even for farmers included via contract/repayment history alone).
-      const featureMeans = {};
-      const featureStds = {};
-      CREDIT_MODEL_FEATURE_KEYS.forEach((key) => {
-        const observed = trainingRows.map((r) => r[key]).filter((v) => v !== null);
-        const m = mean(observed, 50);
-        featureMeans[key] = m;
-        featureStds[key] = stdDev(observed, m);
-      });
-
-      const featureRows = trainingRows.map((r) => CREDIT_MODEL_FEATURE_KEYS.map((key) => {
-        const raw = r[key] === null ? featureMeans[key] : r[key];
-        return (raw - featureMeans[key]) / featureStds[key];
-      }));
-      const labels = trainingRows.map((r) => r.label);
-
-      const { weights, bias, accuracy } = trainLogisticRegression(featureRows, labels);
-
-      // Same `client` this whole route already has open (from the outer
-      // withSessionContext call) — deliberately NOT a second nested
-      // withSessionContext (that would open a wasted extra pool
-      // connection for no benefit, since ROLE/session context are already
-      // set on this one).
-      await client.query('UPDATE risk.credit_model SET is_active = false WHERE is_active = true');
-      const { rows: inserted } = await client.query(
-        `INSERT INTO risk.credit_model
-           (sample_size, positive_count, negative_count, feature_means, feature_stds, weights, bias, training_accuracy, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
-         RETURNING model_id, trained_at, sample_size, positive_count, negative_count, training_accuracy`,
-        // jsonb columns — explicit JSON.stringify rather than relying on
-        // pg's implicit object->JSON serialization, since no other route
-        // in this codebase writes a jsonb column from a JS-side parameter
-        // (every other jsonb write in this project builds the JSON at the
-        // SQL level via jsonb_build_object) — nothing to match here, so
-        // being explicit removes any ambiguity.
-        [sampleSize, positiveCount, negativeCount, JSON.stringify(featureMeans), JSON.stringify(featureStds), JSON.stringify(weights), bias, accuracy],
-      );
-      const model = inserted[0];
-      await logAccess(client, 'write', 'risk.credit_model', model.model_id);
-
-      return { activated: true, ...model };
-    });
-
-    return res.json(result);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-
-// ============================================================
-// Support Chat — admin (platform) side. See grant_support_chat.sql for
-// the schema and support.js for the widget-side (every non-platform
-// subject) half of this feature. Kept here rather than its own file,
-// same convention as every other platform-only slice in this project
-// (e.g. the /admin/product-listings* / /admin/service-listings* featured-
-// listings routes above) — requirePlatform is already applied to this
-// whole router via the router.use() at the top of this file.
-// ============================================================
-
-/**
- * GET /admin/support/conversations — every support conversation, newest
- * activity first. Resolves a human-readable subject_label the same
- * COALESCE(...)-over-LEFT-JOINs way procurement.js resolves
- * requester_name for its own polymorphic subject_type/subject_id pair —
- * extended to all four eligible subject types here (procurement.js only
- * ever needed farmer/organization).
- */
-router.get('/support/conversations', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  try {
-    const rows = await withSessionContext('platform', subjectId, async (client) => {
-      const result = await client.query(`
-        SELECT c.conversation_id, c.subject_type, c.subject_id, c.status,
-               c.unread_by_admin, c.last_message_at,
-               COALESCE(f.full_name, o.org_name, om.full_name, g.full_name) AS subject_label,
-               org2.org_name AS member_org_name
-          FROM support.conversation c
-          LEFT JOIN identity.farmer f
-            ON c.subject_type = 'farmer' AND f.farmer_id = c.subject_id
-          LEFT JOIN identity.organization o
-            ON c.subject_type = 'organization' AND o.org_id = c.subject_id
-          LEFT JOIN identity.organization_member om
-            ON c.subject_type = 'organization_member' AND om.member_id = c.subject_id
-          LEFT JOIN identity.organization org2
-            ON om.org_id = org2.org_id
-          LEFT JOIN identity.government_officer g
-            ON c.subject_type = 'government_officer' AND g.officer_id = c.subject_id
-         ORDER BY c.last_message_at DESC
-      `);
-      return result.rows;
-    });
-    res.json(rows);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * GET /admin/support/conversations/:id/messages — full thread, oldest
- * first. Marks it read BY THE ADMIN (unread_by_admin -> false) as a side
- * effect — same "GET marks read" convention as GET /support/messages on
- * the widget side in support.js.
- */
-router.get('/support/conversations/:id/messages', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { id } = req.params;
-  try {
-    const messages = await withSessionContext('platform', subjectId, async (client) => {
-      const result = await client.query(
-        `SELECT message_id, sender_role, body, created_at
-           FROM support.message
-          WHERE conversation_id = $1
-          ORDER BY created_at ASC`,
-        [id],
-      );
-      await client.query(
-        `UPDATE support.conversation SET unread_by_admin = false WHERE conversation_id = $1`,
-        [id],
-      );
-      return result.rows;
-    });
-    res.json(messages);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * POST /admin/support/conversations/:id/reply — body { message } →
- * appends a sender_role='admin' message and flips unread_by_user=true so
- * it surfaces back on the original subject's own widget the next time it
- * polls GET /support/messages. 404s if the conversation_id doesn't exist
- * (e.g. a stale tab after the conversation somehow disappeared) rather
- * than silently inserting an orphaned message.
- */
-router.post('/support/conversations/:id/reply', async (req, res, next) => {
-  const { subjectId } = req.subject;
-  const { id } = req.params;
-  const body = typeof req.body.message === 'string' ? req.body.message.trim() : '';
-  if (!body) return res.status(400).json({ error: 'message_required' });
-  if (body.length > 4000) return res.status(400).json({ error: 'message_too_long', max_length: 4000 });
-
-  try {
-    const result = await withSessionContext('platform', subjectId, async (client) => {
-      const conv = await client.query(
-        'SELECT conversation_id FROM support.conversation WHERE conversation_id = $1',
-        [id],
-      );
-      if (conv.rows.length === 0) return { notFound: true };
-
-      const msgResult = await client.query(
-        `INSERT INTO support.message (conversation_id, sender_role, body)
-              VALUES ($1, 'admin', $2)
-         RETURNING message_id, sender_role, body, created_at`,
-        [id, body],
-      );
-      await client.query(
-        `UPDATE support.conversation
-            SET unread_by_user = true, unread_by_admin = false, last_message_at = now(),
-                updated_at = now(), status = 'open'
-          WHERE conversation_id = $1`,
-        [id],
-      );
-      return { message: msgResult.rows[0] };
-    });
-    if (result.notFound) return res.status(404).json({ error: 'conversation_not_found' });
-    res.status(201).json(result.message);
-  } catch (err) {
-    next(err);
-  }
-});
-
 
 module.exports = router;

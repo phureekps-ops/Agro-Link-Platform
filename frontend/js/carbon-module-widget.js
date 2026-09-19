@@ -1,11 +1,20 @@
 /**
  * AgroLink — Carbon Module Widget (โมดูลคาร์บอนเครดิตระดับองค์กร) —
- * Phase 1 + Phase 2 (see backend/db/grant_carbon_module_portal_
- * aggregation.sql + grant_carbon_module_mrv_evidence.sql and
- * backend/src/lib/carbonAggregation.js for the schema/API this talks to).
+ * Phase 1 + Phase 2 + Phase 3 (see backend/db/grant_carbon_module_portal_
+ * aggregation.sql + grant_carbon_module_mrv_evidence.sql +
+ * grant_carbon_module_marketplace.sql and backend/src/lib/
+ * carbonAggregation.js for the schema/API this talks to).
  * Phase 2 adds the MRV Data Room (evidence list/upload/remove per project)
  * and a client-side "export ชุดเอกสาร" manifest for staff to hand a VVB/
  * อบก.(TGO) by hand — there is no direct integration with either.
+ * Phase 3 adds, per project once it reaches 'registered'/'credits_issued',
+ * a "ลงขาย" (list for sale) form + this org's own listings for that
+ * project, plus an org-wide "รายได้จากการขายคาร์บอนเครดิต" panel showing
+ * every carbon.revenue_distribution row tied to this org's projects (the
+ * org's own cut AND every farmer's cut it owes) with a "mark paid" action.
+ * Matching a listing to a buyer's order is done ONLY by Platform Ops (see
+ * frontend/admin/js/dashboard.js) — this widget never matches anything
+ * itself, only creates/cancels listings and marks payouts as sent.
  *
  * Self-contained (own inline <style>, no dependency on any page's existing
  * CSS) so the SAME script tag can be dropped into every portal's
@@ -74,6 +83,16 @@
     other: 'อื่นๆ',
   };
   const EVIDENCE_EDITABLE_STATUSES = ['draft', 'mrv_prep'];
+
+  const LISTING_ELIGIBLE_PROJECT_STATUSES = ['registered', 'credits_issued'];
+  const LISTING_STATUS_LABEL_TH = {
+    open: 'เปิดขาย',
+    matched: 'จับคู่แล้ว (รอสรุปยอด)',
+    closed: 'ปิดแล้ว',
+    cancelled: 'ยกเลิกแล้ว',
+  };
+  const PAYOUT_STATUS_LABEL_TH = { pending: 'รอจ่าย', paid: 'จ่ายแล้ว' };
+  const RECIPIENT_TYPE_LABEL_TH = { organization: 'ส่วนขององค์กร', farmer: 'ส่วนของเกษตรกร' };
 
   function cmEscapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -202,6 +221,9 @@
     let expandedEvidence = [];
     let showCreateForm = false;
     let showEvidenceForm = false;
+    let listings = [];
+    let distributions = [];
+    let showListingFormForProjectId = null;
 
     async function loadProjects() {
       try {
@@ -237,6 +259,25 @@
       } catch (err) {
         cmToast(`โหลดหลักฐาน MRV ไม่สำเร็จ: ${err.message}`, true);
         expandedEvidence = [];
+      }
+    }
+
+    // ---------------- Phase 3 — Marketplace + Revenue loaders ----------------
+    async function loadListings() {
+      try {
+        const data = await cmGet('/listings');
+        listings = data.listings || [];
+      } catch (err) {
+        cmToast(`โหลดประกาศขายไม่สำเร็จ: ${err.message}`, true);
+      }
+    }
+
+    async function loadRevenue() {
+      try {
+        const data = await cmGet('/revenue');
+        distributions = data.distributions || [];
+      } catch (err) {
+        cmToast(`โหลดข้อมูลรายได้ไม่สำเร็จ: ${err.message}`, true);
       }
     }
 
@@ -372,6 +413,58 @@
       `;
     }
 
+    function renderListingForm(projectId) {
+      if (showListingFormForProjectId !== projectId) {
+        return `<div style="margin-top:10px;"><button type="button" class="cm-btn cm-btn-secondary" id="cmShowListingBtn" data-project-id="${cmEscapeHtml(projectId)}">＋ ลงขายเครดิตจากโครงการนี้</button></div>`;
+      }
+      return `
+        <form class="cm-form" id="cmListingForm" data-project-id="${cmEscapeHtml(projectId)}">
+          <div class="cm-field">
+            <label for="cmListedCredit">ปริมาณเครดิตที่ขาย (tCO2e) *</label>
+            <input type="number" id="cmListedCredit" min="0.0001" step="0.0001" required />
+          </div>
+          <div class="cm-field">
+            <label for="cmAskingPrice">ราคาที่ต้องการ (บาท/tCO2e) *</label>
+            <input type="number" id="cmAskingPrice" min="0.01" step="0.01" required />
+          </div>
+          <div class="cm-field cm-field-full">
+            <label for="cmListingNote">หมายเหตุ (ถ้ามี)</label>
+            <textarea id="cmListingNote" rows="2"></textarea>
+          </div>
+          <div class="cm-field-full" style="display:flex; gap:8px;">
+            <button type="submit" class="cm-btn">ลงประกาศขาย</button>
+            <button type="button" class="cm-btn cm-btn-secondary" id="cmCancelListingFormBtn">ยกเลิก</button>
+          </div>
+        </form>
+      `;
+    }
+
+    /**
+     * Phase 3 — one project's own listings + the form to create a new one.
+     * A project can only be listed once it has actually reached
+     * 'registered'/'credits_issued' (LISTING_ELIGIBLE_PROJECT_STATUSES) —
+     * matches carbonAggregation.createListing()'s own server-side check.
+     */
+    function renderListingsForProject(project) {
+      const projectListings = listings.filter((l) => l.project_id === project.project_id);
+      const canList = LISTING_ELIGIBLE_PROJECT_STATUSES.includes(project.status);
+      const items = projectListings.map((l) => `
+        <div class="cm-member-row">
+          <div>
+            <div class="cm-member-name">${cmNum(l.listed_credit_tco2e)} tCO2e @ ${cmNum(l.asking_price_per_tco2e)} บาท/tCO2e</div>
+            <div class="cm-member-sub">สถานะ: ${LISTING_STATUS_LABEL_TH[l.status] || l.status}${l.note ? ` · ${cmEscapeHtml(l.note)}` : ''} · ลงเมื่อ ${cmThaiDate(l.created_at)}</div>
+          </div>
+          ${l.status === 'open' ? `<button type="button" class="cm-btn cm-btn-danger" data-cancel-listing-id="${cmEscapeHtml(l.listing_id)}">ยกเลิกประกาศ</button>` : ''}
+        </div>
+      `).join('');
+      return `
+        <div class="cm-section-title">🏷 ตลาดซื้อขายเครดิต</div>
+        ${!canList ? '<div class="cm-empty">ลงขายได้เมื่อโครงการขึ้นทะเบียนแล้ว (registered) หรือออกเครดิตแล้ว (credits_issued) เท่านั้น</div>' : ''}
+        ${projectListings.length === 0 ? '<div class="cm-empty">ยังไม่มีประกาศขายจากโครงการนี้</div>' : items}
+        ${canList ? renderListingForm(project.project_id) : ''}
+      `;
+    }
+
     function renderProjectDetail(detail) {
       const p = detail.project;
       const statusOptions = PROJECT_STATUSES.map((s) => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${PROJECT_STATUS_LABEL_TH[s]}</option>`).join('');
@@ -398,6 +491,7 @@
           ${renderMemberList(detail)}
           ${renderEligibleList(p.project_id)}
           ${renderEvidenceList(p)}
+          ${renderListingsForProject(p)}
         </div>
       `;
     }
@@ -420,6 +514,40 @@
       `;
     }
 
+    /**
+     * Phase 3 — org-wide revenue panel: every carbon.revenue_distribution
+     * row tied to any of this org's projects, both the org's own cut AND
+     * every farmer's cut the org itself must pay out through its own
+     * channels (see this file's own header + backend's payout_status
+     * note — no real money moves through this platform).
+     */
+    function renderRevenuePanel() {
+      if (distributions.length === 0) {
+        return `
+          <div class="cm-panel">
+            <div class="cm-section-title" style="margin-top:0;">💰 รายได้จากการขายคาร์บอนเครดิต</div>
+            <div class="cm-empty">ยังไม่มีรายการรายได้ — จะปรากฏหลังฝ่ายปฏิบัติการ (Platform Ops) จับคู่คำสั่งซื้อกับประกาศขายของโครงการแล้ว</div>
+          </div>
+        `;
+      }
+      const rows = distributions.map((d) => `
+        <div class="cm-member-row">
+          <div>
+            <div class="cm-member-name">${cmEscapeHtml(d.project_name)} — ${RECIPIENT_TYPE_LABEL_TH[d.recipient_type] || d.recipient_type}${d.recipient_type === 'farmer' ? ` (${cmEscapeHtml(d.farmer_name)} · ${cmEscapeHtml(d.farmer_code || '-')})` : ''}</div>
+            <div class="cm-member-sub">${cmNum(d.amount_baht)} บาท · ${PAYOUT_STATUS_LABEL_TH[d.payout_status] || d.payout_status}${d.paid_at ? ` เมื่อ ${cmThaiDate(d.paid_at)}` : ''} · เกิดเมื่อ ${cmThaiDate(d.created_at)}</div>
+          </div>
+          ${d.payout_status === 'pending' ? `<button type="button" class="cm-btn cm-btn-secondary" data-mark-paid-id="${cmEscapeHtml(d.distribution_id)}">ทำเครื่องหมายว่าจ่ายแล้ว</button>` : ''}
+        </div>
+      `).join('');
+      return `
+        <div class="cm-panel">
+          <div class="cm-section-title" style="margin-top:0;">💰 รายได้จากการขายคาร์บอนเครดิต</div>
+          <p class="cm-desc">ยอดคำนวณอัตโนมัติเมื่อฝ่ายปฏิบัติการจับคู่คำสั่งซื้อกับประกาศขาย — องค์กรจ่ายเงินให้เกษตรกร (หรือรับส่วนของตนเอง) ผ่านช่องทางเดิมนอกระบบ แล้วกดทำเครื่องหมายว่าจ่ายแล้วที่นี่ ระบบไม่ได้โอนเงินจริงผ่านแพลตฟอร์ม</p>
+          ${rows}
+        </div>
+      `;
+    }
+
     function render() {
       mount.innerHTML = `
         <div class="cm-panel">
@@ -428,6 +556,7 @@
           ${renderCreateForm()}
           ${projects.length === 0 ? '<div class="cm-empty">ยังไม่มีโครงการคาร์บอน — เริ่มสร้างโครงการแรกได้ด้านบน</div>' : projects.map(renderProjectCard).join('')}
         </div>
+        ${renderRevenuePanel()}
       `;
       attachHandlers();
     }
@@ -471,11 +600,13 @@
             expandedDetail = null;
             expandedEvidence = [];
             showEvidenceForm = false;
+            showListingFormForProjectId = null;
             render();
             return;
           }
           expandedProjectId = projectId;
           showEvidenceForm = false;
+          showListingFormForProjectId = null;
           await Promise.all([loadDetail(projectId), loadEligible(), loadEvidence(projectId)]);
           render();
         });
@@ -669,6 +800,74 @@
           }
         });
       }
+
+      // ---------------- Phase 3 — Marketplace + Revenue handlers ----------------
+      const showListingBtn = document.getElementById('cmShowListingBtn');
+      if (showListingBtn) {
+        showListingBtn.addEventListener('click', () => {
+          showListingFormForProjectId = showListingBtn.dataset.projectId;
+          render();
+        });
+      }
+
+      const cancelListingFormBtn = document.getElementById('cmCancelListingFormBtn');
+      if (cancelListingFormBtn) cancelListingFormBtn.addEventListener('click', () => { showListingFormForProjectId = null; render(); });
+
+      const listingForm = document.getElementById('cmListingForm');
+      if (listingForm) {
+        listingForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const projectId = listingForm.dataset.projectId;
+          const listedCreditTco2e = parseFloat(document.getElementById('cmListedCredit').value || '0');
+          const askingPricePerTco2e = parseFloat(document.getElementById('cmAskingPrice').value || '0');
+          const note = document.getElementById('cmListingNote').value.trim();
+          if (!(listedCreditTco2e > 0) || !(askingPricePerTco2e > 0)) {
+            cmToast('กรุณาระบุปริมาณเครดิตและราคาที่มากกว่า 0', true);
+            return;
+          }
+          try {
+            await cmPost('/listings', {
+              project_id: projectId, listed_credit_tco2e: listedCreditTco2e, asking_price_per_tco2e: askingPricePerTco2e, note: note || null,
+            });
+            cmToast('ลงประกาศขายเรียบร้อยแล้ว');
+            showListingFormForProjectId = null;
+            await loadListings();
+            render();
+          } catch (err) {
+            cmToast(`ลงประกาศขายไม่สำเร็จ: ${err.message}`, true);
+          }
+        });
+      }
+
+      mount.querySelectorAll('[data-cancel-listing-id]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const listingId = btn.dataset.cancelListingId;
+          try {
+            await cmPost(`/listings/${listingId}/cancel`, {});
+            cmToast('ยกเลิกประกาศขายแล้ว');
+            await loadListings();
+            render();
+          } catch (err) {
+            cmToast(`ยกเลิกไม่สำเร็จ: ${err.message}`, true);
+          }
+        });
+      });
+
+      mount.querySelectorAll('[data-mark-paid-id]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const distributionId = btn.dataset.markPaidId;
+          btn.disabled = true;
+          try {
+            await cmPost(`/revenue/${distributionId}/mark-paid`, {});
+            cmToast('บันทึกว่าจ่ายแล้วเรียบร้อย');
+            await loadRevenue();
+            render();
+          } catch (err) {
+            cmToast(`บันทึกไม่สำเร็จ: ${err.message}`, true);
+            btn.disabled = false;
+          }
+        });
+      });
     }
 
     /**
@@ -710,7 +909,7 @@
 
     (async () => {
       mount.innerHTML = `<div class="cm-panel"><div class="cm-empty">กำลังโหลดข้อมูลคาร์บอนเครดิต...</div></div>`;
-      await loadProjects();
+      await Promise.all([loadProjects(), loadListings(), loadRevenue()]);
       render();
     })();
   }

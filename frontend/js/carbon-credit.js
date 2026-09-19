@@ -91,6 +91,35 @@ document.getElementById("cyclesListSection").addEventListener("click", (e) => {
   openDetail(card.dataset.cycleId);
 });
 
+// ---------- รายได้จากการขายคาร์บอนเครดิต (Phase 3, see backend/db/grant_
+// carbon_module_marketplace.sql) ----------
+const PAYOUT_STATUS_LABEL = { pending: "รอจ่าย", paid: "จ่ายแล้ว" };
+
+function revenueCard(d) {
+  return `
+    <div class="item-card">
+      <div class="row"><span class="title">${escapeHtml(d.project_name)}</span><span class="badge ${d.payout_status === "paid" ? "status-active" : "status-pending"}">${escapeHtml(PAYOUT_STATUS_LABEL[d.payout_status] || d.payout_status)}</span></div>
+      <div class="detail-line">${d.amount_baht} บาท</div>
+      <div class="detail-line muted">${d.paid_at ? `จ่ายเมื่อ ${thaiDate(d.paid_at)} · ` : ""}เกิดเมื่อ ${thaiDate(d.created_at)}</div>
+    </div>
+  `;
+}
+
+async function loadCarbonRevenue() {
+  const el = document.getElementById("carbonRevenueSection");
+  try {
+    const data = await AgroLinkAPI.get("/farmer/carbon/revenue");
+    const distributions = data.distributions || [];
+    if (distributions.length === 0) {
+      el.innerHTML = `<div class="empty-state">ยังไม่มีรายได้จากการขายคาร์บอนเครดิต — จะปรากฏหลังโครงการที่ท่านเข้าร่วมขายเครดิตได้จริง</div>`;
+      return;
+    }
+    el.innerHTML = distributions.map(revenueCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลรายได้ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 // ---------- รายละเอียดรอบปลูก ----------
 function renderSummary(cycle, assessment) {
   const el = document.getElementById("detailSummaryPanel");
@@ -216,3 +245,4 @@ document.getElementById("submitAssessmentBtn").addEventListener("click", async (
 
 loadMethodology();
 loadCycles();
+loadCarbonRevenue();

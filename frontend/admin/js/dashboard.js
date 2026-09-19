@@ -457,6 +457,179 @@ document.getElementById("awdConfigSaveBtn").addEventListener("click", async () =
   }
 });
 
+// ---------- ตลาดคาร์บอนเครดิต — จับคู่ผู้ซื้อ/ผู้ขาย (Phase 3, see
+// backend/db/grant_carbon_module_marketplace.sql) ----------
+let carbonMarketplaceListings = [];
+let carbonMarketplaceOrders = [];
+let carbonSelectedListingId = null;
+let carbonSelectedOrderId = null;
+
+function carbonListingCard(l) {
+  const isSelected = l.listing_id === carbonSelectedListingId;
+  return `
+    <div class="item-card" data-listing-id="${escapeHtml(l.listing_id)}" style="${isSelected ? "box-shadow:0 0 0 2px var(--green-700,#2e7d32) inset;" : ""}">
+      <div class="row"><span class="title">${escapeHtml(l.project_name)} — ${escapeHtml(l.org_name)} (${escapeHtml(ORG_TYPE_LABEL[l.org_type] || l.org_type)})</span></div>
+      <div class="detail-line">${l.listed_credit_tco2e} tCO2e @ ${l.asking_price_per_tco2e} บาท/tCO2e</div>
+      <div class="detail-line muted">${l.note ? escapeHtml(l.note) + " · " : ""}ลงเมื่อ ${thaiDate(l.created_at)} · Listing ID: ${escapeHtml(l.listing_id)}</div>
+      <button type="button" class="btn btn-sm btn-approve select-listing-btn" data-listing-id="${escapeHtml(l.listing_id)}">${isSelected ? "✓ เลือกแล้ว" : "เลือกรายการนี้"}</button>
+    </div>
+  `;
+}
+
+function carbonOrderCard(o) {
+  const isSelected = o.order_id === carbonSelectedOrderId;
+  return `
+    <div class="item-card" data-order-id="${escapeHtml(o.order_id)}" style="${isSelected ? "box-shadow:0 0 0 2px var(--green-700,#2e7d32) inset;" : ""}">
+      <div class="row"><span class="title">${escapeHtml(o.buyer_org_name)}</span></div>
+      <div class="detail-line">ต้องการซื้อ ${o.requested_credit_tco2e} tCO2e @ ${o.offered_price_per_tco2e} บาท/tCO2e</div>
+      <div class="detail-line muted">${o.note ? escapeHtml(o.note) + " · " : ""}สร้างเมื่อ ${thaiDate(o.created_at)} · Order ID: ${escapeHtml(o.order_id)}</div>
+      <button type="button" class="btn btn-sm btn-approve select-order-btn" data-order-id="${escapeHtml(o.order_id)}">${isSelected ? "✓ เลือกแล้ว" : "เลือกรายการนี้"}</button>
+    </div>
+  `;
+}
+
+async function loadCarbonMarketplaceListings() {
+  const el = document.getElementById("carbonMarketplaceListingsSection");
+  try {
+    const data = await AgroLinkAdminAPI.get("/admin/carbon/marketplace/listings");
+    carbonMarketplaceListings = data.listings || [];
+    if (carbonMarketplaceListings.length === 0) {
+      el.innerHTML = `<div class="empty-state">ไม่มีประกาศขายที่เปิดอยู่ในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = carbonMarketplaceListings.map(carbonListingCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดประกาศขายไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadCarbonMarketplaceOrders() {
+  const el = document.getElementById("carbonMarketplaceOrdersSection");
+  try {
+    const data = await AgroLinkAdminAPI.get("/admin/carbon/marketplace/orders");
+    carbonMarketplaceOrders = data.orders || [];
+    if (carbonMarketplaceOrders.length === 0) {
+      el.innerHTML = `<div class="empty-state">ไม่มีคำสั่งซื้อที่รอจับคู่ในขณะนี้</div>`;
+      return;
+    }
+    el.innerHTML = carbonMarketplaceOrders.map(carbonOrderCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำสั่งซื้อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function updateCarbonMatchSelectionSummary() {
+  const listing = carbonMarketplaceListings.find((l) => l.listing_id === carbonSelectedListingId);
+  const order = carbonMarketplaceOrders.find((o) => o.order_id === carbonSelectedOrderId);
+  document.getElementById("carbonMarketplaceSelectedListing").textContent = listing
+    ? `${listing.project_name} (${listing.org_name}) — ${listing.listed_credit_tco2e} tCO2e @ ${listing.asking_price_per_tco2e} บาท`
+    : "ยังไม่ได้เลือก";
+  document.getElementById("carbonMarketplaceSelectedOrder").textContent = order
+    ? `${order.buyer_org_name} — ต้องการ ${order.requested_credit_tco2e} tCO2e @ ${order.offered_price_per_tco2e} บาท`
+    : "ยังไม่ได้เลือก";
+  if (listing && !document.getElementById("carbonMatchedCredit").value) {
+    document.getElementById("carbonMatchedCredit").value = listing.listed_credit_tco2e;
+  }
+  if (order && !document.getElementById("carbonMatchedPrice").value) {
+    document.getElementById("carbonMatchedPrice").value = order.offered_price_per_tco2e;
+  }
+}
+
+function renderCarbonMarketplaceListings() {
+  const el = document.getElementById("carbonMarketplaceListingsSection");
+  el.innerHTML = carbonMarketplaceListings.length === 0
+    ? `<div class="empty-state">ไม่มีประกาศขายที่เปิดอยู่ในขณะนี้</div>`
+    : carbonMarketplaceListings.map(carbonListingCard).join("");
+}
+
+function renderCarbonMarketplaceOrders() {
+  const el = document.getElementById("carbonMarketplaceOrdersSection");
+  el.innerHTML = carbonMarketplaceOrders.length === 0
+    ? `<div class="empty-state">ไม่มีคำสั่งซื้อที่รอจับคู่ในขณะนี้</div>`
+    : carbonMarketplaceOrders.map(carbonOrderCard).join("");
+}
+
+document.getElementById("carbonMarketplaceListingsSection").addEventListener("click", (e) => {
+  const btn = e.target.closest(".select-listing-btn");
+  if (!btn) return;
+  carbonSelectedListingId = btn.dataset.listingId;
+  renderCarbonMarketplaceListings();
+  updateCarbonMatchSelectionSummary();
+});
+
+document.getElementById("carbonMarketplaceOrdersSection").addEventListener("click", (e) => {
+  const btn = e.target.closest(".select-order-btn");
+  if (!btn) return;
+  carbonSelectedOrderId = btn.dataset.orderId;
+  renderCarbonMarketplaceOrders();
+  updateCarbonMatchSelectionSummary();
+});
+
+document.getElementById("carbonMarketplaceMatchBtn").addEventListener("click", async () => {
+  const resultEl = document.getElementById("carbonMarketplaceMatchResult");
+  if (!carbonSelectedListingId || !carbonSelectedOrderId) {
+    toast("กรุณาเลือกประกาศขายและคำสั่งซื้อก่อน", true);
+    return;
+  }
+  const matchedCreditTco2e = Number(document.getElementById("carbonMatchedCredit").value);
+  const matchedPricePerTco2e = Number(document.getElementById("carbonMatchedPrice").value);
+  const projectCostBaht = Number(document.getElementById("carbonProjectCost").value || 0);
+  if (!(matchedCreditTco2e > 0) || !(matchedPricePerTco2e > 0)) {
+    toast("กรุณาระบุปริมาณและราคาที่จับคู่ให้ถูกต้อง", true);
+    return;
+  }
+  const btn = document.getElementById("carbonMarketplaceMatchBtn");
+  btn.disabled = true;
+  try {
+    const result = await AgroLinkAdminAPI.post("/admin/carbon/marketplace/match", {
+      order_id: carbonSelectedOrderId,
+      listing_id: carbonSelectedListingId,
+      matched_credit_tco2e: matchedCreditTco2e,
+      matched_price_per_tco2e: matchedPricePerTco2e,
+      project_cost_baht: projectCostBaht,
+    });
+    resultEl.innerHTML = `
+      จับคู่สำเร็จ — รายได้รวม ${result.gross_revenue} บาท · ค่าธรรมเนียม AgroLink ${result.platform_fee} บาท ·
+      รายได้สุทธิ ${result.net_revenue} บาท · เข้ากองเกษตรกร ${result.farmer_pool_amount} บาท · เข้าองค์กร ${result.org_amount} บาท
+      (บันทึกยอดจัดสรรแล้ว ${result.distributions.length} รายการ)
+    `;
+    toast("จับคู่และคำนวณส่วนแบ่งรายได้เรียบร้อยแล้ว");
+    carbonSelectedListingId = null;
+    carbonSelectedOrderId = null;
+    document.getElementById("carbonMatchedCredit").value = "";
+    document.getElementById("carbonMatchedPrice").value = "";
+    document.getElementById("carbonProjectCost").value = "0";
+    await Promise.all([loadCarbonMarketplaceListings(), loadCarbonMarketplaceOrders()]);
+    updateCarbonMatchSelectionSummary();
+  } catch (err) {
+    toast("จับคู่ไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("carbonCompleteOrderBtn").addEventListener("click", async () => {
+  const resultEl = document.getElementById("carbonCompleteOrderResult");
+  const orderId = document.getElementById("carbonCompleteOrderId").value.trim();
+  if (!orderId) {
+    toast("กรุณาระบุ Order ID", true);
+    return;
+  }
+  const btn = document.getElementById("carbonCompleteOrderBtn");
+  btn.disabled = true;
+  try {
+    const result = await AgroLinkAdminAPI.post(`/admin/carbon/marketplace/orders/${orderId}/complete`, {});
+    resultEl.textContent = `ปิดคำสั่งซื้อ ${result.order.order_id} เรียบร้อยแล้ว (สถานะ: ${result.order.status})`;
+    toast("ปิดคำสั่งซื้อเรียบร้อยแล้ว");
+    document.getElementById("carbonCompleteOrderId").value = "";
+  } catch (err) {
+    resultEl.textContent = "";
+    toast("ปิดคำสั่งซื้อไม่สำเร็จ: " + (err.body && err.body.error ? err.body.error : err.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---------- เกษตรกรทั้งหมด (อ่านอย่างเดียว) ----------
 async function loadAllFarmers() {
   const el = document.getElementById("allFarmersSection");
@@ -593,6 +766,7 @@ async function refreshAll() {
   await Promise.all([
     loadSummaryAndHealth(), loadKycQueue(), loadKybQueue(), loadRoleRequestQueue(),
     loadAwdQueue(), loadAwdConfig(), loadAllFarmers(), loadAllOrgs(),
+    loadCarbonMarketplaceListings(), loadCarbonMarketplaceOrders(),
   ]);
 }
 
@@ -1902,6 +2076,8 @@ loadKybQueue();
 loadRoleRequestQueue();
 loadAwdQueue();
 loadAwdConfig();
+loadCarbonMarketplaceListings();
+loadCarbonMarketplaceOrders();
 loadAllFarmers();
 loadAllOrgs();
 loadCreditModelStatus();
