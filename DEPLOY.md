@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (49 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (50 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -182,7 +182,26 @@ grant_flash_buy_campaign.sql
 grant_org_district.sql
 grant_farmer_aid_fund_community_enterprise.sql
 grant_about_content_add_farmer_section.sql
+grant_carbon_module_portal_aggregation.sql
 ```
+
+**เพิ่มเมื่อ 2026-09-19:** `grant_carbon_module_portal_aggregation.sql` —
+Carbon Module เฟส 1 (ชั้น "รวมกลุ่มระดับองค์กร" ต่อยอดจาก `grant_carbon_awd.sql`
+ที่มีอยู่แล้วในระดับเกษตรกรรายเดียว) เพิ่มตาราง `carbon.carbon_project`
+(โครงการคาร์บอนของสหกรณ์/วิสาหกิจชุมชนด้านการเกษตร/กองทุนหมู่บ้าน พร้อม
+ส่วนแบ่งรายได้ farmer_pool_pct/platform_fee_pct ที่ตั้งค่าได้ต่อโครงการ ไม่ใช่
+ค่าคงที่ทั้งระบบ) และ `carbon.project_cycle_member` (รวมผลประเมิน AWD ที่
+verified แล้วของสมาชิกเข้าโครงการ — บังคับกติกา "1 assessment เข้าร่วมได้ทีละ 1
+โครงการ" ด้วย partial unique index) พร้อมขยาย
+`identity.farmer_org_relationship_type_check` ให้มีค่า `CommunityEnterpriseMember`
+(เดิมไม่มีค่าเฉพาะสำหรับวิสาหกิจชุมชน) และอัปเดตฟังก์ชัน `identity.
+link_farmer_to_org()`/`identity.sync_farmer_relationships_from_transactions()`
+ให้ map ตามด้วย — คู่กับ backend route ใหม่ 3 ไฟล์แยกตามพอร์ทัล
+(`coopcarbon.js` /coop-carbon, `communityenterprisecarbon.js`
+/communityenterprise-carbon, `villagefundcarbon.js` /villagefund-carbon — ผ่าน
+shared helper `backend/src/lib/carbonAggregation.js`) และแท็บ/ส่วนใหม่
+"คาร์บอนเครดิต" ในแดชบอร์ดทั้ง 3 พอร์ทัล (`frontend/js/carbon-module-widget.js`)
+ยังไม่รวม MRV evidence (เฟส 2) และ marketplace/แบ่งรายได้จริง (เฟส 3)
 
 **เพิ่มเมื่อ 2026-08-29:** `grant_straw_processing_service.sql` — เพิ่ม
 "เครื่องอัดเม็ดฟางข้าว" (straw_pelletizing) และ "เครื่องอัดก้อนฟางข้าว"

@@ -63,6 +63,16 @@ const aquacultureRouter = require('./routes/aquaculture');
 // under /admin/support/* in admin.js instead, not its own prefix.
 const supportRouter = require('./routes/support');
 
+// Carbon Module, Phase 1 (see backend/db/grant_carbon_module_portal_
+// aggregation.sql and backend/src/lib/carbonAggregation.js). Three
+// separate route files, one per portal org_type, per explicit user
+// decision ("แยก 3 ไฟล์") — each with its own copy-pasted requireXOrg()
+// gate and its own mount prefix, distinct from '/coop' (coopcollection.js)
+// and '/villagefund' (villagefund.js, Farmer 360° only).
+const coopCarbonRouter = require('./routes/coopcarbon');
+const communityEnterpriseCarbonRouter = require('./routes/communityenterprisecarbon');
+const villageFundCarbonRouter = require('./routes/villagefundcarbon');
+
 const app = express();
 
 app.use(cors());
@@ -136,6 +146,9 @@ app.use('/procurement', procurementRouter);
 app.use('/procurement', groupBuyRouter);
 app.use('/farmer360', farmer360Router);
 app.use('/villagefund', villageFundRouter);
+app.use('/coop-carbon', coopCarbonRouter);
+app.use('/communityenterprise-carbon', communityEnterpriseCarbonRouter);
+app.use('/villagefund-carbon', villageFundCarbonRouter);
 app.use('/logistics', logisticsRouter);
 app.use('/aquaculture', aquacultureRouter);
 app.use('/support', supportRouter);

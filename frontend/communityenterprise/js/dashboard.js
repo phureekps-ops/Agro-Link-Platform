@@ -12,6 +12,7 @@ const HUB_PAGE_BREADCRUMB_TH = {
   inputs: "ขายปัจจัยการผลิต",
   buyer: "รับซื้อผลผลิต",
   "group-order": "รวมออเดอร์ซื้อสินค้าเกษตร",
+  carbon: "คาร์บอนเครดิต",
 };
 
 function showHubPage(pageKey) {
