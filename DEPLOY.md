@@ -189,6 +189,22 @@ grant_awd_sensor_rental_service.sql
 grant_farmer_group_self_declaration.sql
 ```
 
+**เพิ่มเมื่อ 2026-09-19 (ดึกที่สุด, frontend เท่านั้น ไม่มี migration):**
+ปรับโครงสร้าง `frontend/buyer/dashboard.html` ให้เป็น sidebar SPA หน้าเดียว
+แบบเดียวกับ `frontend/admin/dashboard.html` / `frontend/coop/dashboard.html`
+ตามคำขอของผู้รับซื้อผลผลิต — รวม 10 หมวดที่เคยเรียงต่อกันเป็นหน้าเดียวยาว
+(ภาพรวม, การส่งมอบ, ราคารับซื้อประจำวัน, ประกาศรับซื้อด่วน, พอร์ตสัญญารับซื้อ,
+แค็ตตาล็อกสหกรณ์, ตลาด RFP/RFQ, e-Auction, สัญญา & ใบสั่งซื้อ,
+ตลาดคาร์บอนเครดิต) เข้ามาเป็นแท็บ `data-page-content` ภายในไฟล์เดียว มี
+sidebar ด้านซ้าย (`aside.buyer-sidebar`) พร้อมปุ่มนำทาง `data-page` และ
+breadcrumb (`#buyerBreadcrumbCurrent`) เหมือนพอร์ทัลอื่น — ตรรกะโหลดข้อมูลเดิม
+ทั้งหมดใน `frontend/buyer/js/dashboard.js` ไม่เปลี่ยนแปลงเลย (โหลดพร้อมกันหมด
+ตอนเปิดหน้าเหมือนเดิม ปุ่ม sidebar แค่ show/hide ว่าจะให้หน้าไหนแสดงบนจอ) เพิ่ม
+แค่บล็อก `BUYER_PAGE_BREADCRUMB_TH` / `showBuyerPage()` /
+click-listener ไว้บนสุดของไฟล์ ไม่มี migration ใหม่ ไม่มีการลบไฟล์เดิมเพราะ
+`frontend/buyer/dashboard.html` เป็นไฟล์เดียวอยู่แล้ว (ไม่ได้รวมจากหลายไฟล์
+เหมือนตอน admin)
+
 **เพิ่มเมื่อ 2026-09-19 (ดึกมากๆ):** `grant_farmer_group_self_declaration.sql` —
 เพิ่ม 2 คอลัมน์ใหม่ใน `identity.farmer`: `farmer_group` (กลุ่มเกษตรกรที่
 เกษตรกรระบุด้วยตนเอง — "เกษตรกรอินทรีย์ (Organic)" หรือ "เกษตรกร GAP" หรือไม่

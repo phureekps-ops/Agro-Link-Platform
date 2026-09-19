@@ -7,25 +7,111 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../css/style.css" />
+<style>
+  /* Sidebar SPA navigation — same structure/classes as admin/dashboard.html's
+     .admin-shell/.admin-sidebar/.admin-nav-item pattern, requested for this
+     portal so it reads the same way. UI-only: does not change any
+     data-loading logic below — every section still loads its own data on
+     page load exactly as before, these classes/JS only show/hide which
+     page is currently on screen. */
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .buyer-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  .buyer-sidebar {
+    width: 260px; flex: 0 0 260px; background: var(--green-900); color: #fff;
+    display: flex; flex-direction: column; padding: 20px 14px; box-sizing: border-box;
+  }
+  .buyer-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; }
+  .buyer-sidebar-logo { font-size: 26px; line-height: 1; }
+  .buyer-sidebar-brand-name { font-weight: 700; font-size: 16px; }
+  .buyer-sidebar-brand-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .buyer-nav { flex: 1; overflow-y: auto; }
+  .buyer-nav-group { margin-bottom: 16px; }
+  .buyer-nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); padding: 0 10px 6px; }
+  .buyer-nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13.5px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  }
+  .buyer-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .buyer-nav-item.active { background: rgba(255,255,255,0.16); color: #fff; font-weight: 600; }
+  .buyer-sidebar-footer { font-size: 11px; color: rgba(255,255,255,0.5); padding: 12px 10px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 12px; }
+  .buyer-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .buyer-breadcrumb { font-size: 14.5px; }
+  .buyer-breadcrumb-sep { opacity: 0.5; margin: 0 6px; }
+  @media (max-width: 860px) {
+    .buyer-shell { flex-direction: column; }
+    .buyer-sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 14px; }
+    .buyer-sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 0 10px 0 0; }
+    .buyer-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; overflow-y: visible; }
+    .buyer-nav-group { margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .buyer-nav-group-title { display: none; }
+    .buyer-sidebar-footer { display: none; }
+  }
+</style>
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand"><span>🌾</span><span>AgroLink Platform — พอร์ทัลผู้รับซื้อผลผลิต</span></div>
-    <div class="who">
-      <span class="name" id="orgName">กำลังโหลด…</span>
-      <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
-      <a href="shrimp-auction.html" class="logout-btn" style="text-decoration:none;">🦐 Auction Place (ประมูลกุ้งสด)</a>
-      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
-    </div>
-  </header>
+  <div class="buyer-shell">
+    <aside class="buyer-sidebar">
+      <div class="buyer-sidebar-brand">
+        <span class="buyer-sidebar-logo">🌾</span>
+        <div>
+          <div class="buyer-sidebar-brand-name">AgroLink</div>
+          <div class="buyer-sidebar-brand-sub">พอร์ทัลผู้รับซื้อผลผลิต</div>
+        </div>
+      </div>
+      <nav class="buyer-nav">
+        <div class="buyer-nav-group">
+          <div class="buyer-nav-group-title">ภาพรวม</div>
+          <button type="button" class="buyer-nav-item active" data-page="overview">📊 ภาพรวม</button>
+        </div>
+        <div class="buyer-nav-group">
+          <div class="buyer-nav-group-title">การรับซื้อโดยตรง</div>
+          <button type="button" class="buyer-nav-item" data-page="deliveries">🚚 การส่งมอบ</button>
+          <button type="button" class="buyer-nav-item" data-page="prices">💰 ราคารับซื้อประจำวัน</button>
+          <button type="button" class="buyer-nav-item" data-page="flash-buy">⚡ ประกาศรับซื้อด่วน</button>
+          <button type="button" class="buyer-nav-item" data-page="procurement-contracts">📑 พอร์ตสัญญารับซื้อ</button>
+        </div>
+        <div class="buyer-nav-group">
+          <div class="buyer-nav-group-title">ตลาดและสหกรณ์</div>
+          <button type="button" class="buyer-nav-item" data-page="coop-catalog">🛒 แค็ตตาล็อกสหกรณ์</button>
+          <button type="button" class="buyer-nav-item" data-page="rfq">📢 RFP/RFQ</button>
+          <button type="button" class="buyer-nav-item" data-page="auction">🏆 e-Auction</button>
+        </div>
+        <div class="buyer-nav-group">
+          <div class="buyer-nav-group-title">สัญญาและคาร์บอน</div>
+          <button type="button" class="buyer-nav-item" data-page="contracts">📄 สัญญา &amp; ใบสั่งซื้อ</button>
+          <button type="button" class="buyer-nav-item" data-page="carbon">🌱 ตลาดคาร์บอนเครดิต</button>
+        </div>
+      </nav>
+      <div class="buyer-sidebar-footer">
+        พอร์ทัลผู้รับซื้อผลผลิต — ทุกฟีเจอร์รวมอยู่ในหน้าเดียว เช่นเดียวกับพอร์ทัลอื่น
+      </div>
+    </aside>
+    <div class="buyer-main">
+      <header class="app-header">
+        <div class="brand buyer-breadcrumb">
+          <span>พอร์ทัลผู้รับซื้อผลผลิต</span><span class="buyer-breadcrumb-sep">/</span><span id="buyerBreadcrumbCurrent">ภาพรวม</span>
+        </div>
+        <div class="who">
+          <span class="name" id="orgName">กำลังโหลด…</span>
+          <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
+          <a href="shrimp-auction.html" class="logout-btn" style="text-decoration:none;">🦐 Auction Place (ประมูลกุ้งสด)</a>
+          <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+        </div>
+      </header>
 
-  <div class="container" id="mainContainer">
+      <div class="container" id="mainContainer">
 
+      <div class="buyer-page" data-page-content="overview">
     <div class="section-title">📊 ภาพรวม</div>
     <div id="summarySection" class="summary-grid">
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="deliveries" style="display:none;">
     <div class="section-title">🚚 การส่งมอบที่ต้องดำเนินการ</div>
     <div id="deliveryReviewQueueSection" class="card-list">
       <div class="loading-line">กำลังโหลดรายการส่งมอบ…</div>
@@ -81,6 +167,9 @@
       <div class="loading-line">กำลังโหลดประวัติการส่งมอบ…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="prices" style="display:none;">
     <div class="section-title">💰 ราคารับซื้อข้าวประจำวัน</div>
     <div class="panel">
       <div id="priceQuoteFormSection" class="form-grid">
@@ -89,6 +178,9 @@
       <button type="button" class="btn btn-primary" id="priceQuoteSubmitBtn" style="max-width:220px; margin-top:12px;">บันทึกราคารับซื้อ</button>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="flash-buy" style="display:none;">
     <div class="section-title">⚡ ประกาศรับซื้อด่วน (จำกัดจำนวน)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 10px;">
       ประกาศราคารับซื้อพร้อมจำกัดจำนวนสูงสุดที่ต้องการรับซื้อ — เหมาะสำหรับเร่งซื้อผลผลิตเข้าสต๊อกในช่วงเวลาสั้นๆ
@@ -127,11 +219,17 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="procurement-contracts" style="display:none;">
     <div class="section-title">📑 พอร์ตสัญญารับซื้อ</div>
     <div id="contractListSection" class="card-list">
       <div class="loading-line">กำลังโหลดสัญญารับซื้อ…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="coop-catalog" style="display:none;">
     <div class="section-title">🛒 แค็ตตาล็อกผลผลิต/สินค้าแปรรูปจากสหกรณ์</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       เรียกดูผลผลิต/สินค้าแปรรูปที่สหกรณ์ต่างๆ ประกาศขาย และสั่งซื้อได้โดยตรง — คำสั่งซื้อจะรอสหกรณ์ยืนยันก่อนถือว่าตกลงซื้อขาย
@@ -175,6 +273,9 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="rfq" style="display:none;">
     <div class="section-title" style="margin-top:22px;">📢 ตลาดขอใบเสนอราคา (RFP/RFQ)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       ประกาศความต้องการซื้อสินค้า/บริการให้สมาชิกทุกพอร์ทัลในระบบ AgroLink แข่งขันเสนอราคาเข้ามา
@@ -267,6 +368,9 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="auction" style="display:none;">
     <div class="section-title" style="margin-top:22px;">🏆 e-Auction (ประมูลราคาแบบย้อนกลับ)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       เปิดประมูลจากประกาศ RFQ ของท่านด้านบนเพื่อให้ผู้ขายแข่งขันเสนอราคากันเอง (ราคาต่ำสุดชนะ) —
@@ -284,6 +388,9 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="contracts" style="display:none;">
     <div class="section-title" style="margin-top:22px;">📄 สัญญา (Contract)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       สร้างขึ้นอัตโนมัติเมื่อประกาศ RFQ ของท่านได้รับการตกลง (ยอมรับใบเสนอราคา หรือ ปิดประมูล e-Auction)
@@ -298,8 +405,15 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
 
+      </div>
+
+      <div class="buyer-page" data-page-content="carbon" style="display:none;">
     <div id="carbonMarketplaceBuyerWidget"></div>
 
+      </div>
+
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>

@@ -1,3 +1,40 @@
+// ============================================================
+// การนำทางแบบแถบข้าง (Sidebar) — UI-only, ไม่แตะตรรกะโหลดข้อมูลเดิมด้านล่าง
+// นี้เลย เหมือนกับ admin/js/dashboard.js และ coop/js/dashboard.js ทุกประการ:
+// ทุก section เดิมยังคงถูกโหลดข้อมูลตามปกติตอนเปิดหน้าเหมือนเดิมทั้งหมด
+// ปุ่มด้านข้างแค่ show/hide ว่าจะให้ page ไหนแสดงอยู่บนจอเท่านั้น
+// ============================================================
+const BUYER_PAGE_BREADCRUMB_TH = {
+  overview: "ภาพรวม",
+  deliveries: "การส่งมอบ",
+  prices: "ราคารับซื้อประจำวัน",
+  "flash-buy": "ประกาศรับซื้อด่วน",
+  "procurement-contracts": "พอร์ตสัญญารับซื้อ",
+  "coop-catalog": "แค็ตตาล็อกสหกรณ์",
+  rfq: "RFP/RFQ",
+  auction: "e-Auction",
+  contracts: "สัญญา &amp; ใบสั่งซื้อ",
+  carbon: "ตลาดคาร์บอนเครดิต",
+};
+
+function showBuyerPage(pageKey) {
+  document.querySelectorAll("[data-page-content]").forEach((el) => {
+    el.style.display = el.dataset.pageContent === pageKey ? "" : "none";
+  });
+  document.querySelectorAll("[data-page]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.page === pageKey);
+  });
+  const crumb = document.getElementById("buyerBreadcrumbCurrent");
+  if (crumb) crumb.innerHTML = BUYER_PAGE_BREADCRUMB_TH[pageKey] || pageKey;
+  const mainEl = document.querySelector(".buyer-main");
+  if (mainEl) mainEl.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll("[data-page]").forEach((btn) => {
+  btn.addEventListener("click", () => showBuyerPage(btn.dataset.page));
+});
+
 const toastEl = document.getElementById("toast");
 function toast(message, isError = false) {
   toastEl.textContent = message;
