@@ -42,7 +42,7 @@ const MACHINERY_ORG_TYPES = [
 ];
 
 /**
- * The eleven fixed rate-card line items this portal exposes. Each maps to
+ * The twelve fixed rate-card line items this portal exposes. Each maps to
  * exactly one marketplace.service_listing row per org (upserted via
  * service_key), tagged with the service_type value marketplace.service_listing
  * constrains to (land_preparation / harvesting / pest_control / transport /
@@ -50,9 +50,11 @@ const MACHINERY_ORG_TYPES = [
  * service.sql for the two straw_processing items, added after the original
  * seven; grant_laser_land_leveling_service.sql for the tenth item, which
  * reuses the existing land_preparation bucket rather than adding an eighth
- * type; and grant_machinery_rental_service.sql for the eleventh item,
- * which reuses the generic 'other' bucket since bare equipment rental
- * isn't a specific job like the rest of these).
+ * type; grant_machinery_rental_service.sql for the eleventh item, which
+ * reuses the generic 'other' bucket since bare equipment rental isn't a
+ * specific job like the rest of these; and grant_awd_sensor_rental_
+ * service.sql for the twelfth item, which also reuses 'other' for the
+ * same bare-rental reason).
  * label_th is the Thai description stored on the row and shown in
  * responses; price_unit is stored verbatim as marketplace.service_listing.price_unit.
  */
@@ -79,6 +81,15 @@ const RATE_CARD_ITEMS = {
   // other item above which is an operator-performed job; doesn't fit any
   // specific bucket so it reuses the generic 'other' service_type.
   machinery_rental: { service_type: 'other', label_th: 'ค่าเช่าเครื่องจักรกลการเกษตร', price_unit: 'บาท/วัน' },
+  // Added by grant_awd_sensor_rental_service.sql — another bare-rental
+  // item like machinery_rental just above (the provider lends out the
+  // sensor hardware, no operator job attached), so it reuses the same
+  // generic 'other' service_type rather than adding a new bucket. The
+  // sensor itself measures the same wet/dry water-level cycle the Carbon
+  // Module's AWD assessment relies on, but this rate-card row is just the
+  // machinery-service portal's own rental listing — unrelated to (and
+  // does not read or write) the Carbon Module's AWD evidence tables.
+  awd_sensor_rental: { service_type: 'other', label_th: 'ให้เช่าเซนเซอร์วัดระดับน้ำนาเปียก/แห้ง (AWD)', price_unit: 'บาท/เดือน' },
 };
 const RATE_CARD_KEYS = Object.keys(RATE_CARD_ITEMS);
 
