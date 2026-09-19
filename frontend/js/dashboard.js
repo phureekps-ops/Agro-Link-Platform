@@ -85,6 +85,42 @@ async function refreshSummary() {
   }
 }
 
+// ---------- กลุ่มเกษตรกร & ชนิดผลผลิต (self-declared, optional) ----------
+// See grant_farmer_group_self_declaration.sql — plain self-declaration,
+// not a verified certification; both fields independent and optional
+// ("หรือไม่เลือกก็ได้").
+async function loadFarmerProfile() {
+  try {
+    const d = await AgroLinkAPI.get("/farmer/profile");
+    document.getElementById("farmerGroupSelect").value = d.farmer_group || "";
+    document.getElementById("farmerProduceTypesInput").value = d.produce_types || "";
+  } catch (err) {
+    // Non-critical section — leave the form at its blank defaults rather
+    // than blocking the rest of the overview page on this one field.
+  }
+}
+
+document.getElementById("farmerProfileSaveBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("farmerProfileSaveBtn");
+  const resultEl = document.getElementById("farmerProfileResult");
+  const farmerGroup = document.getElementById("farmerGroupSelect").value || null;
+  const produceTypes = document.getElementById("farmerProduceTypesInput").value.trim() || null;
+
+  btn.disabled = true;
+  resultEl.textContent = "";
+  try {
+    await AgroLinkAPI.put("/farmer/profile", { farmer_group: farmerGroup, produce_types: produceTypes });
+    resultEl.textContent = "บันทึกแล้ว";
+    resultEl.className = "detail-line";
+    toast("บันทึกข้อมูลกลุ่มเกษตรกรแล้ว");
+  } catch (err) {
+    resultEl.textContent = `บันทึกไม่สำเร็จ: ${escapeHtml(err.message)}`;
+    resultEl.className = "detail-line error";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---------- สมาชิกภาพของฉัน (identity.farmer_org_relationship) ----------
 // Farmer-facing counterpart to the Farmer 360° View built for organization
 // staff (see FARMER_360_ARCHITECTURE.md) — this is deliberately a plain
@@ -461,6 +497,7 @@ async function init() {
     return;
   }
 
+  loadFarmerProfile();
   loadMemberships();
   loadCreditScore();
   loadContracts();

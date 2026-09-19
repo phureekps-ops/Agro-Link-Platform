@@ -389,6 +389,87 @@ router.get('/memberships', async (req, res, next) => {
   }
 });
 
+const FARMER_GROUP_VALUES = ['Organic', 'GAP'];
+
+/**
+ * GET /farmer/profile — the farmer's own optional self-declared "กลุ่ม
+ * เกษตรกร" (Organic / GAP / unset) and free-text produce_types (ชนิดพืช/
+ * สัตว์ที่ผลิต) — see grant_farmer_group_self_declaration.sql for the full
+ * reasoning (plain self-declaration, not a verified certification; both
+ * fields independent and optional).
+ */
+router.get('/profile', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const row = await withSessionContext('farmer', subjectId, async (client) => {
+      const { rows } = await client.query(
+        'SELECT farmer_group, produce_types FROM identity.farmer WHERE farmer_id = $1',
+        [subjectId],
+      );
+      await logAccess(client, 'read', 'identity.farmer', subjectId);
+      return rows[0] || null;
+    });
+
+    if (!row) {
+      return res.status(404).json({ error: 'farmer_not_found' });
+    }
+    return res.json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PUT /farmer/profile — sets or clears the same two self-declared fields.
+ * Body: { farmer_group, produce_types } — both optional; either can be
+ * null/omitted to clear it ("หรือไม่เลือกก็ได้"). farmer_group is validated
+ * against the fixed two-value list here as well as by the database's own
+ * farmer_group_check constraint (defense-in-depth, same pattern used
+ * throughout this codebase — see production-units above). produce_types is
+ * free text, trimmed, capped at a generous length to avoid an unbounded
+ * paste; empty string is treated the same as null (cleared).
+ */
+router.put('/profile', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { farmer_group: farmerGroupRaw, produce_types: produceTypesRaw } = req.body || {};
+
+  const farmerGroup = farmerGroupRaw === undefined || farmerGroupRaw === null || farmerGroupRaw === ''
+    ? null
+    : farmerGroupRaw;
+  if (farmerGroup !== null && !FARMER_GROUP_VALUES.includes(farmerGroup)) {
+    return res.status(400).json({ error: 'invalid_farmer_group', allowed: FARMER_GROUP_VALUES });
+  }
+
+  let produceTypes = produceTypesRaw === undefined || produceTypesRaw === null
+    ? null
+    : String(produceTypesRaw).trim();
+  if (produceTypes === '') produceTypes = null;
+  if (produceTypes !== null && produceTypes.length > 500) {
+    return res.status(400).json({ error: 'produce_types_too_long', max_length: 500 });
+  }
+
+  try {
+    const row = await withSessionContext('farmer', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE identity.farmer
+            SET farmer_group = $2, produce_types = $3, updated_at = now()
+          WHERE farmer_id = $1
+        RETURNING farmer_group, produce_types`,
+        [subjectId, farmerGroup, produceTypes],
+      );
+      await logAccess(client, 'write', 'identity.farmer', subjectId);
+      return rows[0] || null;
+    });
+
+    if (!row) {
+      return res.status(404).json({ error: 'farmer_not_found' });
+    }
+    return res.json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 /**
  * GET /farmer/lenders — active Lender organizations a farmer can pick from
  * when submitting a loan application. Small supporting endpoint so the

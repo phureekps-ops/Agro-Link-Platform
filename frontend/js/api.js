@@ -139,6 +139,7 @@ const AgroLinkAPI = (() => {
 
   const get = (path) => request(path, { method: "GET" });
   const post = (path, data) => request(path, { method: "POST", body: JSON.stringify(data) });
+  const put = (path, data) => request(path, { method: "PUT", body: JSON.stringify(data) });
 
   return {
     getSession,
@@ -148,5 +149,6 @@ const AgroLinkAPI = (() => {
     logout,
     get,
     post,
+    put,
   };
 })();

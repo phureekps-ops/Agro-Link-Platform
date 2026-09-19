@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (53 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (54 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -186,7 +186,22 @@ grant_carbon_module_portal_aggregation.sql
 grant_carbon_module_mrv_evidence.sql
 grant_carbon_module_marketplace.sql
 grant_awd_sensor_rental_service.sql
+grant_farmer_group_self_declaration.sql
 ```
+
+**เพิ่มเมื่อ 2026-09-19 (ดึกมากๆ):** `grant_farmer_group_self_declaration.sql` —
+เพิ่ม 2 คอลัมน์ใหม่ใน `identity.farmer`: `farmer_group` (กลุ่มเกษตรกรที่
+เกษตรกรระบุด้วยตนเอง — "เกษตรกรอินทรีย์ (Organic)" หรือ "เกษตรกร GAP" หรือไม่
+ระบุก็ได้ มี CHECK constraint จำกัดค่า) และ `produce_types` (ข้อความอิสระ
+ระบุชนิดพืช/สัตว์ที่ผลิต เช่น "ข้าวหอมมะลิ, กุ้งขาว" — ไม่ผูกกับตาราง
+`registry.commodity_ref` เพราะตารางนั้นเป็นแค่ตารางอ้างอิงชั่วคราวสำหรับ
+FK ของ "แปลง/หน่วยผลิต" ต่อรอบปลูก คนละแนวคิดกับข้อมูลสรุปโปรไฟล์ของเกษตรกร
+เอง) ทั้งสองช่องเป็นทางเลือก ไม่บังคับ ("หรือไม่เลือกก็ได้") และเป็นการระบุ
+ด้วยตนเอง ไม่ใช่การรับรองมาตรฐานที่ผ่านการตรวจสอบ — เพิ่ม `GET`/`PUT
+/farmer/profile` ใน `backend/src/routes/farmer.js`, เพิ่ม `put()` helper ใน
+`frontend/js/api.js` (มีแค่ `get`/`post` มาก่อน), และเพิ่มส่วน "🌾 กลุ่ม
+เกษตรกร & ชนิดผลผลิต" ในหน้าภาพรวมบัญชีของ `frontend/dashboard.html` /
+`frontend/js/dashboard.js`
 
 **เพิ่มเมื่อ 2026-09-19 (ดึกมาก):** `grant_awd_sensor_rental_service.sql` —
 เพิ่ม "ให้เช่าเซนเซอร์วัดระดับน้ำนาเปียก/แห้ง (AWD)" (awd_sensor_rental) เป็น

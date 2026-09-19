@@ -111,6 +111,30 @@
     <div id="summarySection" class="summary-grid">
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
+
+    <div class="section-title">🌾 กลุ่มเกษตรกร &amp; ชนิดผลผลิต</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ระบุด้วยตนเอง ไม่บังคับ และไม่ใช่การรับรองมาตรฐานที่ผ่านการตรวจสอบ —
+      เลือกได้ทั้งกลุ่มเกษตรกรและชนิดพืช/สัตว์ที่ผลิต หรือจะไม่ระบุเลยก็ได้
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="farmerProfileForm" class="form-grid">
+        <div class="field">
+          <label for="farmerGroupSelect">กลุ่มเกษตรกร</label>
+          <select id="farmerGroupSelect">
+            <option value="">ไม่ระบุ</option>
+            <option value="Organic">เกษตรกรอินทรีย์ (Organic)</option>
+            <option value="GAP">เกษตรกร GAP</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="farmerProduceTypesInput">ชนิดพืชหรือสัตว์ที่ผลิต (ถ้ามี)</label>
+          <input type="text" id="farmerProduceTypesInput" maxlength="500" placeholder="เช่น ข้าวหอมมะลิ, กุ้งขาว, โคนม" />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="farmerProfileSaveBtn" style="max-width:200px; margin-top:10px;">บันทึก</button>
+      <div id="farmerProfileResult" class="detail-line" style="margin-top:12px;"></div>
+    </div>
       </div>
 
       <div class="farmer-page" data-page-content="memberships" style="display:none;">
