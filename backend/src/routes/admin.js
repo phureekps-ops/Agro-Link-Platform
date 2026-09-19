@@ -304,6 +304,39 @@ router.post('/organizations/:id/kyb-status', async (req, res, next) => {
         [id, rows[0].org_type, kybStatus, reason || null],
       );
 
+      // FarmerAidFund/AgriCommunityEnterprise ("กองทุนสงเคราะห์เกษตรกร" /
+      // "วิสาหกิจชุมชนด้านการเกษตร") are "bundle" org_types — see grant_
+      // farmer_aid_fund_community_enterprise.sql's own comment, which
+      // already scoped this exact backend change ("bundle-grants Lender +
+      // MachineryService + InputSupplier + Buyer as Verified roles the
+      // SAME moment KYB is approved") but it was never actually written
+      // until now — frontend/communityenterprise's and frontend/
+      // farmeraidfund's own dashboard copy already promises this
+      // ("ทั้ง 4 บทบาททางธุรกิจด้านล่างจะเปิดใช้งานให้ทันทีในคลิกเดียว"),
+      // so without this, those two portals' org would sit with all 4
+      // role cards stuck at "รอการตรวจสอบ" forever, no matter how many
+      // times Platform Ops approved the entity KYB. Kept in the SAME full
+      // lockstep as the primary-role row just above (mirrors every
+      // kyb_status value, not just 'Verified') so a later reversal (e.g.
+      // Verified -> Rejected) revokes all 4 bundled roles together too,
+      // rather than leaving a rejected org with live role access.
+      const BUNDLE_ROLE_TYPES_BY_ORG_TYPE = {
+        FarmerAidFund: ['Lender', 'MachineryService', 'InputSupplier', 'Buyer'],
+        AgriCommunityEnterprise: ['Lender', 'MachineryService', 'InputSupplier', 'Buyer'],
+      };
+      const bundleRoleTypes = BUNDLE_ROLE_TYPES_BY_ORG_TYPE[rows[0].org_type];
+      if (bundleRoleTypes) {
+        for (const roleType of bundleRoleTypes) {
+          await client.query(
+            `INSERT INTO identity.organization_role (org_id, role_type, status, decided_at, decided_reason)
+             VALUES ($1, $2, $3, now(), $4)
+             ON CONFLICT (org_id, role_type) DO UPDATE
+               SET status = EXCLUDED.status, decided_at = now(), decided_reason = EXCLUDED.decided_reason`,
+            [id, roleType, kybStatus, reason || null],
+          );
+        }
+      }
+
       let activated = false;
       if (kybStatus === 'Verified') {
         const hasVendorProfile = await client.query('SELECT 1 FROM partner.vendor_profile WHERE org_id = $1', [id]);
