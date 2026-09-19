@@ -190,4 +190,82 @@ router.post('/projects/:projectId/members/:memberId/remove', async (req, res, ne
   }
 });
 
+// ---------------------------------------------------------------------
+// Phase 2 — MRV Data Room (see backend/db/grant_carbon_module_mrv_
+// evidence.sql). Evidence files themselves go through the existing
+// generic POST /storage/upload (not this router) — these endpoints only
+// manage the carbon.vvb_evidence link rows on top of that.
+// ---------------------------------------------------------------------
+
+// GET /villagefund-carbon/projects/:projectId/evidence
+router.get('/projects/:projectId/evidence', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { projectId } = req.params;
+  try {
+    const rows = await withSessionContext('organization', subjectId, (client) =>
+      carbonAggregation.listEvidence(client, { orgId: subjectId, projectId }));
+    return res.json({ evidence: rows });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return next(err);
+  }
+});
+
+// POST /villagefund-carbon/projects/:projectId/evidence
+// Body: { evidence_type, title, file_id?, geo_data?, note? }
+router.post('/projects/:projectId/evidence', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { projectId } = req.params;
+  const {
+    evidence_type: evidenceType, title, file_id: fileId, geo_data: geoData, note,
+  } = req.body || {};
+  try {
+    const evidence = await withSessionContext('organization', subjectId, async (client) => {
+      const created = await carbonAggregation.addEvidence(client, {
+        orgId: subjectId, projectId, evidenceType, title, fileId, geoData, note, uploadedBySubjectId: subjectId,
+      });
+      await logAccess(client, 'create', 'carbon_vvb_evidence', created.evidence_id);
+      return created;
+    });
+    return res.status(201).json({ evidence });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return next(err);
+  }
+});
+
+// POST /villagefund-carbon/projects/:projectId/evidence/:evidenceId/remove
+router.post('/projects/:projectId/evidence/:evidenceId/remove', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { projectId, evidenceId } = req.params;
+  try {
+    const removed = await withSessionContext('organization', subjectId, async (client) => {
+      const ok = await carbonAggregation.removeEvidence(client, { orgId: subjectId, projectId, evidenceId });
+      if (ok) await logAccess(client, 'delete', 'carbon_vvb_evidence', evidenceId);
+      return ok;
+    });
+    if (!removed) return res.status(404).json({ error: 'evidence_not_found' });
+    return res.json({ ok: true });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return next(err);
+  }
+});
+
+// GET /villagefund-carbon/projects/:projectId/export — read-only manifest
+// (project + members + evidence list) for staff to assemble a document
+// package by hand; no อบก./TGO integration exists yet.
+router.get('/projects/:projectId/export', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { projectId } = req.params;
+  try {
+    const manifest = await withSessionContext('organization', subjectId, (client) =>
+      carbonAggregation.getExportManifest(client, { orgId: subjectId, projectId }));
+    if (!manifest) return res.status(404).json({ error: 'project_not_found' });
+    return res.json(manifest);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

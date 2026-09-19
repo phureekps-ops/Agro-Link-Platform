@@ -1,7 +1,11 @@
 /**
  * AgroLink — Carbon Module Widget (โมดูลคาร์บอนเครดิตระดับองค์กร) —
- * Phase 1 (see backend/db/grant_carbon_module_portal_aggregation.sql and
+ * Phase 1 + Phase 2 (see backend/db/grant_carbon_module_portal_
+ * aggregation.sql + grant_carbon_module_mrv_evidence.sql and
  * backend/src/lib/carbonAggregation.js for the schema/API this talks to).
+ * Phase 2 adds the MRV Data Room (evidence list/upload/remove per project)
+ * and a client-side "export ชุดเอกสาร" manifest for staff to hand a VVB/
+ * อบก.(TGO) by hand — there is no direct integration with either.
  *
  * Self-contained (own inline <style>, no dependency on any page's existing
  * CSS) so the SAME script tag can be dropped into every portal's
@@ -21,6 +25,11 @@
  * Every request here is GET/POST only, matching the backend's own GET/
  * POST-only route design (driven by frontend/communityenterprise/js/
  * api.js not exposing put/del — see coopcarbon.js's header comment).
+ * Evidence FILES go through the existing generic POST /storage/upload +
+ * GET /storage/:id (backend/src/routes/storage.js) rather than a
+ * carbon-specific upload endpoint — same fetch-with-Authorization-header
+ * pattern frontend/coop/js/dashboard.js already uses for the cooperative's
+ * registration document.
  */
 (function () {
   const SESSION_KEY_TO_PREFIX = {
@@ -58,6 +67,14 @@
   };
   const PROJECT_STATUSES = Object.keys(PROJECT_STATUS_LABEL_TH);
 
+  const EVIDENCE_TYPE_LABEL_TH = {
+    satellite_image: 'ภาพถ่ายดาวเทียม/ภาพถ่ายแปลง',
+    gis_boundary: 'ขอบเขตแปลง (GIS)',
+    certification_document: 'เอกสารรับรอง',
+    other: 'อื่นๆ',
+  };
+  const EVIDENCE_EDITABLE_STATUSES = ['draft', 'mrv_prep'];
+
   function cmEscapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -85,8 +102,8 @@
     }
     const { accessToken, apiPrefix } = session;
 
-    async function cmRequest(path, options) {
-      const res = await fetch(`${CM_API_BASE}${apiPrefix}${path}`, Object.assign({}, options, {
+    async function cmFetchJson(url, options) {
+      const res = await fetch(url, Object.assign({}, options, {
         headers: Object.assign(
           { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
           (options && options.headers) || {},
@@ -101,8 +118,28 @@
       }
       return body;
     }
+    const cmRequest = (path, options) => cmFetchJson(`${CM_API_BASE}${apiPrefix}${path}`, options);
     const cmGet = (path) => cmRequest(path, { method: 'GET' });
     const cmPost = (path, data) => cmRequest(path, { method: 'POST', body: JSON.stringify(data || {}) });
+
+    // Evidence FILE upload/download goes through the shared '/storage'
+    // prefix, not the portal's own carbon prefix — see this file's header.
+    const cmStorageUpload = (payload) => cmFetchJson(`${CM_API_BASE}/storage/upload`, {
+      method: 'POST', body: JSON.stringify(payload),
+    });
+    async function cmDownloadFile(fileId) {
+      const res = await fetch(`${CM_API_BASE}/storage/${fileId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (!res.ok) throw new Error(`download_failed_${res.status}`);
+      return res.blob();
+    }
+    function cmFileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result); // data: URL — matches lib/storage.js's decodeBase64Payload
+        reader.onerror = () => reject(reader.error || new Error('read_failed'));
+        reader.readAsDataURL(file);
+      });
+    }
 
     function cmToast(message, isError) {
       let toastEl = document.getElementById('toast');
@@ -162,7 +199,9 @@
     let eligible = [];
     let expandedProjectId = null;
     let expandedDetail = null;
+    let expandedEvidence = [];
     let showCreateForm = false;
+    let showEvidenceForm = false;
 
     async function loadProjects() {
       try {
@@ -188,6 +227,16 @@
       } catch (err) {
         cmToast(`โหลดรายละเอียดโครงการไม่สำเร็จ: ${err.message}`, true);
         expandedDetail = null;
+      }
+    }
+
+    async function loadEvidence(projectId) {
+      try {
+        const data = await cmGet(`/projects/${projectId}/evidence`);
+        expandedEvidence = data.evidence || [];
+      } catch (err) {
+        cmToast(`โหลดหลักฐาน MRV ไม่สำเร็จ: ${err.message}`, true);
+        expandedEvidence = [];
       }
     }
 
@@ -259,6 +308,70 @@
       return `${rowsHtml(activeMembers)}${removedMembers.length ? `<div class="cm-section-title">ประวัติที่ถอดออกแล้ว</div>${rowsHtml(removedMembers)}` : ''}`;
     }
 
+    function renderEvidenceForm(projectId) {
+      if (!showEvidenceForm) {
+        return `<div style="margin-top:10px;"><button type="button" class="cm-btn cm-btn-secondary" id="cmShowEvidenceBtn">＋ เพิ่มหลักฐาน MRV</button></div>`;
+      }
+      const typeOptions = Object.keys(EVIDENCE_TYPE_LABEL_TH)
+        .map((t) => `<option value="${t}">${EVIDENCE_TYPE_LABEL_TH[t]}</option>`).join('');
+      return `
+        <form class="cm-form" id="cmEvidenceForm" data-project-id="${cmEscapeHtml(projectId)}">
+          <div class="cm-field">
+            <label for="cmEvidenceType">ประเภทหลักฐาน</label>
+            <select id="cmEvidenceType">${typeOptions}</select>
+          </div>
+          <div class="cm-field cm-field-full">
+            <label for="cmEvidenceTitle">ชื่อ/หัวข้อหลักฐาน *</label>
+            <input type="text" id="cmEvidenceTitle" placeholder="เช่น ภาพถ่ายดาวเทียมแปลงนา รอบเก็บเกี่ยว 2569" required />
+          </div>
+          <div class="cm-field cm-field-full" id="cmEvidenceFileWrap">
+            <label for="cmEvidenceFile">ไฟล์ (jpg/png/pdf, ไม่เกิน 5MB)</label>
+            <input type="file" id="cmEvidenceFile" accept="image/jpeg,image/png,image/webp,application/pdf" />
+          </div>
+          <div class="cm-field cm-field-full" id="cmEvidenceGeoWrap" style="display:none;">
+            <label for="cmEvidenceGeoData">ข้อมูลขอบเขตแปลง (พิกัด/GeoJSON แบบข้อความ)</label>
+            <textarea id="cmEvidenceGeoData" rows="3" placeholder="เช่น พิกัดมุมแปลง หรือ GeoJSON"></textarea>
+          </div>
+          <div class="cm-field cm-field-full">
+            <label for="cmEvidenceNote">หมายเหตุ (ถ้ามี)</label>
+            <textarea id="cmEvidenceNote" rows="2"></textarea>
+          </div>
+          <div class="cm-field-full" style="display:flex; gap:8px;">
+            <button type="submit" class="cm-btn">บันทึกหลักฐาน</button>
+            <button type="button" class="cm-btn cm-btn-secondary" id="cmCancelEvidenceBtn">ยกเลิก</button>
+          </div>
+        </form>
+      `;
+    }
+
+    function renderEvidenceList(project) {
+      const editable = EVIDENCE_EDITABLE_STATUSES.includes(project.status);
+      const items = expandedEvidence.map((e) => {
+        const typeLabel = EVIDENCE_TYPE_LABEL_TH[e.evidence_type] || e.evidence_type;
+        const body = e.file_id
+          ? `<button type="button" class="cm-btn cm-btn-secondary" data-view-evidence-file-id="${cmEscapeHtml(e.file_id)}">เปิดดูไฟล์ (${cmEscapeHtml(e.original_filename || '-')})</button>`
+          : `<div class="cm-member-sub" style="white-space:pre-wrap;">${cmEscapeHtml(e.geo_data)}</div>`;
+        return `
+          <div class="cm-member-row">
+            <div>
+              <div class="cm-member-name">[${cmEscapeHtml(typeLabel)}] ${cmEscapeHtml(e.title)}</div>
+              <div class="cm-member-sub">${e.note ? `${cmEscapeHtml(e.note)} · ` : ''}เพิ่มเมื่อ ${cmThaiDate(e.created_at)}</div>
+              <div style="margin-top:6px;">${body}</div>
+            </div>
+            ${editable ? `<button type="button" class="cm-btn cm-btn-danger" data-remove-evidence-id="${cmEscapeHtml(e.evidence_id)}">ลบ</button>` : ''}
+          </div>
+        `;
+      }).join('');
+      return `
+        <div class="cm-section-title">📁 หลักฐาน MRV (${expandedEvidence.length} รายการ)</div>
+        ${expandedEvidence.length === 0 ? '<div class="cm-empty">ยังไม่มีหลักฐานแนบ</div>' : items}
+        ${editable ? renderEvidenceForm(project.project_id) : '<div class="cm-empty">โครงการอยู่ระหว่างยื่น/ขึ้นทะเบียนแล้ว — ชุดหลักฐานถูกล็อกไม่ให้แก้ไข</div>'}
+        <div style="margin-top:10px;">
+          <button type="button" class="cm-btn cm-btn-secondary" id="cmExportBtn" data-project-id="${cmEscapeHtml(project.project_id)}">📤 ส่งออกชุดเอกสารสำหรับ VVB/TGO</button>
+        </div>
+      `;
+    }
+
     function renderProjectDetail(detail) {
       const p = detail.project;
       const statusOptions = PROJECT_STATUSES.map((s) => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${PROJECT_STATUS_LABEL_TH[s]}</option>`).join('');
@@ -284,6 +397,7 @@
           <div class="cm-section-title">สมาชิกในโครงการ (${detail.members.filter((m) => m.status === 'active').length} คน)</div>
           ${renderMemberList(detail)}
           ${renderEligibleList(p.project_id)}
+          ${renderEvidenceList(p)}
         </div>
       `;
     }
@@ -355,11 +469,14 @@
           if (expandedProjectId === projectId) {
             expandedProjectId = null;
             expandedDetail = null;
+            expandedEvidence = [];
+            showEvidenceForm = false;
             render();
             return;
           }
           expandedProjectId = projectId;
-          await Promise.all([loadDetail(projectId), loadEligible()]);
+          showEvidenceForm = false;
+          await Promise.all([loadDetail(projectId), loadEligible(), loadEvidence(projectId)]);
           render();
         });
       });
@@ -423,6 +540,172 @@
           }
         });
       });
+
+      // ---------------- Phase 2 — MRV Data Room handlers ----------------
+      const showEvidenceBtn = document.getElementById('cmShowEvidenceBtn');
+      if (showEvidenceBtn) showEvidenceBtn.addEventListener('click', () => { showEvidenceForm = true; render(); });
+
+      const cancelEvidenceBtn = document.getElementById('cmCancelEvidenceBtn');
+      if (cancelEvidenceBtn) cancelEvidenceBtn.addEventListener('click', () => { showEvidenceForm = false; render(); });
+
+      const evidenceTypeSelect = document.getElementById('cmEvidenceType');
+      if (evidenceTypeSelect) {
+        evidenceTypeSelect.addEventListener('change', () => {
+          const isGeo = evidenceTypeSelect.value === 'gis_boundary';
+          const fileWrap = document.getElementById('cmEvidenceFileWrap');
+          const geoWrap = document.getElementById('cmEvidenceGeoWrap');
+          if (fileWrap) fileWrap.style.display = isGeo ? 'none' : '';
+          if (geoWrap) geoWrap.style.display = isGeo ? '' : 'none';
+        });
+      }
+
+      const evidenceForm = document.getElementById('cmEvidenceForm');
+      if (evidenceForm) {
+        evidenceForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const projectId = evidenceForm.dataset.projectId;
+          const evidenceType = document.getElementById('cmEvidenceType').value;
+          const title = document.getElementById('cmEvidenceTitle').value.trim();
+          const note = document.getElementById('cmEvidenceNote').value.trim();
+          if (!title) {
+            cmToast('กรุณาระบุชื่อ/หัวข้อหลักฐาน', true);
+            return;
+          }
+          const submitBtn = evidenceForm.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          try {
+            let fileId = null;
+            let geoData = null;
+            if (evidenceType === 'gis_boundary') {
+              geoData = document.getElementById('cmEvidenceGeoData').value.trim();
+              if (!geoData) {
+                cmToast('กรุณาระบุข้อมูลขอบเขตแปลง', true);
+                return;
+              }
+            } else {
+              const fileInput = document.getElementById('cmEvidenceFile');
+              const file = fileInput.files[0];
+              if (!file) {
+                cmToast('กรุณาเลือกไฟล์', true);
+                return;
+              }
+              if (file.size > 5 * 1024 * 1024) {
+                cmToast('ไฟล์มีขนาดใหญ่เกิน 5MB', true);
+                return;
+              }
+              const dataUrl = await cmFileToBase64(file);
+              const orgNameEl = document.getElementById('orgName');
+              const uploadedBy = (orgNameEl && orgNameEl.textContent && orgNameEl.textContent.trim()) || 'เจ้าหน้าที่องค์กร';
+              const uploadResult = await cmStorageUpload({
+                purpose: 'carbon_vvb_evidence', filename: file.name, content_type: file.type, file_base64: dataUrl, uploaded_by: uploadedBy,
+              });
+              fileId = uploadResult.file_id;
+            }
+            await cmPost(`/projects/${projectId}/evidence`, {
+              evidence_type: evidenceType, title, file_id: fileId, geo_data: geoData, note: note || null,
+            });
+            cmToast('เพิ่มหลักฐาน MRV เรียบร้อยแล้ว');
+            showEvidenceForm = false;
+            await Promise.all([loadEvidence(projectId), loadProjects()]);
+            render();
+          } catch (err) {
+            cmToast(`เพิ่มหลักฐานไม่สำเร็จ: ${err.message}`, true);
+          } finally {
+            submitBtn.disabled = false;
+          }
+        });
+      }
+
+      mount.querySelectorAll('[data-remove-evidence-id]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const projectId = expandedProjectId;
+          const evidenceId = btn.dataset.removeEvidenceId;
+          try {
+            await cmPost(`/projects/${projectId}/evidence/${evidenceId}/remove`, {});
+            cmToast('ลบหลักฐานแล้ว');
+            await Promise.all([loadEvidence(projectId), loadProjects()]);
+            render();
+          } catch (err) {
+            cmToast(`ลบหลักฐานไม่สำเร็จ: ${err.message}`, true);
+          }
+        });
+      });
+
+      mount.querySelectorAll('[data-view-evidence-file-id]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const fileId = btn.dataset.viewEvidenceFileId;
+          btn.disabled = true;
+          try {
+            const blob = await cmDownloadFile(fileId);
+            window.open(URL.createObjectURL(blob), '_blank');
+          } catch (err) {
+            cmToast(`เปิดไฟล์ไม่สำเร็จ: ${err.message}`, true);
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+
+      const exportBtn = document.getElementById('cmExportBtn');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', async () => {
+          const projectId = exportBtn.dataset.projectId;
+          exportBtn.disabled = true;
+          try {
+            const manifest = await cmGet(`/projects/${projectId}/export`);
+            const text = cmBuildManifestText(manifest);
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `carbon-project-manifest-${projectId}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            cmToast('สร้างไฟล์สรุปโครงการแล้ว — เปิดไฟล์แนบแต่ละรายการด้านบนเพื่อดาวน์โหลดรวมส่งให้ผู้ทวนสอบ');
+          } catch (err) {
+            cmToast(`ส่งออกไม่สำเร็จ: ${err.message}`, true);
+          } finally {
+            exportBtn.disabled = false;
+          }
+        });
+      }
+    }
+
+    /**
+     * Plain-text manifest for staff to hand a VVB / อบก.(TGO) alongside the
+     * evidence files they download individually via the "เปิดดูไฟล์" buttons
+     * above — see this module's own Phase 2 scope note on why this isn't a
+     * generated .zip (no archive library in this backend; adding one is a
+     * new dependency + deploy step for a "manual submission anyway" flow).
+     */
+    function cmBuildManifestText(manifest) {
+      const p = manifest.project;
+      const activeMembers = manifest.members.filter((m) => m.status === 'active');
+      const lines = [];
+      lines.push(`เอกสารสรุปโครงการคาร์บอนเครดิต — ${p.project_name}`);
+      lines.push(`สถานะ: ${PROJECT_STATUS_LABEL_TH[p.status] || p.status}`);
+      lines.push(`Methodology: ${p.methodology_ref}`);
+      lines.push(`ส่วนแบ่งเกษตรกร: ${cmNum(p.farmer_pool_pct)}% / ค่าธรรมเนียม AgroLink: ${cmNum(p.platform_fee_pct)}%`);
+      lines.push(`สร้างเมื่อ: ${cmThaiDate(p.created_at)}`);
+      lines.push('');
+      lines.push(`สมาชิกในโครงการ (${activeMembers.length} คน):`);
+      activeMembers.forEach((m, i) => {
+        lines.push(`${i + 1}. ${m.farmer_name} (${m.farmer_code || '-'}) — ${cmNum(m.area_rai)} ไร่ — จัดสรร ${cmNum(m.allocated_credit_tco2e)} tCO2e`);
+      });
+      lines.push('');
+      lines.push(`หลักฐาน MRV (${manifest.evidence.length} รายการ):`);
+      manifest.evidence.forEach((e, i) => {
+        const typeLabel = EVIDENCE_TYPE_LABEL_TH[e.evidence_type] || e.evidence_type;
+        if (e.geo_data) {
+          lines.push(`${i + 1}. [${typeLabel}] ${e.title}${e.note ? ` — ${e.note}` : ''}`);
+          lines.push(`   ข้อมูลขอบเขตแปลง: ${e.geo_data}`);
+        } else {
+          lines.push(`${i + 1}. [${typeLabel}] ${e.title}${e.note ? ` — ${e.note}` : ''} — ไฟล์แนบ: ${e.original_filename || '-'} (ดาวน์โหลดแยกจากหน้าคาร์บอนเครดิตในระบบ)`);
+        }
+      });
+      lines.push('');
+      lines.push('หมายเหตุ: ไฟล์นี้เป็นเอกสารสรุปสำหรับเจ้าหน้าที่ใช้ประกอบการยื่นต่อผู้ทวนสอบภายนอก (VVB) / อบก. (TGO) ด้วยตนเอง — ระบบยังไม่เชื่อมต่อกับหน่วยงานดังกล่าวโดยตรง');
+      return lines.join('\n');
     }
 
     (async () => {

@@ -34,6 +34,14 @@ const ORG_ROLE_TO_RELATIONSHIP_TYPE = {
 const UPDATABLE_PROJECT_FIELDS = ['project_name', 'status', 'farmer_pool_pct', 'platform_fee_pct', 'note'];
 const PROJECT_STATUSES = ['draft', 'mrv_prep', 'submitted_to_tver', 'registered', 'credits_issued'];
 
+// Phase 2 — MRV Data Room (see backend/db/grant_carbon_module_mrv_
+// evidence.sql). Evidence can only be added/removed while the project is
+// still being prepared — once it moves to 'submitted_to_tver' or beyond,
+// the evidence set is treated as frozen (same "UNLOCKED_STATUSES" idea as
+// carbon.js's own awd_cycle_assessment editing rule).
+const EVIDENCE_TYPES = ['satellite_image', 'gis_boundary', 'certification_document', 'other'];
+const EVIDENCE_EDITABLE_STATUSES = ['draft', 'mrv_prep'];
+
 /**
  * Verified AWD assessments belonging to a farmer who currently has an
  * active farmer_org_relationship of `relationshipType` with `orgId`, and
@@ -217,8 +225,131 @@ async function removeMember(client, { orgId, projectId, memberId }) {
   return result.rows.length > 0;
 }
 
+/** Loads a project row scoped to orgId, or null. Shared by the evidence
+ * functions below so they all fail the same way on a missing/foreign
+ * project before touching carbon.vvb_evidence. */
+async function loadOwnedProject(client, { orgId, projectId }) {
+  const result = await client.query(
+    `SELECT project_id, status FROM carbon.carbon_project WHERE project_id = $1 AND org_id = $2`,
+    [projectId, orgId],
+  );
+  return result.rows[0] || null;
+}
+
+async function listEvidence(client, { orgId, projectId }) {
+  const project = await loadOwnedProject(client, { orgId, projectId });
+  if (!project) {
+    const err = new Error('project_not_found');
+    err.status = 404;
+    throw err;
+  }
+  const result = await client.query(
+    `SELECT e.evidence_id, e.evidence_type, e.title, e.geo_data, e.note, e.created_at,
+            e.file_id, f.original_filename, f.content_type, f.byte_size
+       FROM carbon.vvb_evidence e
+       LEFT JOIN storage.file_object f ON f.file_id = e.file_id
+      WHERE e.project_id = $1
+      ORDER BY e.created_at DESC`,
+    [projectId],
+  );
+  return result.rows;
+}
+
+/**
+ * Attaches one piece of MRV evidence to a project. `fileId`, when given,
+ * MUST already be a file this same organization uploaded via the generic
+ * POST /storage/upload (checked here against storage.file_object's own
+ * owner_subject_type/owner_subject_id) — otherwise an org could link a
+ * file_id it merely guessed at. `geoData` is a plain-text/GeoJSON field
+ * for 'gis_boundary' evidence instead of a file (see the migration's own
+ * header comment for why no GIS file type is accepted through storage.js).
+ */
+async function addEvidence(client, { orgId, projectId, evidenceType, title, fileId, geoData, note, uploadedBySubjectId }) {
+  const project = await loadOwnedProject(client, { orgId, projectId });
+  if (!project) {
+    const err = new Error('project_not_found');
+    err.status = 404;
+    throw err;
+  }
+  if (!EVIDENCE_EDITABLE_STATUSES.includes(project.status)) {
+    const err = new Error('project_not_editable');
+    err.status = 409;
+    throw err;
+  }
+  if (!EVIDENCE_TYPES.includes(evidenceType)) {
+    const err = new Error('invalid_evidence_type');
+    err.status = 400;
+    throw err;
+  }
+  if (!title || !String(title).trim()) {
+    const err = new Error('title_required');
+    err.status = 400;
+    throw err;
+  }
+  if (!fileId && !geoData) {
+    const err = new Error('file_or_geo_data_required');
+    err.status = 400;
+    throw err;
+  }
+
+  if (fileId) {
+    const fileCheck = await client.query(
+      `SELECT file_id FROM storage.file_object WHERE file_id = $1 AND owner_subject_type = 'organization' AND owner_subject_id = $2`,
+      [fileId, orgId],
+    );
+    if (fileCheck.rows.length === 0) {
+      const err = new Error('file_not_owned_by_org');
+      err.status = 403;
+      throw err;
+    }
+  }
+
+  const result = await client.query(
+    `INSERT INTO carbon.vvb_evidence (project_id, evidence_type, title, file_id, geo_data, note, uploaded_by_subject_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING evidence_id`,
+    [projectId, evidenceType, title, fileId || null, geoData || null, note || null, uploadedBySubjectId],
+  );
+  return result.rows[0];
+}
+
+async function removeEvidence(client, { orgId, projectId, evidenceId }) {
+  const project = await loadOwnedProject(client, { orgId, projectId });
+  if (!project) {
+    const err = new Error('project_not_found');
+    err.status = 404;
+    throw err;
+  }
+  if (!EVIDENCE_EDITABLE_STATUSES.includes(project.status)) {
+    const err = new Error('project_not_editable');
+    err.status = 409;
+    throw err;
+  }
+  const result = await client.query(
+    `DELETE FROM carbon.vvb_evidence WHERE evidence_id = $1 AND project_id = $2 RETURNING evidence_id`,
+    [evidenceId, projectId],
+  );
+  return result.rows.length > 0;
+}
+
+/**
+ * Everything needed for staff to assemble a document package for the
+ * external verifier (VVB) / อบก.-TGO by hand — see this module's own
+ * Phase 2 scope note: no direct อบก./TGO integration exists, so this is a
+ * read-only manifest (project + members + evidence list, each evidence
+ * item still downloaded individually via GET /storage/:file_id) rather
+ * than a generated archive file.
+ */
+async function getExportManifest(client, { orgId, projectId }) {
+  const detail = await getProjectDetail(client, { orgId, projectId });
+  if (!detail) return null;
+  const evidence = await listEvidence(client, { orgId, projectId });
+  return { ...detail, evidence };
+}
+
 module.exports = {
   ORG_ROLE_TO_RELATIONSHIP_TYPE,
+  EVIDENCE_TYPES,
   listEligibleAssessments,
   listProjects,
   createProject,
@@ -226,4 +357,8 @@ module.exports = {
   updateProject,
   addMembers,
   removeMember,
+  listEvidence,
+  addEvidence,
+  removeEvidence,
+  getExportManifest,
 };

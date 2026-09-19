@@ -96,7 +96,7 @@ Render บอกไว้ว่าบัญชีที่ไม่ได้ผ�
 
 ---
 
-## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (50 ไฟล์ ตามลำดับ)
+## 7. รันสคริปต์ตั้งค่าฐานข้อมูล (51 ไฟล์ ตามลำดับ)
 
 **แนะนำให้เตรียมคำสั่งใน Notepad หรือ Notepad++ ก่อน** แล้วค่อยคัดลอกไปวางรันใน Command Prompt ทีละบรรทัด (ป้องกันพิมพ์/วางผิดจากการแก้ไขตรงๆ ใน Command Prompt) วิธีทำละเอียด:
 
@@ -183,7 +183,24 @@ grant_org_district.sql
 grant_farmer_aid_fund_community_enterprise.sql
 grant_about_content_add_farmer_section.sql
 grant_carbon_module_portal_aggregation.sql
+grant_carbon_module_mrv_evidence.sql
 ```
+
+**เพิ่มเมื่อ 2026-09-19 (ค่ำ):** `grant_carbon_module_mrv_evidence.sql` —
+Carbon Module เฟส 2 (MRV Data Room + เตรียมยื่น T-VER) เพิ่มตาราง
+`carbon.vvb_evidence` เก็บหลักฐานประกอบ (ภาพถ่ายดาวเทียม, ขอบเขตแปลง GIS,
+เอกสารรับรอง) ผูกกับ `carbon.carbon_project` — ไฟล์จริงอัปโหลดผ่านระบบเก็บ
+ไฟล์กลางที่มีอยู่แล้ว (`storage.file_object`, POST /storage/upload) ไม่ได้
+สร้างระบบเก็บไฟล์ใหม่ ส่วนข้อมูลขอบเขตแปลง (GIS) เก็บเป็นข้อความ/GeoJSON ตรง
+คอลัมน์ `geo_data` แทนการอัปโหลดไฟล์ (ประเภทไฟล์ GIS มาตรฐานไม่อยู่ใน
+allowlist ของ storage.js) สถานะโครงการ mrv_prep/submitted_to_tver/registered
+มีอยู่แล้วตั้งแต่เฟส 1 ไม่ต้องแก้ constraint เพิ่ม — คู่กับ endpoint ใหม่ต่อ
+พอร์ทัล (`GET/POST .../projects/:id/evidence`, `.../evidence/:id/remove`,
+`GET .../projects/:id/export` สำหรับสร้างไฟล์สรุปให้เจ้าหน้าที่ดาวน์โหลดไป
+ยื่นผู้ทวนสอบภายนอก/อบก.(TGO) ด้วยตนเอง — ยังไม่เชื่อมต่อระบบอบก./TGO
+โดยตรง) และหน้าจัดการหลักฐานใหม่ในแท็บ "คาร์บอนเครดิต" เดิมของทั้ง 3 พอร์ทัล
+(`frontend/js/carbon-module-widget.js`) หลักฐานแก้ไข/ลบได้เฉพาะตอนโครงการ
+ยังอยู่สถานะ draft/mrv_prep เท่านั้น
 
 **เพิ่มเมื่อ 2026-09-19:** `grant_carbon_module_portal_aggregation.sql` —
 Carbon Module เฟส 1 (ชั้น "รวมกลุ่มระดับองค์กร" ต่อยอดจาก `grant_carbon_awd.sql`
