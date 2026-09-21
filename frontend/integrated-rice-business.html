@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการธุรกิจข้าวครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html / coop-portal.html / carbon-credit-article.html / auction-intro.html */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo-img { height: 44px; width: auto; display: block; }
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-links a.active-link { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+    }
+    .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-row:last-child a:last-child { border-bottom: none; }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* STAT ROW */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 8px; }
+  @media (max-width: 860px) { .stat-grid { grid-template-columns: 1fr; } }
+  .stat-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 22px; text-align: center; }
+  .stat-card .num { font-size: 30px; font-weight: 800; color: var(--green); display: block; margin-bottom: 8px; }
+  .stat-card .label { font-size: 13.8px; color: var(--muted); line-height: 1.5; }
+
+  /* ROLE CARDS (section 4) */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / auction-intro.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ติดต่อสอบถาม</a>
+        </div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="about.html">เกี่ยวกับเรา</a>
+        <a href="index.html#concept">แนวคิดหลัก</a>
+        <a href="index.html#how">วิธีการทำงาน</a>
+        <a href="index.html#knowledge">คลังความรู้</a>
+        <a href="index.html#prices">ราคาสินค้า</a>
+      </div>
+      <div class="nav-row">
+        <a href="index.html#weather">พยากรณ์อากาศ</a>
+        <a href="index.html#roadmap">แผนสินค้า</a>
+        <a href="coop-portal.html">พอร์ทัลสหกรณ์</a>
+        <a href="index.html#contact">ติดต่อ</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-wheat-awn"></i> คู่มือแนะนำโครงการ</div>
+    <h1 class="section-title">โครงการธุรกิจข้าวครบวงจร</h1>
+    <p class="section-sub">ปลูกข้าวไม่ต้องมีเงินสดล่วงหน้า — ระบบการเงิน + เทคโนโลยี + สหกรณ์ + ตลาด + คาร์บอนเครดิต ที่ออกแบบไว้ให้แล้ว (Integrated Rice Business Project — Introduction Guide)</p>
+    <span class="draft-tag">ฉบับร่างเพื่อพิจารณา — 20 กันยายน 2569</span>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4>สารบัญ</h4>
+      <ol>
+        <li><a href="#sec-1">1. ที่มาของโครงการ</a></li>
+        <li><a href="#sec-2">2. แนวคิดหลักและประโยชน์ที่จะได้รับ</a></li>
+        <li><a href="#sec-3">3. โครงสร้างทางการเงิน: เกษตรกรไม่ต้องลงทุนเงินสด</a></li>
+        <li><a href="#sec-4">4. บทบาทและความรับผิดชอบของผู้เกี่ยวข้องแต่ละฝ่าย</a></li>
+        <li><a href="#sec-5">5. เป้าหมายการเติบโต 15 ปี</a></li>
+        <li><a href="#sec-6">6. บทสรุป</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-1">
+  <div class="container prose-block reveal in">
+    <h2>1. ที่มาของโครงการ</h2>
+    <p>เกษตรกรผู้ปลูกข้าวไทยส่วนใหญ่เผชิญปัญหาเดียวกันมาหลายสิบปี: ต้องหาเงินสดมาลงทุนเองตั้งแต่ต้นฤดู ทั้งค่าเมล็ดพันธุ์ ปุ๋ย ค่าเช่าเครื่องจักร โดยไม่รู้แน่ชัดว่าจะขายข้าวได้ราคาเท่าไรในปลายฤดู หากปีใดราคาตกหรือผลผลิตเสียหาย เกษตรกรต้องแบกรับความเสี่ยงทั้งหมดไว้คนเดียว ขณะที่ปัจจัยการผลิตอย่างปุ๋ยก็มักซื้อผ่านพ่อค้าคนกลางหลายชั้นในราคาสูงกว่าที่ควรจะเป็น และหลังเก็บเกี่ยวฟางข้าวจำนวนมากมักถูกเผาทิ้งเพราะไม่มีช่องทางใช้ประโยชน์ ส่งผลกระทบต่อดินและสร้างมลพิษ PM2.5 ซ้ำเติมปัญหาสิ่งแวดล้อม</p>
+    <p>ในอีกด้านหนึ่ง ธนาคารและสหกรณ์การเกษตรมีเงินทุนพร้อมปล่อยกู้ ผู้ให้บริการเครื่องจักรและเทคโนโลยีมีอุปกรณ์ทันสมัยพร้อมใช้งาน โรงสีและโรงไฟฟ้าชีวมวลต้องการวัตถุดิบที่มีคุณภาพและตรวจสอบย้อนกลับได้ และตลาดคาร์บอนเครดิตกำลังเติบโตต้องการข้อมูลการผลิตที่น่าเชื่อถือ — แต่ทุกฝ่ายเหล่านี้ไม่เคยถูกเชื่อมเข้าด้วยกันเป็นระบบเดียวที่ทำงานร่วมกันได้จริง</p>
+    <p>AgroLink จึงถูกออกแบบขึ้นเพื่อเป็น "ตัวเชื่อม" ดิจิทัลที่นำทุกฝ่ายมารวมกัน โดยเริ่มต้นจากคำถามง่ายๆ ว่า: ถ้าเกษตรกรไม่ต้องหาเงินสดมาลงทุนเองเลย แต่ยังคงเป็นเจ้าของผลผลิตและรายได้ทั้งหมดหลังหักต้นทุน จะช่วยให้ระบบการผลิตข้าวของประเทศดีขึ้นได้แค่ไหน — โครงการธุรกิจข้าวครบวงจรนี้คือคำตอบของคำถามนั้น เปิดโครงการนำร่องขนาด 10,000 ไร่ต่อสหกรณ์ ขยายเครือข่ายอย่างต่อเนื่อง โดยมีกลไกทางการเงิน เทคโนโลยี และตลาด ที่ออกแบบและทดสอบไว้ล่วงหน้าแล้ว</p>
+  </div>
+</section>
+
+<section class="prose-section alt" id="sec-2">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-lightbulb"></i> แนวคิดหลัก</div>
+      <h2 class="section-title" style="font-size:26px;">2. แนวคิดหลักและประโยชน์ที่จะได้รับ</h2>
+      <p class="section-sub">"เกษตรกรไม่ต้องใช้เงินสดของตนเองเริ่มต้นฤดูกาล — ใช้ระบบการเงิน + เทคโนโลยี + สหกรณ์ + ตลาด + Carbon Credit เชื่อมกันเป็นระบบเดียว"</p>
+    </div>
+    <div class="prose-block" style="margin-bottom:34px;">
+      <p>โครงการประกอบด้วยกิจกรรมหลัก 4 ส่วนที่ทำงานร่วมกัน:</p>
+      <ul class="check-list">
+        <li><strong>การผลิตข้าวไม่ใช้เงินสดล่วงหน้า</strong> — เงินทุนหมุนเวียนจากธนาคาร/สหกรณ์ เบิกเป็นงวดตามกิจกรรมเพาะปลูกจริง</li>
+        <li><strong>ปุ๋ยสั่งตัดลดต้นทุน</strong> — ตรวจดิน คำนวณสูตรเฉพาะแปลง รวมคำสั่งซื้อทั้งเครือข่ายเพื่อประมูลราคาส่ง</li>
+        <li><strong>คาร์บอนเครดิตจากนาเปียกสลับแห้ง (AWD)</strong> — ลดการใช้น้ำและก๊าซมีเทน ระยะโครงการ 5 ปี ไม่ต้องลงทุนอุปกรณ์เอง</li>
+        <li><strong>เศรษฐกิจฟางข้าว</strong> — เก็บฟางแทนการเผา แปรรูปเป็นเชื้อเพลิงชีวมวลขายสร้างรายได้เสริม</li>
+      </ul>
+    </div>
+    <h3 style="max-width:860px;margin-left:auto;margin-right:auto;">ประโยชน์ที่แต่ละฝ่ายจะได้รับ</h3>
+    <div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+      <table class="data-table">
+        <thead><tr><th>ผู้ได้รับประโยชน์</th><th>ประโยชน์หลัก</th></tr></thead>
+        <tbody>
+          <tr><td><strong>เกษตรกร</strong></td><td>ไม่ต้องหาเงินสดลงทุนเอง ลดต้นทุนปุ๋ย เพิ่มผลผลิตจากดินที่ดีขึ้น มีรายได้เสริมจากคาร์บอนเครดิตและฟางข้าว ลดความเสี่ยงจากการกู้นอกระบบ</td></tr>
+          <tr><td><strong>สหกรณ์</strong></td><td>มีบทบาทเป็นศูนย์กลางบริการสมาชิกที่ชัดเจนขึ้น มีรายได้จากการรวบรวมผลผลิต จัดซื้อปัจจัยการผลิต และส่วนแบ่งจากบริการต่างๆ โดยไม่ต้องแบกความเสี่ยงด้านเงินทุนเอง</td></tr>
+          <tr><td><strong>ธนาคาร/ผู้ให้กู้</strong></td><td>ปล่อยสินเชื่อที่มีข้อมูลติดตามกิจกรรมการผลิตแบบดิจิทัลรองรับ ลดความเสี่ยงหนี้เสียเมื่อเทียบกับสินเชื่อเกษตรแบบเดิม</td></tr>
+          <tr><td><strong>สิ่งแวดล้อม</strong></td><td>ลดการเผาตอซัง/ฟางข้าว ลดการใช้น้ำและก๊าซเรือนกระจกจากนาข้าว ลดการใช้ปุ๋ยเกินความจำเป็น</td></tr>
+          <tr><td><strong>ประเทศ/สังคม</strong></td><td>ยกระดับระบบผลิตข้าวไทยให้มีมาตรฐาน ตรวจสอบย้อนกลับได้ แข่งขันได้ในตลาดที่ให้ความสำคัญกับความยั่งยืนมากขึ้นทุกปี</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-3">
+  <div class="container prose-block reveal in">
+    <h2>3. โครงสร้างทางการเงิน: เกษตรกรไม่ต้องลงทุนเงินสด</h2>
+    <p>ข้อควรเข้าใจให้ตรงกัน: คำว่า "ไม่ต้องลงทุนเงินสด" หมายถึงเกษตรกรไม่ต้องควักเงินสดของตนเองล่วงหน้าเท่านั้น ไม่ใช่ต้นทุนเป็นศูนย์ ต้นทุนที่แท้จริงยังเกิดขึ้นเสมอ เพียงแต่มีธนาคาร สหกรณ์ และผู้ให้บริการเป็นผู้จัดหาเงินทุนล่วงหน้าแทน แล้วรับชำระคืนจากรายได้หลังขายผลผลิตหรือขายคาร์บอน/ฟางในภายหลัง</p>
+
+    <h3>3.1 เงินทุนการผลิตข้าว</h3>
+    <p>เกษตรกรรับเงินทุนหมุนเวียนจากธนาคารหรือสหกรณ์เป็นงวดตามกิจกรรมจริง (เตรียมแปลง → ปลูก → บำรุงรักษา → เก็บเกี่ยว) แทนการหาเงินสดมาลงทุนเองทั้งฤดูกาล เมื่อขายข้าวได้ ระบบจะหักชำระคืนเงินทุนและค่าบริการต่างๆ โดยอัตโนมัติผ่านแพลตฟอร์ม ก่อนโอนเงินส่วนที่เหลือให้เกษตรกร</p>
+
+    <h3>3.2 อุปกรณ์ปรับพื้นที่และเซนเซอร์วัดน้ำ (สำหรับกิจกรรมคาร์บอนเครดิต)</h3>
+    <p>นี่คือส่วนที่ออกแบบไว้อย่างรอบคอบที่สุด: ผู้ให้บริการปรับพื้นที่ด้วยเลเซอร์ และผู้ให้เช่าเซนเซอร์วัดระดับน้ำ เป็นผู้กู้เงินจากธนาคารมาลงทุนอุปกรณ์เอง และรับภาระดอกเบี้ยเอง เกษตรกรไม่จ่ายเงินสดส่วนนี้เลยแม้แต่บาทเดียว แล้วค่อยๆ ผ่อนชำระค่าบริการคืนเป็นรายปีตลอด 5 ปี จากรายได้ 2 ทางเท่านั้นคือ การขายคาร์บอนเครดิต และการขายฟางข้าว — ไม่แตะรายได้จากการขายข้าวเลย</p>
+    <p>เหตุผลที่โครงสร้างนี้ทำได้จริง: ผู้ให้บริการอุปกรณ์มีลูกค้าจำนวนมากในเครือข่ายเดียวกัน ทำให้กู้เงินธนาคารได้ง่ายกว่าเกษตรกรรายย่อยแต่ละคนที่ไปกู้เอง ความเสี่ยงด้านเครดิตจึงถูกยกไปอยู่กับผู้ที่บริหารความเสี่ยงนี้เป็นธุรกิจหลักโดยตรง ไม่ใช่เกษตรกร</p>
+
+    <h3>3.3 สรุปภาพรวมเงินทุนตลอดโครงการ</h3>
+  </div>
+  <div class="container" style="margin-top:6px;">
+    <div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+      <table class="data-table">
+        <thead><tr><th>กิจกรรม</th><th>ใครเป็นผู้จ่ายเงินก่อน</th><th>เกษตรกรชำระคืนจากอะไร</th></tr></thead>
+        <tbody>
+          <tr><td>การผลิตข้าว</td><td>ธนาคาร/สหกรณ์</td><td>รายได้จากการขายข้าวในฤดูนั้น</td></tr>
+          <tr><td>ปุ๋ยสั่งตัด</td><td>รวมอยู่ในวงเงินผลิต</td><td>รายได้จากการขายข้าว (ต้นทุนที่ลดลงแล้ว)</td></tr>
+          <tr><td>อุปกรณ์ AWD (ปรับพื้นที่/เซนเซอร์)</td><td>ผู้ให้บริการอุปกรณ์ (กู้เอง)</td><td>รายได้คาร์บอนเครดิต + ขายฟาง ทยอย 5 ปี</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt" id="sec-4">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-people-group"></i> ผู้เกี่ยวข้อง</div>
+      <h2 class="section-title" style="font-size:26px;">4. บทบาทและความรับผิดชอบของผู้เกี่ยวข้องแต่ละฝ่าย</h2>
+    </div>
+    <div class="role-grid">
+      <div class="role-card" id="sec-4-1">
+        <h4><span class="badge-num">4.1</span> เกษตรกร</h4>
+        <ul>
+          <li>นำแปลงนาเข้าร่วมโครงการ และปฏิบัติตามแผนการผลิตที่ตกลงไว้ (ช่วงเวลาปลูก บำรุงรักษา จัดการน้ำแบบ AWD)</li>
+          <li>อนุญาตให้ติดตั้งอุปกรณ์ตรวจวัด (เซนเซอร์น้ำ ภาพถ่ายดาวเทียม) เพื่อยืนยันกิจกรรมการผลิตตามระบบ</li>
+          <li>ขายผลผลิตข้าว ฟางข้าว และคาร์บอนเครดิตผ่านระบบ AgroLink เพื่อให้การหักชำระหนี้เป็นไปโดยอัตโนมัติและโปร่งใส</li>
+          <li>ไม่ต้องเตรียมเงินสดลงทุนล่วงหน้าในทุกกิจกรรมของโครงการ</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-2">
+        <h4><span class="badge-num">4.2</span> สหกรณ์</h4>
+        <ul>
+          <li>เป็นศูนย์กลางประสานงานกับสมาชิกในพื้นที่ ลานตาก โกดัง และเครือข่ายโรงสี</li>
+          <li>รวบรวมคำสั่งซื้อปัจจัยการผลิตของสมาชิกเพื่อจัดประมูลราคาส่ง</li>
+          <li>ผสมปุ๋ยสั่งตัดตามสูตรเฉพาะแปลงที่คำนวณจากผลตรวจดินของสมาชิกแต่ละราย แล้วจำหน่ายให้สมาชิกโดยตรง</li>
+          <li>ติดตามความคืบหน้าการผลิตร่วมกับ AgroLink และช่วยแก้ปัญหาหน้างานกับสมาชิก</li>
+          <li>รับส่วนแบ่งรายได้จากกิจกรรมต่างๆ ของโครงการตามที่ตกลงไว้</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-3">
+        <h4><span class="badge-num">4.3</span> ธนาคาร / ผู้ให้กู้</h4>
+        <ul>
+          <li>จัดหาวงเงินทุนหมุนเวียนสำหรับการผลิตข้าว เบิกจ่ายเป็นงวดตามกิจกรรมจริงผ่านระบบติดตามของ AgroLink</li>
+          <li>รับชำระคืนอัตโนมัติ ณ จุดขายผลผลิต ลดความเสี่ยงหนี้เสียเมื่อเทียบกับการปล่อยกู้แบบดั้งเดิม</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-4">
+        <h4><span class="badge-num">4.4</span> ผู้ให้บริการปรับพื้นที่และเซนเซอร์วัดน้ำ (AWD)</h4>
+        <ul>
+          <li>ลงทุนอุปกรณ์ปรับพื้นที่ด้วยเลเซอร์และเซนเซอร์วัดระดับน้ำด้วยเงินทุนของตนเอง (กู้เองจากธนาคาร)</li>
+          <li>ให้บริการแก่เกษตรกรโดยไม่เก็บเงินสดล่วงหน้า และรับความเสี่ยงด้านการเงิน/ดอกเบี้ยของตนเอง</li>
+          <li>รับชำระค่าบริการคืนทยอยเป็นรายปีตลอด 5 ปี จากรายได้คาร์บอนเครดิตและฟางข้าวของเกษตรกรที่ใช้บริการ</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-5">
+        <h4><span class="badge-num">4.5</span> AgroLink</h4>
+        <ul>
+          <li>เป็นโครงสร้างพื้นฐานดิจิทัลกลาง เชื่อมทุกฝ่ายเข้าด้วยกัน: แพลตฟอร์ม ข้อมูลดาวเทียม AI การจัดซื้อ ระบบตรวจวัดคาร์บอน (MRV) ตลาดกลาง และระบบหักบัญชีอัตโนมัติ</li>
+          <li>ดูแลความโปร่งใสของธุรกรรมทุกฝ่าย และประสานงานกับผู้ตรวจสอบคาร์บอนเครดิตและหน่วยงานภาครัฐที่เกี่ยวข้อง</li>
+          <li>รับรายได้จากค่าธรรมเนียมบริการต่างๆ ตามที่ตกลงกับแต่ละฝ่าย</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-6">
+        <h4><span class="badge-num">4.6</span> โรงสี / ผู้ซื้อ / โรงไฟฟ้าชีวมวล / โรงงานปูนซีเมนต์</h4>
+        <ul>
+          <li>รับซื้อข้าวเปลือกจากเกษตรกรในเครือข่าย</li>
+          <li>รับซื้อเชื้อเพลิงชีวมวลจากฟางข้าว ทั้งโรงไฟฟ้าชีวมวลและโรงงานปูนซีเมนต์ที่ใช้เชื้อเพลิงชีวมวลทดแทนถ่านหินในกระบวนการผลิต</li>
+          <li>ได้รับข้อมูลตรวจสอบย้อนกลับที่น่าเชื่อถือประกอบการรับซื้อ</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-7">
+        <h4><span class="badge-num">4.7</span> ผู้นำเข้าแม่ปุ๋ย</h4>
+        <ul>
+          <li>เข้าร่วมประมูลขายแม่ปุ๋ย (วัตถุดิบตั้งต้น N-P-K) ให้กับเครือข่ายผ่านระบบรวมคำสั่งซื้อของ AgroLink (Reverse Auction)</li>
+          <li>แข่งขันราคากันโดยตรงในระบบประมูล ทำให้เครือข่ายได้ราคาแม่ปุ๋ยระดับราคาส่ง แทนการซื้อผ่านพ่อค้าคนกลางหลายชั้นแบบเดิม</li>
+          <li>ได้ประโยชน์จากคำสั่งซื้อรวมที่มีปริมาณแน่นอนและคาดการณ์ล่วงหน้าได้ ช่วยวางแผนการนำเข้าและบริหารสต๊อกได้แม่นยำขึ้น</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-8">
+        <h4><span class="badge-num">4.8</span> ผู้ผลิตเคมีเกษตร</h4>
+        <ul>
+          <li>ผลิตและจำหน่ายสารเคมีเกษตรอื่นๆ ที่เครือข่ายต้องการ (เช่น ยาปราบศัตรูพืช ฮอร์โมนพืช) นอกเหนือจากแม่ปุ๋ยที่สหกรณ์นำไปผสมเอง</li>
+          <li>รับคำสั่งซื้อรวมจากเครือข่ายผ่านระบบของ AgroLink ทำให้มีกำลังการผลิต/นำเข้าที่แน่นอนและวางแผนได้ล่วงหน้า</li>
+          <li>ควบคุมคุณภาพสินค้าให้ได้มาตรฐานตามที่เครือข่ายกำหนด</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-9">
+        <h4><span class="badge-num">4.9</span> อบก. (TGO)</h4>
+        <ul>
+          <li>รับรองมาตรฐานและขึ้นทะเบียนคาร์บอนเครดิตให้พร้อมซื้อขายในตลาด (T-VER Registration)</li>
+          <li>กำหนดหลักเกณฑ์และเครื่องมือคำนวณการลดก๊าซเรือนกระจกที่ใช้อ้างอิงทั่วประเทศ</li>
+        </ul>
+      </div>
+      <div class="role-card" id="sec-4-10">
+        <h4><span class="badge-num">4.10</span> KUniverse (หน่วยงานตรวจสอบ)</h4>
+        <ul>
+          <li>ทำหน้าที่ผู้ตรวจสอบความถูกต้องของข้อมูล (MRV — Measurement, Reporting, Verification) ก่อนนำส่งขึ้นทะเบียนกับ อบก.</li>
+          <li>ตรวจสอบและรับรองข้อมูลด้าน Green/GHG/ESG ของโครงการ เพื่อสร้างความน่าเชื่อถือให้กับคาร์บอนเครดิตที่ AgroLink นำออกขาย</li>
+          <li>เป็นหน่วยงานอิสระที่แยกจาก AgroLink โดยตรง เพื่อให้ผู้ซื้อคาร์บอนเครดิตมั่นใจได้ว่าข้อมูลผ่านการตรวจสอบจากบุคคลที่สาม</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-5">
+  <div class="container">
+    <div class="prose-block" style="margin-bottom:30px;">
+      <h2>5. เป้าหมายการเติบโต 15 ปี</h2>
+      <p>เป้าหมายการเติบโตของโครงการกำหนดเป็น 3 ช่วง ตามความพร้อมของเครือข่ายที่คาดว่าจะเปลี่ยนไปเมื่อฐานใหญ่ขึ้น: ปีที่ 1-5 เติบโตปีละ 50% (ช่วงบุกเบิก ฐานยังเล็ก) ปีที่ 6-10 เติบโตปีละ 25% (ช่วงขยายตัว) และปีที่ 11-15 เติบโตปีละ 10% (ช่วงเครือข่ายเข้าสู่ความอิ่มตัวและเน้นความมั่นคง) โดยเริ่มต้นจากปีที่ 1 ที่ 120,000 ไร่ (เทียบเท่าประมาณ 12 สหกรณ์ ขนาดสหกรณ์ละ 10,000 ไร่)</p>
+    </div>
+    <div class="stat-grid" style="margin-bottom:34px;">
+      <div class="stat-card"><span class="num">+50%</span><span class="label">อัตราเติบโตต่อปี ปีที่ 1–5 (ช่วงบุกเบิก)</span></div>
+      <div class="stat-card"><span class="num">+25%</span><span class="label">อัตราเติบโตต่อปี ปีที่ 6–10 (ช่วงขยายตัว)</span></div>
+      <div class="stat-card"><span class="num">+10%</span><span class="label">อัตราเติบโตต่อปี ปีที่ 11–15 (ช่วงมุ่งความมั่นคง)</span></div>
+    </div>
+    <div class="data-table-wrap" style="max-width:860px;margin:0 auto 34px;">
+      <table class="data-table">
+        <thead><tr><th>ปี</th><th>พื้นที่สะสม (ไร่)</th><th>เทียบเท่าสหกรณ์ (10,000 ไร่/แห่ง)</th><th>อัตราเพิ่มจากปีก่อน</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="num-cell">120,000</td><td>≈12 แห่ง</td><td>—</td></tr>
+          <tr><td>2</td><td class="num-cell">180,000</td><td>≈18 แห่ง</td><td>+50%</td></tr>
+          <tr><td>3</td><td class="num-cell">270,000</td><td>≈27 แห่ง</td><td>+50%</td></tr>
+          <tr><td>4</td><td class="num-cell">405,000</td><td>≈41 แห่ง</td><td>+50%</td></tr>
+          <tr><td>5</td><td class="num-cell">608,000</td><td>≈61 แห่ง</td><td>+50%</td></tr>
+          <tr><td>6</td><td class="num-cell">759,000</td><td>≈76 แห่ง</td><td>+25%</td></tr>
+          <tr><td>7</td><td class="num-cell">949,000</td><td>≈95 แห่ง</td><td>+25%</td></tr>
+          <tr><td>8</td><td class="num-cell">1,187,000</td><td>≈119 แห่ง</td><td>+25%</td></tr>
+          <tr><td>9</td><td class="num-cell">1,483,000</td><td>≈148 แห่ง</td><td>+25%</td></tr>
+          <tr><td>10</td><td class="num-cell">1,854,000</td><td>≈185 แห่ง</td><td>+25%</td></tr>
+          <tr><td>11</td><td class="num-cell">2,039,000</td><td>≈204 แห่ง</td><td>+10%</td></tr>
+          <tr><td>12</td><td class="num-cell">2,243,000</td><td>≈224 แห่ง</td><td>+10%</td></tr>
+          <tr><td>13</td><td class="num-cell">2,468,000</td><td>≈247 แห่ง</td><td>+10%</td></tr>
+          <tr><td>14</td><td class="num-cell">2,714,000</td><td>≈271 แห่ง</td><td>+10%</td></tr>
+          <tr><td>15</td><td class="num-cell">2,986,000</td><td>≈299 แห่ง</td><td>+10%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose-block">
+      <p style="font-size:14px;color:var(--muted);">ตรวจสอบขนาดเทียบบริบทประเทศ: พื้นที่นาปรังทั่วประเทศมีประมาณ 12.2 ล้านไร่ (ข้อมูล สศก.) พื้นที่เป้าหมายในปีที่ 15 (≈2.99 ล้านไร่) จึงเทียบเท่าประมาณ 24.5% ของพื้นที่นาปรังทั้งประเทศ หรือประมาณ 4.2% ของพื้นที่นาข้าวทั้งหมดทุกฤดูรวมกัน (นาปี+นาปรัง ≈70-73 ล้านไร่) — เป็นเป้าหมายที่ทะเยอทะยานแต่อยู่ในวิสัยที่พอวางแผนได้จริงมากกว่าอัตราเดิม (+50% ตลอด 15 ปี) อย่างมีนัยสำคัญ อย่างไรก็ตามยังต้องมีการขยายทีมงาน เงินทุนหมุนเวียน และเครือข่ายสหกรณ์ให้สอดคล้องกับอัตราเร่งในแต่ละช่วง โดยเฉพาะช่วงปีที่ 6-10 ที่เครือข่ายจะโตจาก 61 เป็น 185 สหกรณ์ ซึ่งเป็นช่วงที่ต้องการการลงทุนขยายทีมภาคสนามมากที่สุด</p>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt" id="sec-6">
+  <div class="container prose-block reveal in">
+    <h2>6. บทสรุป</h2>
+    <p>โครงการธุรกิจข้าวครบวงจรโดย AgroLink คือความพยายามเปลี่ยนระบบผลิตข้าวไทยจาก "เกษตรกรลงทุนเอง แบกความเสี่ยงเอง" ไปสู่ระบบที่มีการเงิน เทคโนโลยี ตลาด และกลไกด้านสิ่งแวดล้อมทำงานร่วมกันเป็นหนึ่งเดียว โดยออกแบบให้เกษตรกรเป็นศูนย์กลางที่ได้รับประโยชน์สูงสุด ไม่ต้องแบกรับภาระเงินทุนหรือความเสี่ยงทางการเงินที่ไม่จำเป็น ขณะที่ทุกฝ่ายที่เกี่ยวข้อง — สหกรณ์ ธนาคาร ผู้ให้บริการเทคโนโลยี ตลาดรับซื้อ และภาคสิ่งแวดล้อม — ต่างได้รับประโยชน์ร่วมกันในระบบเดียวกันนี้</p>
+    <p>คู่มือฉบับนี้เป็นเอกสารเบื้องต้นสำหรับพิจารณาและทำความเข้าใจภาพรวมโครงการ รายละเอียดเชิงตัวเลขเฉพาะด้าน (แผนธุรกิจฉบับเต็ม แผนรายได้ 5 ปี งบการเงิน Pre-Seed) มีอยู่ในเอกสารประกอบชุดอื่นของ AgroLink ผู้สนใจเข้าร่วมโครงการในฐานะสหกรณ์ เกษตรกร หรือพันธมิตรทางธุรกิจ สามารถติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้</p>
+    <div class="note-block" style="margin-top:22px;">
+      <strong>หมายเหตุ:</strong> เอกสารนี้เป็นคู่มือแนะนำเบื้องต้นสำหรับการพิจารณาภายในเท่านั้น (Draft for Consideration) รายละเอียดเชิงสัญญา การเงิน และกฎหมาย ต้องอ้างอิงเอกสารฉบับเต็มและได้รับการตรวจสอบจากทีมการเงิน/กฎหมายก่อนใช้งานจริง
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container section-head reveal">
+    <h2 class="section-title">สนใจเข้าร่วมโครงการธุรกิจข้าวครบวงจร</h2>
+    <p class="section-sub">ไม่ว่าจะในฐานะสหกรณ์ เกษตรกร หรือพันธมิตรทางธุรกิจ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="index.html#contact" class="btn btn-gold">ติดต่อทีมงาน AgroLink</a>
+      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark">🌿</span>AgroLink</div>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
+      </div>
+      <div>
+        <h5>แพลตฟอร์ม</h5>
+        <ul>
+          <li><a href="index.html#concept">แนวคิดหลัก</a></li>
+          <li><a href="production-cycle-template.html">แม่แบบวงจรการผลิต (รายละเอียด)</a></li>
+          <li><a href="auction-intro.html">Auction Place</a></li>
+          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>ผู้ใช้งาน</h5>
+        <ul>
+          <li><a href="index.html#audience">เกษตรกร</a></li>
+          <li><a href="coop-portal.html">สหกรณ์</a></li>
+          <li><a href="index.html#audience">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#audience">ผู้ให้สินเชื่อ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>องค์กร</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="index.html#partners">พันธมิตร</a></li>
+          <li><a href="index.html#contact">ติดต่อเรา</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span>สร้างบนแกนกลาง Galaxy Core</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
