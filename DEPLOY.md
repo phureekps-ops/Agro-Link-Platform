@@ -189,6 +189,39 @@ grant_awd_sensor_rental_service.sql
 grant_farmer_group_self_declaration.sql
 ```
 
+**เพิ่มเมื่อ 2026-09-21 (frontend เท่านั้น ไม่มี migration):**
+เพิ่มหน้าเอกสารใหม่ `frontend/carbon-module-guide.html` ("กลไกการทำงานของ
+Carbon Module") ตามคำขอของผู้ใช้ให้อธิบาย**กลไกการทำงานจริงของระบบ** (ไม่ใช่
+บทความการตลาด/ขายไอเดียแบบ `frontend/carbon-credit-article.html` ที่มีอยู่
+ก่อนแล้ว) — สรุปทั้ง 3 เฟสของ Carbon Module ที่กระจายอยู่ใน 4 ไฟล์ migration
+(`grant_carbon_awd.sql`, `grant_carbon_module_portal_aggregation.sql`,
+`grant_carbon_module_mrv_evidence.sql`, `grant_carbon_module_marketplace.sql`)
+ให้เป็นเอกสารเดียวอ่านต่อเนื่องได้: ภาพรวม 3 เฟส, ผังขั้นตอนแบบ end-to-end
+10 ขั้นตอนตั้งแต่เกษตรกรบันทึกระดับน้ำจนถึงจ่ายเงินให้เกษตรกร, สูตรคำนวณสิทธิ์
+AWD และเครดิตคาร์บอน (คัดลอกตรงจาก `recomputeAssessment()` ใน
+`backend/src/routes/carbon.js`), state machine draft → pending_review →
+verified/rejected, โครงสร้างตาราง `carbon.carbon_project` /
+`carbon.project_cycle_member`, กติกาการจับคู่ซื้อขายแบบ manual-only และสูตร
+แบ่งรายได้ (คัดลอกตรงจาก `matchOrderToListing()` ใน
+`backend/src/lib/carbonAggregation.js`), ตารางสรุปว่าใครทำอะไรที่พอร์ทัลไหน
+(เกษตรกร/Platform Ops/สหกรณ์-วิสาหกิจชุมชน-กองทุนหมู่บ้าน/ผู้ซื้อ), ตารางอ้างอิง
+ทั้ง 10 ตารางในสคีมา `carbon.*` พร้อมเฟสและหน้าที่ของแต่ละตาราง และหัวข้อ
+"ข้อจำกัดและสิ่งที่ต้องระวัง" (ย้ำว่านี่เป็นเครื่องมือ MRV/ประมาณการภายในเท่านั้น
+ไม่ใช่การขึ้นทะเบียน T-VER กับ อบก./TGO จริง, ค่าคงที่ทั้งหมดเป็นค่าตั้งต้นชั่วคราว
+ต้องตรวจสอบกับตัวเลขจริงของ TGO ก่อนใช้เชิงพาณิชย์, การจับคู่คำสั่งซื้อเป็นแบบ
+manual โดย Platform Ops 100% ไม่มีระบบอัตโนมัติ, ยังไม่มีระบบชำระเงินจริงในแพลตฟอร์ม
+— `payout_status` เป็นแค่ log สำหรับตรวจสอบเท่านั้น, และไม่มี Row Level Security
+บนตาราง `carbon.*` เลยสักตาราง — ความปลอดภัยทั้งหมดพึ่งพา WHERE clause ใน
+โค้ด backend) ใช้เทมเพลตหน้าเว็บสาธารณะเดียวกับ `carbon-credit-article.html`
+(nav/footer/สี/ฟอนต์เหมือนกันทุกอย่าง) เพิ่ม CSS เฉพาะหน้าสำหรับผังขั้นตอน
+(`.flow`), การ์ดข้อมูล (`.card-grid`), กล่องสูตร (`.formula-box`), และผัง
+pipeline สถานะ (`.pipeline`) — หน้านี้ลิงก์กลับไปหา `carbon-credit-article.html`
+ที่ท้ายหน้า และมีลิงก์ตัวเองอยู่ในคอลัมน์ "แพลตฟอร์ม" ของ footer แล้ว (ยังไม่ได้
+เพิ่มลิงก์ไปหน้านี้จากหน้าอื่นเพิ่มเติม เช่นจาก nav หลักหรือจาก
+`carbon-credit-article.html` เอง — ถ้าต้องการให้แจ้งได้) ไม่มี migration ใหม่
+เพราะเป็นหน้าเอกสารอธิบายระบบล้วนๆ ไม่มีการเรียก API หรือเชื่อมฐานข้อมูลใดๆ
+
+
 **เพิ่มเมื่อ 2026-09-19 (ดึกที่สุด, frontend เท่านั้น ไม่มี migration):**
 ปรับโครงสร้าง `frontend/buyer/dashboard.html` ให้เป็น sidebar SPA หน้าเดียว
 แบบเดียวกับ `frontend/admin/dashboard.html` / `frontend/coop/dashboard.html`

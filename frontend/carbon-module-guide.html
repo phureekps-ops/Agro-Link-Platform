@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กลไกการทำงานของ Carbon Module | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 760px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html / carbon-credit-article.html / auction-intro.html */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo-img { height: 44px; width: auto; display: block; }
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+    }
+    .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-row:last-child a:last-child { border-bottom: none; }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+
+  /* PROSE */
+  .prose-section { padding: 56px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 880px; margin: 0 auto; }
+  .prose-block p { font-size: 15.3px; color: var(--text); margin-bottom: 15px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 25px; margin-bottom: 16px; }
+  .prose-block h3 { font-size: 18.5px; margin: 24px 0 10px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 24px; font-size: 14.5px; margin-bottom: 9px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+  .prose-block code { background: var(--green-light); color: var(--green-dark); padding: 1px 6px; border-radius: 5px; font-size: 13px; font-family: 'SFMono-Regular', Consolas, monospace; }
+
+  /* TOC */
+  .toc { max-width: 880px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* FLOW STEPS */
+  .flow { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
+  .flow-step { display: flex; gap: 18px; padding: 18px 0; border-bottom: 1px dashed var(--border); }
+  .flow-step:last-child { border-bottom: none; }
+  .flow-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--green); color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .flow-body h4 { font-size: 15px; margin-bottom: 4px; color: var(--navy); }
+  .flow-body p { font-size: 13.8px; color: var(--muted); margin: 0; }
+  .flow-body .who { display: inline-block; margin-top: 6px; font-size: 11.5px; font-weight: 700; color: var(--green); background: var(--green-light); padding: 3px 10px; border-radius: 999px; }
+
+  /* ROLE / DATA CARDS */
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .card-grid { grid-template-columns: 1fr; } }
+  .card-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 900px) { .card-grid.three { grid-template-columns: 1fr; } }
+  .info-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; }
+  .info-card h4 { font-size: 15px; margin-bottom: 10px; color: var(--navy); display:flex; align-items:center; gap:8px; }
+  .info-card p { font-size: 13.8px; color: var(--text); margin-bottom: 8px; }
+  .info-card p:last-child { margin-bottom: 0; }
+  .info-card ul { margin: 0; }
+  .info-card ul li { position: relative; padding-left: 16px; font-size: 13.3px; color: var(--text); margin-bottom: 7px; }
+  .info-card ul li:last-child { margin-bottom: 0; }
+  .info-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+  .info-card .tag { display:inline-block; font-size: 11px; font-weight: 700; color: var(--muted); background: var(--cream); border: 1px solid var(--border); padding: 2px 9px; border-radius: 999px; margin-bottom: 10px; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.3px; }
+  table.data-table th, table.data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td code { white-space: nowrap; }
+
+  /* FORMULA BOX */
+  .formula-box { background: var(--navy); color: #fff; border-radius: var(--radius); padding: 24px 28px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13.5px; line-height: 2; overflow-x: auto; }
+  .formula-box .line { white-space: pre; }
+  .formula-box .comment { color: #9BB5A9; }
+  .formula-box .op { color: var(--gold); }
+
+  /* NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 20px 24px; font-size: 13.8px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+  .note-block.danger { background: #FCECEC; border-color: #F0B8B8; }
+  .note-block.danger strong { color: #A23636; }
+
+  /* STAGE PIPELINE */
+  .pipeline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; max-width: 880px; margin: 0 auto; }
+  .pipeline .stage { background: #fff; border: 1.5px solid var(--border); border-radius: 999px; padding: 9px 18px; font-size: 13px; font-weight: 700; color: var(--navy); }
+  .pipeline .stage.active { border-color: var(--green); background: var(--green-light); color: var(--green-dark); }
+  .pipeline .arrow { color: var(--muted); font-size: 15px; }
+
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+          <a href="carbon-credit-article.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">แนวคิดคาร์บอนเครดิต</a>
+        </div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="about.html">เกี่ยวกับเรา</a>
+        <a href="index.html#concept">แนวคิดหลัก</a>
+        <a href="carbon-credit-article.html">คาร์บอนเครดิต (แนวคิด)</a>
+        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
+      </div>
+      <div class="nav-row">
+        <a href="coop-portal.html">พอร์ทัลสหกรณ์</a>
+        <a href="auction-intro.html">Auction Place</a>
+        <a href="index.html#contact">ติดต่อ</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-diagram-project"></i> เอกสารทางเทคนิค · สำหรับทีมงาน</div>
+    <h1 class="section-title">กลไกการทำงานของ Carbon Module</h1>
+    <p class="section-sub">อธิบายว่าโมดูลคาร์บอนเครดิตของ AgroLink ทำงานจริงอย่างไร ตั้งแต่เกษตรกรบันทึกระดับน้ำในนา ไปจนถึงเงินที่ได้จากการขายคาร์บอนเครดิตถูกแบ่งกลับไปหาสมาชิกแต่ละคน — ครอบคลุมทั้ง 3 เฟสที่พัฒนาไว้แล้วในระบบจริง (ไม่ใช่แนวคิดการตลาด แต่เป็นกลไกจริงในโค้ด)</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4>สารบัญ</h4>
+      <ol>
+        <li><a href="#sec-overview">ภาพรวม 3 เฟส</a></li>
+        <li><a href="#sec-flow">เส้นทางข้อมูลแบบเต็ม (End-to-End)</a></li>
+        <li><a href="#sec-phase1">เฟส 1 — การประเมิน AWD ระดับเกษตรกร</a></li>
+        <li><a href="#sec-phase2">เฟส 2 — การรวมกลุ่มระดับองค์กร + ห้องเก็บเอกสาร MRV</a></li>
+        <li><a href="#sec-phase3">เฟส 3 — ตลาดกลางและกลไกแบ่งรายได้</a></li>
+        <li><a href="#sec-roles">ใครทำอะไรที่ไหน</a></li>
+        <li><a href="#sec-data">ตารางข้อมูลหลัก (สำหรับทีมพัฒนา)</a></li>
+        <li><a href="#sec-caveats">ข้อจำกัดและสิ่งที่ต้องระวัง</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-overview">
+  <div class="container prose-block reveal in">
+    <h2>ภาพรวม 3 เฟส</h2>
+    <p>Carbon Module ของ AgroLink พัฒนาเป็น 3 เฟสต่อเนื่องกัน แต่ละเฟสเพิ่ม "ชั้น" ใหม่บนของเดิมโดยไม่แก้ไขของเดิม:</p>
+    <ul class="check-list">
+      <li><strong>เฟส 1 — MRV ระดับเกษตรกรรายเดียว:</strong> เกษตรกรบันทึกระดับน้ำในนาแบบเปียกสลับแห้ง (AWD) ต่อรอบปลูก ระบบคำนวณประมาณการเครดิตอัตโนมัติ แล้ว Platform Ops ตรวจสอบ/รับรอง</li>
+      <li><strong>เฟส 2 — การรวมกลุ่มระดับองค์กร:</strong> สหกรณ์ / วิสาหกิจชุมชนด้านการเกษตร / กองทุนหมู่บ้าน รวบรวมผลที่รับรองแล้วของสมาชิกหลายคนเข้าเป็น "โครงการคาร์บอน" เดียว พร้อมห้องเก็บเอกสารหลักฐาน (MRV Data Room) เพื่อเตรียมยื่นขึ้นทะเบียนจริง</li>
+      <li><strong>เฟส 3 — ตลาดกลางและแบ่งรายได้:</strong> เมื่อโครงการขึ้นทะเบียนแล้ว องค์กรลงขายเครดิตในตลาด ผู้ซื้อ (Buyer) ยื่นคำสั่งซื้อ Platform Ops จับคู่ด้วยมือ ระบบคำนวณและแบ่งรายได้กลับไปหาองค์กรและเกษตรกรแต่ละคนโดยอัตโนมัติ</li>
+    </ul>
+    <div class="note-block" style="margin-top:6px;">
+      <strong>สิ่งที่ต้องเข้าใจให้ตรงกันตั้งแต่ต้น:</strong> ทั้ง 3 เฟสนี้คือเครื่องมือ <strong>MRV และประเมินผลภายในแพลตฟอร์มเท่านั้น</strong> ไม่ใช่การขึ้นทะเบียนคาร์บอนเครดิตจริงกับหน่วยงานใด การจะได้เครดิตที่ซื้อขายได้จริงต้องยื่นเรื่องแยกต่างหากกับผู้รับรอง (เช่น อบก./TGO ภายใต้โครงการ T-VER) ซึ่งมีขั้นตอน baseline/project boundary/leakage/third-party validation ที่ซับซ้อนกว่านี้ ดูรายละเอียดเพิ่มเติมที่ <a href="carbon-credit-article.html" style="color:var(--green);font-weight:700;">หน้าแนวคิดคาร์บอนเครดิต</a>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt" id="sec-flow">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-route"></i> ภาพรวมกระบวนการ</div>
+      <h2 class="section-title" style="font-size:26px;">เส้นทางข้อมูลแบบเต็ม (End-to-End)</h2>
+      <p class="section-sub">ไล่ตามลำดับตั้งแต่เกษตรกรบันทึกข้อมูลจริง ไปจนถึงเงินเข้าบัญชี</p>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <h4>เกษตรกรบันทึกระดับน้ำในนาต่อรอบปลูก</h4>
+          <p>ทุกครั้งที่ไปดูนา บันทึกว่าน้ำ "ท่วม" หรือ "แห้ง" (และระดับน้ำเป็น ซม. ถ้ามีท่อวัด) ผ่านหน้า carbon-credit.html — ข้อมูลนี้เป็น append-only แก้ไขย้อนหลังไม่ได้</p>
+          <span class="who">เกษตรกร · frontend/carbon-credit.html</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <h4>ระบบคำนวณ "ร่างประเมิน" ใหม่ทุกครั้งที่มีข้อมูลเพิ่ม</h4>
+          <p>ไล่ดูบันทึกทั้งหมดตามลำดับเวลา จัดกลุ่มช่วงที่ "แห้งตามเกณฑ์ AWD" ต่อเนื่องกันเป็น "รอบแห้ง" นับว่ารอบปลูกนี้เข้าเกณฑ์หรือไม่ ตามจำนวนรอบแห้งที่ผ่านเกณฑ์</p>
+          <span class="who">อัตโนมัติ · backend/src/routes/carbon.js: recomputeAssessment()</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-body">
+          <h4>เกษตรกรส่งร่างประเมินเข้าคิวตรวจสอบ</h4>
+          <p>เมื่อพอใจกับข้อมูลแล้ว กด "ส่งตรวจ" — สถานะเปลี่ยนจาก draft เป็น pending_review และ "ล็อก" ไม่ให้แก้ไขข้อมูลต่อจนกว่าจะมีผลตรวจ</p>
+          <span class="who">เกษตรกร · POST /farmer/carbon/cycles/:id/submit</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-body">
+          <h4>Platform Ops ตรวจสอบและตัดสิน</h4>
+          <p>ดูบันทึกระดับน้ำทั้งหมด + ข้อมูลดาวเทียมเสริม (ถ้ามี) แล้วกด "รับรอง" (verified — ล็อกถาวร) หรือ "ตีกลับ" (rejected — พร้อมเหตุผล เกษตรกรแก้ไขแล้วส่งใหม่ได้)</p>
+          <span class="who">Platform Ops · หน้าแอดมิน "คาร์บอนเครดิต (AWD)"</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-body">
+          <h4>องค์กรรวบรวมผลที่รับรองแล้วเข้าโครงการ</h4>
+          <p>สหกรณ์/วิสาหกิจชุมชน/กองทุนหมู่บ้าน สร้าง "โครงการคาร์บอน" แล้วเลือกเฉพาะรอบปลูกของสมาชิกที่มีสถานะ verified แล้วเท่านั้นเข้าร่วม — 1 รอบปลูกอยู่ในโครงการที่กำลังใช้งานได้ทีละ 1 โครงการ</p>
+          <span class="who">สหกรณ์/วิสาหกิจชุมชน/กองทุนหมู่บ้าน · widget "Carbon Module"</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">6</div>
+        <div class="flow-body">
+          <h4>แนบหลักฐาน MRV และส่งออกชุดเอกสาร</h4>
+          <p>แนบภาพถ่าย/ภาพดาวเทียม/ขอบเขตแปลง (GIS)/เอกสารรับรอง เข้าโครงการ แล้วส่งออก manifest รวมทุกอย่างเพื่อนำไปยื่นกับผู้ตรวจสอบ (VVB) หรือ อบก./TGO ด้วยตนเองนอกระบบ</p>
+          <span class="who">สหกรณ์/วิสาหกิจชุมชน/กองทุนหมู่บ้าน · MRV Data Room</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">7</div>
+        <div class="flow-body">
+          <h4>อัปเดตสถานะโครงการตามความคืบหน้าจริงนอกระบบ</h4>
+          <p>องค์กรปรับสถานะโครงการเอง: draft → mrv_prep → submitted_to_tver → registered → credits_issued ตามความคืบหน้าจริงกับหน่วยงานภายนอก (ระบบไม่เชื่อมต่อกับ อบก./TGO โดยตรง)</p>
+          <span class="who">สหกรณ์/วิสาหกิจชุมชน/กองทุนหมู่บ้าน</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">8</div>
+        <div class="flow-body">
+          <h4>องค์กรลงขายเครดิต ผู้ซื้อยื่นคำสั่งซื้อ</h4>
+          <p>เมื่อโครงการถึงสถานะ registered/credits_issued แล้วเท่านั้น จึงลงขาย (ระบุจำนวนตันคาร์บอนไดออกไซด์เทียบเท่า + ราคาที่ต้องการ) — ฝั่งผู้ซื้อสร้างคำสั่งซื้อคู่ขนาน (จำนวนที่ต้องการ + ราคาที่เสนอ) โดยยังไม่เห็นรายชื่อผู้ขายรายใดโดยตรง</p>
+          <span class="who">ผู้ขาย: สหกรณ์ฯ · ผู้ซื้อ: พอร์ทัลผู้รับซื้อผลผลิต (แท็บคาร์บอนเครดิต)</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">9</div>
+        <div class="flow-body">
+          <h4>Platform Ops จับคู่ด้วยมือ ระบบคำนวณแบ่งรายได้อัตโนมัติ</h4>
+          <p>เลือกคำสั่งซื้อ 1 รายการจับคู่กับประกาศขาย 1 รายการ (ขายเต็มจำนวนเสมอ ไม่รองรับขายบางส่วน) กรอกต้นทุนโครงการ (ถ้ามี) แล้วระบบคำนวณส่วนแบ่งของทุกฝ่ายทันที ไม่ให้เจ้าหน้าที่กรอกตัวเลขเอง</p>
+          <span class="who">Platform Ops · หน้าแอดมิน "ตลาดคาร์บอนเครดิต"</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">10</div>
+        <div class="flow-body">
+          <h4>องค์กรจ่ายเงินจริงนอกระบบ แล้วกดยืนยันในระบบ</h4>
+          <p>ระบบยังไม่มีช่องทางโอนเงินจริง — องค์กรโอนเงินให้เกษตรกรแต่ละคนผ่านช่องทางเดิมที่มีอยู่ (พร้อมเพย์/โอนธนาคาร) เอง แล้วกลับมากด "จ่ายแล้ว" เพื่อเป็นหลักฐานตรวจสอบย้อนหลังเท่านั้น</p>
+          <span class="who">สหกรณ์/วิสาหกิจชุมชน/กองทุนหมู่บ้าน</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-phase1">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-droplet"></i> เฟส 1</div>
+      <h2 class="section-title" style="font-size:26px;">การประเมิน AWD ระดับเกษตรกร</h2>
+      <p class="section-sub">เครื่องมือ MRV (Measurement, Reporting, Verification) ระดับรอบปลูกเดียว — จุดเริ่มต้นของทั้งโมดูล</p>
+    </div>
+    <div class="prose-block" style="margin-bottom:28px;">
+      <p>ใช้ได้เฉพาะรอบปลูกที่เป็นข้าว (รหัสสินค้าขึ้นต้นด้วย <code>RICE_</code>) เนื่องจากเทคนิคเปียกสลับแห้งเป็นเทคนิคเฉพาะนาข้าวที่มีการขังน้ำเท่านั้น ค่าคงที่ทั้งหมดที่ใช้คำนวณเก็บไว้ใน <code>carbon.awd_config</code> และ Platform Ops ปรับได้โดยไม่กระทบผลประเมินเก่าที่คำนวณไปแล้ว (เก็บเป็นเวอร์ชัน ไม่ใช่การแก้ไขทับ):</p>
+    </div>
+    <div class="card-grid" style="margin-bottom:30px;">
+      <div class="info-card">
+        <h4>📏 ค่าตั้งต้นของวิธีคำนวณ (ปรับได้)</h4>
+        <ul>
+          <li><strong>อัตราเครดิตต่อไร่:</strong> 0.0800 tCO₂e ต่อไร่ ต่อ 1 รอบปลูกที่ผ่านเกณฑ์</li>
+          <li><strong>จำนวนรอบแห้งขั้นต่ำที่ต้องมี:</strong> อย่างน้อย 3 รอบต่อฤดูปลูก</li>
+          <li><strong>ความยาวขั้นต่ำของ 1 รอบแห้ง:</strong> อย่างน้อย 7 วันติดต่อกัน</li>
+          <li><strong>ระดับน้ำที่ถือว่า "แห้งตามเกณฑ์":</strong> ต่ำกว่าผิวดินอย่างน้อย 15 ซม.</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <h4>🌾 กติกาการนับ "รอบแห้ง" ที่ผ่านเกณฑ์</h4>
+        <ul>
+          <li>ไล่บันทึกระดับน้ำตามลำดับเวลา นับว่า "แห้งตามเกณฑ์" เมื่อสถานะเป็น "แห้ง" และ (ระดับน้ำลดลงถึงเกณฑ์ หรือไม่ได้กรอกระดับน้ำเป็น ซม. ก็เชื่อตามสถานะที่รายงาน)</li>
+          <li>รวมบันทึกที่ต่อเนื่องกันเป็น "รอบ" หนึ่งรอบ นับว่าผ่านเกณฑ์ก็ต่อเมื่อช่วงเวลาของรอบนั้นยาวไม่น้อยกว่าเกณฑ์ขั้นต่ำ</li>
+          <li>เข้าเกณฑ์ทั้งรอบปลูกก็ต่อเมื่อมีรอบแห้งที่ผ่านเกณฑ์สะสมครบตามจำนวนขั้นต่ำ — <strong>ได้หรือไม่ได้เต็มจำนวนเท่านั้น ไม่มีเครดิตบางส่วน</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="prose-block" style="margin-bottom:14px;">
+      <h3>สูตรคำนวณเครดิตประมาณการ</h3>
+    </div>
+    <div class="formula-box" style="max-width:880px;margin:0 auto 30px;">
+      <div class="line"><span class="comment">// คำนวณใหม่ทุกครั้งที่มีการบันทึกระดับน้ำเพิ่ม จนกว่าจะถูกส่งตรวจ</span></div>
+      <div class="line">is_eligible = (จำนวนรอบแห้งที่ผ่านเกณฑ์ <span class="op">&gt;=</span> min_dry_events_required)</div>
+      <div class="line"></div>
+      <div class="line">estimated_credit_tco2e = is_eligible</div>
+      <div class="line">  <span class="op">?</span> พื้นที่แปลง (ไร่) <span class="op">×</span> อัตราเครดิตต่อไร่</div>
+      <div class="line">  <span class="op">:</span> 0</div>
+    </div>
+    <div class="prose-block" style="margin-bottom:20px;">
+      <h3>สถานะของ 1 รอบปลูก (carbon.awd_cycle_assessment)</h3>
+    </div>
+    <div class="pipeline" style="margin-bottom:24px;">
+      <div class="stage active">draft</div><div class="arrow">→</div>
+      <div class="stage">pending_review</div><div class="arrow">→</div>
+      <div class="stage">verified</div>
+      <div class="arrow" style="margin-left:8px;">/</div>
+      <div class="stage">rejected</div><div class="arrow">→</div>
+      <div class="stage">draft (แก้ไขใหม่)</div>
+    </div>
+    <div class="note-block" style="max-width:880px;margin:0 auto;">
+      <strong>ข้อมูลดาวเทียมเป็นข้อมูลเสริม ไม่ใช่แหล่งหลัก:</strong> เพราะระบบยังไม่มีบัญชี/API ผู้ให้บริการภาพถ่ายดาวเทียมจริง (Sentinel Hub / Google Earth Engine / GISTDA ฯลฯ) วันนี้ Platform Ops จึงป้อนข้อมูลดาวเทียมเข้าเองด้วยมือ (<code>source_provider = 'manual'</code>) เพื่อใช้ประกอบการพิจารณาตอนตรวจสอบเท่านั้น ไม่ได้ใช้ในสูตรคำนวณเครดิตโดยตรง
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt" id="sec-phase2">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-people-group"></i> เฟส 2</div>
+      <h2 class="section-title" style="font-size:26px;">การรวมกลุ่มระดับองค์กร + ห้องเก็บเอกสาร MRV</h2>
+      <p class="section-sub">เปลี่ยนจาก "เครดิตของเกษตรกรรายเดียว" ให้กลายเป็น "โครงการคาร์บอน" ระดับองค์กรที่ยื่นขอรับรอง/ขายได้จริง</p>
+    </div>
+    <div class="card-grid" style="margin-bottom:30px;">
+      <div class="info-card">
+        <span class="tag">carbon.carbon_project</span>
+        <h4>โครงการคาร์บอน 1 โครงการ = 1 องค์กร</h4>
+        <p>สร้างได้โดย 3 ประเภทองค์กรเท่านั้น: <strong>สหกรณ์ (Cooperative)</strong>, <strong>วิสาหกิจชุมชนด้านการเกษตร (AgriCommunityEnterprise)</strong>, <strong>กองทุนหมู่บ้าน (VillageFund)</strong></p>
+        <ul>
+          <li>กำหนด "สัดส่วนแบ่งให้กลุ่มเกษตรกร" (farmer_pool_pct) และ "ค่าธรรมเนียมแพลตฟอร์ม" (platform_fee_pct) ได้เองต่อโครงการ ไม่ใช่ค่าคงที่ 80/20 ทั้งระบบ</li>
+          <li>มีสถานะไล่ระดับ: draft → mrv_prep → submitted_to_tver → registered → credits_issued (องค์กรปรับเองตามความคืบหน้าจริงนอกระบบ)</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <span class="tag">carbon.project_cycle_member</span>
+        <h4>สมาชิกของโครงการ = รอบปลูกที่ verified แล้ว</h4>
+        <p>ดึงได้เฉพาะรอบปลูกของสมาชิกในองค์กรที่มีสถานะ AWD assessment เป็น <code>verified</code> แล้วเท่านั้น (ดู "รายชื่อที่มีสิทธิ์เข้าร่วม" — eligible-assessments)</p>
+        <ul>
+          <li>1 รอบปลูก (assessment) เข้าร่วมโครงการที่ "กำลังใช้งาน" ได้ทีละ 1 โครงการเท่านั้นในแต่ละช่วงเวลา</li>
+          <li>ถอดสมาชิกออกได้ (ไม่ลบทิ้ง แค่เปลี่ยนสถานะเป็น removed) แล้วนำไปเพิ่มในโครงการอื่นทีหลังได้ — ประวัติยังอยู่ครบเพื่อการตรวจสอบ</li>
+          <li>สัดส่วนเครดิตของแต่ละคน (allocated_credit_tco2e) คือฐานที่ใช้แบ่งรายได้ในเฟส 3 ทีหลัง</li>
+        </ul>
+      </div>
+    </div>
+    <div class="prose-block" style="margin-bottom:16px;">
+      <h3>ห้องเก็บเอกสาร MRV (MRV Data Room)</h3>
+      <p>แต่ละโครงการมีที่เก็บ "หลักฐาน" 4 ประเภท ได้แก่ ภาพถ่ายดาวเทียม, ขอบเขตแปลง (GIS/GeoJSON), เอกสารรับรอง และอื่นๆ — ไฟล์จริง (ภาพ/PDF) ใช้ระบบอัปโหลดไฟล์กลางที่มีอยู่แล้วของแพลตฟอร์ม (ไม่ได้สร้างระบบเก็บไฟล์ใหม่) ส่วนขอบเขตแปลง (GIS) เก็บเป็นข้อความ/พิกัดตรงๆ เพราะไฟล์ประเภท .geojson/.kml/.shp ไม่อยู่ใน allowlist ของระบบอัปโหลดไฟล์ปัจจุบัน ลบออกได้เฉพาะตอนโครงการยังอยู่สถานะ draft/mrv_prep เท่านั้น (กันไม่ให้แก้ไขหลักฐานหลังยื่นไปแล้ว)</p>
+      <p>เมื่อพร้อมแล้ว องค์กรกด "ส่งออกชุดเอกสาร" — ระบบรวมข้อมูลโครงการ + รายชื่อสมาชิก + หลักฐานทั้งหมดเป็นชุดเดียว (manifest) ให้เจ้าหน้าที่นำไปยื่นกับผู้ตรวจสอบ (VVB) หรือ อบก./TGO ด้วยตนเอง — <strong>ไม่มีการเชื่อมต่อ/ส่งข้อมูลอัตโนมัติไปยังหน่วยงานภายนอกใดๆ ทั้งสิ้น</strong></p>
+    </div>
+    <div class="note-block">
+      <strong>3 องค์กรใช้หน้าจอเดียวกัน:</strong> พอร์ทัลของสหกรณ์ วิสาหกิจชุมชนด้านการเกษตร และกองทุนหมู่บ้าน ทั้ง 3 แบบใช้ widget เดียวกัน (<code>js/carbon-module-widget.js</code>) ฝังในหน้า dashboard ของแต่ละพอร์ทัล — โค้ดหลังบ้านแยกเป็นคนละไฟล์ต่อประเภทองค์กร (<code>coopcarbon.js</code>, <code>communityenterprisecarbon.js</code>, <code>villagefundcarbon.js</code>) แต่ตรรกะเหมือนกันทุกประการ องค์กรเห็นและจัดการได้เฉพาะโครงการของตนเองเท่านั้น
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-phase3">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-scale-balanced"></i> เฟส 3</div>
+      <h2 class="section-title" style="font-size:26px;">ตลาดกลางและกลไกแบ่งรายได้</h2>
+      <p class="section-sub">จับคู่ผู้ซื้อกับผู้ขาย คำนวณและแบ่งรายได้อัตโนมัติ — ระบบเดียวที่ทำให้ "คาร์บอนเครดิต" กลายเป็นเงินจริง</p>
+    </div>
+    <div class="card-grid three" style="margin-bottom:30px;">
+      <div class="info-card">
+        <span class="tag">carbon.marketplace_listing</span>
+        <h4>🏷️ ประกาศขาย (ฝั่งองค์กร)</h4>
+        <p>ลงขายได้เฉพาะโครงการที่สถานะ <code>registered</code> หรือ <code>credits_issued</code> เท่านั้น — ระบุจำนวนเครดิต (tCO₂e) และราคาที่ต้องการต่อหน่วย</p>
+      </div>
+      <div class="info-card">
+        <span class="tag">carbon.marketplace_order</span>
+        <h4>🛒 คำสั่งซื้อ (ฝั่งผู้ซื้อ)</h4>
+        <p>ผู้ซื้อ (Buyer) ระบุจำนวนที่ต้องการซื้อและราคาที่เสนอ — ยังไม่เห็นรายชื่อผู้ขายหรือประกาศขายใดๆ โดยตรง เป็นเพียง "คำขอ" เข้าคิว</p>
+      </div>
+      <div class="info-card">
+        <span class="tag">carbon.revenue_distribution</span>
+        <h4>💰 ผลการแบ่งรายได้</h4>
+        <p>หนึ่งแถวต่อผู้รับเงินหนึ่งราย (องค์กร 1 แถว + เกษตรกรที่ยัง active ในโครงการอีกคนละ 1 แถว) ต่อการจับคู่หนึ่งครั้ง</p>
+      </div>
+    </div>
+    <div class="prose-block" style="margin-bottom:20px;">
+      <h3>การจับคู่: ทำโดย Platform Ops เท่านั้น ไม่ใช่ระบบอัตโนมัติ</h3>
+      <p>เมื่อมีประกาศขายและคำสั่งซื้อพร้อมกัน Platform Ops เป็นผู้เลือกจับคู่เองผ่านหน้าแอดมิน "ตลาดคาร์บอนเครดิต" (ไม่ใช่ตลาดแบบเปิดให้ผู้ซื้อเลือกผู้ขายเอง) กติกาสำคัญ:</p>
+      <ul class="check-list">
+        <li><strong>ขายเต็มจำนวนเท่านั้น:</strong> จำนวนที่จับคู่ต้องเท่ากับจำนวนที่ประกาศขายพอดี ไม่รองรับขายบางส่วนหรือทบยอดคงเหลือไปขายต่อ</li>
+        <li><strong>จับคู่ได้ไม่เกินจำนวนที่ขอซื้อ:</strong> จำนวนที่จับคู่ต้องไม่เกินจำนวนที่คำสั่งซื้อนั้นระบุไว้</li>
+        <li><strong>ราคา/ต้นทุนกรอกจริงตอนจับคู่:</strong> ราคาที่ตกลงกันจริงและต้นทุนโครงการ (ถ้ามี) ให้ Platform Ops กรอกตอนจับคู่ อาจต่างจากราคาที่แต่ละฝ่ายเสนอไว้แต่แรกก็ได้</li>
+      </ul>
+    </div>
+    <div class="prose-block" style="margin-bottom:14px;">
+      <h3>สูตรแบ่งรายได้ (คำนวณโดยระบบ 100% ไม่ให้เจ้าหน้าที่กรอกเอง)</h3>
+    </div>
+    <div class="formula-box" style="max-width:880px;margin:0 auto 24px;">
+      <div class="line">รายได้รวม (Gross)     = จำนวนเครดิตที่จับคู่ <span class="op">×</span> ราคาต่อหน่วยที่ตกลงกัน</div>
+      <div class="line">ค่าธรรมเนียม AgroLink = รายได้รวม <span class="op">×</span> platform_fee_pct <span class="comment">// ของโครงการนี้</span></div>
+      <div class="line">รายได้สุทธิ (Net)     = รายได้รวม <span class="op">−</span> ต้นทุนโครงการ <span class="op">−</span> ค่าธรรมเนียม</div>
+      <div class="line"><span class="comment">// ถ้ารายได้สุทธิติดลบ ระบบปฏิเสธการจับคู่ทันที</span></div>
+      <div class="line"></div>
+      <div class="line">ส่วนแบ่งกลุ่มเกษตรกร  = รายได้สุทธิ <span class="op">×</span> farmer_pool_pct <span class="comment">// ของโครงการนี้</span></div>
+      <div class="line">ส่วนแบ่งองค์กร        = รายได้สุทธิ <span class="op">−</span> ส่วนแบ่งกลุ่มเกษตรกร</div>
+      <div class="line"></div>
+      <div class="line">ส่วนของเกษตรกรแต่ละคน = ส่วนแบ่งกลุ่มเกษตรกร <span class="op">×</span> (เครดิตของตน ÷ เครดิตรวมของสมาชิก active ทั้งหมด)</div>
+    </div>
+    <div class="prose-block" style="margin-bottom:24px;">
+      <p style="font-size:13.5px;color:var(--muted);">ตัวอย่างจากเอกสารออกแบบ: รายได้รวม 30,000 บาท − ต้นทุนโครงการ 2,000 − ค่าธรรมเนียม 10% ของรายได้รวม (3,000) = รายได้สุทธิ 25,000 บาท → แบ่งกลุ่มเกษตรกร 80% (20,000 บาท ตามสัดส่วนเครดิตของแต่ละคน) และเข้าองค์กร 20% (5,000 บาท) การปัดเศษทำละเอียดถึงสตางค์ โดยให้สมาชิกคนสุดท้ายรับผลต่างจากการปัดเศษ เพื่อให้ผลรวมของทุกคนตรงกับยอดที่ปัดแล้วเป๊ะ ไม่คลาดเคลื่อนสะสม</p>
+    </div>
+    <div class="note-block danger">
+      <strong>ยังไม่มีระบบโอนเงินจริงในแพลตฟอร์ม:</strong> ตาราง <code>carbon.revenue_distribution</code> เก็บ "ยอดที่ต้องจ่าย" และสถานะ pending/paid ไว้เป็นหลักฐานตรวจสอบเท่านั้น — เงินจริงต้องโอนกันเองนอกระบบ (องค์กร → เกษตรกร) ผ่านช่องทางที่มีอยู่แล้ว แล้วผู้มีสิทธิ์ (ฝั่งองค์กร) กลับมากด "จ่ายแล้ว" ในระบบเพื่อบันทึกไว้เท่านั้น
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt" id="sec-roles">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-users-gear"></i> สรุป</div>
+      <h2 class="section-title" style="font-size:26px;">ใครทำอะไรที่ไหน</h2>
+    </div>
+    <div class="data-table-wrap" style="max-width:1000px;margin:0 auto;">
+      <table class="data-table">
+        <thead><tr><th>บทบาท</th><th>ทำอะไร</th><th>หน้า/พอร์ทัล</th></tr></thead>
+        <tbody>
+          <tr><td><strong>เกษตรกร</strong></td><td>บันทึกระดับน้ำ AWD ต่อรอบปลูก, ส่งตรวจ, ดูสถานะและรายได้ที่ได้รับ</td><td><code>frontend/carbon-credit.html</code></td></tr>
+          <tr><td><strong>Platform Ops (แอดมิน)</strong></td><td>ตรวจสอบ/รับรอง/ตีกลับผลประเมิน AWD, ปรับค่าคงที่วิธีคำนวณ, ป้อนข้อมูลดาวเทียมเสริม, จับคู่คำสั่งซื้อ-ขายในตลาดกลาง</td><td>พอร์ทัลแอดมิน แท็บ "คาร์บอนเครดิต (AWD)"</td></tr>
+          <tr><td><strong>สหกรณ์ / วิสาหกิจชุมชนด้านการเกษตร / กองทุนหมู่บ้าน</strong></td><td>สร้าง/จัดการโครงการคาร์บอน, เพิ่ม-ถอดสมาชิก, แนบหลักฐาน MRV, ส่งออกเอกสาร, ลงขายเครดิต, ยืนยันจ่ายเงินให้สมาชิก</td><td>widget "Carbon Module" ในหน้า dashboard ของแต่ละพอร์ทัล</td></tr>
+          <tr><td><strong>ผู้รับซื้อผลผลิต (Buyer)</strong></td><td>สร้าง/ยกเลิกคำสั่งซื้อเครดิต ดูผลการจับคู่หลังมีการจับคู่แล้ว (ดูได้อย่างเดียว แก้ไขไม่ได้)</td><td>พอร์ทัลผู้รับซื้อผลผลิต แท็บ "ตลาดคาร์บอนเครดิต"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-data">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:30px;">
+      <div class="eyebrow"><i class="fa-solid fa-database"></i> อ้างอิงสำหรับทีมพัฒนา</div>
+      <h2 class="section-title" style="font-size:26px;">ตารางข้อมูลหลัก</h2>
+      <p class="section-sub">ทุกตารางอยู่ใน schema <code>carbon</code> — ไม่มี Row Level Security บนตารางเหล่านี้เลย ขอบเขตความปลอดภัยทั้งหมดคือเงื่อนไข WHERE ที่ backend เขียนไว้ชัดเจน (ดูคอมเมนต์ท้ายไฟล์ grant_carbon_awd.sql)</p>
+    </div>
+    <div class="data-table-wrap" style="max-width:1000px;margin:0 auto;">
+      <table class="data-table">
+        <thead><tr><th>ตาราง</th><th>เฟส</th><th>หน้าที่</th></tr></thead>
+        <tbody>
+          <tr><td><code>carbon.awd_config</code></td><td>1</td><td>ค่าคงที่วิธีคำนวณ เก็บเป็นเวอร์ชัน (แถวใหม่ + ปิด active แถวเก่า)</td></tr>
+          <tr><td><code>carbon.awd_water_log</code></td><td>1</td><td>บันทึกระดับน้ำที่เกษตรกรรายงานเอง — append-only</td></tr>
+          <tr><td><code>carbon.satellite_observation</code></td><td>1</td><td>ข้อมูลดาวเทียมเสริม ป้อนด้วยมือโดย Platform Ops วันนี้</td></tr>
+          <tr><td><code>carbon.awd_cycle_assessment</code></td><td>1</td><td>ผลประเมิน 1 แถวต่อ 1 รอบปลูก (draft/pending_review/verified/rejected)</td></tr>
+          <tr><td><code>carbon.carbon_project</code></td><td>2</td><td>โครงการคาร์บอนของ 1 องค์กร พร้อมสัดส่วนแบ่งรายได้ที่ตั้งเองได้</td></tr>
+          <tr><td><code>carbon.project_cycle_member</code></td><td>2</td><td>เชื่อมรอบปลูกที่ verified แล้วเข้ากับโครงการ</td></tr>
+          <tr><td><code>carbon.vvb_evidence</code></td><td>2</td><td>หลักฐาน MRV ของโครงการ (ไฟล์/GIS/เอกสารรับรอง)</td></tr>
+          <tr><td><code>carbon.marketplace_listing</code></td><td>3</td><td>ประกาศขายเครดิตของโครงการที่ registered แล้ว</td></tr>
+          <tr><td><code>carbon.marketplace_order</code></td><td>3</td><td>คำสั่งซื้อของผู้ซื้อ + ผลการจับคู่</td></tr>
+          <tr><td><code>carbon.revenue_distribution</code></td><td>3</td><td>ยอดเงินที่ต้องจ่ายต่อผู้รับหนึ่งราย + สถานะจ่ายแล้ว/รอจ่าย</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt" id="sec-caveats">
+  <div class="container prose-block reveal in">
+    <h2>ข้อจำกัดและสิ่งที่ต้องระวัง</h2>
+    <ul class="check-list">
+      <li>ค่าคงที่ทุกตัวในสูตรคำนวณ (อัตราเครดิตต่อไร่, จำนวนรอบแห้งขั้นต่ำ, ฯลฯ) เป็นค่าประมาณการเบื้องต้นที่ได้แรงบันดาลใจจากแนวทาง AWD ของ T-VER เท่านั้น ต้องปรับให้ตรงกับตัวเลขจริงที่ อบก. ประกาศ ก่อนนำไปอ้างอิงเชิงพาณิชย์หรือยื่นขอเครดิตจริง</li>
+      <li>ระบบทั้งหมดนี้ไม่ใช่การขึ้นทะเบียนคาร์บอนเครดิตจริง — เป็นเครื่องมือเตรียมข้อมูล/ประเมินภายในเท่านั้น การขึ้นทะเบียนจริงต้องผ่านผู้รับรอง (VVB) และหน่วยงานกำกับ (เช่น อบก./TGO) แยกต่างหาก</li>
+      <li>การจับคู่ผู้ซื้อ-ผู้ขายเป็นการทำงานด้วยมือของ Platform Ops ทั้งหมด ไม่มีอัลกอริทึมจับคู่อัตโนมัติ และรองรับเฉพาะการขาย/ซื้อเต็มจำนวนเท่านั้น (ไม่มีการขายบางส่วน)</li>
+      <li>ไม่มีระบบโอนเงินจริงเชื่อมต่ออยู่ — ทุกยอดเงินในระบบเป็นบันทึกทางบัญชี (audit trail) เท่านั้น การโอนเงินจริงเกิดขึ้นนอกระบบเสมอ</li>
+      <li>ไม่มี Row Level Security ระดับฐานข้อมูลบนตาราง carbon.* — ความปลอดภัยทั้งหมดอยู่ที่เงื่อนไขการ query ในโค้ด backend</li>
+    </ul>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container section-head reveal">
+    <h2 class="section-title">อยากดูภาพรวมแนวคิดคาร์บอนเครดิตด้วยหรือไม่?</h2>
+    <p class="section-sub">หน้านี้อธิบาย "กลไกภายในระบบ" ส่วนหน้าแนวคิดคาร์บอนเครดิตอธิบายภาพรวมตลาดคาร์บอนไทยและเทคนิค AWD ในเชิงหลักการทั่วไป</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="carbon-credit-article.html" class="btn btn-gold">อ่านแนวคิดคาร์บอนเครดิต</a>
+      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark">🌿</span>AgroLink</div>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
+      </div>
+      <div>
+        <h5>แพลตฟอร์ม</h5>
+        <ul>
+          <li><a href="index.html#concept">แนวคิดหลัก</a></li>
+          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต (แนวคิด)</a></li>
+          <li><a href="carbon-module-guide.html">กลไกการทำงานของ Carbon Module</a></li>
+          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>ผู้ใช้งาน</h5>
+        <ul>
+          <li><a href="index.html#audience">เกษตรกร</a></li>
+          <li><a href="coop-portal.html">สหกรณ์</a></li>
+          <li><a href="index.html#audience">ผู้ให้บริการ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>องค์กร</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="index.html#contact">ติดต่อเรา</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span>สร้างบนแกนกลาง Galaxy Core</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
