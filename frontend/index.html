@@ -165,6 +165,7 @@
     background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
     box-shadow: 0 10px 26px rgba(18,61,43,.06);
     width: 100%; overflow: hidden; height: 100%;
+    display: flex; flex-direction: column;
   }
   .quick-chat-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -184,12 +185,26 @@
     transition: transform .2s ease;
   }
   .quick-chat-card.collapsed .quick-chat-toggle { transform: rotate(180deg); }
-  .quick-chat-body { border-top: 1px solid var(--border); padding: 14px 18px 16px; }
+  .quick-chat-body {
+    border-top: 1px solid var(--border); padding: 14px 18px 16px;
+    flex: 1; display: flex; flex-direction: column;
+  }
   .quick-chat-card.collapsed .quick-chat-body { display: none; }
   .quick-chat-messages {
     max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-    margin-bottom: 12px; padding-right: 4px;
+    margin-bottom: 12px; padding-right: 4px; flex: none;
   }
+  .quick-chat-form { flex: none; }
+  .qc-heart-filler {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    text-align: center; padding-top: 18px; min-height: 24px;
+  }
+  .qc-heart-filler .qc-heart-text {
+    font-size: 19px; font-weight: 800; color: var(--green-dark);
+    display: flex; align-items: center; justify-content: center; gap: 10px; line-height: 1.4;
+  }
+  .qc-heart-filler .qc-heart-text i { color: var(--gold); font-size: 18px; }
+  @media (max-width: 500px) { .qc-heart-filler .qc-heart-text { font-size: 16.5px; } }
   .qc-msg { max-width: 85%; font-size: 13.5px; line-height: 1.5; padding: 9px 13px; border-radius: 12px; }
   .qc-msg-bot { background: var(--green-light); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
   .qc-msg-user { background: var(--green); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
@@ -413,6 +428,9 @@
               <i class="fa-solid fa-paper-plane"></i>
             </button>
           </form>
+          <div class="qc-heart-filler">
+            <div class="qc-heart-text"><i class="fa-solid fa-heart"></i> AgroLink หัวใจคือเกษตรกร</div>
+          </div>
         </div>
       </div>
       <div class="hero-art">
