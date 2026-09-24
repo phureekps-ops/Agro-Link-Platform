@@ -613,6 +613,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
 <script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
   const navToggle = document.querySelector('.nav-toggle');
   const navLinksEl = document.querySelector('.nav-links');
   navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
