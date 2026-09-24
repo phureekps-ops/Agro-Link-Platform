@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>พรีวิวผลิตภัณฑ์ AgroLink แบบเดินเรื่อง | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864; --green: #1B6B4A; --green-dark: #123D2B; --green-light: #E8F3ED;
+    --gold: #C9A227; --gold-light: #FBF3DA; --cream: #FAF8F3; --text: #22262B;
+    --muted: #6B7280; --border: #E7E2D6; --white: #FFFFFF; --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Leelawadee UI','Sarabun','Noto Sans Thai','Segoe UI',Tahoma,sans-serif; color: var(--text); background: var(--cream); line-height: 1.6; }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--green); background:var(--green-light); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  h1,h2,h3,h4 { font-weight:800; color:var(--navy); line-height:1.3; }
+  .section-title { font-size:30px; margin-bottom:12px; }
+  .section-sub { color:var(--muted); font-size:16px; max-width:720px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; justify-content:center; padding:13px 26px; border-radius:10px; font-weight:700; font-size:15.5px; cursor:pointer; border:none; white-space:nowrap; }
+  .btn-primary { background:var(--green); color:#fff; box-shadow:0 6px 18px rgba(27,107,74,.28); }
+  .btn-outline { background:transparent; color:var(--navy); border:1.5px solid var(--border); }
+  .btn-gold { background:var(--gold); color:var(--green-dark); }
+
+  header.nav { position: sticky; top:0; z-index:100; background:rgba(250,248,243,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+  .nav-top { display:flex; align-items:center; justify-content:space-between; height:78px; }
+  .logo-img { height:68px; width:auto; display:block; }
+  .nav-cta { display:flex; gap:10px; align-items:center; }
+
+  .page-header { background:var(--green-dark); color:#fff; padding:64px 0 48px; text-align:center; }
+  .page-header .section-title, .page-header h1 { color:#fff; }
+  .page-header .section-sub { color:#C8DBD1; margin-left:auto; margin-right:auto; }
+  .page-header .eyebrow { background:rgba(255,255,255,.12); color:var(--gold); }
+
+  .journey-track { display:flex; justify-content:center; flex-wrap:wrap; gap:8px 4px; padding:22px 0; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:78px; z-index:90; }
+  .journey-step { font-size:12.5px; font-weight:700; color:var(--muted); padding:7px 13px; border-radius:999px; background:var(--cream); border:1px solid var(--border); }
+  .journey-step .n { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; background:var(--border); color:#fff; font-size:10px; margin-right:5px; }
+
+  .step-section { padding:64px 0; }
+  .step-section.alt { background:#fff; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .step-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
+  .step-grid.rev .step-text { order:2; }
+  .step-grid.rev .step-visual { order:1; }
+  @media (max-width:900px) { .step-grid, .step-grid.rev .step-text, .step-grid.rev .step-visual { grid-template-columns:1fr; order:initial; } }
+  .step-num { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-bottom:14px; }
+  .step-text h2 { font-size:24px; margin-bottom:12px; }
+  .step-text p.lead { font-size:15px; color:var(--text); margin-bottom:16px; }
+  .step-feats { display:flex; flex-direction:column; gap:9px; }
+  .step-feats li { font-size:13.8px; color:var(--muted); display:flex; gap:9px; align-items:flex-start; }
+  .step-feats li i { color:var(--green); margin-top:3px; }
+  .step-src { margin-top:16px; font-size:12px; color:var(--muted); font-style:italic; }
+  .step-src a { color:var(--green); font-weight:700; font-style:normal; }
+
+  /* MOCK SCREEN */
+  .screen-mock { background:#fff; border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:0 24px 48px rgba(31,56,100,.10); }
+  .screen-bar { background:#F1EEE6; padding:10px 14px; display:flex; align-items:center; gap:7px; border-bottom:1px solid var(--border); }
+  .screen-dot { width:9px; height:9px; border-radius:50%; }
+  .screen-title { margin-left:8px; font-size:12px; color:var(--muted); font-weight:700; }
+  .screen-body { padding:20px; }
+  .m-field { margin-bottom:12px; }
+  .m-field label { display:block; font-size:11.5px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+  .m-field .m-input { border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:12.5px; color:var(--text); background:#FAFAF8; }
+  .m-btn { display:inline-block; background:var(--green); color:#fff; font-size:12.5px; font-weight:700; padding:8px 16px; border-radius:8px; margin-top:4px; }
+  .m-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .m-tab { font-size:11px; font-weight:700; padding:6px 10px; border-radius:7px; background:var(--cream); color:var(--muted); border:1px solid var(--border); }
+  .m-tab.active { background:var(--green-light); color:var(--green-dark); border-color:var(--green); }
+  .m-card { border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; font-size:12px; color:var(--text); }
+  .m-card .m-card-title { font-weight:700; color:var(--navy); margin-bottom:3px; }
+  .m-card .m-card-sub { color:var(--muted); font-size:11px; }
+  .m-badge { display:inline-block; font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .m-badge.green { background:var(--green-light); color:var(--green-dark); }
+  .m-badge.gold { background:var(--gold-light); color:#7A5E10; }
+  .m-row { display:flex; gap:10px; }
+  .m-row > * { flex:1; }
+  .m-illustrative { text-align:center; font-size:10.5px; color:var(--muted); padding:8px; background:var(--cream); border-top:1px dashed var(--border); }
+
+  .cta-final { background:var(--green-dark); color:#fff; padding:70px 0; text-align:center; }
+  .cta-final h2 { color:#fff; font-size:28px; margin-bottom:12px; }
+  .cta-final p { color:#C8DBD1; max-width:640px; margin:0 auto 26px; font-size:15px; }
+
+  footer { background:var(--green-dark); color:#C8DBD1; padding:50px 0 26px; }
+  .footer-bottom { text-align:center; font-size:12.5px; color:#9BB5A9; padding-top:20px; border-top:1px solid rgba(255,255,255,.12); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container nav-top">
+    <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+    <div class="nav-cta">
+      <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+      <a href="#cta" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">คุยกับทีมงาน</a>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container">
+    <div class="eyebrow"><i class="fa-solid fa-route"></i> Product Walkthrough</div>
+    <h1 class="section-title">พาชมการทำงานจริงของ AgroLink ทีละขั้นตอน</h1>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;">
+      หน้านี้พาเดินเรื่องตามลำดับการใช้งานจริงของเกษตรกรบนระบบ AgroLink ตั้งแต่ลงทะเบียนจนถึงขายผลผลิต
+      โดยอ้างอิงหน้าจอ เมนู และฟิลด์ข้อมูลจริงจากระบบ — ภาพประกอบด้านล่างเป็นภาพจำลองโครงสร้างหน้าจอเพื่อการนำเสนอ
+      ไม่ใช่ภาพถ่ายหน้าจอจริงหรือข้อมูลลูกค้าจริง
+    </p>
+  </div>
+</section>
+
+<div class="journey-track">
+  <div class="journey-step"><span class="n">1</span>ลงทะเบียน</div>
+  <div class="journey-step"><span class="n">2</span>ลงทะเบียนแปลง</div>
+  <div class="journey-step"><span class="n">3</span>วางแผน/ติดตาม</div>
+  <div class="journey-step"><span class="n">4</span>ตรวจสอบ AI/ดาวเทียม</div>
+  <div class="journey-step"><span class="n">5</span>การเงิน</div>
+  <div class="journey-step"><span class="n">6</span>ขายผลผลิต</div>
+</div>
+
+<!-- STEP 1 -->
+<section class="step-section">
+  <div class="container step-grid">
+    <div class="step-text">
+      <div class="step-num">1</div>
+      <h2>ลงทะเบียนเข้าใช้งาน</h2>
+      <p class="lead">เกษตรกรลงทะเบียนด้วยเบอร์โทรศัพท์ ยืนยันตัวตนง่าย ๆ แล้วเข้าสู่ระบบผ่านหน้าเข้าสู่ระบบเกษตรกรของตนเอง</p>
+      <ul class="step-feats">
+        <li><i class="fa-solid fa-check"></i>สมัครสมาชิกด้วยเบอร์โทรศัพท์ ไม่ต้องใช้อีเมล</li>
+        <li><i class="fa-solid fa-check"></i>มีหน้าเข้าสู่ระบบแยกสำหรับเกษตรกรโดยเฉพาะ</li>
+        <li><i class="fa-solid fa-check"></i>เชื่อมต่อไปหน้าหลักเกษตรกร (แดชบอร์ด) ทันทีหลังเข้าสู่ระบบ</li>
+      </ul>
+      <div class="step-src">อ้างอิงจากหน้า register.html และ farmer-login.html ในระบบจริง</div>
+    </div>
+    <div class="step-visual">
+      <div class="screen-mock">
+        <div class="screen-bar"><span class="screen-dot" style="background:#E5534B;"></span><span class="screen-dot" style="background:#E6B800;"></span><span class="screen-dot" style="background:#1B6B4A;"></span><span class="screen-title">AgroLink — สมัครสมาชิกเกษตรกร</span></div>
+        <div class="screen-body">
+          <div class="m-field"><label>เบอร์โทรศัพท์</label><div class="m-input">08X-XXX-XXXX</div></div>
+          <div class="m-field"><label>ชื่อ-นามสกุล</label><div class="m-input">สมชาย ใจดี (ตัวอย่าง)</div></div>
+          <div class="m-field"><label>รหัส OTP</label><div class="m-input">• • • • • •</div></div>
+          <div class="m-btn">ยืนยันและสมัครสมาชิก</div>
+        </div>
+        <div class="m-illustrative">ภาพจำลองเพื่อการนำเสนอ — ไม่ใช่ข้อมูลจริง</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 2 -->
+<section class="step-section alt">
+  <div class="container step-grid rev">
+    <div class="step-text">
+      <div class="step-num">2</div>
+      <h2>ลงทะเบียนแปลง / หน่วยผลิต</h2>
+      <p class="lead">เกษตรกรลงทะเบียนแปลงที่ดินหรือหน่วยผลิตของตนเองเข้าระบบ พร้อมพิกัดและชนิดพืชที่ปลูก เพื่อใช้เป็นฐานข้อมูลการผลิตต่อยอดในทุกขั้นตอนถัดไป</p>
+      <ul class="step-feats">
+        <li><i class="fa-solid fa-check"></i>ลงทะเบียนแปลง/หน่วยผลิตได้หลายแปลงต่อบัญชี</li>
+        <li><i class="fa-solid fa-check"></i>ระบุพิกัดแปลงและชนิดพืช/สัตว์ที่ผลิต</li>
+        <li><i class="fa-solid fa-check"></i>เพิ่มแปลงใหม่ได้ทุกเมื่อจากหน้าหลักเกษตรกร</li>
+      </ul>
+      <div class="step-src">อ้างอิงจากหน้า register-plot.html และแท็บ "แปลง/หน่วยผลิต" ใน dashboard.html</div>
+    </div>
+    <div class="step-visual">
+      <div class="screen-mock">
+        <div class="screen-bar"><span class="screen-dot" style="background:#E5534B;"></span><span class="screen-dot" style="background:#E6B800;"></span><span class="screen-dot" style="background:#1B6B4A;"></span><span class="screen-title">AgroLink — ลงทะเบียนแปลง/หน่วยผลิต</span></div>
+        <div class="screen-body">
+          <div class="m-field"><label>ชื่อแปลง</label><div class="m-input">แปลงนา 1 — บ้านหนองบัว (ตัวอย่าง)</div></div>
+          <div class="m-row">
+            <div class="m-field"><label>จังหวัด</label><div class="m-input">ชัยนาท</div></div>
+            <div class="m-field"><label>พื้นที่ (ไร่)</label><div class="m-input">12.5</div></div>
+          </div>
+          <div class="m-field"><label>ชนิดพืชหลัก</label><div class="m-input">ข้าวหอมมะลิ</div></div>
+          <div class="m-btn">บันทึกแปลง</div>
+        </div>
+        <div class="m-illustrative">ภาพจำลองเพื่อการนำเสนอ — ไม่ใช่ข้อมูลจริง</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 3 -->
+<section class="step-section">
+  <div class="container step-grid">
+    <div class="step-text">
+      <div class="step-num">3</div>
+      <h2>วางแผนและติดตามการผลิต</h2>
+      <p class="lead">วางแผนรอบการผลิตผ่านปฏิทินแผนการผลิต แล้วติดตามภาพรวมบัญชี สมาชิกภาพ และแปลงทั้งหมดของตนเองได้จากหน้าหลักเกษตรกรจุดเดียว</p>
+      <ul class="step-feats">
+        <li><i class="fa-solid fa-check"></i>ปฏิทินแผนการผลิตแบบรายรอบปลูก</li>
+        <li><i class="fa-solid fa-check"></i>ภาพรวมบัญชี สมาชิกภาพ และสัญญาทั้งหมดในที่เดียว</li>
+        <li><i class="fa-solid fa-check"></i>ระบุกลุ่มเกษตรกร (เช่น อินทรีย์, GAP) ได้ด้วยตนเอง</li>
+      </ul>
+      <div class="step-src">อ้างอิงจากหน้า crop-cycle.html และแท็บ "ภาพรวมบัญชี" ใน dashboard.html</div>
+    </div>
+    <div class="step-visual">
+      <div class="screen-mock">
+        <div class="screen-bar"><span class="screen-dot" style="background:#E5534B;"></span><span class="screen-dot" style="background:#E6B800;"></span><span class="screen-dot" style="background:#1B6B4A;"></span><span class="screen-title">AgroLink — หน้าหลักเกษตรกร</span></div>
+        <div class="screen-body">
+          <div class="m-tabs">
+            <span class="m-tab active">📊 ภาพรวมบัญชี</span>
+            <span class="m-tab">🏷️ สมาชิกภาพ</span>
+            <span class="m-tab">🗺️ แปลง/หน่วยผลิต</span>
+            <span class="m-tab">📄 สัญญา</span>
+          </div>
+          <div class="m-card"><div class="m-card-title">แปลงนา 1 — บ้านหนองบัว</div><div class="m-card-sub">ข้าวหอมมะลิ · รอบปลูกปัจจุบัน: ระยะแตกกอ</div></div>
+          <div class="m-card"><div class="m-card-title">กลุ่มเกษตรกร</div><div class="m-card-sub">เกษตรกร GAP (ระบุด้วยตนเอง)</div></div>
+        </div>
+        <div class="m-illustrative">ภาพจำลองเพื่อการนำเสนอ — ไม่ใช่ข้อมูลจริง</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 4 -->
+<section class="step-section alt">
+  <div class="container step-grid rev">
+    <div class="step-text">
+      <div class="step-num">4</div>
+      <h2>ตรวจสอบด้วย AI และดาวเทียม</h2>
+      <p class="lead">ยืนยันกิจกรรมในแปลงด้วยเครื่องมือที่อ้างอิงข้อมูลดาวเทียมและ AI เช่น การบันทึกรอบเปียกสลับแห้ง (AWD) สำหรับประเมินคาร์บอนเครดิต และการคำนวณสูตรปุ๋ยสั่งตัดตามค่าวิเคราะห์ดิน</p>
+      <ul class="step-feats">
+        <li><i class="fa-solid fa-check"></i>บันทึกรอบเปียกสลับแห้ง (AWD) เพื่อประเมินคาร์บอนเครดิตเบื้องต้น</li>
+        <li><i class="fa-solid fa-check"></i>AI ปุ๋ยสั่งตัดตามค่าวิเคราะห์ดินของแปลง</li>
+        <li><i class="fa-solid fa-check"></i>ทีมงาน Platform Ops ตรวจสอบผลก่อนยืนยันผลลัพธ์</li>
+      </ul>
+      <div class="step-src">อ้างอิงจากหน้า carbon-credit.html (ยืนยันข้าวคาร์บอนต่ำ) และ fertilizer-calculator.html (AI ปุ๋ยสั่งตัด)</div>
+    </div>
+    <div class="step-visual">
+      <div class="screen-mock">
+        <div class="screen-bar"><span class="screen-dot" style="background:#E5534B;"></span><span class="screen-dot" style="background:#E6B800;"></span><span class="screen-dot" style="background:#1B6B4A;"></span><span class="screen-title">AgroLink — ยืนยันการปลูกข้าวคาร์บอนต่ำ (AWD)</span></div>
+        <div class="screen-body">
+          <div class="m-field"><label>รอบปลูก</label><div class="m-input">รอบที่ 2 / 2569 — แปลงนา 1</div></div>
+          <div class="m-field"><label>ระดับน้ำที่วัดได้ (ซม. ต่ำกว่าผิวดิน)</label><div class="m-input">15 ซม.</div></div>
+          <div class="m-row">
+            <div><span class="m-badge green">รอตรวจสอบโดย Platform Ops</span></div>
+          </div>
+          <div class="m-btn" style="margin-top:10px;">บันทึกรอบ AWD</div>
+        </div>
+        <div class="m-illustrative">ภาพจำลองเพื่อการนำเสนอ — ไม่ใช่ข้อมูลจริง</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 5 -->
+<section class="step-section">
+  <div class="container step-grid">
+    <div class="step-text">
+      <div class="step-num">5</div>
+      <h2>เชื่อมโยงการเงิน</h2>
+      <p class="lead">ดูคะแนนความน่าเชื่อถือทางสินเชื่อที่ประเมินจากข้อมูลการผลิตจริง แล้วยื่นคำขอสินเชื่อไปยังผู้ให้บริการทางการเงินที่เข้าร่วมระบบ — AgroLink ไม่ใช่ผู้ให้สินเชื่อเอง เป็นเพียงผู้เชื่อมข้อมูล</p>
+      <ul class="step-feats">
+        <li><i class="fa-solid fa-check"></i>คะแนนความน่าเชื่อถือทางสินเชื่อ พร้อมประวัติย้อนหลัง</li>
+        <li><i class="fa-solid fa-check"></i>ยื่นคำขอสินเชื่อ ระบุหน่วยผลิต ผู้ให้สินเชื่อ วงเงิน และวัตถุประสงค์</li>
+        <li><i class="fa-solid fa-check"></i>เลือกผู้ให้สินเชื่อที่เข้าร่วมระบบได้ตามประเภทที่ต้องการ</li>
+      </ul>
+      <div class="step-src">อ้างอิงจากแท็บ "คะแนนความน่าเชื่อถือ" และ "คำขอสินเชื่อ" ใน dashboard.html — ดูประเภทพันธมิตรผู้ให้สินเชื่อทั้งหมดที่ <a href="finance-partners.html">เอกสารพันธมิตรผู้ให้สินเชื่อ</a></div>
+    </div>
+    <div class="step-visual">
+      <div class="screen-mock">
+        <div class="screen-bar"><span class="screen-dot" style="background:#E5534B;"></span><span class="screen-dot" style="background:#E6B800;"></span><span class="screen-dot" style="background:#1B6B4A;"></span><span class="screen-title">AgroLink — คำขอสินเชื่อ</span></div>
+        <div class="screen-body">
+          <div class="m-field"><label>หน่วยผลิตที่เกี่ยวข้อง</label><div class="m-input">แปลงนา 1 — บ้านหนองบัว</div></div>
+          <div class="m-field"><label>ผู้ให้สินเชื่อ</label><div class="m-input">สหกรณ์การเกษตร (ตัวอย่าง)</div></div>
+          <div class="m-row">
+            <div class="m-field"><label>วงเงินที่ขอ (บาท)</label><div class="m-input">50,000</div></div>
+            <div class="m-field"><label>คะแนนความน่าเชื่อถือ</label><div class="m-input"><span class="m-badge gold">B+ (ตัวอย่าง)</span></div></div>
+          </div>
+          <div class="m-btn">ส่งคำขอ</div>
+        </div>
+        <div class="m-illustrative">ภาพจำลองเพื่อการนำเสนอ — ไม่ใช่ข้อมูลจริง</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 6 -->
+<section class="step-section alt">
+  <div class="container step-grid rev">
+    <div class="step-text">
+      <div class="step-num">6</div>
+      <h2>ขายผลผลิตและซื้อปัจจัยการผลิต</h2>
+      <p class="lead">เปรียบเทียบราคารับซื้อข้าวจากหลายแหล่ง ตั้งประกาศขายผลผลิตหรือรับใบเสนอราคาด่วน และซื้อปัจจัยการผลิตผ่านตลาดกลางของระบบ</p>
+      <ul class="step-feats">
+        <li><i class="fa-solid fa-check"></i>เปรียบเทียบราคารับซื้อข้าวแบบเรียลไทม์จากหลายแหล่ง</li>
+        <li><i class="fa-solid fa-check"></i>ตลาดขอใบเสนอราคา (RFQ) สำหรับความต้องการซื้อ-ขายเร่งด่วน</li>
+        <li><i class="fa-solid fa-check"></i>ตลาดปัจจัยการผลิตสำหรับซื้อปุ๋ย เมล็ดพันธุ์ และวัสดุการเกษตร</li>
+      </ul>
+      <div class="step-src">อ้างอิงจากหน้า rice-prices.html, rfq.html และ marketplace.html — ดูภาพรวมช่องทางตลาดทั้งหมดที่ <a href="marketplace-partners.html">เอกสารพันธมิตรกลุ่มตลาดสินค้าและบริการ</a></div>
+    </div>
+    <div class="step-visual">
+      <div class="screen-mock">
+        <div class="screen-bar"><span class="screen-dot" style="background:#E5534B;"></span><span class="screen-dot" style="background:#E6B800;"></span><span class="screen-dot" style="background:#1B6B4A;"></span><span class="screen-title">AgroLink — เปรียบเทียบราคารับซื้อข้าว</span></div>
+        <div class="screen-body">
+          <div class="m-card"><div class="m-card-title">โรงสี ก. (ตัวอย่าง)</div><div class="m-card-sub">ข้าวหอมมะลิ 100% · 12,400 บาท/ตัน</div></div>
+          <div class="m-card"><div class="m-card-title">โรงสี ข. (ตัวอย่าง)</div><div class="m-card-sub">ข้าวหอมมะลิ 100% · 12,250 บาท/ตัน</div></div>
+          <div class="m-btn">ดูประกาศรับซื้อทั้งหมด</div>
+        </div>
+        <div class="m-illustrative">ภาพจำลองเพื่อการนำเสนอ — ไม่ใช่ข้อมูลจริง</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final" id="cta">
+  <div class="container">
+    <h2>พร้อมเห็น AgroLink ทำงานจริงหรือยัง?</h2>
+    <p>นี่คือภาพรวมแบบเดินเรื่องของการใช้งานจริง หากต้องการชม Demo แบบเต็มรูปแบบพร้อมทีมงาน หรือทดลองใช้งานจริงด้วยบัญชีของท่านเอง สามารถติดต่อได้ทันที</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="mailto:contact@agrolink.example?subject=ขอชม%20Demo%20AgroLink" class="btn btn-gold">✉️ ขอนัดชม Demo กับทีมงาน</a>
+      <a href="login.html" class="btn btn-outline" style="background:#fff;">เข้าสู่ระบบ</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+</body>
+</html>
