@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ข้อกำหนดการใช้งาน | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul, ol { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 0; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER */
+  .page-header { background: var(--green-dark); color: #fff; padding: 56px 0 40px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .updated { color: #9BB5A9; font-size: 13px; margin-top: 14px; }
+
+  /* PROSE */
+  .prose-section { padding: 46px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block h2 { font-size: 21px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .prose-block h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 9px; background: var(--green-light); color: var(--green-dark);
+    font-size: 14px; flex-shrink: 0;
+  }
+  .prose-block p { font-size: 15px; color: var(--text); margin-bottom: 14px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block ul { margin: 10px 0 14px 0; }
+  .prose-block ul li { font-size: 14.5px; color: var(--text); padding-left: 22px; position: relative; margin-bottom: 8px; }
+  .prose-block ul li::before {
+    content: "\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900; color: var(--green);
+    position: absolute; left: 0; top: 2px; font-size: 12px;
+  }
+
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 20px 24px; font-size: 14px; line-height: 1.75; margin-bottom: 0;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  .toc { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; }
+  .toc h3 { font-size: 15px; margin-bottom: 12px; }
+  .toc ol { counter-reset: toc-counter; }
+  .toc ol li { counter-increment: toc-counter; font-size: 14px; margin-bottom: 8px; }
+  .toc ol li a { color: var(--green); font-weight: 600; }
+  .toc ol li a:hover { text-decoration: underline; }
+  .toc ol li::before { content: counter(toc-counter) ". "; font-weight: 700; color: var(--navy); }
+
+  /* CTA */
+  .cta-final { background: var(--green-dark); color: #fff; padding: 56px 0; text-align: center; }
+  .cta-final h2 { color: #fff; font-size: 24px; margin-bottom: 12px; }
+  .cta-final p { color: #C8DBD1; max-width: 600px; margin: 0 auto 24px; font-size: 15px; }
+  .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  /* FOOTER — identical to index.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; letter-spacing: .04em; text-transform: uppercase; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 10px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  .footer-tagline-en { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 12px; }
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top">หน้าแรก</a>
+        <a href="coop-portal.html">สำหรับสหกรณ์</a>
+        <a href="register.html">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html">การเงิน</a>
+        <a href="marketplace-partners.html">ตลาดกลาง</a>
+        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
+        <a href="index.html#ai-satellite">AI และดาวเทียม</a>
+        <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
+        <a href="business-model.html">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+        </div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container reveal in">
+    <div class="eyebrow"><i class="fa-solid fa-file-contract"></i> ข้อกำหนดการใช้งาน</div>
+    <h1 class="section-title">ข้อกำหนดการใช้งาน (Terms of Use)</h1>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;">
+      ข้อกำหนดฉบับนี้กำหนดสิทธิ หน้าที่ และเงื่อนไขการใช้งานแพลตฟอร์ม AgroLink
+      โปรดอ่านให้เข้าใจก่อนเข้าใช้งานหรือลงทะเบียนเป็นสมาชิก
+    </p>
+    <div class="updated">ปรับปรุงล่าสุด: กันยายน 2569 (ฉบับร่าง)</div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in">
+    <div class="note-block">
+      <strong>หมายเหตุสำคัญ:</strong> เอกสารนี้เป็น<strong>ร่างเบื้องต้น</strong>จัดทำขึ้นเพื่อเป็นแนวทางประกอบการพัฒนาเว็บไซต์เท่านั้น
+      ไม่ถือเป็นคำแนะนำทางกฎหมาย และยังไม่ผ่านการตรวจสอบจากที่ปรึกษากฎหมาย ก่อนเผยแพร่ใช้งานจริงบนเว็บไซต์
+      ขอแนะนำให้บริษัทตรวจสอบเนื้อหาร่วมกับที่ปรึกษากฎหมาย โดยเฉพาะส่วนการจำกัดความรับผิด บทบาทของแพลตฟอร์ม
+      และเงื่อนไขที่เกี่ยวข้องกับธุรกรรมทางการเงินและการซื้อขาย เพื่อให้สอดคล้องกับกฎหมายไทยที่เกี่ยวข้องอย่างครบถ้วน
+      ก่อนนำไปใช้อ้างอิงกับผู้ใช้งานจริง
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <div class="toc">
+      <h3>สารบัญ</h3>
+      <ol>
+        <li><a href="#acceptance">การยอมรับข้อกำหนด</a></li>
+        <li><a href="#definitions">คำนิยาม</a></li>
+        <li><a href="#eligibility">คุณสมบัติผู้ใช้งานและการลงทะเบียน</a></li>
+        <li><a href="#role">บทบาทของ AgroLink</a></li>
+        <li><a href="#acceptable-use">การใช้งานแพลตฟอร์มอย่างเหมาะสม</a></li>
+        <li><a href="#data-accuracy">ความถูกต้องของข้อมูลที่ผู้ใช้ให้ไว้</a></li>
+        <li><a href="#ip">ทรัพย์สินทางปัญญา</a></li>
+        <li><a href="#liability">การจำกัดความรับผิด</a></li>
+        <li><a href="#suspension">การระงับหรือยกเลิกการใช้งาน</a></li>
+        <li><a href="#changes">การเปลี่ยนแปลงข้อกำหนด</a></li>
+        <li><a href="#law">กฎหมายที่ใช้บังคับ</a></li>
+        <li><a href="#contact">ช่องทางติดต่อ</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="acceptance">
+    <h2><span class="num">1</span> การยอมรับข้อกำหนด</h2>
+    <p>การเข้าใช้งานเว็บไซต์หรือแพลตฟอร์ม AgroLink ไม่ว่าในฐานะผู้เยี่ยมชมหรือสมาชิกที่ลงทะเบียนแล้ว ถือว่าท่านได้อ่าน เข้าใจ และยอมรับที่จะปฏิบัติตามข้อกำหนดการใช้งานฉบับนี้ รวมถึงนโยบายความเป็นส่วนตัวของเรา หากท่านไม่เห็นด้วยกับข้อกำหนดฉบับนี้ไม่ว่าส่วนใดส่วนหนึ่ง ขอให้ท่านหลีกเลี่ยงการใช้งานแพลตฟอร์ม</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="definitions">
+    <h2><span class="num">2</span> คำนิยาม</h2>
+    <ul>
+      <li><strong>"แพลตฟอร์ม" หรือ "AgroLink"</strong> หมายถึง เว็บไซต์และระบบซอฟต์แวร์ AgroLink ที่ให้บริการเชื่อมโยงข้อมูลระหว่างเกษตรกร สหกรณ์ ผู้ให้บริการ สถาบันการเงิน และผู้ซื้อ</li>
+      <li><strong>"บริษัท"</strong> หมายถึง บริษัท ภักดี คอร์ปอเรชั่น จำกัด ผู้พัฒนาและให้บริการแพลตฟอร์ม AgroLink</li>
+      <li><strong>"ผู้ใช้งาน"</strong> หมายถึง บุคคลหรือนิติบุคคลที่เข้าใช้งานแพลตฟอร์ม ไม่ว่าจะลงทะเบียนในบทบาทใดก็ตาม เช่น เกษตรกร สหกรณ์ ผู้ให้บริการ ผู้ให้สินเชื่อ หรือผู้ซื้อ</li>
+      <li><strong>"พันธมิตร"</strong> หมายถึง สถาบันการเงิน ผู้ให้บริการ หรือผู้ซื้อที่เข้าร่วมเป็นส่วนหนึ่งของระบบนิเวศบนแพลตฟอร์ม</li>
+    </ul>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="eligibility">
+    <h2><span class="num">3</span> คุณสมบัติผู้ใช้งานและการลงทะเบียน</h2>
+    <p>ผู้ใช้งานต้องให้ข้อมูลที่ถูกต้อง เป็นจริง และเป็นปัจจุบันในการลงทะเบียนบัญชีผู้ใช้ ผู้ใช้งานมีหน้าที่รักษาความปลอดภัยของบัญชีของตนเอง รวมถึงรหัสยืนยันตัวตน (OTP) ที่ใช้ในการเข้าสู่ระบบ และต้องรับผิดชอบต่อกิจกรรมทั้งหมดที่เกิดขึ้นภายใต้บัญชีของตน หากพบการใช้งานที่ไม่ได้รับอนุญาต ผู้ใช้งานต้องแจ้งให้เราทราบโดยทันที</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="role">
+    <h2><span class="num">4</span> บทบาทของ AgroLink</h2>
+    <p>AgroLink เป็น<strong>แพลตฟอร์มและโครงสร้างพื้นฐานด้านข้อมูล</strong> ที่เชื่อมโยงข้อมูลการผลิตจริงระหว่างผู้ใช้งานกลุ่มต่าง ๆ เพื่ออำนวยความสะดวกในการติดต่อ พิจารณา และทำธุรกรรมระหว่างกัน โดยมีขอบเขตบทบาทที่ชัดเจนดังนี้</p>
+    <ul>
+      <li><strong>AgroLink ไม่ใช่ผู้ให้สินเชื่อ</strong> การอนุมัติสินเชื่อ วงเงิน อัตราดอกเบี้ย และเงื่อนไขต่าง ๆ เป็นการพิจารณาและดำเนินการโดยผู้ให้บริการทางการเงินแต่ละรายเอง</li>
+      <li><strong>AgroLink ไม่ใช่ผู้ซื้อหรือผู้ขายผลผลิต</strong> และไม่รับประกันราคาซื้อขายหรือคุณภาพของสินค้าที่ซื้อขายผ่านตลาดกลางบนแพลตฟอร์ม การทำธุรกรรมเป็นความรับผิดชอบระหว่างผู้ซื้อและผู้ขายโดยตรง</li>
+      <li>การจับคู่ในตลาดคาร์บอนเครดิตและธุรกรรมบางประเภทดำเนินการโดยทีมงาน Platform Ops ของเราเพื่อความถูกต้อง แต่ไม่ถือเป็นการรับประกันผลลัพธ์ของธุรกรรมนั้น ๆ</li>
+      <li>รายชื่อพันธมิตรที่ปรากฏบนแพลตฟอร์มเป็นหมวดหมู่พันธมิตรเป้าหมายหรือพันธมิตรที่เข้าร่วมระบบ ณ ขณะนั้น อาจมีการเปลี่ยนแปลงได้</li>
+    </ul>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="acceptable-use">
+    <h2><span class="num">5</span> การใช้งานแพลตฟอร์มอย่างเหมาะสม</h2>
+    <p>ผู้ใช้งานตกลงจะไม่กระทำการดังต่อไปนี้ในระหว่างการใช้งานแพลตฟอร์ม</p>
+    <ul>
+      <li>ให้ข้อมูลอันเป็นเท็จเกี่ยวกับตนเอง แปลง/หน่วยผลิต การผลิต หรือธุรกรรมใด ๆ บนระบบ</li>
+      <li>ใช้แพลตฟอร์มเพื่อกระทำการที่ผิดกฎหมาย ฉ้อโกง หรือละเมิดสิทธิของผู้อื่น</li>
+      <li>พยายามเข้าถึงระบบ ข้อมูล หรือบัญชีของผู้ใช้งานรายอื่นโดยไม่ได้รับอนุญาต</li>
+      <li>รบกวนหรือขัดขวางการทำงานปกติของแพลตฟอร์ม เช่น การโจมตีระบบหรือใช้โปรแกรมอัตโนมัติโดยไม่ได้รับอนุญาต</li>
+      <li>คัดลอก ทำซ้ำ หรือเผยแพร่เนื้อหาบนแพลตฟอร์มเพื่อวัตถุประสงค์ทางการค้าโดยไม่ได้รับอนุญาตจากเรา</li>
+    </ul>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="data-accuracy">
+    <h2><span class="num">6</span> ความถูกต้องของข้อมูลที่ผู้ใช้ให้ไว้</h2>
+    <p>ข้อมูลการผลิต ข้อมูลแปลง ข้อมูลทางการเงิน และข้อมูลอื่นใดที่ผู้ใช้งานกรอกหรืออัปโหลดเข้าสู่ระบบ เป็นความรับผิดชอบของผู้ใช้งานในความถูกต้องและครบถ้วน AgroLink อาจใช้ข้อมูลดังกล่าวประกอบการวิเคราะห์ด้วย AI หรือภาพถ่ายดาวเทียม แต่ผลลัพธ์ที่ได้เป็นเพียงข้อมูลประกอบการตัดสินใจ ไม่ถือเป็นการรับรองความถูกต้องแบบสมบูรณ์ และไม่ทดแทนการตรวจสอบหรือดุลยพินิจของผู้ใช้งานหรือพันธมิตรที่เกี่ยวข้อง</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="ip">
+    <h2><span class="num">7</span> ทรัพย์สินทางปัญญา</h2>
+    <p>เนื้อหา โลโก้ เครื่องหมายการค้า และซอฟต์แวร์ทั้งหมดบนแพลตฟอร์ม AgroLink เป็นทรัพย์สินของบริษัท ภักดี คอร์ปอเรชั่น จำกัด หรือผู้อนุญาตให้ใช้สิทธิ ห้ามมิให้ผู้ใดทำซ้ำ ดัดแปลง หรือนำไปใช้ในเชิงพาณิชย์โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษรจากเราก่อน ข้อมูลการผลิตที่ผู้ใช้งานป้อนเข้าสู่ระบบยังคงเป็นของผู้ใช้งาน โดยเราจะใช้ข้อมูลดังกล่าวตามที่ระบุไว้ในนโยบายความเป็นส่วนตัว</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="liability">
+    <h2><span class="num">8</span> การจำกัดความรับผิด</h2>
+    <p>แพลตฟอร์ม AgroLink ให้บริการในลักษณะ "ตามสภาพที่เป็นอยู่" (as is) เราจะพยายามอย่างเต็มที่เพื่อให้ข้อมูลและบริการมีความถูกต้องและพร้อมใช้งาน แต่ไม่รับประกันว่าแพลตฟอร์มจะปราศจากข้อผิดพลาดหรือทำงานได้อย่างต่อเนื่องตลอดเวลา เราไม่รับผิดชอบต่อความเสียหายทางตรง ทางอ้อม หรือที่เกิดขึ้นตามมา อันเกิดจากการตัดสินใจของผู้ใช้งานหรือพันธมิตรที่อ้างอิงจากข้อมูลบนแพลตฟอร์ม รวมถึงผลของธุรกรรมทางการเงินหรือการซื้อขายที่เกิดขึ้นระหว่างผู้ใช้งานด้วยกันเอง เว้นแต่กรณีที่กฎหมายกำหนดไว้เป็นอย่างอื่น</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="suspension">
+    <h2><span class="num">9</span> การระงับหรือยกเลิกการใช้งาน</h2>
+    <p>เราขอสงวนสิทธิ์ในการระงับหรือยกเลิกบัญชีผู้ใช้งาน หากพบว่ามีการฝ่าฝืนข้อกำหนดฉบับนี้ ให้ข้อมูลอันเป็นเท็จ หรือใช้งานแพลตฟอร์มในลักษณะที่อาจก่อให้เกิดความเสียหายต่อผู้ใช้งานรายอื่นหรือต่อระบบ โดยจะแจ้งให้ทราบตามความเหมาะสม เว้นแต่กรณีเร่งด่วนที่จำเป็นต้องระงับการใช้งานทันที</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="changes">
+    <h2><span class="num">10</span> การเปลี่ยนแปลงข้อกำหนด</h2>
+    <p>เราอาจปรับปรุงข้อกำหนดการใช้งานฉบับนี้เป็นครั้งคราว เพื่อให้สอดคล้องกับการเปลี่ยนแปลงของบริการหรือกฎหมายที่เกี่ยวข้อง โดยจะแจ้งวันที่ปรับปรุงล่าสุดไว้ที่ด้านบนของหน้านี้ การใช้งานแพลตฟอร์มต่อไปหลังจากมีการเปลี่ยนแปลง ถือว่าท่านยอมรับข้อกำหนดฉบับปรับปรุงนั้นแล้ว</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="law">
+    <h2><span class="num">11</span> กฎหมายที่ใช้บังคับ</h2>
+    <p>ข้อกำหนดการใช้งานฉบับนี้อยู่ภายใต้บังคับและตีความตามกฎหมายไทย ข้อพิพาทใด ๆ ที่เกิดขึ้นจากหรือเกี่ยวเนื่องกับข้อกำหนดฉบับนี้ ให้อยู่ในเขตอำนาจของศาลไทย</p>
+  </div>
+</section>
+
+<section class="prose-section" id="contact">
+  <div class="container prose-block reveal in">
+    <h2><span class="num">12</span> ช่องทางติดต่อ</h2>
+    <p>หากท่านมีข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งานฉบับนี้ สามารถติดต่อบริษัท ภักดี คอร์ปอเรชั่น จำกัด ได้ตามช่องทางต่อไปนี้</p>
+    <ul>
+      <li>อีเมล: management@agrolinkthai.com</li>
+      <li>โทรศัพท์: 092-654-9935</li>
+      <li>ที่อยู่: 49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</li>
+    </ul>
+  </div>
+</section>
+
+<section class="cta-final">
+  <div class="container">
+    <h2>มีคำถามเกี่ยวกับการใช้งานแพลตฟอร์ม?</h2>
+    <p>ติดต่อทีมงาน AgroLink ได้โดยตรง เราพร้อมช่วยตอบข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งาน</p>
+    <div class="cta-actions">
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i> ติดต่อทีมงาน</a>
+      <a href="index.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-house"></i> กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
+        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5>ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="register.html">เกษตรกร</a></li>
+          <li><a href="finance-partners.html">การเงิน</a></li>
+          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
+          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="index.html#ai-satellite">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#partners">พันธมิตรเทคโนโลยี</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>บริษัท</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html">นักลงทุน</a></li>
+          <li><a href="contact.html">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+</script>
+</body>
+</html>
