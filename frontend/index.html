@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgroLink — โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</title>
+<title>AgroLink Platform — แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยงเพื่อเกษตรกรไทย</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <style>
@@ -58,6 +58,15 @@
     color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
     margin-bottom: 16px;
   }
+  .tagline-strip {
+    background: var(--green-dark);
+    padding: 12px 0;
+    text-align: center;
+  }
+  .tagline-strip span {
+    font-size: 13.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: #fff;
+  }
   h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
   .section-title { font-size: 32px; margin-bottom: 12px; }
   .section-sub { color: var(--muted); font-size: 16.5px; max-width: 680px; margin-bottom: 40px; }
@@ -78,32 +87,47 @@
 
   /* NAV */
   header.nav {
-    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
     backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
   }
   .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
   .nav-right { display: flex; align-items: center; gap: 14px; }
-  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
-  .logo-img { height: 68px; width: auto; display: block; }
-  .nav-links {
-    display: flex; align-items: center; justify-content: center; gap: 14px;
-    font-size: 13.5px; font-weight: 600; color: var(--text);
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo .mark {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--green), var(--gold));
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px;
   }
-  .nav-links a { white-space: nowrap; }
+  .logo-img { height: 68px; width: auto; display: block; }
+  /* Menu is deliberately split into two fixed rows (not a single wrapping
+     line) so it always reads as two neat rows on desktop, regardless of
+     exact viewport width. */
+  .nav-links {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 0 14px; border-top: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
   @media (max-width: 1180px) {
     .nav-links {
-      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
-      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
-      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
     }
     .nav-links.open { display: flex; }
+    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
     .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-row:last-child a:last-child { border-bottom: none; }
     .nav-toggle { display: block; }
   }
   @media (max-width: 480px) {
+    /* Pre-existing gap, not caused by the two-row menu change above: logo
+       + both header buttons + the hamburger icon don't all fit on one line
+       on narrow phones. Let the top row wrap onto two lines here instead
+       of overflowing the viewport horizontally. */
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
     .nav-right { width: 100%; justify-content: space-between; }
   }
@@ -113,26 +137,34 @@
     position: relative; overflow: hidden;
     background: radial-gradient(1200px 500px at 85% -10%, #E9F6EE 0%, transparent 60%),
                 linear-gradient(180deg, #FCFAF5 0%, var(--cream) 100%);
-    padding: 70px 0 60px; text-align: center;
+    padding: 90px 0 60px;
   }
-  .hero .eyebrow { display: inline-flex; }
-  .hero h1 { font-size: 46px; line-height: 1.2; margin-bottom: 6px; }
-  .hero h1 .brand { color: var(--navy); }
-  .hero .connectors { font-size: 15px; color: var(--muted); font-weight: 600; margin-bottom: 20px; }
-  .hero p.lead { font-size: 17.5px; color: var(--muted); max-width: 720px; margin: 0 auto 26px; }
-  .flow-badge {
-    display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
-    background: #fff; border: 1px solid var(--border); border-radius: 999px;
-    padding: 10px 22px; font-weight: 800; color: var(--navy); font-size: 14.5px;
-    box-shadow: 0 10px 26px rgba(18,61,43,.06); margin: 0 auto 30px;
+  .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 50px; align-items: center; }
+  @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+  .hero-heading-card {
+    display: flex; align-items: flex-start; gap: 18px;
+    background: linear-gradient(135deg, #fff 0%, var(--green-light) 140%);
+    border: 1px solid var(--border); border-left: 4px solid var(--green);
+    border-radius: var(--radius);
+    padding: 28px 30px;
+    box-shadow: 0 14px 34px rgba(18,61,43,.08);
+    margin-bottom: 24px;
   }
-  .flow-badge .seg { display: flex; align-items: center; gap: 10px; }
-  .flow-badge i { color: var(--gold); font-size: 12px; }
-  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
-
-  /* HERO TOP PAIR: chat widget + field map, side by side */
-  .hero-top-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: start; max-width: 1000px; margin: 0 auto 56px; text-align: left; }
-  @media (max-width: 900px) { .hero-top-pair { grid-template-columns: 1fr; gap: 46px; } }
+  .hero-heading-icon {
+    flex: none; width: 46px; height: 46px; border-radius: 12px;
+    background: var(--green); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .hero h1 { font-size: 34px; line-height: 1.3; margin: 0; text-wrap: balance; }
+  .hero h1 span { color: var(--green); }
+  @media (max-width: 480px) {
+    .hero-heading-card { flex-direction: column; gap: 12px; padding: 22px; }
+  }
+  .hero p.lead { font-size: 18px; color: var(--muted); max-width: 560px; margin-bottom: 30px; }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 34px; }
+  .hero-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+  .hero-stats .stat b { display: block; font-size: 24px; color: var(--navy); }
+  .hero-stats .stat span { font-size: 13px; color: var(--muted); }
 
   .hero-art { position: relative; }
   .field-card {
@@ -141,12 +173,12 @@
   }
   .field-map { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; margin-bottom: 18px; background: var(--green-light); }
   .field-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-  .field-card .cap { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; gap: 6px; }
+  .field-card .cap { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
   .field-card .cap b { color: var(--navy); font-size: 14px; }
   .float-badge {
     position: absolute; background: #fff; border: 1px solid var(--border); border-radius: 12px;
     padding: 12px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.08); display: flex; gap: 10px; align-items: center;
-    font-size: 13.5px; font-weight: 700; color: var(--navy); z-index: 2;
+    font-size: 13.5px; font-weight: 700; color: var(--navy);
   }
   .float-badge i { color: var(--green); font-size: 16px; }
   .fb1 { top: -18px; right: 10px; }
@@ -154,10 +186,11 @@
   @media (max-width: 500px) { .float-badge { position: static; margin-top: 10px; width: fit-content; } }
 
   /* QUICK CHAT WIDGET */
+  .quick-chat-section { background: var(--cream); padding: 22px 0 0; }
   .quick-chat-card {
     background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
     box-shadow: 0 10px 26px rgba(18,61,43,.06);
-    width: 100%; overflow: hidden; height: 100%;
+    max-width: 640px; margin: 0 auto; overflow: hidden;
   }
   .quick-chat-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -210,60 +243,105 @@
     .quick-chat-title span { display: none; }
   }
 
-  /* ECOSYSTEM DIAGRAM */
-  .eco-section { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .eco-diagram { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 900px; margin: 0 auto; }
-  .eco-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; width: 100%; }
-  .eco-node {
-    background: var(--cream); border: 1.5px solid var(--border); border-radius: 14px;
-    padding: 14px 22px; font-weight: 800; color: var(--navy); font-size: 14.5px; text-align: center;
-    display: flex; align-items: center; gap: 10px; min-width: 150px; justify-content: center;
-  }
-  .eco-node small { display: block; font-weight: 600; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
-  .eco-node i { color: var(--green); font-size: 16px; }
-  .eco-node.eco-hub {
-    background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff;
-    border: none; font-size: 17px; padding: 18px 30px; border-radius: 16px;
-    box-shadow: 0 14px 30px rgba(18,61,43,.25);
-  }
-  .eco-node.eco-hub i { color: var(--gold); }
-  .eco-node.eco-intel { background: var(--gold-light); border-color: var(--gold); color: var(--green-dark); }
-  .eco-arrow-vert { color: var(--muted); font-size: 20px; line-height: 1; }
-  .eco-arrow-horiz { color: var(--muted); font-size: 20px; }
-  @media (max-width: 700px) {
-    .eco-row.eco-mid { flex-direction: column; }
-    .eco-arrow-horiz { transform: rotate(90deg); }
-  }
+  .partner-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #fff; }
+  .partner-strip .container { display: flex; align-items: center; gap: 34px; padding: 22px 24px; flex-wrap: wrap; justify-content: center; }
+  .partner-strip .label { font-size: 12.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+  .partner-chip { font-size: 13.5px; font-weight: 700; color: var(--navy); background: var(--cream); padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); text-decoration: none; display: inline-block; transition: border-color .15s ease, background .15s ease; }
+  a.partner-chip:hover { border-color: var(--green); background: #fff; }
 
-  /* 5 CORE PLATFORMS */
-  .platform-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  @media (max-width: 950px) { .platform-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 560px) { .platform-grid { grid-template-columns: 1fr; } }
-  .platform-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; }
-  .platform-card .icn {
-    width: 50px; height: 50px; border-radius: 12px; margin: 0 auto 14px;
-    background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px;
-  }
-  .platform-card h4 { font-size: 16px; margin-bottom: 6px; }
-  .platform-card p { font-size: 13px; color: var(--muted); }
-  .platform-card[data-target="finance"] .icn { background: var(--green); }
-  .platform-card[data-target="marketplace"] .icn { background: var(--gold); color: var(--green-dark); }
-  .platform-card[data-target="member-portal"] .icn { background: var(--green-dark); }
+  /* PROBLEM */
+  .card-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  @media (max-width: 950px) { .card-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .card-grid-4 { grid-template-columns: 1fr; } }
+  .pain-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
+  .pain-card .icn { width: 46px; height: 46px; border-radius: 12px; background: #FDEEEE; color: #C0392B; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px; }
+  .pain-card h4 { font-size: 17px; margin-bottom: 8px; }
+  .pain-card p { font-size: 14.5px; color: var(--muted); }
+  a.pain-card { display: block; text-decoration: none; color: inherit; transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease; }
+  a.pain-card:hover { border-color: var(--green); box-shadow: 0 10px 24px rgba(27,107,74,.12); transform: translateY(-2px); }
 
-  /* HOW IT WORKS (6 steps) */
-  .steps6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
-  @media (max-width: 950px) { .steps6 { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 560px) { .steps6 { grid-template-columns: 1fr; } }
-  .step { text-align: center; padding: 8px; }
+  /* TEMPLATE 6 COMPONENTS */
+  .template-section { background: var(--green-dark); color: #fff; }
+  .template-section .section-title, .template-section h3 { color: #fff; }
+  .template-section .section-sub { color: #C8DBD1; }
+  .template-section .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .tpl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 900px) { .tpl-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .tpl-grid { grid-template-columns: 1fr; } }
+  .tpl-card {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius);
+    padding: 24px; position: relative;
+  }
+  .tpl-num { position: absolute; top: 18px; right: 20px; font-size: 34px; font-weight: 800; color: rgba(255,255,255,.12); }
+  .tpl-card .icn { width: 44px; height: 44px; border-radius: 10px; background: var(--gold); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 14px; }
+  .tpl-card h4 { font-size: 16.5px; color: #fff; margin-bottom: 8px; }
+  .tpl-card p { font-size: 13.8px; color: #C8DBD1; }
+  a.tpl-card { display: block; text-decoration: none; color: inherit; transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease, background .18s ease; }
+  a.tpl-card:hover { border-color: var(--gold); background: rgba(255,255,255,.1); box-shadow: 0 10px 24px rgba(0,0,0,.3); transform: translateY(-2px); }
+
+  /* HOW IT WORKS */
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; position: relative; }
+  @media (max-width: 950px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .steps { grid-template-columns: 1fr; } }
+  .step { text-align: center; padding: 10px; }
   .step .circle {
-    width: 56px; height: 56px; border-radius: 50%; background: var(--green-light); color: var(--green);
-    display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; margin: 0 auto 14px;
+    width: 60px; height: 60px; border-radius: 50%; background: var(--green-light); color: var(--green);
+    display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px;
     border: 2px solid var(--green);
   }
-  .step h4 { font-size: 14.5px; margin-bottom: 4px; }
-  .step p { font-size: 12.5px; color: var(--muted); }
+  .step h4 { font-size: 15.5px; margin-bottom: 6px; }
+  .step p { font-size: 13.2px; color: var(--muted); }
 
-  /* PHASE TIMELINE (แผนขยายสินค้า) */
+  /* KNOWLEDGE HUB */
+  .chip-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 34px; }
+  .chip {
+    font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer;
+    transition: all .2s ease; font-family: inherit;
+  }
+  .chip:hover { border-color: var(--green); color: var(--green); }
+  .chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .kb-card { background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; flex-direction: column; height: 100%; }
+  .kb-card .tag { display: inline-block; font-size: 11.5px; font-weight: 800; color: var(--green); background: var(--green-light); padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; width: fit-content; }
+  .kb-card h4 { font-size: 16px; margin-bottom: 10px; line-height: 1.4; }
+  .kb-card p { font-size: 13.8px; color: var(--muted); margin-bottom: 16px; flex-grow: 1; }
+  .kb-card .meta { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--muted); padding-top: 14px; border-top: 1px solid var(--border); }
+  .kb-card .meta a { color: var(--green); font-weight: 700; }
+  .kb-card.hide { display: none; }
+  .kb-note { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 30px; }
+
+  /* PRICE TABLE */
+  .price-table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: 0 10px 30px rgba(18,61,43,.06); }
+  .price-table { width: 100%; min-width: 560px; border-collapse: collapse; background: #fff; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .price-table th { text-align: left; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--cream); padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .price-table td { padding: 16px 20px; font-size: 14.5px; border-bottom: 1px solid var(--border); }
+  .price-table tr:last-child td { border-bottom: none; }
+  .price-table .commodity { font-weight: 700; color: var(--navy); }
+  .price-table .commodity small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .trend { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+  .trend.up { color: #1B7A43; }
+  .trend.down { color: #C0392B; }
+  .trend.flat { color: var(--muted); }
+  .price-table .source-link { color: var(--green); font-weight: 700; text-decoration: none; }
+  .price-table .source-link:hover { text-decoration: underline; }
+  .price-note { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 22px; }
+
+  /* WEATHER */
+  .weather-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  @media (max-width: 950px) { .weather-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .weather-grid { grid-template-columns: 1fr; } }
+  .weather-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; text-align: center; }
+  a.weather-card { display: block; text-decoration: none; color: inherit; transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease; }
+  a.weather-card:hover { border-color: var(--green); box-shadow: 0 10px 24px rgba(27,107,74,.12); transform: translateY(-2px); }
+  .weather-card .wicon { font-size: 30px; color: var(--gold); margin-bottom: 12px; }
+  .weather-card h4 { font-size: 14.5px; margin-bottom: 4px; }
+  .weather-card .region-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .weather-card .temp { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+  .weather-card .rain { font-size: 12.5px; color: var(--green); font-weight: 700; margin-bottom: 14px; }
+  .weather-card .advisory { font-size: 12.5px; color: var(--muted); padding-top: 14px; border-top: 1px dashed var(--border); }
+  .weather-note { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 26px; }
+
+  /* PHASE TIMELINE */
   .phase-track { display: flex; gap: 0; overflow-x: auto; padding-bottom: 10px; }
   .phase-item { flex: 1; min-width: 190px; padding: 22px 18px; border-right: 1px dashed var(--border); position: relative; }
   .phase-item:last-child { border-right: none; }
@@ -273,48 +351,31 @@
   .phase-item p { font-size: 13px; color: var(--muted); }
   .phase-item .icn-row { display: flex; gap: 8px; margin-bottom: 10px; font-size: 20px; color: var(--green); }
 
-  /* COOPERATIVE (dark) */
-  .coop-section { background: var(--green-dark); color: #fff; }
-  .coop-section .section-title, .coop-section h3 { color: #fff; }
-  .coop-section .section-sub { color: #C8DBD1; }
-  .coop-section .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
-  .coop-flow { text-align: center; font-weight: 700; color: var(--gold-light); font-size: 14px; margin-bottom: 34px; letter-spacing: .01em; }
-  .coop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 34px; }
-  @media (max-width: 700px) { .coop-grid { grid-template-columns: 1fr 1fr; } }
-  .coop-mod {
-    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); border-radius: 12px;
-    padding: 16px; text-align: center; font-size: 13.5px; font-weight: 700; color: #fff;
-  }
-  .coop-mod i { display: block; color: var(--gold); font-size: 18px; margin-bottom: 8px; }
-  .coop-cta { text-align: center; }
+  /* AUDIENCE */
+  .card-grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 900px) { .card-grid-6 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .card-grid-6 { grid-template-columns: 1fr; } }
+  .aud-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; gap: 16px; }
+  .aud-card .icn { min-width: 48px; height: 48px; border-radius: 12px; background: var(--gold-light); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .aud-card h4 { font-size: 16px; margin-bottom: 6px; }
+  .aud-card p { font-size: 13.5px; color: var(--muted); }
 
-  /* AI + SATELLITE */
-  .ai-flow { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; font-weight: 800; color: var(--navy); font-size: 16px; margin-bottom: 34px; }
-  .ai-flow i { color: var(--gold); font-size: 14px; }
-  .dash-chip-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-  .dash-chip {
-    background: var(--green-light); color: var(--green); font-weight: 700; font-size: 13px;
-    padding: 9px 16px; border-radius: 999px; display: flex; align-items: center; gap: 8px;
-  }
-  .dash-chip i { font-size: 12px; }
+  /* FEATURES */
+  .card-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 900px) { .card-grid-3 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .card-grid-3 { grid-template-columns: 1fr; } }
+  .feat-card { padding: 26px; border-radius: var(--radius); background: var(--cream); border: 1px solid var(--border); }
+  .feat-card .icn { width: 46px; height: 46px; border-radius: 12px; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 16px; }
+  .feat-card h4 { font-size: 16.5px; margin-bottom: 8px; }
+  .feat-card p { font-size: 14px; color: var(--muted); }
 
-  /* CARBON */
-  .carbon-section { background: var(--gold-light); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .carbon-flow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-weight: 700; color: var(--green-dark); font-size: 14px; margin-bottom: 30px; }
-  .carbon-flow i { color: var(--green); font-size: 12px; }
-  .carbon-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-
-  /* FINANCE NOTE */
-  .note-block {
-    background: var(--gold-light); border: 1px solid var(--gold); border-radius: 14px;
-    padding: 22px 26px; font-size: 14.5px; color: var(--text); max-width: 900px; margin: 0 auto;
-  }
-  .note-block strong { color: #7A5E10; }
-
-  /* PARTNERS */
-  .partner-note-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 18px; }
-  .partner-chip { font-size: 13.5px; font-weight: 700; color: var(--navy); background: #fff; padding: 9px 18px; border-radius: 8px; border: 1px solid var(--border); }
-  .partner-caveat { text-align: center; font-size: 12.5px; color: var(--muted); }
+  /* STATS */
+  .stats-section { background: var(--navy); color: #fff; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; text-align: center; }
+  @media (max-width: 800px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stats-grid .num { font-size: 34px; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
+  .stats-grid .lbl { font-size: 13.5px; color: #C9D3E5; }
+  .stats-note { text-align: center; font-size: 12.5px; color: #9FB0CC; margin-top: 30px; }
 
   /* CTA BANNER */
   .cta-banner {
@@ -330,12 +391,11 @@
   footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
   .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
   @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
-  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; letter-spacing: .04em; text-transform: uppercase; }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
   footer ul li { margin-bottom: 10px; font-size: 13.8px; }
   footer ul li a:hover { color: #fff; }
-  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 10px; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
   .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
-  footer .footer-tagline-en { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 12px; }
   footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
   .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
 
@@ -349,171 +409,324 @@
   <div class="container">
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
-      <nav class="nav-links">
-        <a href="#top">หน้าแรก</a>
-        <a href="coop-portal.html">สำหรับสหกรณ์</a>
-        <a href="register.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-        <a href="#ai-satellite">AI และดาวเทียม</a>
-        <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-        <a href="#partners">นักลงทุน</a>
-      </nav>
       <div class="nav-right">
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="#demo" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;background:rgba(31,56,100,.12);"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
+          <a href="#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">สมัครใช้งาน</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
+    <nav class="nav-links">
+      <div class="nav-row">
+        <a href="about.html">เกี่ยวกับเรา</a>
+        <a href="#concept">แนวคิดหลัก</a>
+        <a href="#how">วิธีการทำงาน</a>
+        <a href="#knowledge">คลังความรู้</a>
+        <a href="#prices">ราคาสินค้า</a>
+        <a href="#weather">พยากรณ์อากาศ</a>
+      </div>
+      <div class="nav-row">
+        <a href="#roadmap">แผนสินค้า</a>
+        <a href="#audience">สำหรับใคร</a>
+        <a href="coop-portal.html">พอร์ทัลสหกรณ์</a>
+        <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
+        <a href="auction-intro.html">Auction Place</a>
+        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
+        <a href="#partners">พันธมิตร</a>
+        <a href="#contact">ติดต่อ</a>
+      </div>
+    </nav>
   </div>
 </header>
 
-<section class="hero" id="top">
+<div class="tagline-strip">
   <div class="container">
-    <div class="hero-top-pair reveal in">
-      <div class="quick-chat-card" id="quickChatCard">
-        <div class="quick-chat-header" id="quickChatHeader">
-          <div class="quick-chat-title">
-            <div class="quick-chat-icon"><i class="fa-solid fa-comment-dots"></i></div>
-            <div>
-              <b>สอบถาม AgroLink</b>
-              <span>พิมพ์หรือพูดคำถามของคุณได้เลย</span>
-            </div>
+    <span>Thailand Agricultural Ecosystem</span>
+  </div>
+</div>
+
+<section class="quick-chat-section">
+  <div class="container">
+    <div class="quick-chat-card" id="quickChatCard">
+      <div class="quick-chat-header" id="quickChatHeader">
+        <div class="quick-chat-title">
+          <div class="quick-chat-icon"><i class="fa-solid fa-comment-dots"></i></div>
+          <div>
+            <b>สอบถาม AgroLink</b>
+            <span>พิมพ์หรือพูดคำถามของคุณได้เลย</span>
           </div>
-          <button type="button" class="quick-chat-toggle" id="quickChatToggle" aria-expanded="true" aria-controls="quickChatBody" aria-label="ย่อ/ขยายช่องแชท">
-            <i class="fa-solid fa-chevron-up"></i>
+        </div>
+        <button type="button" class="quick-chat-toggle" id="quickChatToggle" aria-expanded="true" aria-controls="quickChatBody" aria-label="ย่อ/ขยายช่องแชท">
+          <i class="fa-solid fa-chevron-up"></i>
+        </button>
+      </div>
+      <div class="quick-chat-body" id="quickChatBody">
+        <div class="quick-chat-messages" id="quickChatMessages">
+          <div class="qc-msg qc-msg-bot">สวัสดีค่ะ ต้องการสอบถาม Agrolink พิมพ์หรือกดไมค์พูดได้เลยค่ะ</div>
+        </div>
+        <form class="quick-chat-form" id="quickChatForm">
+          <button type="button" class="qc-mic-btn" id="qcMicBtn" title="พูดเพื่อพิมพ์" aria-label="พูดเพื่อพิมพ์">
+            <i class="fa-solid fa-microphone"></i>
           </button>
-        </div>
-        <div class="quick-chat-body" id="quickChatBody">
-          <div class="quick-chat-messages" id="quickChatMessages">
-            <div class="qc-msg qc-msg-bot">สวัสดีค่ะ ต้องการสอบถาม Agrolink พิมพ์หรือกดไมค์พูดได้เลยค่ะ</div>
-          </div>
-          <form class="quick-chat-form" id="quickChatForm">
-            <button type="button" class="qc-mic-btn" id="qcMicBtn" title="พูดเพื่อพิมพ์" aria-label="พูดเพื่อพิมพ์">
-              <i class="fa-solid fa-microphone"></i>
-            </button>
-            <input type="text" id="qcInput" placeholder="พิมพ์ข้อความ..." autocomplete="off" />
-            <button type="submit" class="qc-send-btn" aria-label="ส่งข้อความ">
-              <i class="fa-solid fa-paper-plane"></i>
-            </button>
-          </form>
-        </div>
+          <input type="text" id="qcInput" placeholder="พิมพ์ข้อความ..." autocomplete="off" />
+          <button type="submit" class="qc-send-btn" aria-label="ส่งข้อความ">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
       </div>
-      <div class="hero-art">
-        <div class="float-badge fb1"><i class="fa-solid fa-satellite-dish"></i> ยืนยันด้วยภาพถ่ายดาวเทียม</div>
-        <div class="field-card">
-          <div class="field-map">
-            <iframe src="https://maps.google.com/maps?q=Nakhon+Sawan,+Thailand&amp;t=&amp;z=9&amp;ie=UTF8&amp;iwloc=&amp;output=embed"
-              loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="แผนที่จังหวัดนครสวรรค์"></iframe>
-          </div>
-          <div class="cap">
-            <span>แปลงนำร่อง อ.สรรพยา จ.ชัยนาท</span>
-            <b>สถานะ: กำลังเจริญเติบโต</b>
-          </div>
-        </div>
-        <div class="float-badge fb2"><i class="fa-solid fa-coins"></i> วงเงินคงเหลือ 4,200 บาท</div>
-      </div>
-    </div>
-    <div class="eyebrow"><i class="fa-solid fa-satellite"></i> โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-    <h1><span class="brand">AgroLink</span></h1>
-    <div class="connectors">เชื่อม เกษตรกร • สหกรณ์ • บริการเกษตร • ปัจจัยการผลิต • การเงิน • ผู้ซื้อ</div>
-    <p class="lead">AgroLink เปลี่ยนข้อมูลจากการผลิตจริงในแปลงเกษตร ให้กลายเป็นโครงสร้างพื้นฐานดิจิทัลสำหรับการผลิต การเงิน และตลาด — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
-    <div class="flow-badge reveal in">
-      <span class="seg">การผลิต</span><i class="fa-solid fa-arrow-right"></i>
-      <span class="seg">ข้อมูล</span><i class="fa-solid fa-arrow-right"></i>
-      <span class="seg">การเงิน</span><i class="fa-solid fa-arrow-right"></i>
-      <span class="seg">ตลาด</span>
-    </div>
-    <div class="hero-actions">
-      <a href="#demo" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> ขอชม Demo</a>
-      <a href="#platforms" class="btn btn-outline"><i class="fa-solid fa-diagram-project"></i> สำรวจ AgroLink</a>
     </div>
   </div>
 </section>
 
-<span id="concept" aria-hidden="true"></span>
-<section class="eco-section">
-  <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:40px;">
-      <div class="eyebrow"><i class="fa-solid fa-circle-nodes"></i> ระบบนิเวศของ AgroLink</div>
-      <h2 class="section-title">ระบบนิเวศเดียว ที่เชื่อมทุกฝ่ายด้วยข้อมูล</h2>
-      <p class="section-sub">ตลาดกลาง การเงิน คาร์บอนเครดิต AI และดาวเทียม ไม่ใช่ธุรกิจแยกกันหลายธุรกิจ แต่เป็นบริการที่อยู่บนแพลตฟอร์มและโครงสร้างพื้นฐานข้อมูลเดียวกันของ AgroLink</p>
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="hero-heading-card">
+        <div class="hero-heading-icon"><i class="fa-solid fa-wheat-awn"></i></div>
+        <h1><span>AgroLink คือแพลตฟอร์มโครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร ที่เชื่อมการผลิต บริการ ปัจจัยการผลิต สินเชื่อ และตลาดเข้าด้วยกัน โดยใช้ข้อมูล AI และ Satellite เพื่อสร้างระบบการผลิตที่ตรวจสอบได้</span></h1>
+      </div>
+      <p class="lead">AgroLink คือแม่แบบวงจรการผลิตสากล ที่ผูกบริการทุกขั้นตอนการผลิต สินเชื่อหลายผู้ให้กู้แบบเบิกจ่ายเป็นงวดที่ตรวจสอบได้จริง และระบบเตือนภัยร่วม ไว้ในแพลตฟอร์มเดียว เริ่มต้นด้วยข้าว พร้อมขยายสู่พืชและสัตว์เศรษฐกิจทุกชนิด</p>
+      <div class="hero-actions">
+        <a href="register.html" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> สมัครเป็นเกษตรกร</a>
+        <a href="#contact" class="btn btn-outline" style="background:rgba(31,56,100,.12);"><i class="fa-solid fa-handshake"></i> สมัครเป็นผู้ให้บริการ/ผู้ให้กู้/ผู้ซื้อ/ผู้ขาย</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b>8,000–20,000</b><span>หน่วยผลิตเป้าหมายปีแรก</span></div>
+        <div class="stat"><b>3+</b><span>ผู้ให้สินเชื่อต่อพื้นที่นำร่อง</span></div>
+        <div class="stat"><b>90%+</b><span>เบิกจ่ายผ่านการยืนยันจริง</span></div>
+      </div>
     </div>
-    <div class="eco-diagram">
-      <div class="eco-row">
-        <div class="eco-node eco-buyers"><i class="fa-solid fa-warehouse"></i> ผู้ซื้อ<small>โรงสี / โรงงาน / ส่งออก</small></div>
+    <div class="hero-art">
+      <div class="float-badge fb1"><i class="fa-solid fa-satellite-dish"></i> ยืนยันด้วยภาพถ่ายดาวเทียม</div>
+      <div class="field-card">
+        <div class="field-map">
+          <iframe src="https://maps.google.com/maps?q=Nakhon+Sawan,+Thailand&t=&z=9&ie=UTF8&iwloc=&output=embed"
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="แผนที่จังหวัดนครสวรรค์"></iframe>
+        </div>
+        <div class="cap">
+          <span>แปลงนำร่อง อ.สรรพยา จ.ชัยนาท</span>
+          <b>สถานะ: กำลังเจริญเติบโต</b>
+        </div>
       </div>
-      <div class="eco-arrow-vert"><i class="fa-solid fa-arrow-up"></i></div>
-      <div class="eco-row eco-mid">
-        <div class="eco-node"><i class="fa-solid fa-tractor"></i> บริการเกษตร</div>
-        <div class="eco-arrow-horiz"><i class="fa-solid fa-arrow-right"></i></div>
-        <div class="eco-node eco-hub"><i class="fa-solid fa-leaf"></i> AGROLINK</div>
-        <div class="eco-arrow-horiz"><i class="fa-solid fa-arrow-left"></i></div>
-        <div class="eco-node"><i class="fa-solid fa-sack-dollar"></i> การเงิน</div>
-      </div>
-      <div class="eco-arrow-vert"><i class="fa-solid fa-arrow-down"></i></div>
-      <div class="eco-row"><div class="eco-node"><i class="fa-solid fa-people-group"></i> สหกรณ์</div></div>
-      <div class="eco-arrow-vert"><i class="fa-solid fa-arrow-down"></i></div>
-      <div class="eco-row"><div class="eco-node"><i class="fa-solid fa-user"></i> เกษตรกร</div></div>
-      <div class="eco-arrow-vert"><i class="fa-solid fa-arrow-down"></i></div>
-      <div class="eco-row"><div class="eco-node"><i class="fa-solid fa-seedling"></i> ข้อมูลการผลิตจากแปลง</div></div>
-      <div class="eco-arrow-vert"><i class="fa-solid fa-arrow-down"></i></div>
-      <div class="eco-row">
-        <div class="eco-node"><i class="fa-solid fa-satellite"></i> ดาวเทียม</div>
-        <div class="eco-node"><i class="fa-solid fa-robot"></i> AI</div>
-      </div>
-      <div class="eco-arrow-vert"><i class="fa-solid fa-arrow-down"></i></div>
-      <div class="eco-row"><div class="eco-node eco-intel"><i class="fa-solid fa-brain"></i> ระบบอัจฉริยะด้านการเกษตร</div></div>
+      <div class="float-badge fb2"><i class="fa-solid fa-coins"></i> วงเงินคงเหลือ 4,200 บาท</div>
     </div>
   </div>
 </section>
 
-<span id="prices" aria-hidden="true"></span><span id="features" aria-hidden="true"></span>
-<section id="platforms">
+<div class="partner-strip">
   <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:40px;">
-      <div class="eyebrow"><i class="fa-solid fa-layer-group"></i> 6 แพลตฟอร์มหลัก</div>
-      <h2 class="section-title">แพลตฟอร์มหลัก 6 ระบบ บนโครงสร้างพื้นฐานเดียว</h2>
+    <span class="label">เชื่อมข้อมูลร่วมกับ</span>
+    <a class="partner-chip" href="https://www.baac.or.th/" target="_blank" rel="noopener noreferrer">ธ.ก.ส.</a>
+    <a class="partner-chip" href="https://www.gistda.or.th/" target="_blank" rel="noopener noreferrer">GISTDA</a>
+    <a class="partner-chip" href="https://www.doae.go.th/" target="_blank" rel="noopener noreferrer">กรมส่งเสริมการเกษตร</a>
+    <a class="partner-chip" href="https://www.cpd.go.th/" target="_blank" rel="noopener noreferrer">กรมส่งเสริมสหกรณ์</a>
+    <a class="partner-chip" href="https://www.dld.go.th/" target="_blank" rel="noopener noreferrer">กรมปศุสัตว์</a>
+    <a class="partner-chip" href="https://www4.fisheries.go.th/" target="_blank" rel="noopener noreferrer">กรมประมง</a>
+    <a class="partner-chip" href="https://www.raot.co.th/" target="_blank" rel="noopener noreferrer">การยางแห่งประเทศไทย</a>
+    <a class="partner-chip" href="https://www.doa.go.th/" target="_blank" rel="noopener noreferrer">กรมวิชาการเกษตร</a>
+    <a class="partner-chip" href="https://www.ricethailand.go.th/" target="_blank" rel="noopener noreferrer">กรมการข้าว</a>
+    <a class="partner-chip" href="https://www.opsmoac.go.th/fund-home" target="_blank" rel="noopener noreferrer">กองทุนสงเคราะห์เกษตรกร</a>
+    <a class="partner-chip" href="https://www.cad.go.th/" target="_blank" rel="noopener noreferrer">กรมตรวจบัญชีสหกรณ์</a>
+  </div>
+</div>
+
+<section id="problem">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-triangle-exclamation"></i> โจทย์ของภาคเกษตรไทย</div>
+      <h2 class="section-title">เกษตรกรไทยต้องได้รับการดูแลที่ดีขึ้น</h2>
+      <p class="section-sub">ตลาดสินค้าเกษตรมีมูลค่ามหาศาลแต่ยังกระจัดกระจาย ขาดความโปร่งใสด้านราคา พึ่งพาคนกลางหลายชั้น และเข้าถึงสินเชื่อ/เทคโนโลยีได้จำกัด</p>
     </div>
-    <div class="platform-grid">
-      <div class="platform-card" data-target="member-portal"><div class="icn"><i class="fa-solid fa-table-columns"></i></div><h4>พอร์ทัลสมาชิก</h4><p>แดชบอร์ดบริหารข้อมูลสมาชิกทุกกลุ่ม ทั้งเกษตรกร สหกรณ์ และผู้ให้บริการ ในที่เดียว</p></div>
-      <div class="platform-card" data-target="farmos"><div class="icn"><i class="fa-solid fa-chart-line"></i></div><h4>Farm OS</h4><p>บริหารแปลง วางแผนการผลิต ติดตามรอบปลูก</p></div>
-      <div class="platform-card" data-target="services"><div class="icn"><i class="fa-solid fa-tractor"></i></div><h4>บริการเกษตร</h4><p>จองบริการเครื่องจักรกล รถไถ โดรน รถเกี่ยว</p></div>
-      <div class="platform-card" data-target="inputs"><div class="icn"><i class="fa-solid fa-flask"></i></div><h4>ปัจจัยการผลิต</h4><p>ปัจจัยการผลิต ปุ๋ย เมล็ดพันธุ์ สารชีวภัณฑ์</p></div>
-      <div class="platform-card" data-target="finance"><div class="icn"><i class="fa-solid fa-sack-dollar"></i></div><h4>การเงิน</h4><p>เชื่อมข้อมูลการผลิตกับผู้ให้บริการทางการเงิน</p></div>
-      <div class="platform-card" data-target="marketplace"><div class="icn"><i class="fa-solid fa-store"></i></div><h4>ตลาดกลาง</h4><p>ตลาดผู้ซื้อผลผลิต โรงสี โรงงาน และขนส่ง</p></div>
+    <div class="card-grid-4 reveal">
+      <div class="pain-card"><div class="icn"><i class="fa-solid fa-piggy-bank"></i></div><h4>เกษตรกรต้องเข้าถึงแหล่งทุนได้ง่ายเพื่อพัฒนาการผลิต</h4><p>ขาดหลักประกันแบบเดิม ธนาคารประเมินความเสี่ยงจากข้อมูลจำกัด</p></div>
+      <div class="pain-card"><div class="icn"><i class="fa-solid fa-people-arrows"></i></div><h4>อำนาจต่อรองต่ำ</h4><p>ผูกมัดกับคนกลาง/ผู้รับซื้อรายเดียว ไม่มีทางเลือกด้านราคา</p></div>
+      <div class="pain-card"><div class="icn"><i class="fa-solid fa-cloud-showers-heavy"></i></div><h4>เสี่ยงภัยธรรมชาติ</h4><p>ไม่มีข้อมูลเตือนภัยเชิงพื้นที่ที่แม่นยำและทันเวลา</p></div>
+      <div class="pain-card"><div class="icn"><i class="fa-solid fa-file-circle-question"></i></div><h4>ตรวจสอบย้อนกลับไม่ได้</h4><p>ไม่มีข้อมูลรองรับมาตรฐานส่งออกที่เข้มงวดขึ้นเรื่อยๆ</p></div>
     </div>
   </div>
 </section>
 
-<section id="how" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+<section id="concept" class="template-section">
   <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:40px;">
-      <div class="eyebrow"><i class="fa-solid fa-route"></i> AgroLink ทำงานอย่างไร</div>
-      <h2 class="section-title">6 ขั้นตอน จากลงทะเบียนถึงขายผลผลิต</h2>
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-diagram-project"></i> แนวคิดหลัก</div>
+      <h2 class="section-title">แม่แบบวงจรการผลิตสากล<br>(Universal Production-Cycle Template)</h2>
+      <p class="section-sub">หัวใจของ AgroLink ไม่ใช่เพียงตลาดกลางซื้อขาย แต่คือระบบที่เชื่อมโยงบริการทุกขั้นตอนของการผลิตเข้ากับสินเชื่อและการเตือนภัย ใช้ซ้ำได้กับสินค้าเกษตรทุกชนิด</p>
     </div>
-    <div class="steps6">
-      <div class="step"><div class="circle">1</div><h4>ลงทะเบียน</h4><p>ลงทะเบียนแปลง / สหกรณ์</p></div>
-      <div class="step"><div class="circle">2</div><h4>วางแผน</h4><p>วางแผนการผลิต</p></div>
-      <div class="step"><div class="circle">3</div><h4>ผลิต</h4><p>ผลิต บันทึกกิจกรรมในแปลง</p></div>
-      <div class="step"><div class="circle">4</div><h4>ตรวจสอบ</h4><p>ตรวจสอบด้วย AI / ดาวเทียม</p></div>
-      <div class="step"><div class="circle">5</div><h4>การเงิน</h4><p>เชื่อมข้อมูลสู่ผู้ให้สินเชื่อ</p></div>
-      <div class="step"><div class="circle">6</div><h4>ขาย</h4><p>ขายผลผลิตผ่านตลาด</p></div>
+    <div class="tpl-grid reveal">
+      <a class="tpl-card" href="production-cycle-template.html#unit-account"><span class="tpl-num">01</span><div class="icn"><i class="fa-solid fa-map-location-dot"></i></div><h4>บัญชีหน่วยผลิต</h4><p>หนึ่งบัญชีต่อแปลง/คอก/บ่อ ต่อรอบการผลิต บันทึกพิกัด ขนาด ชนิดสินค้า และประวัติย้อนหลัง</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#stage-calendar"><span class="tpl-num">02</span><div class="icn"><i class="fa-solid fa-calendar-days"></i></div><h4>แผนการผลิต/ปฏิทินระยะ</h4><p>กำหนดขั้นตอนและกรอบเวลาเฉพาะของสินค้าแต่ละชนิดโดยอัตโนมัติ</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#service-marketplace"><span class="tpl-num">03</span><div class="icn"><i class="fa-solid fa-store"></i></div><h4>ตลาดบริการเฉพาะขั้นตอน</h4><p>จับคู่ผู้ผลิตกับผู้ให้บริการที่เหมาะกับแต่ละขั้นตอนด้วย AI Matching</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#tranche-credit"><span class="tpl-num">04</span><div class="icn"><i class="fa-solid fa-sack-dollar"></i></div><h4>สินเชื่อเป็นงวดตรวจสอบได้จริง</h4><p>เบิกใช้เป็นบริการ/ปัจจัยการผลิต ไม่ใช่เงินสด ปลดล็อกทีละงวดเมื่อยืนยันความจริงแล้ว</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#early-warning"><span class="tpl-num">05</span><div class="icn"><i class="fa-solid fa-tower-broadcast"></i></div><h4>ระบบเตือนภัยร่วม</h4><p>เชื่อมข้อมูลภาครัฐที่เกี่ยวข้องกับสินค้านั้นให้ทุกฝ่ายเห็นสถานการณ์จริงพร้อมกัน</p></a>
+      <a class="tpl-card" href="production-cycle-template.html#auto-settlement"><span class="tpl-num">06</span><div class="icn"><i class="fa-solid fa-scale-balanced"></i></div><h4>หักบัญชีอัตโนมัติ</h4><p>กระทบยอดหนี้และโอนยอดสุทธิให้ผู้ผลิตทันทีที่จุดขาย พร้อม Audit Trail</p></a>
     </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-route"></i> วิธีการทำงาน</div>
+      <h2 class="section-title">จากขึ้นทะเบียนแปลง สู่เงินเข้าบัญชี ใน 5 ขั้นตอน</h2>
+      <p class="section-sub">ออกแบบให้เกษตรกรใช้งานง่ายที่สุด ไม่ต้องเข้าใจเทคโนโลยีเบื้องหลัง</p>
+    </div>
+    <div class="steps reveal">
+      <div class="step"><div class="circle"><i class="fa-solid fa-file-signature"></i></div><h4>1. ขึ้นทะเบียนแปลง</h4><p>บันทึกพิกัด ขนาด และชนิดสินค้าผ่านแอปหรือเจ้าหน้าที่ภาคสนาม</p></div>
+      <div class="step"><div class="circle"><i class="fa-solid fa-wallet"></i></div><h4>2. รับวงเงินบริการ</h4><p>AI พยากรณ์ผลผลิตกำหนดวงเงินสูงสุดที่ปลอดภัยให้อัตโนมัติ</p></div>
+      <div class="step"><div class="circle"><i class="fa-solid fa-tractor"></i></div><h4>3. จองบริการที่ต้องการ</h4><p>เตรียมดิน เมล็ดพันธุ์ ปุ๋ย รถเกี่ยว ผ่านเครือข่ายพันธมิตรที่ตรวจสอบแล้ว</p></div>
+      <div class="step"><div class="circle"><i class="fa-solid fa-satellite"></i></div><h4>4. ระบบยืนยันความคืบหน้า</h4><p>ปลดล็อกวงเงินงวดถัดไปเมื่อยืนยันการเจริญเติบโตจริงเท่านั้น</p></div>
+      <div class="step"><div class="circle"><i class="fa-solid fa-coins"></i></div><h4>5. ขาย และรับเงินสุทธิ</h4><p>ระบบหักหนี้และค่าธรรมเนียมอัตโนมัติ โอนยอดสุทธิเข้า Wallet ทันที</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="knowledge">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-book-open"></i> คลังความรู้การเกษตร</div>
+      <h2 class="section-title">ความรู้ที่ใช้ได้จริง อัปเดตตามรอบการผลิต</h2>
+      <p class="section-sub">รวมบทความ คู่มือ และประกาศจากหน่วยงานภาครัฐ คัดสรรให้ตรงกับชนิดสินค้าและช่วงเวลาที่แต่ละหน่วยผลิตกำลังดำเนินอยู่</p>
+    </div>
+    <div class="chip-row reveal">
+      <button class="chip active" data-cat="all">ทั้งหมด</button>
+      <button class="chip" data-cat="crop">การเพาะปลูก</button>
+      <button class="chip" data-cat="finance">สินเชื่อ/การเงิน</button>
+      <button class="chip" data-cat="standard">มาตรฐาน/ส่งออก</button>
+      <button class="chip" data-cat="risk">บริหารความเสี่ยง</button>
+      <button class="chip" data-cat="tech">เทคโนโลยีเกษตร</button>
+      <button class="chip" data-cat="policy">นโยบายภาครัฐ</button>
+    </div>
+    <div class="card-grid-3 reveal" id="kbGrid">
+      <div class="kb-card" data-cat="crop">
+        <span class="tag">การเพาะปลูก</span>
+        <h4>ปฏิทินการปลูกข้าวนาปี: 6 ระยะที่ต้องรู้</h4>
+        <p>สรุปกิจกรรมสำคัญในแต่ละระยะการเจริญเติบโตของข้าว ตั้งแต่เตรียมดินจนถึงเก็บเกี่ยว พร้อมจุดสังเกตความเสี่ยง</p>
+        <div class="meta"><span><i class="fa-solid fa-clock"></i> อ่าน ~4 นาที</span><a href="knowledge/rice-calendar.html">อ่านเพิ่มเติม →</a></div>
+      </div>
+      <div class="kb-card" data-cat="finance">
+        <span class="tag">สินเชื่อ/การเงิน</span>
+        <h4>อ่านวงเงินสินเชื่อแบบเป็นงวดให้เข้าใจง่ายใน 5 นาที</h4>
+        <p>วงเงินเบิกใช้เป็นบริการหรือปัจจัยการผลิต ปลดล็อกทีละงวดอย่างไร และตรวจสอบยอดคงเหลือได้จากที่ไหน</p>
+        <div class="meta"><span><i class="fa-solid fa-clock"></i> อ่าน ~5 นาที</span><a href="knowledge/credit-line.html">อ่านเพิ่มเติม →</a></div>
+      </div>
+      <div class="kb-card" data-cat="standard">
+        <span class="tag">มาตรฐาน/ส่งออก</span>
+        <h4>GLOBALG.A.P. และ EUDR คืออะไร เตรียมตัวอย่างไร</h4>
+        <p>ทำความเข้าใจข้อกำหนดตรวจสอบย้อนกลับที่ตลาดส่งออกต้องการ และสิ่งที่ต้องบันทึกไว้ตั้งแต่ต้นฤดู</p>
+        <div class="meta"><span><i class="fa-solid fa-clock"></i> อ่าน ~6 นาที</span><a href="knowledge/globalgap-eudr.html">อ่านเพิ่มเติม →</a></div>
+      </div>
+      <div class="kb-card" data-cat="risk">
+        <span class="tag">บริหารความเสี่ยง</span>
+        <h4>สังเกตสัญญาณเตือนภัยแล้งล่วงหน้าอย่างไร</h4>
+        <p>วิธีอ่านข้อมูลเตือนภัยร่วมในแอป และขั้นตอนที่ควรทำทันทีเมื่อได้รับการแจ้งเตือนระดับสูง</p>
+        <div class="meta"><span><i class="fa-solid fa-clock"></i> อ่าน ~3 นาที</span><a href="knowledge/drought-warning.html">อ่านเพิ่มเติม →</a></div>
+      </div>
+      <div class="kb-card" data-cat="tech">
+        <span class="tag">เทคโนโลยีเกษตร</span>
+        <h4>ภาพถ่ายดาวเทียมช่วยยืนยันผลผลิตได้อย่างไร</h4>
+        <p>เบื้องหลังการยืนยันความคืบหน้าแปลงแบบไม่ต้องลงพื้นที่ทุกครั้ง และช่วยปลดล็อกวงเงินได้เร็วขึ้นได้อย่างไร</p>
+        <div class="meta"><span><i class="fa-solid fa-clock"></i> อ่าน ~4 นาที</span><a href="knowledge/satellite-yield.html">อ่านเพิ่มเติม →</a></div>
+      </div>
+      <div class="kb-card" data-cat="policy">
+        <span class="tag">นโยบายภาครัฐ</span>
+        <h4>สรุปมาตรการช่วยเหลือเกษตรกรที่ควรรู้ประจำไตรมาส</h4>
+        <p>รวมประกาศและมาตรการจากหน่วยงานภาครัฐที่เกี่ยวข้องกับสินค้าที่ขึ้นทะเบียนไว้ในบัญชีของคุณ</p>
+        <div class="meta"><span><i class="fa-solid fa-clock"></i> อ่าน ~3 นาที</span><a href="knowledge/quarterly-support.html">อ่านเพิ่มเติม →</a></div>
+      </div>
+    </div>
+    <p class="kb-note reveal">บทความข้างต้นเป็นเนื้อหาความรู้ทั่วไปจัดทำไว้ล่วงหน้า ระบบจริงจะจัดลำดับและปรับเนื้อหาอัตโนมัติตามชนิดสินค้าและระยะการผลิตของแต่ละบัญชีหน่วยผลิต</p>
+  </div>
+</section>
+
+<section id="prices" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-chart-line"></i> ราคาสินค้า</div>
+      <h2 class="section-title">ราคาตลาดอ้างอิง เพื่อการตัดสินใจที่แม่นยำ</h2>
+      <p class="section-sub">เปรียบเทียบราคาจากหลายแหล่งอ้างอิงในที่เดียว ก่อนตัดสินใจขายหรือเจรจากับคู่ค้า</p>
+    </div>
+    <div class="price-table-wrap reveal">
+      <table class="price-table">
+        <thead>
+          <tr><th>สินค้า</th><th>ราคาล่าสุด</th><th>เทียบสัปดาห์ก่อน</th><th>แหล่งอ้างอิง</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="commodity">ข้าวเปลือกหอมมะลิ<small>ความชื้น 15%</small></td><td>13,450 บาท/ตัน</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 1.8%</span></td><td><a class="source-link" href="https://www.moc.go.th/th/page/item/index/id/1" target="_blank" rel="noopener noreferrer">กรมการค้าภายใน</a></td></tr>
+          <tr><td class="commodity">ข้าวเปลือกเจ้านาปี<small>ความชื้น 15%</small></td><td>9,200 บาท/ตัน</td><td><span class="trend down"><i class="fa-solid fa-arrow-down"></i> 0.6%</span></td><td><a class="source-link" href="https://www.moc.go.th/th/page/item/index/id/1" target="_blank" rel="noopener noreferrer">กรมการค้าภายใน</a></td></tr>
+          <tr><td class="commodity">มันสำปะหลังสด<small>เชื้อแป้ง 25%</small></td><td>2.85 บาท/กก.</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 0.4%</span></td><td><a class="source-link" href="https://www.nettathai.org/" target="_blank" rel="noopener noreferrer">สมาคมโรงงานผู้ผลิตมันสำปะหลัง</a></td></tr>
+          <tr><td class="commodity">ข้าวโพดเลี้ยงสัตว์<small>ความชื้น 14.5%</small></td><td>11.20 บาท/กก.</td><td><span class="trend flat"><i class="fa-solid fa-minus"></i> 0.0%</span></td><td><a class="source-link" href="https://www.oae.go.th/" target="_blank" rel="noopener noreferrer">สำนักงานเศรษฐกิจการเกษตร (สศก.)</a></td></tr>
+          <tr><td class="commodity">ยางแผ่นรมควันชั้น 3</td><td>62.30 บาท/กก.</td><td><span class="trend up"><i class="fa-solid fa-arrow-up"></i> 2.1%</span></td><td><a class="source-link" href="https://www.raot.co.th/" target="_blank" rel="noopener noreferrer">การยางแห่งประเทศไทย</a></td></tr>
+          <tr><td class="commodity">ปาล์มน้ำมัน<small>ผลปาล์มทั้งทะลาย</small></td><td>6.10 บาท/กก.</td><td><span class="trend down"><i class="fa-solid fa-arrow-down"></i> 1.2%</span></td><td><a class="source-link" href="https://www.moc.go.th/th/page/item/index/id/1" target="_blank" rel="noopener noreferrer">กรมการค้าภายใน</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="price-note reveal">ราคาที่แสดงเป็นข้อมูลตัวอย่างเพื่อประกอบการนำเสนอ ระบบจริงจะเชื่อมต่อข้อมูลจากหน่วยงานอ้างอิงโดยตรงและอัปเดตราคาอัตโนมัติทุกวัน</p>
+  </div>
+</section>
+
+<section id="weather">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-cloud-sun"></i> พยากรณ์อากาศ</div>
+      <h2 class="section-title">พยากรณ์อากาศเชิงพื้นที่ เชื่อมกับระบบเตือนภัยร่วม</h2>
+      <p class="section-sub">ข้อมูลอากาศรายภาค ปรับคำแนะนำให้ตรงกับระยะการเจริญเติบโตของแต่ละแปลงโดยอัตโนมัติ</p>
+    </div>
+    <div class="weather-grid reveal">
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
+        <div class="wicon"><i class="fa-solid fa-sun"></i></div>
+        <h4>ภาคกลาง</h4>
+        <div class="region-sub">จ.ชัยนาท</div>
+        <div class="temp">26–34°C</div>
+        <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 10%</div>
+        <div class="advisory">เหมาะกับการพ่นปุ๋ยและกำจัดวัชพืช</div>
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
+        <div class="wicon"><i class="fa-solid fa-cloud-sun-rain"></i></div>
+        <h4>ภาคอีสาน</h4>
+        <div class="region-sub">จ.อุบลราชธานี</div>
+        <div class="temp">24–33°C</div>
+        <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 40%</div>
+        <div class="advisory">เตรียมระบายน้ำในแปลงนาลุ่ม</div>
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
+        <div class="wicon"><i class="fa-solid fa-cloud"></i></div>
+        <h4>ภาคเหนือ</h4>
+        <div class="region-sub">จ.เชียงราย</div>
+        <div class="temp">22–31°C</div>
+        <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 20%</div>
+        <div class="advisory">อากาศเย็นลงช่วงเช้า เหมาะปลูกพืชฤดูหนาว</div>
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
+        <div class="wicon"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
+        <h4>ภาคใต้</h4>
+        <div class="region-sub">จ.สุราษฎร์ธานี</div>
+        <div class="temp">24–30°C</div>
+        <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 70%</div>
+        <div class="advisory">เฝ้าระวังน้ำท่วมขังในสวนปาล์ม/ยาง</div>
+      </a>
+      <a class="weather-card" href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer">
+        <div class="wicon"><i class="fa-solid fa-cloud-sun"></i></div>
+        <h4>ภาคตะวันออก</h4>
+        <div class="region-sub">จ.ระยอง</div>
+        <div class="temp">25–33°C</div>
+        <div class="rain"><i class="fa-solid fa-droplet"></i> โอกาสฝน 30%</div>
+        <div class="advisory">ช่วงเหมาะสมสำหรับเก็บเกี่ยวผลไม้</div>
+      </a>
+    </div>
+    <p class="weather-note reveal">ข้อมูลตัวอย่างเพื่อประกอบการนำเสนอ ระบบจริงเชื่อมข้อมูลจากกรมอุตุนิยมวิทยาและ GISTDA เป็นรายแปลง แล้วส่งการแจ้งเตือนผ่านระบบเตือนภัยร่วมโดยอัตโนมัติ — ดูพยากรณ์อากาศฉบับเต็มที่ <a href="https://www.tmd.go.th/forecast/daily" target="_blank" rel="noopener noreferrer" style="color:var(--green);font-weight:700;">กรมอุตุนิยมวิทยา</a></p>
   </div>
 </section>
 
 <section id="roadmap" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
   <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:40px;">
+    <div class="section-head reveal">
       <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-flag-checkered"></i> แผนขยายสินค้า</div>
       <h2 class="section-title">นำร่องด้วยข้าว แล้วขยายสู่สินค้าเกษตรทุกชนิด</h2>
       <p class="section-sub">แม่แบบเดียวกันปรับใช้ได้กับพืชไร่ พืชยืนต้น ปศุสัตว์ และประมง โดยปรับเฉพาะรายละเอียดขั้นตอนและสัญญาณยืนยัน</p>
     </div>
-    <div class="phase-track reveal in">
+    <div class="phase-track reveal">
       <div class="phase-item">
         <span class="phase-tag flagship">ระยะที่ 1 — เรือธง</span>
         <div class="icn-row"><i class="fa-solid fa-wheat-awn"></i></div>
@@ -548,116 +761,89 @@
   </div>
 </section>
 
-<span id="audience" aria-hidden="true"></span>
-<section class="coop-section">
+<section id="audience">
   <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:30px;">
-      <div class="eyebrow"><i class="fa-solid fa-people-roof"></i> สำหรับสหกรณ์</div>
-      <h2 class="section-title">เปลี่ยนสหกรณ์ให้เป็นศูนย์กลางเกษตรดิจิทัล</h2>
-      <p class="section-sub">AgroLink ช่วยสหกรณ์บริหารสมาชิก การผลิต ปัจจัยการผลิต บริการเกษตร การรวบรวมผลผลิต การเงิน และข้อมูลธุรกิจ ผ่านระบบเดียว — สหกรณ์ไม่ต้องซื้อซอฟต์แวร์หลายระบบอีกต่อไป</p>
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-users"></i> สำหรับใคร</div>
+      <h2 class="section-title">ระบบนิเวศที่ครอบคลุมทั้งห่วงโซ่การผลิต</h2>
+      <p class="section-sub">AgroLink เชื่อมทุกฝ่ายที่เกี่ยวข้องไว้บนแพลตฟอร์มเดียว</p>
     </div>
-    <div class="coop-flow reveal in">สมาชิก → การผลิต → ปัจจัยการผลิต → สินเชื่อ → รวบรวม → ตลาด → ข้อมูล</div>
-    <div class="coop-grid reveal in">
-      <div class="coop-mod"><i class="fa-solid fa-id-card"></i>สมาชิก</div>
-      <div class="coop-mod"><i class="fa-solid fa-mobile-screen"></i>แอปเกษตรกร</div>
-      <div class="coop-mod"><i class="fa-solid fa-clipboard-list"></i>บริหารการผลิต</div>
-      <div class="coop-mod"><i class="fa-solid fa-flask-vial"></i>ปัจจัยการผลิต</div>
-      <div class="coop-mod"><i class="fa-solid fa-blender"></i>ปุ๋ยสั่งตัด</div>
-      <div class="coop-mod"><i class="fa-solid fa-tractor"></i>ตลาดบริการ</div>
-      <div class="coop-mod"><i class="fa-solid fa-sack-dollar"></i>การเงิน</div>
-      <div class="coop-mod"><i class="fa-solid fa-warehouse"></i>รวบรวมผลผลิต</div>
-      <div class="coop-mod"><i class="fa-solid fa-store"></i>ตลาดผู้ซื้อ</div>
-      <div class="coop-mod"><i class="fa-solid fa-wheat-awn"></i>ธุรกิจข้าวครบวงจร</div>
-      <div class="coop-mod"><i class="fa-solid fa-leaf"></i>Carbon Credit</div>
-      <div class="coop-mod"><i class="fa-solid fa-bolt"></i>ชีวมวล Bio Mass</div>
-    </div>
-    <div class="coop-cta reveal in">
-      <a href="coop-portal.html" class="btn btn-gold">ดูพอร์ทัลสหกรณ์แบบเต็ม</a>
+    <div class="card-grid-6 reveal">
+      <div class="aud-card"><div class="icn"><i class="fa-solid fa-user"></i></div><div><h4>เกษตรกร / แปลงใหญ่</h4><p>เข้าถึงบริการและสินเชื่อครบวงจรในที่เดียว</p></div></div>
+      <div class="aud-card"><div class="icn"><i class="fa-solid fa-people-group"></i></div><div><h4>สหกรณ์ / วิสาหกิจชุมชน</h4><p>รวบรวมและต่อรองแทนสมาชิกได้อย่างมีพลัง</p></div></div>
+      <div class="aud-card"><div class="icn"><i class="fa-solid fa-truck-fast"></i></div><div><h4>ผู้ให้บริการขั้นตอนการผลิต</h4><p>รับงานจับคู่อัตโนมัติจากพื้นที่และคิวว่าง</p></div></div>
+      <div class="aud-card"><div class="icn"><i class="fa-solid fa-shop"></i></div><div><h4>ผู้จำหน่ายปัจจัยการผลิต</h4><p>เข้าถึงลูกค้าเกษตรกรผ่านเครือข่ายที่ตรวจสอบแล้ว</p></div></div>
+      <div class="aud-card"><div class="icn"><i class="fa-solid fa-warehouse"></i></div><div><h4>ผู้รับซื้อปลายทาง</h4><p>ท่าข้าว โรงสี โรงงานอาหารสัตว์ โรงงานแป้งมัน ลานมัน ไซโล — รับซื้อพร้อมข้อมูลย้อนกลับครบถ้วน</p></div></div>
+      <div class="aud-card"><div class="icn"><i class="fa-solid fa-building-columns"></i></div><div><h4>ผู้ให้สินเชื่อ</h4><p>ธนาคาร สหกรณ์ กองทุนหมู่บ้าน ปล่อยกู้อย่างตรวจสอบได้</p></div></div>
     </div>
   </div>
 </section>
 
-<span id="knowledge" aria-hidden="true"></span><span id="weather" aria-hidden="true"></span>
-<section id="ai-satellite">
+<section id="features" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
   <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:34px;">
-      <div class="eyebrow"><i class="fa-solid fa-satellite-dish"></i> ข้อมูล AI และดาวเทียม</div>
-      <h2 class="section-title">เปลี่ยนกิจกรรมในแปลงให้เป็นข้อมูลที่ใช้งานได้จริง</h2>
-      <p class="section-sub">AgroLink รวมข้อมูลจากแปลงเกษตร การผลิต สภาพอากาศ ดาวเทียม และกิจกรรมภาคสนาม เพื่อสร้างข้อมูลที่ช่วยสนับสนุนการบริหารการผลิต การตรวจสอบ และการให้บริการทางการเงิน</p>
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-star"></i> ทำไมต้อง AgroLink</div>
+      <h2 class="section-title">ออกแบบให้ต่างจากเกษตรพันธสัญญาแบบเดิม</h2>
+      <p class="section-sub">เรียนรู้จากจุดแข็งและจุดอ่อนของระบบเดิม แล้วออกแบบให้เป็นธรรมกับเกษตรกรมากกว่า</p>
     </div>
-    <div class="ai-flow reveal in">
-      <span>ข้อมูลแปลง</span><i class="fa-solid fa-arrow-right"></i>
-      <span>การวิเคราะห์</span><i class="fa-solid fa-arrow-right"></i>
-      <span>การตัดสินใจ</span>
-    </div>
-    <div class="dash-chip-row reveal in">
-      <div class="dash-chip"><i class="fa-solid fa-seedling"></i>ดัชนีพืชพรรณ</div>
-      <div class="dash-chip"><i class="fa-solid fa-chart-simple"></i>ระยะการเจริญเติบโต</div>
-      <div class="dash-chip"><i class="fa-solid fa-tractor"></i>กิจกรรมในแปลง</div>
-      <div class="dash-chip"><i class="fa-solid fa-cloud-showers-heavy"></i>ความเสี่ยงสภาพอากาศ</div>
-      <div class="dash-chip"><i class="fa-solid fa-wheat-awn"></i>ประมาณการผลผลิต</div>
-      <div class="dash-chip"><i class="fa-solid fa-clock-rotate-left"></i>ประวัติการผลิต</div>
-      <div class="dash-chip"><i class="fa-solid fa-file-invoice-dollar"></i>ข้อมูลเครดิต</div>
+    <div class="card-grid-3 reveal">
+      <div class="feat-card"><div class="icn"><i class="fa-solid fa-people-arrows"></i></div><h4>เลือกผู้ให้กู้/ผู้ซื้อได้หลายราย</h4><p>ไม่ผูกมัดกับรายเดียว เกษตรกรมีอำนาจต่อรองผ่านเครือข่ายพันธมิตรที่หลากหลาย</p></div>
+      <div class="feat-card"><div class="icn"><i class="fa-solid fa-eye"></i></div><h4>ราคาโปร่งใส</h4><p>แสดง Rate Card และเงื่อนไขต่อสาธารณะ ไม่มีการเจรจาปิดลับรายบุคคล</p></div>
+      <div class="feat-card"><div class="icn"><i class="fa-solid fa-satellite-dish"></i></div><h4>เตือนภัยร่วมแบบเรียลไทม์</h4><p>เชื่อม GISTDA กรมอุตุนิยมวิทยา กรมปศุสัตว์ และกรมประมง ให้ทุกฝ่ายเห็นสถานการณ์เดียวกัน</p></div>
+      <div class="feat-card"><div class="icn"><i class="fa-solid fa-shield-halved"></i></div><h4>ยึดกรอบกฎหมายเกษตรพันธสัญญา</h4><p>สัญญาเป็นธรรม จดทะเบียนได้ มีกลไกไกล่เกลี่ยข้อพิพาทที่เป็นกลาง</p></div>
+      <div class="feat-card"><div class="icn"><i class="fa-solid fa-robot"></i></div><h4>AI ช่วยตลอดฤดูกาล</h4><p>จับคู่บริการ ตรวจเกรด ประเมินสินเชื่อ และให้คำแนะนำผ่านคลินิกเกษตรอัจฉริยะ</p></div>
+      <div class="feat-card"><div class="icn"><i class="fa-solid fa-globe"></i></div><h4>พร้อมมาตรฐานส่งออกสากล</h4><p>ตรวจสอบย้อนกลับตรงข้อกำหนด GACC / EUDR / GLOBALG.A.P. ตั้งแต่ต้น</p></div>
     </div>
   </div>
 </section>
 
-<section class="carbon-section">
+<section class="stats-section">
   <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:30px;">
-      <div class="eyebrow" style="background:rgba(27,107,74,.12);"><i class="fa-solid fa-leaf"></i> โอกาสด้านคาร์บอนเครดิต</div>
-      <h2 class="section-title">เปลี่ยนการทำเกษตรยั่งยืนให้เป็นมูลค่าที่วัดผลได้</h2>
-      <p class="section-sub">AgroLink สนับสนุนโครงการเกษตรที่สามารถติดตาม ตรวจสอบ และรวบรวมข้อมูลการลดการปล่อยก๊าซเรือนกระจก เช่น การทำนาเปียกสลับแห้ง (AWD)</p>
+    <div class="section-head reveal">
+      <h2 class="section-title" style="color:#fff;">เป้าหมายปีแรกของสินค้านำร่อง (ข้าว)</h2>
+      <p class="section-sub" style="color:#C9D3E5;">ตัวเลขภาพประกอบเพื่อการวางแผนเบื้องต้น</p>
     </div>
-    <div class="carbon-flow reveal in">
-      <span>แนวทางการทำเกษตร</span><i class="fa-solid fa-arrow-right"></i>
-      <span>MRV</span><i class="fa-solid fa-arrow-right"></i>
-      <span>การทวนสอบ</span><i class="fa-solid fa-arrow-right"></i>
-      <span>คาร์บอนเครดิต</span><i class="fa-solid fa-arrow-right"></i>
-      <span>มูลค่าสู่เกษตรกรและสหกรณ์</span>
+    <div class="stats-grid reveal">
+      <div><div class="num">8,000–20,000</div><div class="lbl">หน่วยผลิตในพื้นที่นำร่อง</div></div>
+      <div><div class="num">300–900 ลบ.</div><div class="lbl">มูลค่าธุรกรรมรวม (GMV) ปีแรก</div></div>
+      <div><div class="num">&gt;90%</div><div class="lbl">อัตราเบิกจ่ายผ่านการยืนยันสำเร็จ</div></div>
+      <div><div class="num">&gt;85%</div><div class="lbl">อัตราขายผ่านเครือข่ายพันธมิตร</div></div>
     </div>
-    <div class="carbon-actions reveal in">
-      <a href="carbon-credit-article.html" class="btn btn-primary">อ่านเรื่องคาร์บอนเครดิต</a>
-      <a href="carbon-module-guide.html" class="btn btn-outline">กลไกการทำงานเชิงเทคนิค</a>
+    <p class="stats-note">ตัวเลขทั้งหมดเป็นสมมติฐานเพื่อการวางแผนเบื้องต้น อ้างอิงจากแผนธุรกิจ AgroLink ฉบับปรับปรุง ก.ค. 2569</p>
+  </div>
+</section>
+
+<section id="partners">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="margin:0 auto 16px;width:fit-content;"><i class="fa-solid fa-handshake"></i> พันธมิตรและหน่วยงานกำกับดูแล</div>
+      <h2 class="section-title">สร้างบนความร่วมมือกับหน่วยงานภาครัฐและสถาบันการเงิน</h2>
+    </div>
+    <div class="card-grid-4 reveal">
+      <a class="pain-card" href="https://www.baac.or.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-building-columns"></i></div><h4>ธ.ก.ส. / ธนาคารพาณิชย์</h4><p>ผู้ให้กู้หลักและพันธมิตร AI Credit Scoring</p></a>
+      <a class="pain-card" href="https://www.gistda.or.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-satellite"></i></div><h4>GISTDA</h4><p>ภาพถ่ายดาวเทียมติดตามน้ำท่วม/ภัยแล้ง</p></a>
+      <a class="pain-card" href="https://www.doae.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-id-card"></i></div><h4>กรมส่งเสริมการเกษตร</h4><p>ทะเบียนเกษตรกรกลาง (Farmbook) และการขึ้นทะเบียน</p></a>
+      <a class="pain-card" href="https://www.cpd.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-people-group"></i></div><h4>กรมส่งเสริมสหกรณ์</h4><p>ทะเบียนสหกรณ์การเกษตรและการกำกับดูแลธรรมาภิบาล</p></a>
+      <a class="pain-card" href="https://www.doa.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-file-shield"></i></div><h4>กรมวิชาการเกษตร / ACFS</h4><p>มาตรฐานสินค้าเกษตรและการขึ้นทะเบียนผู้ส่งออก</p></a>
+      <a class="pain-card" href="https://www.dld.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-cow"></i></div><h4>กรมปศุสัตว์</h4><p>มาตรฐานและการขึ้นทะเบียนฟาร์มปศุสัตว์</p></a>
+      <a class="pain-card" href="https://www4.fisheries.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-fish"></i></div><h4>กรมประมง</h4><p>มาตรฐานฟาร์มเพาะเลี้ยงสัตว์น้ำและการตรวจสอบย้อนกลับ</p></a>
+      <a class="pain-card" href="https://www.cad.go.th/" target="_blank" rel="noopener noreferrer"><div class="icn" style="background:var(--green-light);color:var(--green);"><i class="fa-solid fa-file-invoice"></i></div><h4>กรมตรวจบัญชีสหกรณ์</h4><p>ตรวจสอบบัญชีและความโปร่งใสทางการเงินของสหกรณ์การเกษตร</p></a>
     </div>
   </div>
 </section>
 
-<section>
-  <div class="container">
-    <div class="note-block reveal in">
-      <strong>ตำแหน่งทางธุรกิจของ AgroLink ด้านการเงิน:</strong> AgroLink เป็นแพลตฟอร์มและโครงสร้างพื้นฐานข้อมูล ที่เชื่อมข้อมูลการผลิตจริงจากเกษตรกรและสหกรณ์กับผู้ให้บริการทางการเงินที่เข้าร่วมระบบ เพื่อสนับสนุนการพิจารณาสินเชื่อและการบริหารเงินทุนตามกิจกรรมการผลิต — <strong>AgroLink ไม่ใช่ผู้ให้สินเชื่อ</strong> การอนุมัติสินเชื่อ วงเงิน อัตราดอกเบี้ย และเงื่อนไขต่าง ๆ เป็นการพิจารณาโดยผู้ให้บริการทางการเงินแต่ละรายเอง
+<section id="contact">
+  <div class="cta-banner reveal">
+    <h2>พร้อมยกระดับการบริหารจัดการแปลงของคุณแล้วหรือยัง</h2>
+    <p>ไม่ว่าคุณจะเป็นเกษตรกร สหกรณ์ ผู้ให้บริการ หรือสถาบันการเงิน AgroLink พร้อมเชื่อมคุณเข้ากับเครือข่ายที่โปร่งใสและเป็นธรรม</p>
+    <div class="cta-actions">
+      <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i> สมัครเป็นเกษตรกรนำร่อง</a>
+      <a href="register-provider.html" class="btn btn-outline" style="background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.35);"><i class="fa-solid fa-handshake"></i> สมัครเป็นผู้ให้บริการ/ผู้ให้กู้/ผู้ซื้อ/ผู้ขาย</a>
     </div>
-  </div>
-</section>
-
-<section id="partners" style="background:#fff;border-top:1px solid var(--border);">
-  <div class="container">
-    <div class="section-head reveal in" style="margin-bottom:30px;">
-      <div class="eyebrow"><i class="fa-solid fa-handshake"></i> พันธมิตร / โครงการนำร่อง / ระบบนิเวศ</div>
-      <h2 class="section-title">กำลังเปิดรับพันธมิตรเชิงยุทธศาสตร์</h2>
-    </div>
-    <div class="partner-note-row reveal in">
-      <div class="partner-chip">สหกรณ์การเกษตร</div>
-      <div class="partner-chip">สถาบันการเงินเพื่อภาคเกษตร</div>
-      <div class="partner-chip">ผู้ซื้อ / โรงสี / โรงงาน</div>
-      <div class="partner-chip">ผู้ให้บริการเครื่องจักรกล</div>
-      <div class="partner-chip">พันธมิตรด้านเทคโนโลยีดาวเทียมและ AI</div>
-    </div>
-    <p class="partner-caveat">* รายชื่อข้างต้นเป็นหมวดหมู่พันธมิตรเป้าหมายเท่านั้น ยังไม่ใช่รายชื่อพันธมิตรที่ยืนยันแล้ว — ใส่โลโก้/ชื่อจริงเมื่อมีการยืนยันความร่วมมือ</p>
-  </div>
-</section>
-
-<span id="contact" aria-hidden="true"></span>
-<section id="demo">
-  <div class="container">
-    <div class="cta-banner reveal in">
-      <h2>พร้อมเห็น AgroLink ทำงานจริงหรือยัง?</h2>
-      <p>นัดหมาย Demo กับทีมงาน AgroLink เพื่อดูว่าแพลตฟอร์มนี้จะช่วยสหกรณ์ เกษตรกร หรือองค์กรของท่านได้อย่างไร</p>
-      <div class="cta-actions">
-        <a href="mailto:contact@agrolink.example?subject=Request%20a%20Demo" class="btn btn-gold"><i class="fa-solid fa-calendar-check"></i> ขอชม Demo</a>
-        <a href="login.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-      </div>
+    <div class="contact-details" style="margin-top:32px; padding-top:28px; border-top:1px solid rgba(255,255,255,.2); display:flex; flex-wrap:wrap; justify-content:center; gap:28px; color:#D8ECE2; font-size:15px;">
+      <span><i class="fa-solid fa-location-dot"></i>&nbsp; 49/325-326 ม.7 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี</span>
+      <span><i class="fa-solid fa-phone"></i>&nbsp; 092-654-9935</span>
+      <span><i class="fa-solid fa-globe"></i>&nbsp; www.agrolinkthai.com</span>
     </div>
   </div>
 </section>
@@ -667,67 +853,81 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5>แพลตฟอร์ม</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="register.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="#ai-satellite">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
+          <li><a href="#concept">แนวคิดหลัก</a></li>
+          <li><a href="production-cycle-template.html">แม่แบบวงจรการผลิต (รายละเอียด)</a></li>
+          <li><a href="auction-intro.html">Auction Place (ระบบประมูลสินค้า)</a></li>
+          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร (คู่มือโครงการ)</a></li>
+          <li><a href="#how">วิธีการทำงาน</a></li>
           <li><a href="#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="#features">จุดเด่น</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5>ผู้ใช้งาน</h5>
         <ul>
-          <li><a href="#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="#partners">ผู้ให้บริการ</a></li>
-          <li><a href="#partners">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="#audience">เกษตรกร</a></li>
+          <li><a href="coop-portal.html">สหกรณ์</a></li>
+          <li><a href="#audience">ผู้ให้บริการ</a></li>
+          <li><a href="#audience">ผู้ให้สินเชื่อ</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5>องค์กร</h5>
         <ul>
           <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="#partners">นักลงทุน</a></li>
-          <li><a href="#demo">ติดต่อเรา</a></li>
+          <li><a href="#partners">พันธมิตร</a></li>
           <li><a href="#">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="#">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="#contact">ติดต่อเรา</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
       <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span>สร้างบนแกนกลาง Galaxy Core</span>
     </div>
   </div>
 </footer>
 
 <script>
+  // scroll reveal
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
   }, { threshold: 0.12 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
+  // nav shadow on scroll
   const nav = document.querySelector('header.nav');
   window.addEventListener('scroll', () => {
     nav.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
   });
 
+  // mobile nav toggle
   const navToggle = document.querySelector('.nav-toggle');
   const navLinks = document.querySelector('.nav-links');
   navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
   navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
 
-  // quick chat widget — UI preview only, not yet wired to a real backend
+  // knowledge hub category filter
+  const chips = document.querySelectorAll('.chip');
+  const kbCards = document.querySelectorAll('#kbGrid .kb-card');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const cat = chip.dataset.cat;
+      kbCards.forEach(card => {
+        card.classList.toggle('hide', cat !== 'all' && card.dataset.cat !== cat);
+      });
+    });
+  });
+
+  // quick chat widget (homepage) — UI preview only, not yet wired to the
+  // real authenticated Support Chat backend (see backend/src/routes/support.js).
   const qcCard = document.getElementById('quickChatCard');
   const qcHeader = document.getElementById('quickChatHeader');
   const qcToggle = document.getElementById('quickChatToggle');
@@ -759,7 +959,7 @@
       qcAddMessage(text, 'user');
       qcInput.value = '';
       setTimeout(() => {
-        qcAddMessage('ขอบคุณสำหรับข้อความค่ะ ขณะนี้ระบบแชทเต็มรูปแบบกำลังเปิดให้บริการเร็วๆ นี้ค่ะ', 'bot');
+        qcAddMessage('ขอบคุณสำหรับข้อความค่ะ ขณะนี้ระบบแชทเต็มรูปแบบกำลังเปิดให้บริการเร็วๆ นี้ หากท่านเป็นเกษตรกรหรือผู้ให้บริการที่เข้าสู่ระบบแล้ว สามารถแชทกับเจ้าหน้าที่ได้ทันทีในหน้าพอร์ทัลของท่านค่ะ', 'bot');
       }, 500);
     });
   }
