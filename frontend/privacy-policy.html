@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>นโยบายความเป็นส่วนตัว | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul, ol { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 0; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical to index.html */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER */
+  .page-header { background: var(--green-dark); color: #fff; padding: 56px 0 40px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .updated { color: #9BB5A9; font-size: 13px; margin-top: 14px; }
+
+  /* PROSE */
+  .prose-section { padding: 46px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block h2 { font-size: 21px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .prose-block h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 9px; background: var(--green-light); color: var(--green-dark);
+    font-size: 14px; flex-shrink: 0;
+  }
+  .prose-block p { font-size: 15px; color: var(--text); margin-bottom: 14px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block ul { margin: 10px 0 14px 0; }
+  .prose-block ul li { font-size: 14.5px; color: var(--text); padding-left: 22px; position: relative; margin-bottom: 8px; }
+  .prose-block ul li::before {
+    content: "\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900; color: var(--green);
+    position: absolute; left: 0; top: 2px; font-size: 12px;
+  }
+  .prose-block table { width: 100%; border-collapse: collapse; margin: 14px 0 18px; font-size: 13.8px; }
+  .prose-block table th, .prose-block table td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; vertical-align: top; }
+  .prose-block table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; }
+
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 20px 24px; font-size: 14px; line-height: 1.75; margin-bottom: 0;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  .toc { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; }
+  .toc h3 { font-size: 15px; margin-bottom: 12px; }
+  .toc ol { counter-reset: toc-counter; }
+  .toc ol li { counter-increment: toc-counter; font-size: 14px; margin-bottom: 8px; }
+  .toc ol li a { color: var(--green); font-weight: 600; }
+  .toc ol li a:hover { text-decoration: underline; }
+  .toc ol li::before { content: counter(toc-counter) ". "; font-weight: 700; color: var(--navy); }
+
+  /* CTA */
+  .cta-final { background: var(--green-dark); color: #fff; padding: 56px 0; text-align: center; }
+  .cta-final h2 { color: #fff; font-size: 24px; margin-bottom: 12px; }
+  .cta-final p { color: #C8DBD1; max-width: 600px; margin: 0 auto 24px; font-size: 15px; }
+  .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  /* FOOTER — identical to index.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; letter-spacing: .04em; text-transform: uppercase; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 10px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  .footer-tagline-en { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 12px; }
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top">หน้าแรก</a>
+        <a href="coop-portal.html">สำหรับสหกรณ์</a>
+        <a href="register.html">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html">การเงิน</a>
+        <a href="marketplace-partners.html">ตลาดกลาง</a>
+        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
+        <a href="index.html#ai-satellite">AI และดาวเทียม</a>
+        <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
+        <a href="business-model.html">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+        </div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container reveal in">
+    <div class="eyebrow"><i class="fa-solid fa-user-shield"></i> ความเป็นส่วนตัว</div>
+    <h1 class="section-title">นโยบายความเป็นส่วนตัว (Privacy Policy)</h1>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;">
+      นโยบายฉบับนี้อธิบายว่า AgroLink เก็บรวบรวม ใช้ เปิดเผย และดูแลรักษาข้อมูลส่วนบุคคลของผู้ใช้งานอย่างไร
+      สอดคล้องกับพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)
+    </p>
+    <div class="updated">ปรับปรุงล่าสุด: กันยายน 2569 (ฉบับร่าง)</div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in">
+    <div class="note-block">
+      <strong>หมายเหตุสำคัญ:</strong> เอกสารนี้เป็น<strong>ร่างเบื้องต้น</strong>จัดทำขึ้นเพื่อเป็นแนวทางประกอบการพัฒนาเว็บไซต์เท่านั้น
+      ไม่ถือเป็นคำแนะนำทางกฎหมาย และยังไม่ผ่านการตรวจสอบจากที่ปรึกษากฎหมาย ก่อนเผยแพร่ใช้งานจริงบนเว็บไซต์
+      ขอแนะนำให้บริษัทตรวจสอบเนื้อหาร่วมกับที่ปรึกษากฎหมายหรือเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO)
+      เพื่อให้สอดคล้องกับพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) และแนวปฏิบัติของหน่วยงานกำกับดูแลอย่างครบถ้วน
+      ก่อนนำไปใช้อ้างอิงกับผู้ใช้งานจริง
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in">
+    <div class="toc">
+      <h3>สารบัญ</h3>
+      <ol>
+        <li><a href="#scope">ขอบเขตของนโยบายนี้</a></li>
+        <li><a href="#collect">ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม</a></li>
+        <li><a href="#purpose">วัตถุประสงค์ในการใช้ข้อมูล</a></li>
+        <li><a href="#share">การเปิดเผยข้อมูลแก่บุคคลที่สาม</a></li>
+        <li><a href="#retention">การเก็บรักษาและความปลอดภัยของข้อมูล</a></li>
+        <li><a href="#rights">สิทธิของเจ้าของข้อมูลส่วนบุคคล</a></li>
+        <li><a href="#cookies">คุกกี้และเทคโนโลยีติดตามที่คล้ายกัน</a></li>
+        <li><a href="#minors">ข้อมูลของผู้เยาว์</a></li>
+        <li><a href="#changes">การเปลี่ยนแปลงนโยบาย</a></li>
+        <li><a href="#contact">ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="scope">
+    <h2><span class="num">1</span> ขอบเขตของนโยบายนี้</h2>
+    <p>นโยบายความเป็นส่วนตัวฉบับนี้ใช้กับข้อมูลส่วนบุคคลของผู้ใช้งานเว็บไซต์และแพลตฟอร์ม AgroLink ทุกกลุ่ม ได้แก่ เกษตรกร สหกรณ์/กลุ่มเกษตรกร ผู้ให้บริการ (เครื่องจักรกล ปัจจัยการผลิต ลานตาก ขนส่ง) สถาบันการเงินและผู้ให้สินเชื่อ ผู้ซื้อผลผลิต และผู้เยี่ยมชมเว็บไซต์ทั่วไป ดูแลและบริหารจัดการโดยบริษัท ภักดี คอร์ปอเรชั่น จำกัด ("บริษัท" หรือ "เรา") ผู้พัฒนาและให้บริการแพลตฟอร์ม AgroLink</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="collect">
+    <h2><span class="num">2</span> ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม</h2>
+    <p>เราเก็บรวบรวมข้อมูลเท่าที่จำเป็นต่อการให้บริการในแต่ละส่วนของแพลตฟอร์ม โดยแบ่งตามลักษณะการใช้งานได้ดังนี้</p>
+    <table>
+      <tr><th>ประเภทข้อมูล</th><th>ตัวอย่างข้อมูล</th></tr>
+      <tr><td>ข้อมูลบัญชีผู้ใช้</td><td>เบอร์โทรศัพท์ ชื่อ-นามสกุล รหัสยืนยันตัวตน (OTP) และประเภทบทบาทผู้ใช้งาน (เกษตรกร/สหกรณ์/ผู้ให้บริการ/ผู้ให้สินเชื่อ/ผู้ซื้อ ฯลฯ)</td></tr>
+      <tr><td>ข้อมูลแปลง/หน่วยผลิต</td><td>ชื่อแปลง พิกัดที่ตั้ง จังหวัด/อำเภอ ขนาดพื้นที่ ชนิดพืชหรือสัตว์ที่ผลิต</td></tr>
+      <tr><td>ข้อมูลการผลิตและกิจกรรมในแปลง</td><td>ปฏิทินแผนการผลิต บันทึกรอบเปียกสลับแห้ง (AWD) ข้อมูลจากภาพถ่ายดาวเทียมและการวิเคราะห์ AI ที่เกี่ยวข้องกับแปลงของผู้ใช้</td></tr>
+      <tr><td>ข้อมูลทางการเงิน</td><td>คำขอสินเชื่อ วงเงินที่ขอ วัตถุประสงค์การกู้ยืม คะแนนความน่าเชื่อถือทางสินเชื่อที่ประเมินจากข้อมูลการผลิต และประวัติการทำธุรกรรมกับผู้ให้สินเชื่อบนระบบ</td></tr>
+      <tr><td>ข้อมูลการซื้อขายและตลาด</td><td>ประกาศซื้อ-ขายผลผลิต คำขอใบเสนอราคา (RFQ) ราคาที่เสนอ และประวัติการทำธุรกรรมบนตลาดกลาง</td></tr>
+      <tr><td>ข้อมูลการใช้งานเว็บไซต์</td><td>ข้อความที่พิมพ์หรือพูดผ่านช่องแชทสอบถาม (Quick Chat) บันทึกการเข้าใช้งาน และข้อมูลทางเทคนิคพื้นฐาน เช่น ประเภทอุปกรณ์และเบราว์เซอร์</td></tr>
+    </table>
+    <p>เราเก็บข้อมูลจากผู้ใช้งานโดยตรง (เช่น ตอนลงทะเบียนหรือกรอกแบบฟอร์ม) และจากการใช้งานฟีเจอร์ต่าง ๆ บนแพลตฟอร์ม เราไม่ซื้อข้อมูลส่วนบุคคลจากบุคคลภายนอกเพื่อนำมาใช้ในการให้บริการ</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="purpose">
+    <h2><span class="num">3</span> วัตถุประสงค์ในการใช้ข้อมูล</h2>
+    <p>เราใช้ข้อมูลส่วนบุคคลของท่านเพื่อวัตถุประสงค์ดังต่อไปนี้</p>
+    <ul>
+      <li>เพื่อสร้างและดูแลบัญชีผู้ใช้งาน ยืนยันตัวตน และให้เข้าถึงฟีเจอร์ตามบทบาทของผู้ใช้แต่ละประเภท</li>
+      <li>เพื่อประมวลผลข้อมูลการผลิต รวมถึงการวิเคราะห์ด้วย AI และภาพถ่ายดาวเทียม สำหรับการวางแผนการผลิตและประเมินคาร์บอนเครดิตเบื้องต้น</li>
+      <li>เพื่อประเมินคะแนนความน่าเชื่อถือทางสินเชื่อ และส่งต่อคำขอสินเชื่อไปยังผู้ให้บริการทางการเงินที่ท่านเลือก</li>
+      <li>เพื่อจับคู่และอำนวยความสะดวกในการซื้อขายผลผลิตหรือปัจจัยการผลิตระหว่างผู้ใช้งานบนตลาดกลาง</li>
+      <li>เพื่อสื่อสาร แจ้งเตือนสถานะ และตอบข้อสอบถามผ่านช่องทางต่าง ๆ รวมถึงช่องแชทบนเว็บไซต์</li>
+      <li>เพื่อรักษาความปลอดภัยของระบบ ป้องกันการทุจริต และปฏิบัติตามกฎหมายที่เกี่ยวข้อง</li>
+      <li>เพื่อปรับปรุงและพัฒนาคุณภาพของแพลตฟอร์มในภาพรวม</li>
+    </ul>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="share">
+    <h2><span class="num">4</span> การเปิดเผยข้อมูลแก่บุคคลที่สาม</h2>
+    <p>AgroLink เป็นแพลตฟอร์มที่เชื่อมโยงข้อมูลระหว่างผู้ใช้งานหลายกลุ่ม เราจึงอาจเปิดเผยข้อมูลส่วนบุคคลบางส่วนแก่บุคคลที่สามในกรณีดังต่อไปนี้เท่านั้น</p>
+    <ul>
+      <li><strong>ผู้ให้สินเชื่อ/สถาบันการเงิน</strong> — เฉพาะเมื่อท่านยื่นคำขอสินเชื่อและเลือกผู้ให้สินเชื่อรายนั้นด้วยตนเอง โดยจะส่งข้อมูลเท่าที่จำเป็นต่อการพิจารณาสินเชื่อ ทั้งนี้ AgroLink ไม่ใช่ผู้ให้สินเชื่อและไม่มีส่วนในการตัดสินใจอนุมัติสินเชื่อ</li>
+      <li><strong>ผู้ซื้อ/ผู้ให้บริการในตลาดกลาง</strong> — เฉพาะข้อมูลที่จำเป็นต่อการทำธุรกรรมซื้อขาย เช่น รายละเอียดประกาศขายและช่องทางติดต่อ</li>
+      <li><strong>สหกรณ์หรือหน่วยงานต้นสังกัด</strong> — กรณีผู้ใช้งานเป็นสมาชิกของสหกรณ์หรือกลุ่มเกษตรกรที่เชื่อมต่อกับระบบ</li>
+      <li><strong>ผู้ให้บริการระบบและโครงสร้างพื้นฐาน</strong> — เช่น ผู้ให้บริการเซิร์ฟเวอร์/คลาวด์ที่ประมวลผลข้อมูลแทนเราภายใต้ข้อตกลงรักษาความลับ</li>
+      <li><strong>หน่วยงานราชการ</strong> — กรณีมีกฎหมายกำหนดหรือมีคำสั่งจากหน่วยงานที่มีอำนาจตามกฎหมาย</li>
+    </ul>
+    <p>เราจะไม่ขายข้อมูลส่วนบุคคลของท่านให้แก่บุคคลภายนอกเพื่อวัตถุประสงค์ทางการตลาดโดยไม่ได้รับความยินยอมจากท่านก่อน</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="retention">
+    <h2><span class="num">5</span> การเก็บรักษาและความปลอดภัยของข้อมูล</h2>
+    <p>เราจัดเก็บข้อมูลส่วนบุคคลของท่านไว้ในระบบที่มีมาตรการรักษาความปลอดภัยตามความเหมาะสม และเก็บรักษาข้อมูลไว้ตราบเท่าที่จำเป็นต่อวัตถุประสงค์ในการเก็บรวบรวม หรือตามระยะเวลาที่กฎหมายกำหนด เมื่อพ้นระยะเวลาดังกล่าวหรือไม่มีความจำเป็นต้องใช้ข้อมูลอีกต่อไป เราจะดำเนินการลบหรือทำให้ข้อมูลไม่สามารถระบุตัวตนได้</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="rights">
+    <h2><span class="num">6</span> สิทธิของเจ้าของข้อมูลส่วนบุคคล</h2>
+    <p>ภายใต้พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 ท่านมีสิทธิดังต่อไปนี้เกี่ยวกับข้อมูลส่วนบุคคลของท่าน</p>
+    <ul>
+      <li>สิทธิขอเข้าถึงและขอรับสำเนาข้อมูลส่วนบุคคลของท่าน</li>
+      <li>สิทธิขอให้แก้ไขข้อมูลส่วนบุคคลให้ถูกต้องและเป็นปัจจุบัน</li>
+      <li>สิทธิขอให้ลบหรือทำลายข้อมูลส่วนบุคคล เมื่อหมดความจำเป็นในการเก็บรักษา</li>
+      <li>สิทธิขอถอนความยินยอมที่เคยให้ไว้ ในกรณีที่การประมวลผลข้อมูลนั้นอาศัยความยินยอมของท่าน</li>
+      <li>สิทธิขอให้ระงับการใช้ หรือคัดค้านการประมวลผลข้อมูลในบางกรณี</li>
+      <li>สิทธิร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล หากเห็นว่าเราไม่ปฏิบัติตามกฎหมาย</li>
+    </ul>
+    <p>ท่านสามารถใช้สิทธิดังกล่าวได้โดยติดต่อเราผ่านช่องทางในหัวข้อ "ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล" ด้านล่าง</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="cookies">
+    <h2><span class="num">7</span> คุกกี้และเทคโนโลยีติดตามที่คล้ายกัน</h2>
+    <p>เว็บไซต์ของเราอาจใช้คุกกี้หรือเทคโนโลยีที่คล้ายกันในระดับพื้นฐาน เพื่อให้เว็บไซต์ทำงานได้อย่างถูกต้อง จดจำการตั้งค่าเบื้องต้นของผู้ใช้งาน และปรับปรุงประสบการณ์การใช้งาน ท่านสามารถตั้งค่าเบราว์เซอร์เพื่อปฏิเสธคุกกี้ได้ แต่การทำเช่นนั้นอาจส่งผลต่อการใช้งานบางฟีเจอร์ของเว็บไซต์</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" id="minors">
+    <h2><span class="num">8</span> ข้อมูลของผู้เยาว์</h2>
+    <p>แพลตฟอร์ม AgroLink ออกแบบมาสำหรับการใช้งานโดยเกษตรกร ผู้ประกอบการ และหน่วยงานที่เกี่ยวข้องกับภาคเกษตร ซึ่งโดยทั่วไปเป็นผู้ใช้งานที่บรรลุนิติภาวะแล้ว หากท่านเป็นผู้เยาว์และประสงค์จะใช้งานแพลตฟอร์ม ควรดำเนินการภายใต้ความยินยอมและการดูแลของผู้ปกครองหรือผู้แทนโดยชอบธรรมตามกฎหมาย</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in" id="changes">
+    <h2><span class="num">9</span> การเปลี่ยนแปลงนโยบาย</h2>
+    <p>เราอาจปรับปรุงนโยบายความเป็นส่วนตัวฉบับนี้เป็นครั้งคราว เพื่อให้สอดคล้องกับการเปลี่ยนแปลงของบริการหรือกฎหมายที่เกี่ยวข้อง โดยจะแจ้งวันที่ปรับปรุงล่าสุดไว้ที่ด้านบนของหน้านี้ ขอแนะนำให้ท่านตรวจสอบนโยบายนี้เป็นระยะ</p>
+  </div>
+</section>
+
+<section class="prose-section" id="contact">
+  <div class="container prose-block reveal in">
+    <h2><span class="num">10</span> ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล</h2>
+    <p>หากท่านมีข้อสงสัยเกี่ยวกับนโยบายความเป็นส่วนตัวฉบับนี้ หรือต้องการใช้สิทธิเกี่ยวกับข้อมูลส่วนบุคคลของท่าน สามารถติดต่อบริษัท ภักดี คอร์ปอเรชั่น จำกัด ได้ตามช่องทางต่อไปนี้</p>
+    <ul>
+      <li>อีเมล: management@agrolinkthai.com</li>
+      <li>โทรศัพท์: 092-654-9935</li>
+      <li>ที่อยู่: 49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</li>
+    </ul>
+  </div>
+</section>
+
+<section class="cta-final">
+  <div class="container">
+    <h2>มีคำถามเกี่ยวกับข้อมูลส่วนบุคคลของท่าน?</h2>
+    <p>ติดต่อทีมงาน AgroLink ได้โดยตรง เราพร้อมช่วยตอบข้อสงสัยและดำเนินการตามสิทธิของท่าน</p>
+    <div class="cta-actions">
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i> ติดต่อทีมงาน</a>
+      <a href="index.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-house"></i> กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
+        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5>ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="register.html">เกษตรกร</a></li>
+          <li><a href="finance-partners.html">การเงิน</a></li>
+          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
+          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="index.html#ai-satellite">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#partners">พันธมิตรเทคโนโลยี</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>บริษัท</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html">นักลงทุน</a></li>
+          <li><a href="contact.html">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="#">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span>© 2569 Agrolink Operating Co., Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+</script>
+</body>
+</html>
