@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สำหรับเกษตรกร — ประโยชน์ บริการ และวิธีสมัครสมาชิก | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 0; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+  .btn-gold:hover { filter: brightness(.95); }
+
+  /* NAV — identical to index.html */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* PAGE HEADER */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .hero-cta { margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* SHARED SECTION LAYOUT */
+  .prose-section { padding: 64px 0; }
+  .prose-section.alt { background: #fff; }
+  .section-head { max-width: 720px; margin: 0 auto 40px; text-align: center; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+
+  /* BENEFITS GRID */
+  .benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media (max-width: 900px) { .benefit-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .benefit-grid { grid-template-columns: 1fr; } }
+  .benefit-card {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px; transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .benefit-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(18,61,43,.08); }
+  .benefit-card .icn {
+    width: 52px; height: 52px; border-radius: 14px; background: var(--green-light); color: var(--green-dark);
+    display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 16px;
+  }
+  .benefit-card h4 { font-size: 17px; margin-bottom: 8px; }
+  .benefit-card p { font-size: 14px; color: var(--muted); }
+
+  /* SERVICES */
+  .service-cat { margin-bottom: 44px; }
+  .service-cat:last-child { margin-bottom: 0; }
+  .service-cat-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .service-cat-head .icn {
+    width: 44px; height: 44px; border-radius: 12px; background: var(--gold-light); color: var(--gold);
+    display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0;
+  }
+  .service-cat-head h3 { font-size: 20px; }
+  .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 900px) { .service-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .service-grid { grid-template-columns: 1fr; } }
+  .service-item {
+    background: var(--cream); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .prose-section.alt .service-item { background: var(--cream); }
+  .service-item .icn2 {
+    width: 34px; height: 34px; border-radius: 9px; background: #fff; color: var(--green);
+    display: flex; align-items: center; justify-content: center; font-size: 14.5px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .service-item h5 { font-size: 14.5px; margin-bottom: 4px; color: var(--navy); }
+  .service-item p { font-size: 12.8px; color: var(--muted); line-height: 1.55; }
+
+  /* REGISTRATION STEPS */
+  .steps-wrap { display: flex; flex-direction: column; gap: 0; max-width: 880px; margin: 0 auto; }
+  .step-row { display: flex; gap: 24px; padding: 0 0 40px; position: relative; }
+  .step-row:last-child { padding-bottom: 0; }
+  .step-row::before {
+    content: ''; position: absolute; left: 27px; top: 56px; bottom: 0; width: 2px;
+    background: var(--border);
+  }
+  .step-row:last-child::before { display: none; }
+  .step-num {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--green); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800;
+    flex-shrink: 0; box-shadow: 0 6px 16px rgba(27,107,74,.28); z-index: 1;
+  }
+  .step-body { flex: 1; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; }
+  .step-body h4 { font-size: 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .step-body .step-page-tag {
+    font-size: 11.5px; font-weight: 700; color: var(--green); background: var(--green-light);
+    padding: 3px 10px; border-radius: 999px; letter-spacing: .02em;
+  }
+  .step-body p { font-size: 14.3px; color: var(--muted); margin-bottom: 10px; }
+  .step-body ul.step-detail { list-style: none; margin: 0; }
+  .step-body ul.step-detail li { font-size: 13.5px; color: var(--text); padding: 5px 0 5px 22px; position: relative; }
+  .step-body ul.step-detail li::before {
+    content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: var(--green);
+    position: absolute; left: 0; top: 6px; font-size: 11px;
+  }
+
+  .note-block {
+    background: var(--gold-light); border: 1px solid #E6D9A8; border-radius: 12px;
+    padding: 18px 22px; font-size: 13.6px; color: #6B5A15; display: flex; gap: 12px; align-items: flex-start;
+    max-width: 880px; margin: 32px auto 0;
+  }
+  .note-block i { margin-top: 2px; }
+
+  /* CTA FINAL */
+  .cta-final {
+    background: linear-gradient(135deg, var(--green-dark), var(--green));
+    color: #fff; padding: 60px 0; text-align: center;
+  }
+  .cta-final h2 { color: #fff; font-size: 28px; margin-bottom: 12px; }
+  .cta-final p { color: #C8DBD1; max-width: 560px; margin: 0 auto 26px; font-size: 15.5px; }
+  .cta-final .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  /* FOOTER — identical to index.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; letter-spacing: .04em; text-transform: uppercase; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 10px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  .footer-tagline-en { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 12px; }
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top">หน้าแรก</a>
+        <a href="coop-portal.html">สำหรับสหกรณ์</a>
+        <a href="for-farmers.html">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html">การเงิน</a>
+        <a href="marketplace-partners.html">ตลาดกลาง</a>
+        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
+        <a href="index.html#ai-satellite">AI และดาวเทียม</a>
+        <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
+        <a href="business-model.html">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <div class="nav-cta">
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+        </div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container reveal in">
+    <div class="eyebrow"><i class="fa-solid fa-seedling"></i> สำหรับเกษตรกร</div>
+    <h1 class="section-title">AgroLink เพื่อเกษตรกรไทย</h1>
+    <p class="section-sub">
+      ครบทั้งข้อมูลแปลง การเงิน ตลาดขาย และรายได้เสริมจากคาร์บอนเครดิต ในที่เดียว —
+      ใช้งานฟรี สมัครง่าย เริ่มต้นได้ในไม่กี่นาที
+    </p>
+    <div class="hero-cta">
+      <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i> สมัครสมาชิกเกษตรกร</a>
+      <a href="farmer-login.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ (มีบัญชีแล้ว)</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BENEFITS ===================== -->
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow"><i class="fa-solid fa-award"></i> ประโยชน์ที่เกษตรกรจะได้รับ</div>
+      <h2 class="section-title">ทำไมเกษตรกรควรใช้ AgroLink</h2>
+      <p class="section-sub">แพลตฟอร์มเดียวที่รวมข้อมูลแปลง การเงิน ตลาด และรายได้เสริม ไว้ให้เกษตรกรจัดการได้ด้วยตัวเอง</p>
+    </div>
+    <div class="benefit-grid">
+      <div class="benefit-card reveal">
+        <div class="icn"><i class="fa-solid fa-map-location-dot"></i></div>
+        <h4>บันทึกข้อมูลแปลงของตัวเอง</h4>
+        <p>ลงทะเบียนแปลง/หน่วยผลิตพร้อมปักขอบเขต GPS บนแผนที่ดาวเทียม ระบบคำนวณพื้นที่โดยประมาณให้อัตโนมัติ เก็บเป็นข้อมูลอ้างอิงของท่านเอง</p>
+      </div>
+      <div class="benefit-card reveal">
+        <div class="icn"><i class="fa-solid fa-sack-dollar"></i></div>
+        <h4>เข้าถึงแหล่งสินเชื่อได้ง่ายขึ้น</h4>
+        <p>ยื่นคำขอสินเชื่อถึงผู้ให้บริการทางการเงินที่เข้าร่วมได้โดยตรงจากหน้าพอร์ทัลของท่าน พร้อมคะแนนความน่าเชื่อถือที่สะสมจากประวัติการใช้งาน</p>
+      </div>
+      <div class="benefit-card reveal">
+        <div class="icn"><i class="fa-solid fa-store"></i></div>
+        <h4>ช่องทางขายผลผลิตที่หลากหลาย</h4>
+        <p>เข้าถึงตลาดขอใบเสนอราคา (RFQ) ประกาศรับซื้อด่วน และการประมูลราคา เพื่อเปรียบเทียบและเลือกช่องทางขายที่ได้ราคาดีที่สุด</p>
+      </div>
+      <div class="benefit-card reveal">
+        <div class="icn"><i class="fa-solid fa-leaf"></i></div>
+        <h4>รายได้เสริมจากคาร์บอนเครดิต</h4>
+        <p>ยืนยันการทำนาแบบเปียกสลับแห้ง (AWD) เพื่อลดการปล่อยก๊าซเรือนกระจก และสร้างรายได้เสริมจากคาร์บอนเครดิตในอนาคต</p>
+      </div>
+      <div class="benefit-card reveal">
+        <div class="icn"><i class="fa-solid fa-flask"></i></div>
+        <h4>ประหยัดต้นทุนปัจจัยการผลิต</h4>
+        <p>คำนวณสูตรปุ๋ยให้เหมาะกับพืชและดินของท่าน รวมกลุ่มสั่งซื้อปุ๋ยกับเกษตรกรรายอื่นเพื่อต่อรองราคาส่ง และใช้บริการผสมปุ๋ยสั่งตัด</p>
+      </div>
+      <div class="benefit-card reveal">
+        <div class="icn"><i class="fa-solid fa-bell"></i></div>
+        <h4>ข้อมูลและการแจ้งเตือนครบในที่เดียว</h4>
+        <p>ติดตามสัญญา สมาชิกภาพในหน่วยงานต่างๆ และการแจ้งเตือนสำคัญ ได้จากหน้าภาพรวมบัญชีเดียว ไม่ต้องสลับหลายระบบ</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SERVICES ===================== -->
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow"><i class="fa-solid fa-layer-group"></i> บริการต่างๆ ที่มี</div>
+      <h2 class="section-title">บริการทั้งหมดในพอร์ทัลเกษตรกร</h2>
+      <p class="section-sub">หลังสมัครสมาชิก เกษตรกรจะเข้าถึงบริการเหล่านี้ได้ทันทีจากหน้าหลักเกษตรกร</p>
+    </div>
+
+    <div class="service-cat reveal">
+      <div class="service-cat-head">
+        <div class="icn"><i class="fa-solid fa-map"></i></div>
+        <h3>ข้อมูลแปลงและบัญชี</h3>
+      </div>
+      <div class="service-grid">
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-draw-polygon"></i></div>
+          <div><h5>ลงทะเบียนแปลง/หน่วยผลิต</h5><p>ปักขอบเขต GPS บนแผนที่ดาวเทียม ระบุประเภทหน่วยผลิต พืช/สัตว์หลัก และฤดูกาลปลูก</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-id-card"></i></div>
+          <div><h5>สมาชิกภาพของฉัน</h5><p>ดูหน่วยงาน (สหกรณ์/ผู้ปล่อยกู้/กองทุนหมู่บ้าน) ที่ท่านเป็นสมาชิกอยู่ในที่เดียว</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-chart-line"></i></div>
+          <div><h5>คะแนนความน่าเชื่อถือ</h5><p>ติดตามคะแนนความน่าเชื่อถือทางสินเชื่อและประวัติย้อนหลัง</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service-cat reveal">
+      <div class="service-cat-head">
+        <div class="icn"><i class="fa-solid fa-sack-dollar"></i></div>
+        <h3>การเงินและสัญญา</h3>
+      </div>
+      <div class="service-grid">
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+          <div><h5>ยื่นคำขอสินเชื่อ</h5><p>เลือกผู้ให้สินเชื่อ ระบุวงเงินและวัตถุประสงค์ ยื่นคำขอผูกกับหน่วยผลิตของท่านได้โดยตรง</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-file-contract"></i></div>
+          <div><h5>ติดตามสัญญา</h5><p>ดูสถานะสัญญาที่ทำกับสหกรณ์ ผู้ให้สินเชื่อ หรือผู้รับซื้อ</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-bell"></i></div>
+          <div><h5>แจ้งเตือนที่ยังไม่อ่าน</h5><p>ไม่พลาดข่าวสารสำคัญจากหน่วยงานที่เกี่ยวข้องกับบัญชีของท่าน</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service-cat reveal">
+      <div class="service-cat-head">
+        <div class="icn"><i class="fa-solid fa-store"></i></div>
+        <h3>ตลาดและช่องทางขาย</h3>
+      </div>
+      <div class="service-grid">
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+          <div><h5>ตลาดขอใบเสนอราคา (RFQ)</h5><p>ให้ผู้ซื้อยื่นข้อเสนอราคารับซื้อผลผลิตของท่านโดยตรง</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-bolt"></i></div>
+          <div><h5>ประกาศรับซื้อด่วน</h5><p>ติดตามประกาศรับซื้อผลผลิตแบบเร่งด่วนจากผู้รับซื้อที่เข้าร่วม</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-gavel"></i></div>
+          <div><h5>Auction Place (ประมูลราคา)</h5><p>เสนอขายผลผลิต เช่น กุ้ง ผ่านระบบประมูลเพื่อให้ได้ราคาสูงสุด</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-scale-balanced"></i></div>
+          <div><h5>เปรียบเทียบราคารับซื้อข้าว</h5><p>ดูราคารับซื้อข้าวจากหลายแหล่งเพื่อประกอบการตัดสินใจขาย</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service-cat reveal">
+      <div class="service-cat-head">
+        <div class="icn"><i class="fa-solid fa-flask"></i></div>
+        <h3>ปัจจัยการผลิตและคาร์บอน</h3>
+      </div>
+      <div class="service-grid">
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-cart-shopping"></i></div>
+          <div><h5>ตลาดปัจจัยการผลิต</h5><p>เลือกซื้อปัจจัยการผลิตที่จำเป็นสำหรับรอบผลิตของท่าน</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-calculator"></i></div>
+          <div><h5>คำนวณสูตรปุ๋ย</h5><p>คำนวณสูตรปุ๋ยที่เหมาะสมกับพืชและสภาพดินของท่าน</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-blender"></i></div>
+          <div><h5>บริการผสมปุ๋ยสั่งตัด</h5><p>สั่งผสมปุ๋ยสูตรเฉพาะตามผลคำนวณ ไม่ต้องผสมเอง</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-people-group"></i></div>
+          <div><h5>รวมกลุ่มสั่งซื้อปุ๋ย</h5><p>รวมออเดอร์กับเกษตรกรรายอื่นเพื่อต่อรองราคาซื้อในปริมาณมาก</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-leaf"></i></div>
+          <div><h5>ยืนยันข้าวคาร์บอนต่ำ (AWD)</h5><p>ยืนยันการทำนาแบบเปียกสลับแห้งเพื่อเตรียมสร้างรายได้จากคาร์บอนเครดิต</p></div>
+        </div>
+        <div class="service-item">
+          <div class="icn2"><i class="fa-solid fa-truck-field"></i></div>
+          <div><h5>เช่า/จองเครื่องจักรกล</h5><p>จองบริการเครื่องจักรกลการเกษตรตามช่วงเวลาที่ต้องการใช้งาน</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== REGISTRATION STEPS ===================== -->
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow"><i class="fa-solid fa-list-check"></i> วิธีการสมัครสมาชิก</div>
+      <h2 class="section-title">เริ่มต้นใช้งาน 4 ขั้นตอน</h2>
+      <p class="section-sub">สมัครฟรี ใช้เวลาไม่กี่นาที ไม่ต้องมีเอกสารสิทธิ์ที่ดินก็เริ่มลงทะเบียนได้</p>
+    </div>
+
+    <div class="steps-wrap">
+      <div class="step-row reveal">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>สมัครสมาชิกเกษตรกร <span class="step-page-tag">register.html</span></h4>
+          <p>กรอกข้อมูลพื้นฐานเพื่อเปิดบัญชีผู้ใช้งาน:</p>
+          <ul class="step-detail">
+            <li>ชื่อ-นามสกุล และเบอร์โทรศัพท์</li>
+            <li>เลขประจำตัวประชาชน — ระบบเก็บเฉพาะค่าแฮช ไม่เก็บเลขจริงในฐานข้อมูล</li>
+            <li>จังหวัดและอำเภอที่อยู่อาศัย/ทำการเกษตร</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-row reveal">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>เข้าสู่ระบบเกษตรกร <span class="step-page-tag">farmer-login.html</span></h4>
+          <p>หลังสมัครสำเร็จ เข้าสู่ระบบด้วยเบอร์โทรศัพท์ที่ลงทะเบียนไว้ เพื่อเริ่มใช้งานพอร์ทัลเกษตรกร</p>
+        </div>
+      </div>
+
+      <div class="step-row reveal">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>ลงทะเบียนแปลง/หน่วยผลิต <span class="step-page-tag">register-plot.html</span></h4>
+          <p>บันทึกข้อมูลแปลงหรือหน่วยผลิตของท่าน (ไม่บังคับว่าต้องทำก่อนใช้บริการอื่น แต่แนะนำให้ทำเพื่อใช้สิทธิ์ครบทุกบริการ):</p>
+          <ul class="step-detail">
+            <li>คลิกปักขอบเขตแปลงบนแผนที่ดาวเทียม (อย่างน้อย 3 จุด) — ระบบคำนวณพื้นที่โดยประมาณให้อัตโนมัติ แก้ไขเองได้ภายหลัง</li>
+            <li>เลือกประเภทหน่วยผลิต เช่น แปลงนา/ไร่นา คอกเลี้ยงสัตว์ บ่อเลี้ยง หรือสวนผลไม้</li>
+            <li>ระบุพืช/สัตว์เศรษฐกิจหลัก และฤดูกาล/รอบปลูก</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-row reveal">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>เริ่มใช้งานพอร์ทัลเกษตรกร <span class="step-page-tag">dashboard.html</span></h4>
+          <p>เข้าสู่หน้าหลักเกษตรกร ดูภาพรวมบัญชี สมาชิกภาพ คะแนนความน่าเชื่อถือ แปลง สัญญา คำขอสินเชื่อ และเข้าถึงตลาด/บริการทั้งหมดที่กล่าวถึงด้านบนได้จากเมนูเดียว</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note-block reveal">
+      <i class="fa-solid fa-circle-info"></i>
+      <div>
+        การลงทะเบียนขอบเขตแปลงเป็นการระบุตำแหน่งด้วยตนเอง (manual) เพื่อใช้อ้างอิงภายในระบบเท่านั้น
+        ไม่ได้เชื่อมโยงหรือรับรองความถูกต้องร่วมกับข้อมูลของหน่วยงานภายนอกใดๆ
+        และ AgroLink ไม่ใช่ผู้ให้สินเชื่อหรือผู้รับซื้อโดยตรง — เป็นเพียงแพลตฟอร์มที่เชื่อมเกษตรกรกับผู้ให้บริการที่เข้าร่วมเท่านั้น
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final reveal">
+  <div class="container">
+    <h2>พร้อมเริ่มต้นใช้งาน AgroLink หรือยัง?</h2>
+    <p>สมัครสมาชิกฟรีวันนี้ เริ่มบันทึกข้อมูลแปลง เข้าถึงแหล่งเงินทุน และเปิดช่องทางขายผลผลิตของท่าน</p>
+    <div class="cta-btns">
+      <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i> สมัครสมาชิกเกษตรกร</a>
+      <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-comments"></i> สอบถามทีมงาน</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
+        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5>ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html">เกษตรกร</a></li>
+          <li><a href="finance-partners.html">การเงิน</a></li>
+          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
+          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="index.html#ai-satellite">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#partners">พันธมิตรเทคโนโลยี</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>บริษัท</h5>
+        <ul>
+          <li><a href="about.html">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html">นักลงทุน</a></li>
+          <li><a href="contact.html">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span>© 2569 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+</script>
+</body>
+</html>
