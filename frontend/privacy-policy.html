@@ -78,6 +78,37 @@
     .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
     .nav-toggle { display: block; }
   }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
     .nav-right { width: 100%; justify-content: space-between; }
@@ -157,13 +188,17 @@
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
         <a href="index.html#top">หน้าแรก</a>
-        <a href="coop-portal.html">สำหรับสหกรณ์</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
+          </div>
+        </div>
         <a href="for-farmers.html">สำหรับเกษตรกร</a>
         <a href="finance-partners.html">การเงิน</a>
         <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
         <a href="index.html#ai-satellite">AI และดาวเทียม</a>
-        <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
         <a href="business-model.html">นักลงทุน</a>
       </nav>
       <div class="nav-right">
@@ -382,7 +417,7 @@
           <li><a href="business-model.html">นักลงทุน</a></li>
           <li><a href="contact.html">ติดต่อเรา</a></li>
           <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="#">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>

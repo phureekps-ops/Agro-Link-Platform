@@ -54,35 +54,63 @@
   .btn-outline:hover { border-color: var(--navy); background: #fff; }
   .btn-gold { background: var(--gold); color: var(--green-dark); }
 
-  /* NAV — identical to index.html / carbon-credit-article.html / auction-intro.html */
+  /* NAV — identical across the whole site */
   header.nav {
-    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.92);
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
     backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
   }
   .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
   .nav-right { display: flex; align-items: center; gap: 14px; }
-  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; color: var(--navy); }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
   .logo-img { height: 68px; width: auto; display: block; }
   .nav-links {
-    display: flex; flex-direction: column; gap: 8px;
-    padding: 10px 0 14px; border-top: 1px solid var(--border);
-    font-size: 14px; font-weight: 600; color: var(--text);
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
   }
-  .nav-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 26px; }
+  .nav-links a { white-space: nowrap; }
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
   @media (max-width: 1180px) {
     .nav-links {
-      display: none; position: absolute; top: 100%; left: 0; right: 0;
-      background: #fff; padding: 10px 24px 18px; border-top: none; border-bottom: 1px solid var(--border);
-      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
     }
     .nav-links.open { display: flex; }
-    .nav-row { flex-direction: column; flex-wrap: nowrap; gap: 0; }
     .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .nav-row:last-child a:last-child { border-bottom: none; }
     .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
@@ -192,27 +220,27 @@
   <div class="container">
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
-      <div class="nav-right">
-        <div class="nav-cta">
-          <a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
-          <a href="carbon-credit-article.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">แนวคิดคาร์บอนเครดิต</a>
+      <nav class="nav-links">
+        <a href="index.html#top">หน้าแรก</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
+          </div>
         </div>
+        <a href="for-farmers.html">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html">การเงิน</a>
+        <a href="marketplace-partners.html">ตลาดกลาง</a>
+        <a href="index.html#ai-satellite">AI และดาวเทียม</a>
+        <a href="business-model.html">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
+          <a href="carbon-credit-article.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">แนวคิดคาร์บอนเครดิต</a></div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
-    <nav class="nav-links">
-      <div class="nav-row">
-        <a href="about.html">เกี่ยวกับเรา</a>
-        <a href="index.html#concept">แนวคิดหลัก</a>
-        <a href="carbon-credit-article.html">คาร์บอนเครดิต (แนวคิด)</a>
-        <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-      </div>
-      <div class="nav-row">
-        <a href="coop-portal.html">พอร์ทัลสหกรณ์</a>
-        <a href="auction-intro.html">Auction Place</a>
-        <a href="index.html#contact">ติดต่อ</a>
-      </div>
-    </nav>
   </div>
 </header>
 
@@ -576,37 +604,48 @@
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo"><span class="mark">🌿</span>AgroLink</div>
-        <p class="desc">แพลตฟอร์มบริการครบวงจรและสินเชื่อเชื่อมโยง สำหรับพืชและสัตว์เศรษฐกิจทุกชนิด</p>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
+        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>แพลตฟอร์ม</h5>
+        <h5>ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="index.html#concept">แนวคิดหลัก</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต (แนวคิด)</a></li>
-          <li><a href="carbon-module-guide.html">กลไกการทำงานของ Carbon Module</a></li>
+          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html">เกษตรกร</a></li>
+          <li><a href="finance-partners.html">การเงิน</a></li>
+          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
           <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="index.html#ai-satellite">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
+          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>ผู้ใช้งาน</h5>
+        <h5>พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#audience">เกษตรกร</a></li>
-          <li><a href="coop-portal.html">สหกรณ์</a></li>
-          <li><a href="index.html#audience">ผู้ให้บริการ</a></li>
+          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
         </ul>
       </div>
       <div>
-        <h5>องค์กร</h5>
+        <h5>บริษัท</h5>
         <ul>
           <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="index.html#contact">ติดต่อเรา</a></li>
+          <li><a href="business-model.html">นักลงทุน</a></li>
+          <li><a href="contact.html">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
+      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
       <span>© 2569 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
-      <span>สร้างบนแกนกลาง Galaxy Core</span>
     </div>
   </div>
 </footer>
