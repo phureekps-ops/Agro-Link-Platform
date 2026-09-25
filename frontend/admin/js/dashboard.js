@@ -94,7 +94,7 @@ const KYB_STATUS_LABEL = { Pending: "รอตรวจสอบ", Verified: "�
 // migrated.
 const ORG_TYPE_LABEL = {
   Cooperative: "สหกรณ์", Mill: "โรงสี", Bank: "ธนาคาร", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
-  Lender: "ผู้ปล่อยกู้", Logistics: "โลจิสติกส์", Buyer: "ผู้รับซื้อผลผลิต", VillageFund: "กองทุนหมู่บ้าน",
+  Lender: "ผู้ปล่อยกู้", Logistics: "โลจิสติกส์", Buyer: "ผู้รับซื้อผลผลิตและชีวมวล", VillageFund: "กองทุนหมู่บ้าน",
   MachineryService: "ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)",
   TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี", HarvesterService: "บริการรถเกี่ยวข้าว",
   TruckService: "บริการรถบรรทุก", DryingYardService: "บริการลานตากข้าว/โกดังและไซโล",

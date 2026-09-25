@@ -483,7 +483,7 @@ gateway — not a mock:
   `settled` showed the right deliveries; the contracts section showed the
   real forward-purchase contract. Logout returned to the login page.
   Separately confirmed a farmer JWT and a Lender-org JWT are both correctly
-  bounced from the Buyer Portal with "บัญชีนี้ไม่ใช่บัญชีผู้รับซื้อผลผลิต" shown.
+  bounced from the Buyer Portal with "บัญชีนี้ไม่ใช่บัญชีผู้รับซื้อผลผลิตและชีวมวล" shown.
 - **Platform Ops / Admin Portal**, tested the same way: the login page
   correctly showed a Thai error for a wrong passcode and logged straight in
   with the real one; the dashboard rendered the overview cards, the system
@@ -545,7 +545,7 @@ gateway — not a mock:
   clicked the new "จัดการบทบาทธุรกิจ" link on the Buyer dashboard's header
   and landed on `manage-roles.html`, which correctly auto-detected the
   Buyer session (no separate login) and showed the one held role
-  (`ผู้รับซื้อผลผลิต · อนุมัติแล้ว`); requested an additional `TractorService`
+  (`ผู้รับซื้อผลผลิตและชีวมวล · อนุมัติแล้ว`); requested an additional `TractorService`
   role through the on-page dropdown+button and confirmed it appeared
   immediately as `บริการรถไถ · รอตรวจสอบ` with no page reload; opened the
   Machinery Portal in a second tab with the same underlying session token

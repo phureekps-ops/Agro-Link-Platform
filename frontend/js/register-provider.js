@@ -54,7 +54,7 @@ const continueBtn = document.getElementById("continueBtn");
 const backHomeLink = document.getElementById("backHomeLink");
 
 const ORG_TYPE_LABEL = {
-  Lender: "ผู้ปล่อยกู้", Buyer: "ผู้รับซื้อผลผลิต", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
+  Lender: "ผู้ปล่อยกู้", Buyer: "ผู้รับซื้อผลผลิตและชีวมวล", InputSupplier: "ผู้จำหน่ายปัจจัยการผลิต",
   VillageFund: "กองทุนหมู่บ้าน",
   Logistics: "โลจิสติกส์/ขนส่งทั่วไป",
   MachineryService: "ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)",
