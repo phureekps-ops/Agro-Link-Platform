@@ -7,24 +7,106 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../css/style.css" />
+<style>
+  /* Sidebar SPA navigation — same structure/classes as admin/dashboard.html's
+     .admin-shell/.admin-sidebar/.admin-nav-item pattern (also used by
+     buyer/coop/farmeraidfund/communityenterprise), added here so this
+     portal reads the same way. UI-only: does not change any data-loading
+     logic below — every section still loads its own data on page load
+     exactly as before, these classes/JS only show/hide which page is
+     currently on screen. */
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .logistics-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  .logistics-sidebar {
+    width: 260px; flex: 0 0 260px; background: var(--green-900); color: #fff;
+    display: flex; flex-direction: column; padding: 20px 14px; box-sizing: border-box;
+  }
+  .logistics-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; }
+  .logistics-sidebar-logo { font-size: 26px; line-height: 1; }
+  .logistics-sidebar-brand-name { font-weight: 700; font-size: 16px; }
+  .logistics-sidebar-brand-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .logistics-nav { flex: 1; overflow-y: auto; }
+  .logistics-nav-group { margin-bottom: 16px; }
+  .logistics-nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); padding: 0 10px 6px; }
+  .logistics-nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13.5px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  }
+  .logistics-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .logistics-nav-item.active { background: rgba(255,255,255,0.16); color: #fff; font-weight: 600; }
+  .logistics-sidebar-footer { font-size: 11px; color: rgba(255,255,255,0.5); padding: 12px 10px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 12px; }
+  .logistics-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .logistics-breadcrumb { font-size: 14.5px; }
+  .logistics-breadcrumb-sep { opacity: 0.5; margin: 0 6px; }
+  @media (max-width: 860px) {
+    .logistics-shell { flex-direction: column; }
+    .logistics-sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 14px; }
+    .logistics-sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 0 10px 0 0; }
+    .logistics-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; overflow-y: visible; }
+    .logistics-nav-group { margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .logistics-nav-group-title { display: none; }
+    .logistics-sidebar-footer { display: none; }
+  }
+</style>
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand"><span>🚚</span><span>AgroLink Platform — พอร์ทัลผู้ให้บริการขนส่ง</span></div>
-    <div class="who">
-      <span class="name" id="orgName">กำลังโหลด…</span>
-      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
-    </div>
-  </header>
+  <div class="logistics-shell">
+    <aside class="logistics-sidebar">
+      <div class="logistics-sidebar-brand">
+        <span class="logistics-sidebar-logo">🚚</span>
+        <div>
+          <div class="logistics-sidebar-brand-name">AgroLink</div>
+          <div class="logistics-sidebar-brand-sub">พอร์ทัลผู้ให้บริการขนส่ง</div>
+        </div>
+      </div>
+      <nav class="logistics-nav">
+        <div class="logistics-nav-group">
+          <div class="logistics-nav-group-title">ภาพรวม</div>
+          <button type="button" class="logistics-nav-item active" data-page="overview">📊 ภาพรวม</button>
+        </div>
+        <div class="logistics-nav-group">
+          <div class="logistics-nav-group-title">งานที่สหกรณ์มอบหมาย</div>
+          <button type="button" class="logistics-nav-item" data-page="shipments">🚚 งานขนส่งที่ได้รับมอบหมาย</button>
+        </div>
+        <div class="logistics-nav-group">
+          <div class="logistics-nav-group-title">จัดการกองรถ</div>
+          <button type="button" class="logistics-nav-item" data-page="fleet">🚛 ทะเบียนรถบรรทุก/รถพ่วง</button>
+          <button type="button" class="logistics-nav-item" data-page="service-area">🗺️ พื้นที่ให้บริการ</button>
+        </div>
+        <div class="logistics-nav-group">
+          <div class="logistics-nav-group-title">ตลาดงานขนส่ง</div>
+          <button type="button" class="logistics-nav-item" data-page="rfq">📢 ประกาศงานขนส่ง / เสนอราคา</button>
+          <button type="button" class="logistics-nav-item" data-page="empty-legs">🔄 รถเที่ยวเปล่า</button>
+        </div>
+      </nav>
+      <div class="logistics-sidebar-footer">
+        พอร์ทัลผู้ให้บริการขนส่ง — ทุกฟีเจอร์รวมอยู่ในหน้าเดียว เช่นเดียวกับพอร์ทัลอื่น
+      </div>
+    </aside>
+    <div class="logistics-main">
+      <header class="app-header">
+        <div class="brand logistics-breadcrumb">
+          <span>พอร์ทัลผู้ให้บริการขนส่ง</span><span class="logistics-breadcrumb-sep">/</span><span id="logisticsBreadcrumbCurrent">ภาพรวม</span>
+        </div>
+        <div class="who">
+          <span class="name" id="orgName">กำลังโหลด…</span>
+          <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+        </div>
+      </header>
 
-  <div class="container" id="mainContainer">
+      <div class="container" id="mainContainer">
 
+      <div class="logistics-page" data-page-content="overview">
     <div class="section-title">📊 ภาพรวม</div>
     <div id="summarySection" class="summary-grid">
       <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
     </div>
+      </div>
 
-    <div class="section-title" style="margin-top:22px;">🚚 งานขนส่งที่ได้รับมอบหมาย</div>
+      <div class="logistics-page" data-page-content="shipments" style="display:none;">
+    <div class="section-title">🚚 งานขนส่งที่ได้รับมอบหมาย</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       รายการจัดส่งที่สหกรณ์มอบหมายให้ท่าน (ผูกบัญชีผ่านผู้ขนส่งของสหกรณ์) — บันทึกออกเดินทางเมื่อรถออก,
       บันทึกหลักฐานการส่งมอบเมื่อถึงปลายทาง, และรายงานปัญหาระหว่างทางได้จากที่นี่ (การยกเลิกหรือแก้ไขข้อยกเว้นยังเป็นสิทธิ์ของสหกรณ์ผู้วางแผนจัดส่ง)
@@ -44,8 +126,10 @@
     <div id="shipmentsSection" class="card-list">
       <div class="loading-line">กำลังโหลดรายการจัดส่ง…</div>
     </div>
+      </div>
 
-    <div class="section-title" style="margin-top:22px;">🚛 ทะเบียนรถบรรทุก/รถพ่วง</div>
+      <div class="logistics-page" data-page-content="fleet" style="display:none;">
+    <div class="section-title">🚛 ทะเบียนรถบรรทุก/รถพ่วง</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       ทะเบียนรถของท่านเอง — ใช้ประกอบการประกาศรถเที่ยวเปล่าด้านล่าง และแสดงข้อมูลรถให้ผู้ว่าจ้างเห็นเมื่อท่านเสนอราคางานขนส่ง
       (แยกต่างหากจากรถที่สหกรณ์บันทึกไว้เองในระบบมอบหมายงานด้านบน)
@@ -73,8 +157,10 @@
     <div id="vehicleListSection" class="card-list">
       <div class="loading-line">กำลังโหลดทะเบียนรถ…</div>
     </div>
+      </div>
 
-    <div class="section-title" style="margin-top:22px;">🗺️ พื้นที่ให้บริการ (จังหวัด/อำเภอ)</div>
+      <div class="logistics-page" data-page-content="service-area" style="display:none;">
+    <div class="section-title">🗺️ พื้นที่ให้บริการ (จังหวัด/อำเภอ)</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
       เลือกจังหวัด (หรือคลิกลูกศรเพื่อเลือกเฉพาะบางอำเภอ) ที่ท่านให้บริการขนส่งถึง —
       หากไม่เลือกจังหวัดใดเลย ระบบจะถือว่าท่านให้บริการทุกจังหวัด
@@ -83,8 +169,10 @@
       <div class="loading-line">กำลังโหลด…</div>
     </div>
     <button type="button" class="btn btn-primary btn-sm" id="serviceRegionsSaveBtn" style="max-width:220px; margin-bottom:8px;">บันทึกพื้นที่ให้บริการ</button>
+      </div>
 
-    <div class="section-title" style="margin-top:22px;">📢 ประกาศงานขนส่ง / เสนอราคา</div>
+      <div class="logistics-page" data-page-content="rfq" style="display:none;">
+    <div class="section-title">📢 ประกาศงานขนส่ง / เสนอราคา</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       กระดานนี้ใช้ตลาดกลางขอใบเสนอราคา (RFQ) ของ AgroLink ร่วมกับพอร์ทัลอื่นๆ — สหกรณ์/ผู้รับซื้อ
       ที่ต้องการขนย้ายผลผลิต ปุ๋ย หรือชีวมวล จะประกาศความต้องการไว้ที่นี่ (หมวดหมู่ "บริการขนส่ง")
@@ -157,8 +245,10 @@
     <div id="rfqMyQuotesSection" class="card-list">
       <div class="loading-line">กำลังโหลด…</div>
     </div>
+      </div>
 
-    <div class="section-title" style="margin-top:22px;">🔄 รถเที่ยวเปล่า</div>
+      <div class="logistics-page" data-page-content="empty-legs" style="display:none;">
+    <div class="section-title">🔄 รถเที่ยวเปล่า</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
       ประกาศเที่ยวรถที่วิ่งกลับแบบว่างเปล่า ให้สหกรณ์/ผู้ซื้อรายอื่นติดต่อขอใช้บริการในราคาพิเศษได้ —
       การจองยังดำเนินการนอกระบบโดยตรงกับท่าน (ระบบเป็นเพียงกระดานประกาศจับคู่)
@@ -204,7 +294,10 @@
     <div id="emptyLegBoardSection" class="card-list">
       <div class="loading-line">กำลังโหลด…</div>
     </div>
+      </div>
 
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>

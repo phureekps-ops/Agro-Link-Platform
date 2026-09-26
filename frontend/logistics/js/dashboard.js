@@ -1,3 +1,37 @@
+// ============================================================
+// การนำทางแบบแถบข้าง (Sidebar) — UI-only, ไม่แตะตรรกะโหลดข้อมูลเดิมด้านล่าง
+// นี้เลย เหมือนกับ admin/js/dashboard.js, coop/js/dashboard.js และ
+// buyer/js/dashboard.js ทุกประการ: ทุก section เดิมยังคงถูกโหลดข้อมูลตามปกติ
+// ตอนเปิดหน้าเหมือนเดิมทั้งหมด ปุ่มด้านข้างแค่ show/hide ว่าจะให้ page ไหน
+// แสดงอยู่บนจอเท่านั้น
+// ============================================================
+const LOGISTICS_PAGE_BREADCRUMB_TH = {
+  overview: "ภาพรวม",
+  shipments: "งานขนส่งที่ได้รับมอบหมาย",
+  fleet: "ทะเบียนรถบรรทุก/รถพ่วง",
+  "service-area": "พื้นที่ให้บริการ",
+  rfq: "ประกาศงานขนส่ง / เสนอราคา",
+  "empty-legs": "รถเที่ยวเปล่า",
+};
+
+function showLogisticsPage(pageKey) {
+  document.querySelectorAll("[data-page-content]").forEach((el) => {
+    el.style.display = el.dataset.pageContent === pageKey ? "" : "none";
+  });
+  document.querySelectorAll("[data-page]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.page === pageKey);
+  });
+  const crumb = document.getElementById("logisticsBreadcrumbCurrent");
+  if (crumb) crumb.textContent = LOGISTICS_PAGE_BREADCRUMB_TH[pageKey] || pageKey;
+  const mainEl = document.querySelector(".logistics-main");
+  if (mainEl) mainEl.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll("[data-page]").forEach((btn) => {
+  btn.addEventListener("click", () => showLogisticsPage(btn.dataset.page));
+});
+
 const toastEl = document.getElementById("toast");
 function toast(message, isError = false) {
   toastEl.textContent = message;
