@@ -45,10 +45,172 @@
       <div class="loading-line">กำลังโหลดรายการจัดส่ง…</div>
     </div>
 
+    <div class="section-title" style="margin-top:22px;">🚛 ทะเบียนรถบรรทุก/รถพ่วง</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ทะเบียนรถของท่านเอง — ใช้ประกอบการประกาศรถเที่ยวเปล่าด้านล่าง และแสดงข้อมูลรถให้ผู้ว่าจ้างเห็นเมื่อท่านเสนอราคางานขนส่ง
+      (แยกต่างหากจากรถที่สหกรณ์บันทึกไว้เองในระบบมอบหมายงานด้านบน)
+    </p>
+    <form id="vehicleForm" class="form-grid" style="margin-bottom:10px;">
+      <div class="field">
+        <label for="vehicleTypeSelect">ประเภทรถ</label>
+        <select id="vehicleTypeSelect">
+          <option value="Truck">รถบรรทุก</option>
+          <option value="Trailer">รถพ่วง</option>
+          <option value="Pickup">รถกระบะ</option>
+          <option value="Other">อื่นๆ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="vehiclePlateInput">ทะเบียนรถ</label>
+        <input type="text" id="vehiclePlateInput" placeholder="เช่น 80-1234 กรุงเทพมหานคร" required />
+      </div>
+      <div class="field">
+        <label for="vehicleCapacityInput">น้ำหนักบรรทุก (ตัน, ถ้าทราบ)</label>
+        <input type="number" id="vehicleCapacityInput" min="0.01" step="0.01" placeholder="เช่น 10" />
+      </div>
+    </form>
+    <button type="button" class="btn btn-primary btn-sm" id="vehicleAddBtn" style="max-width:180px; margin-bottom:14px;">เพิ่มรถ</button>
+    <div id="vehicleListSection" class="card-list">
+      <div class="loading-line">กำลังโหลดทะเบียนรถ…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">🗺️ พื้นที่ให้บริการ (จังหวัด/อำเภอ)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
+      เลือกจังหวัด (หรือคลิกลูกศรเพื่อเลือกเฉพาะบางอำเภอ) ที่ท่านให้บริการขนส่งถึง —
+      หากไม่เลือกจังหวัดใดเลย ระบบจะถือว่าท่านให้บริการทุกจังหวัด
+    </p>
+    <div id="serviceRegionsCheckboxes" style="max-height:340px; overflow-y:auto; border:1px solid #e2e2e2; border-radius:8px; padding:10px; margin-bottom:10px;">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="serviceRegionsSaveBtn" style="max-width:220px; margin-bottom:8px;">บันทึกพื้นที่ให้บริการ</button>
+
+    <div class="section-title" style="margin-top:22px;">📢 ประกาศงานขนส่ง / เสนอราคา</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      กระดานนี้ใช้ตลาดกลางขอใบเสนอราคา (RFQ) ของ AgroLink ร่วมกับพอร์ทัลอื่นๆ — สหกรณ์/ผู้รับซื้อ
+      ที่ต้องการขนย้ายผลผลิต ปุ๋ย หรือชีวมวล จะประกาศความต้องการไว้ที่นี่ (หมวดหมู่ "บริการขนส่ง")
+      ให้ผู้ให้บริการขนส่งแข่งขันเสนอราคาเข้ามา ท่านเองก็ประกาศงานขนส่งได้เช่นกัน (เช่น กรณีรับงานมาแล้วต้องการหาผู้รับช่วงต่อ)
+      — เมื่อผู้ประกาศ "ยอมรับ" ใบเสนอราคาของท่าน ระบบจะถือเป็นการยืนยันการจอง และสร้างสัญญาบริการอัตโนมัติ
+      (การชำระเงินยังดำเนินการนอกระบบโดยตรงระหว่างคู่สัญญา)
+    </p>
+
+    <div class="section-title" style="margin-top:18px; font-size:16px;">➕ ประกาศงานขนส่งใหม่</div>
+    <form id="rfqPostForm" class="form-grid" style="margin-bottom:10px;">
+      <div class="field">
+        <label for="rfqCargoTypeSelect">ประเภทสินค้า</label>
+        <select id="rfqCargoTypeSelect">
+          <option value="ผลผลิตทางการเกษตร">ผลผลิตทางการเกษตร</option>
+          <option value="ปุ๋ย">ปุ๋ย</option>
+          <option value="ชีวมวล">ชีวมวล</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="rfqOriginInput">ต้นทาง</label>
+        <input type="text" id="rfqOriginInput" placeholder="เช่น สหกรณ์ ต.บางระกำ จ.พิษณุโลก" required />
+      </div>
+      <div class="field">
+        <label for="rfqDestinationInput">ปลายทาง</label>
+        <input type="text" id="rfqDestinationInput" placeholder="เช่น โกดังผู้รับซื้อ จ.นครสวรรค์" required />
+      </div>
+      <div class="field">
+        <label for="rfqQuantityInput">น้ำหนัก (ตัน)</label>
+        <input type="number" id="rfqQuantityInput" min="0.01" step="0.01" placeholder="เช่น 15" />
+      </div>
+      <div class="field">
+        <label for="rfqTargetPriceInput">ราคาเป้าหมาย (บาท, ถ้ามี)</label>
+        <input type="number" id="rfqTargetPriceInput" min="0.01" step="0.01" />
+      </div>
+      <div class="field">
+        <label for="rfqNeededByInput">ต้องการภายในวันที่</label>
+        <input type="date" id="rfqNeededByInput" />
+      </div>
+      <div class="field full">
+        <label for="rfqDescriptionInput">รายละเอียดเพิ่มเติม</label>
+        <textarea id="rfqDescriptionInput" rows="2" placeholder="เช่น ต้องการรถห้องเย็น, ช่วงเวลารับสินค้า"></textarea>
+      </div>
+    </form>
+    <button type="button" class="btn btn-primary btn-sm" id="rfqPostSubmitBtn" style="max-width:220px; margin-bottom:14px;">ประกาศงานขนส่ง</button>
+
+    <div class="section-title" style="margin-top:18px; font-size:16px;">📋 ประกาศของฉัน</div>
+    <div id="rfqMineSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">🔍 งานขนส่งที่เปิดรับเสนอราคา</div>
+    <div id="rfqBrowseSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">💬 ใบเสนอราคาที่ฉันเสนอ</div>
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="rfqMyQuotesStatusFilter">สถานะ</label>
+        <select id="rfqMyQuotesStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="submitted">รอผลพิจารณา</option>
+          <option value="accepted">ได้รับเลือก (จองแล้ว)</option>
+          <option value="rejected">ไม่ได้รับเลือก</option>
+          <option value="withdrawn">ถอนแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="rfqMyQuotesSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px;">🔄 รถเที่ยวเปล่า</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ประกาศเที่ยวรถที่วิ่งกลับแบบว่างเปล่า ให้สหกรณ์/ผู้ซื้อรายอื่นติดต่อขอใช้บริการในราคาพิเศษได้ —
+      การจองยังดำเนินการนอกระบบโดยตรงกับท่าน (ระบบเป็นเพียงกระดานประกาศจับคู่)
+    </p>
+    <form id="emptyLegForm" class="form-grid" style="margin-bottom:10px;">
+      <div class="field">
+        <label for="emptyLegVehicleSelect">รถที่ใช้ (ถ้าระบุ)</label>
+        <select id="emptyLegVehicleSelect"><option value="">-- ไม่ระบุ --</option></select>
+      </div>
+      <div class="field">
+        <label for="emptyLegOriginInput">ต้นทาง</label>
+        <input type="text" id="emptyLegOriginInput" required />
+      </div>
+      <div class="field">
+        <label for="emptyLegDestinationInput">ปลายทาง</label>
+        <input type="text" id="emptyLegDestinationInput" required />
+      </div>
+      <div class="field">
+        <label for="emptyLegDateInput">วันที่รถว่าง</label>
+        <input type="date" id="emptyLegDateInput" required />
+      </div>
+      <div class="field">
+        <label for="emptyLegCapacityInput">น้ำหนักที่รับได้ (ตัน)</label>
+        <input type="number" id="emptyLegCapacityInput" min="0.01" step="0.01" />
+      </div>
+      <div class="field">
+        <label for="emptyLegPhoneInput">เบอร์ติดต่อ</label>
+        <input type="text" id="emptyLegPhoneInput" />
+      </div>
+      <div class="field full">
+        <label for="emptyLegNoteInput">หมายเหตุ</label>
+        <input type="text" id="emptyLegNoteInput" />
+      </div>
+    </form>
+    <button type="button" class="btn btn-primary btn-sm" id="emptyLegAddBtn" style="max-width:220px; margin-bottom:14px;">ประกาศรถเที่ยวเปล่า</button>
+
+    <div class="section-title" style="margin-top:18px; font-size:16px;">📋 รถเที่ยวเปล่าของฉัน</div>
+    <div id="emptyLegMineSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px; font-size:16px;">🔍 กระดานรถเที่ยวเปล่า (ทุกผู้ให้บริการ)</div>
+    <div id="emptyLegBoardSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
 
+  <script src="../js/provinces.js"></script>
+  <script src="../js/districts.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="../js/support-widget.js"></script>
