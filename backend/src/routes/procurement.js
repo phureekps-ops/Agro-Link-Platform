@@ -29,7 +29,14 @@ const UNIQUE_VIOLATION = '23505';
  */
 router.use(requireAuth);
 
-const RFQ_CATEGORIES = ['input_product', 'produce', 'processed_good', 'machinery_service', 'other'];
+// 'logistics_transport' added by grant_logistics_marketplace.sql — a
+// cooperative/buyer needing produce/fertilizer/biomass hauled posts an RFQ
+// in this category, and a Logistics org (or another carrier subcontracting
+// a load) responds with a quote through this same generic mechanism, same
+// as every other category here. See that migration's design note 3 for
+// why the Logistics load-board/bid-negotiate feature reuses this
+// marketplace instead of a bespoke logistics-only one.
+const RFQ_CATEGORIES = ['input_product', 'produce', 'processed_good', 'machinery_service', 'logistics_transport', 'other'];
 
 // A requester can be a farmer or an organization; a quote responder is
 // always an organization (see grant_rfq_marketplace.sql's design note).

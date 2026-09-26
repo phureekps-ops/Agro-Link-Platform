@@ -79,9 +79,50 @@ async function requireLogisticsOrg(req, res, next) {
   }
 }
 
+/**
+ * GET /logistics/empty-legs — the backhaul/empty-leg BOARD: any
+ * authenticated organization can browse open postings a carrier made
+ * ("I have spare capacity from A to B on date X"), not just Logistics-role
+ * ones — see grant_logistics_marketplace.sql's design note 4 for why this
+ * sits BEFORE requireLogisticsOrg below (restricting the read side to
+ * carriers only would make the board pointless, since the whole point is
+ * a cooperative/buyer discovering cheap spare capacity). Not gated on KYB
+ * status either, matching GET /procurement/rfqs's own "browse is open"
+ * convention. Posting one (further below, after the gate) still requires
+ * a Verified Logistics org — only a real carrier has a truck to offer.
+ * Optional ?status= (defaults to Open, the only status useful to browse).
+ */
+router.get('/empty-legs', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const effectiveStatus = status || 'Open';
+      const result = await client.query(
+        `SELECT el.empty_leg_id, el.org_id, o.org_name AS carrier_org_name, el.carrier_vehicle_id,
+                cv.vehicle_type, cv.license_plate, cv.capacity_ton AS vehicle_capacity_ton,
+                el.origin, el.destination, el.available_date, el.capacity_ton, el.note, el.contact_phone,
+                el.status, el.created_at
+           FROM logistics.empty_leg el
+           JOIN identity.organization o ON o.org_id = el.org_id
+           LEFT JOIN logistics.carrier_vehicle cv ON cv.carrier_vehicle_id = el.carrier_vehicle_id
+          WHERE el.status = $1
+          ORDER BY el.available_date ASC`,
+        [effectiveStatus],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.use(requireLogisticsOrg);
 
 const EXCEPTION_TYPES = ['Damage', 'Shortage', 'Delay', 'Rejected', 'Other'];
+const VEHICLE_TYPES = ['Truck', 'Trailer', 'Pickup', 'Other'];
+const EMPTY_LEG_STATUSES = ['Open', 'Booked', 'Cancelled', 'Expired'];
 
 /**
  * Resolves a shipment_id iff a carrier LINKED to this org (see
@@ -123,6 +164,18 @@ router.get('/dashboard', async (req, res, next) => {
           WHERE c.linked_org_id = $1 AND e.resolved = false`,
         [subjectId],
       );
+      // active_vehicle_count / open_empty_leg_count (grant_logistics_
+      // marketplace.sql): the two new self-service pieces this org
+      // manages directly, surfaced here so the dashboard's overview cards
+      // don't need two extra round trips just to show a count.
+      const vehicleCount = await client.query(
+        `SELECT COUNT(*)::int AS count FROM logistics.carrier_vehicle WHERE org_id = $1 AND status = 'active'`,
+        [subjectId],
+      );
+      const openEmptyLegCount = await client.query(
+        `SELECT COUNT(*)::int AS count FROM logistics.empty_leg WHERE org_id = $1 AND status = 'Open'`,
+        [subjectId],
+      );
       await logAccess(client, 'read', 'logistics.shipment', subjectId);
 
       const statusCounts = { Pending: 0, InTransit: 0, Delivered: 0, Cancelled: 0 };
@@ -134,6 +187,8 @@ router.get('/dashboard', async (req, res, next) => {
         shipments_by_status: statusCounts,
         needs_action_count: statusCounts.Pending + statusCounts.InTransit,
         open_exception_count: openExceptions.rows[0].count,
+        active_vehicle_count: vehicleCount.rows[0].count,
+        open_empty_leg_count: openEmptyLegCount.rows[0].count,
       };
     });
     return res.json(result);
@@ -350,6 +405,255 @@ router.post('/shipments/:id/exceptions', async (req, res, next) => {
     if (result.shipmentNotFound) return res.status(404).json({ error: 'shipment_not_found' });
     if (result.businessError) return res.status(409).json({ error: 'cannot_report_exception', detail: result.businessError });
     return res.status(201).json({ exception_id: result.exceptionId });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// =============================================================================
+// Fleet registry (ทะเบียนรถบรรทุก/รถพ่วง) — logistics.carrier_vehicle, this
+// org's OWN self-declared fleet (see grant_logistics_marketplace.sql's
+// design note 1 for why this is a separate table from the cooperative-side
+// logistics.vehicle used earlier in this file).
+// =============================================================================
+
+/** GET /logistics/vehicles — this org's own fleet, every status. */
+router.get('/vehicles', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT carrier_vehicle_id, vehicle_type, license_plate, capacity_ton, status, created_at
+           FROM logistics.carrier_vehicle WHERE org_id = $1 ORDER BY created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /logistics/vehicles — add one vehicle to this org's fleet.
+ * Body: { vehicle_type: Truck|Trailer|Pickup|Other, license_plate, capacity_ton? }
+ */
+router.post('/vehicles', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { vehicle_type: vehicleType, license_plate: licensePlate, capacity_ton: capacityTon } = req.body || {};
+
+  if (!vehicleType || !licensePlate) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['vehicle_type', 'license_plate'] });
+  }
+  if (!VEHICLE_TYPES.includes(vehicleType)) {
+    return res.status(400).json({ error: 'invalid_vehicle_type', valid: VEHICLE_TYPES });
+  }
+  if (capacityTon !== undefined && capacityTon !== null
+    && (!Number.isFinite(Number(capacityTon)) || Number(capacityTon) <= 0)) {
+    return res.status(400).json({ error: 'invalid_capacity_ton' });
+  }
+
+  try {
+    const row = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO logistics.carrier_vehicle (org_id, vehicle_type, license_plate, capacity_ton)
+         VALUES ($1, $2, $3, $4)
+         RETURNING carrier_vehicle_id, vehicle_type, license_plate, capacity_ton, status, created_at`,
+        [subjectId, vehicleType, licensePlate.trim(), capacityTon || null],
+      );
+      await logAccess(client, 'write', 'logistics.carrier_vehicle', rows[0].carrier_vehicle_id);
+      return rows[0];
+    });
+    return res.status(201).json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /logistics/vehicles/:id/status — activate/deactivate a fleet
+ * vehicle (soft delete — same active/inactive convention as logistics.
+ * carrier.status and logistics.vehicle.status already used earlier in
+ * this schema; no hard DELETE on any vehicle-like table in this project).
+ * Body: { status: active|inactive }
+ */
+router.post('/vehicles/:id/status', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { status } = req.body || {};
+  if (!['active', 'inactive'].includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ['active', 'inactive'] });
+  }
+
+  try {
+    const row = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE logistics.carrier_vehicle SET status = $3, updated_at = now()
+          WHERE carrier_vehicle_id = $1 AND org_id = $2
+          RETURNING carrier_vehicle_id, vehicle_type, license_plate, capacity_ton, status, created_at`,
+        [id, subjectId, status],
+      );
+      return rows[0] || null;
+    });
+    if (!row) return res.status(404).json({ error: 'vehicle_not_found' });
+    return res.json(row);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// =============================================================================
+// Service area (พื้นที่ให้บริการ) — identical shape to GET/PUT /machinery/
+// service-regions (see that route's own doc comment in src/routes/
+// machinery.js): partner.vendor_profile.service_regions is a generic
+// column every self-registered org already has (auth.js's POST /auth/
+// org-register creates the row for every org_type, Logistics included),
+// not machinery-specific — no schema change needed for this piece at all.
+// =============================================================================
+
+router.get('/service-area', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const regions = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        'SELECT service_regions FROM partner.vendor_profile WHERE org_id = $1',
+        [subjectId],
+      );
+      return result.rows[0] ? result.rows[0].service_regions : [];
+    });
+    return res.json({ service_regions: regions });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PUT /logistics/service-area
+ * Body: { service_regions: string[] }
+ * Replaces (not merges) wholesale, same as PUT /machinery/service-regions.
+ */
+router.put('/service-area', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { service_regions: serviceRegions } = req.body || {};
+
+  if (!Array.isArray(serviceRegions) || !serviceRegions.every((r) => typeof r === 'string')) {
+    return res.status(400).json({ error: 'invalid_service_regions', expected: 'array_of_strings' });
+  }
+
+  try {
+    const regions = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `UPDATE partner.vendor_profile
+            SET service_regions = $2, updated_at = now()
+          WHERE org_id = $1
+          RETURNING service_regions`,
+        [subjectId, serviceRegions],
+      );
+      await logAccess(client, 'write', 'partner.vendor_profile', subjectId);
+      return result.rows[0] ? result.rows[0].service_regions : [];
+    });
+    return res.json({ service_regions: regions });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// =============================================================================
+// Empty-leg / backhaul board (รถเที่ยวเปล่า) — logistics.empty_leg. The
+// BROWSE side (GET /logistics/empty-legs) is defined earlier in this file,
+// above the requireLogisticsOrg gate, so any organization can see the open
+// board; everything below (post/list-mine/change-status) requires a
+// Verified Logistics org, same as everything else past that gate.
+// =============================================================================
+
+/**
+ * POST /logistics/empty-legs — post spare capacity on a route/date.
+ * Body: { origin, destination, available_date, carrier_vehicle_id?, capacity_ton?, note?, contact_phone? }
+ */
+router.post('/empty-legs', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    origin, destination, available_date: availableDate, carrier_vehicle_id: carrierVehicleId,
+    capacity_ton: capacityTon, note, contact_phone: contactPhone,
+  } = req.body || {};
+
+  if (!origin || !destination || !availableDate) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['origin', 'destination', 'available_date'] });
+  }
+  if (capacityTon !== undefined && capacityTon !== null
+    && (!Number.isFinite(Number(capacityTon)) || Number(capacityTon) <= 0)) {
+    return res.status(400).json({ error: 'invalid_capacity_ton' });
+  }
+
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      if (carrierVehicleId) {
+        const check = await client.query(
+          'SELECT carrier_vehicle_id FROM logistics.carrier_vehicle WHERE carrier_vehicle_id = $1 AND org_id = $2',
+          [carrierVehicleId, subjectId],
+        );
+        if (check.rows.length === 0) return { vehicleNotOwned: true };
+      }
+      const { rows } = await client.query(
+        `INSERT INTO logistics.empty_leg (org_id, carrier_vehicle_id, origin, destination, available_date, capacity_ton, note, contact_phone)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING empty_leg_id, origin, destination, available_date, capacity_ton, note, contact_phone, status, created_at`,
+        [subjectId, carrierVehicleId || null, origin.trim(), destination.trim(), availableDate, capacityTon || null, note || null, contactPhone || null],
+      );
+      await logAccess(client, 'write', 'logistics.empty_leg', rows[0].empty_leg_id);
+      return { emptyLeg: rows[0] };
+    });
+    if (result.vehicleNotOwned) return res.status(400).json({ error: 'vehicle_not_owned' });
+    return res.status(201).json(result.emptyLeg);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/** GET /logistics/empty-legs/mine — this org's own posted legs, every status. */
+router.get('/empty-legs/mine', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT empty_leg_id, carrier_vehicle_id, origin, destination, available_date, capacity_ton, note, contact_phone, status, created_at
+           FROM logistics.empty_leg WHERE org_id = $1 ORDER BY created_at DESC`,
+        [subjectId],
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /logistics/empty-legs/:id/status — owner-only status change
+ * (e.g. Open -> Booked once a shipper contacts this carrier directly, or
+ * -> Cancelled/Expired). Body: { status }
+ */
+router.post('/empty-legs/:id/status', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { status } = req.body || {};
+  if (!EMPTY_LEG_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: EMPTY_LEG_STATUSES });
+  }
+
+  try {
+    const row = await withSessionContext('organization', subjectId, async (client) => {
+      const { rows } = await client.query(
+        `UPDATE logistics.empty_leg SET status = $3, updated_at = now()
+          WHERE empty_leg_id = $1 AND org_id = $2
+          RETURNING empty_leg_id, origin, destination, available_date, capacity_ton, note, contact_phone, status, created_at`,
+        [id, subjectId, status],
+      );
+      return rows[0] || null;
+    });
+    if (!row) return res.status(404).json({ error: 'empty_leg_not_found' });
+    return res.json(row);
   } catch (err) {
     return next(err);
   }
