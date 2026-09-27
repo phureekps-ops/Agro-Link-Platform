@@ -103,14 +103,36 @@ router.get('/system-health', async (req, res, next) => {
 });
 
 /**
- * GET /admin/farmers?status=pending_kyc — list farmers, optionally
- * filtered by status. identity.farmer has no RLS (platform sees everyone
+ * GET /admin/farmers?status=pending_kyc&province_code=&district_code= —
+ * list farmers, optionally filtered by status and/or by where the farmer
+ * is based. identity.farmer has no RLS (platform sees everyone
  * regardless), so this is a plain query — no ownership scoping needed,
  * unlike every other portal's own-data-only endpoints.
+ *
+ * province_code/district_code added 2026-09-27 after the admin asked
+ * whether the approved-farmer list already had any way to browse by
+ * จังหวัด/อำเภอ — it didn't (region_code/district_code were stored on
+ * every farmer row but never selected, filtered, or sorted on by this
+ * endpoint). Named `province_code`/`district_code` in the query string to
+ * match the convention every other province/district-filterable endpoint
+ * already uses (see farmer.js's GET /input-suppliers, GET /products,
+ * farmermachinery.js's GET /machinery-providers), even though the columns
+ * underneath are literally named region_code/district_code — plain text
+ * equality, no lookup table, same as those columns already are (see
+ * grant_farmer_district.sql). Values come from frontend/js/provinces.js
+ * (TH_PROVINCES) and frontend/js/districts.js (TH_DISTRICTS) client-side,
+ * validated only there — consistent with how region_code/district_code
+ * are treated everywhere else in this codebase.
+ *
+ * Default ORDER BY also changed from created_at DESC alone to
+ * region_code/district_code first (NULLS LAST), created_at DESC as the
+ * tiebreaker — so simply opening this list with no filter now reads as
+ * "grouped by province, then district" instead of one long
+ * newest-first feed, which is the other half of what was asked for.
  */
 router.get('/farmers', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { status } = req.query;
+  const { status, province_code: provinceCode, district_code: districtCode } = req.query;
 
   if (status && !FARMER_STATUSES.includes(status)) {
     return res.status(400).json({ error: 'invalid_status', valid: FARMER_STATUSES });
@@ -119,16 +141,25 @@ router.get('/farmers', async (req, res, next) => {
   try {
     const rows = await withSessionContext('platform', subjectId, async (client) => {
       const params = [];
-      let statusFilter = '';
+      const conditions = [];
       if (status) {
         params.push(status);
-        statusFilter = 'WHERE status = $1';
+        conditions.push(`status = $${params.length}`);
       }
+      if (provinceCode) {
+        params.push(provinceCode);
+        conditions.push(`region_code = $${params.length}`);
+      }
+      if (districtCode) {
+        params.push(districtCode);
+        conditions.push(`district_code = $${params.length}`);
+      }
+      const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
       const result = await client.query(
-        `SELECT farmer_id, full_name, phone, region_code, status, trust_score, created_at, updated_at
+        `SELECT farmer_id, full_name, phone, region_code, district_code, status, trust_score, created_at, updated_at
            FROM identity.farmer
-           ${statusFilter}
-          ORDER BY created_at DESC`,
+           ${whereClause}
+          ORDER BY region_code NULLS LAST, district_code NULLS LAST, created_at DESC`,
         params,
       );
       await logAccess(client, 'read', 'identity.farmer', null);

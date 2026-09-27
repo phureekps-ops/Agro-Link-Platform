@@ -167,12 +167,31 @@ async function loadAlertsIfAny(count) {
   }
 }
 
+// ---------- แปลงรหัสจังหวัด/อำเภอของเกษตรกรเป็นชื่อเต็ม ----------
+// identity.farmer.region_code/district_code are plain ISO 3166-2:TH-style
+// codes with no lookup table in the database (see grant_farmer_district.sql
+// — validated only client-side, same convention everywhere else in this
+// codebase). TH_PROVINCES/TH_DISTRICTS (frontend/js/provinces.js,
+// districts.js) are the only place the human-readable names live, so
+// resolve through them here for display instead of showing the raw code.
+// Falls back to the raw code if it isn't found in either list, and to "-"
+// when nothing is on file at all.
+function farmerAreaLabel(f) {
+  if (!f.region_code) return "-";
+  const province = TH_PROVINCES.find(([code]) => code === f.region_code);
+  const provinceName = province ? province[1] : f.region_code;
+  if (!f.district_code) return provinceName;
+  const district = TH_DISTRICTS.find(([code]) => code === f.district_code);
+  const districtName = district ? district[1] : f.district_code;
+  return `${districtName}, ${provinceName}`;
+}
+
 // ---------- คิว KYC เกษตรกร ----------
 function kycCard(f) {
   return `
     <div class="item-card" data-farmer-id="${f.farmer_id}">
       <div class="row"><span class="title">${escapeHtml(f.full_name)}</span>${farmerStatusBadge(f.status)}</div>
-      <div class="detail-line">โทร ${escapeHtml(f.phone || "-")} · พื้นที่ ${escapeHtml(f.region_code || "-")}</div>
+      <div class="detail-line">โทร ${escapeHtml(f.phone || "-")} · พื้นที่ ${escapeHtml(farmerAreaLabel(f))}</div>
       <div class="detail-line muted">คะแนนความน่าเชื่อถือ: ${f.trust_score !== null && f.trust_score !== undefined ? f.trust_score : "-"} · สมัครเมื่อ ${thaiDate(f.created_at)}</div>
       <div class="action-row">
         <input type="text" class="reason-input" placeholder="เหตุผล (ถ้าปฏิเสธ)" />
@@ -630,21 +649,56 @@ document.getElementById("carbonCompleteOrderBtn").addEventListener("click", asyn
   }
 });
 
+// ---------- จังหวัด/อำเภอ (ตัวกรองรายชื่อเกษตรกร) ----------
+// Same pattern as marketplace.js's provinceFilter/districtFilter (see that
+// file's own doc comment) — added 2026-09-27 after the admin asked whether
+// the approved-farmer list could already be browsed by จังหวัด/อำเภอ; it
+// couldn't, this closes that gap end-to-end with the province_code/
+// district_code support added to GET /admin/farmers (see admin.js's route
+// doc comment). Reset the district dropdown to "ทั้งหมด" whenever the
+// province filter changes, since a district from the old province no
+// longer applies.
+const farmerProvinceFilterEl = document.getElementById("farmerProvinceFilter");
+TH_PROVINCES.forEach(([code, name]) => {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = name;
+  farmerProvinceFilterEl.appendChild(opt);
+});
+
+const farmerDistrictFilterEl = document.getElementById("farmerDistrictFilter");
+function populateFarmerDistrictOptions(provinceCode) {
+  farmerDistrictFilterEl.innerHTML = `<option value="">ทั้งหมด</option>`;
+  if (!provinceCode) return;
+  TH_DISTRICTS.filter(([, , pCode]) => pCode === provinceCode).forEach(([code, name]) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = name;
+    farmerDistrictFilterEl.appendChild(opt);
+  });
+}
+
 // ---------- เกษตรกรทั้งหมด (อ่านอย่างเดียว) ----------
 async function loadAllFarmers() {
   const el = document.getElementById("allFarmersSection");
   const status = document.getElementById("farmerStatusFilter").value;
-  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const provinceCode = farmerProvinceFilterEl.value;
+  const districtCode = farmerDistrictFilterEl.value;
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (provinceCode) params.set("province_code", provinceCode);
+  if (districtCode) params.set("district_code", districtCode);
+  const query = params.toString() ? `?${params.toString()}` : "";
   try {
     const farmers = await AgroLinkAdminAPI.get(`/admin/farmers${query}`);
     if (farmers.length === 0) {
-      el.innerHTML = `<div class="empty-state">ไม่มีเกษตรกรในสถานะนี้</div>`;
+      el.innerHTML = `<div class="empty-state">ไม่มีเกษตรกรตามเงื่อนไขที่เลือก</div>`;
       return;
     }
     el.innerHTML = farmers.map((f) => `
       <div class="item-card">
         <div class="row"><span class="title">${escapeHtml(f.full_name)}</span>${farmerStatusBadge(f.status)}</div>
-        <div class="detail-line">โทร ${escapeHtml(f.phone || "-")} · พื้นที่ ${escapeHtml(f.region_code || "-")}</div>
+        <div class="detail-line">โทร ${escapeHtml(f.phone || "-")} · พื้นที่ ${escapeHtml(farmerAreaLabel(f))}</div>
         <div class="detail-line muted">คะแนนความน่าเชื่อถือ: ${f.trust_score !== null && f.trust_score !== undefined ? f.trust_score : "-"} · สมัครเมื่อ ${thaiDate(f.created_at)}</div>
       </div>
     `).join("");
@@ -653,6 +707,11 @@ async function loadAllFarmers() {
   }
 }
 document.getElementById("farmerStatusFilter").addEventListener("change", () => loadAllFarmers());
+farmerProvinceFilterEl.addEventListener("change", () => {
+  populateFarmerDistrictOptions(farmerProvinceFilterEl.value);
+  loadAllFarmers();
+});
+farmerDistrictFilterEl.addEventListener("change", () => loadAllFarmers());
 
 // ---------- องค์กรทั้งหมด (อ่านอย่างเดียว) ----------
 async function loadAllOrgs() {

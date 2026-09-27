@@ -264,6 +264,18 @@
           <option value="closed">ปิดบัญชี/ถูกปฏิเสธ</option>
         </select>
       </div>
+      <div class="field">
+        <label for="farmerProvinceFilter">กรองตามจังหวัด</label>
+        <select id="farmerProvinceFilter">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="farmerDistrictFilter">กรองตามอำเภอ</label>
+        <select id="farmerDistrictFilter">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
     </div>
     <div id="allFarmersSection" class="card-list">
       <div class="loading-line">กำลังโหลดรายชื่อเกษตรกร…</div>
@@ -657,6 +669,8 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="../js/provinces.js"></script>
+  <script src="../js/districts.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
