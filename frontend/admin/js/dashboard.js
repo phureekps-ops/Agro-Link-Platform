@@ -713,21 +713,64 @@ farmerProvinceFilterEl.addEventListener("change", () => {
 });
 farmerDistrictFilterEl.addEventListener("change", () => loadAllFarmers());
 
+// ---------- จังหวัด/อำเภอ (ตัวกรองรายชื่อองค์กร) ----------
+// Same pattern as the farmer list's own province/district filter above —
+// added together, same request ("หน้าแสดงองค์กรให้แสดงแยกจังหวัด อำเภอด้วย").
+const orgProvinceFilterEl = document.getElementById("orgProvinceFilter");
+TH_PROVINCES.forEach(([code, name]) => {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = name;
+  orgProvinceFilterEl.appendChild(opt);
+});
+
+const orgDistrictFilterEl = document.getElementById("orgDistrictFilter");
+function populateOrgDistrictOptions(provinceCode) {
+  orgDistrictFilterEl.innerHTML = `<option value="">ทั้งหมด</option>`;
+  if (!provinceCode) return;
+  TH_DISTRICTS.filter(([, , pCode]) => pCode === provinceCode).forEach(([code, name]) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = name;
+    orgDistrictFilterEl.appendChild(opt);
+  });
+}
+
+// Same resolution as farmerAreaLabel() above, applied to
+// identity.organization.region_code/district_code (grant_org_district.sql)
+// instead of identity.farmer's — not every org has a value on file (see
+// this endpoint's own doc comment in admin.js), hence the "-" fallback.
+function orgAreaLabel(o) {
+  if (!o.region_code) return "-";
+  const province = TH_PROVINCES.find(([code]) => code === o.region_code);
+  const provinceName = province ? province[1] : o.region_code;
+  if (!o.district_code) return provinceName;
+  const district = TH_DISTRICTS.find(([code]) => code === o.district_code);
+  const districtName = district ? district[1] : o.district_code;
+  return `${districtName}, ${provinceName}`;
+}
+
 // ---------- องค์กรทั้งหมด (อ่านอย่างเดียว) ----------
 async function loadAllOrgs() {
   const el = document.getElementById("allOrgsSection");
   const kybStatus = document.getElementById("orgKybFilter").value;
-  const query = kybStatus ? `?kyb_status=${encodeURIComponent(kybStatus)}` : "";
+  const provinceCode = orgProvinceFilterEl.value;
+  const districtCode = orgDistrictFilterEl.value;
+  const params = new URLSearchParams();
+  if (kybStatus) params.set("kyb_status", kybStatus);
+  if (provinceCode) params.set("province_code", provinceCode);
+  if (districtCode) params.set("district_code", districtCode);
+  const query = params.toString() ? `?${params.toString()}` : "";
   try {
     const orgs = await AgroLinkAdminAPI.get(`/admin/organizations${query}`);
     if (orgs.length === 0) {
-      el.innerHTML = `<div class="empty-state">ไม่มีองค์กรในสถานะนี้</div>`;
+      el.innerHTML = `<div class="empty-state">ไม่มีองค์กรตามเงื่อนไขที่เลือก</div>`;
       return;
     }
     el.innerHTML = orgs.map((o) => `
       <div class="item-card">
         <div class="row"><span class="title">${escapeHtml(o.org_name)}</span>${kybStatusBadge(o.kyb_status)}</div>
-        <div class="detail-line">ประเภท: ${escapeHtml(ORG_TYPE_LABEL[o.org_type] || o.org_type)}${o.verified_badge ? " · ✅ ยืนยันแล้ว" : ""}</div>
+        <div class="detail-line">ประเภท: ${escapeHtml(ORG_TYPE_LABEL[o.org_type] || o.org_type)}${o.verified_badge ? " · ✅ ยืนยันแล้ว" : ""} · พื้นที่: ${escapeHtml(orgAreaLabel(o))}</div>
         <div class="detail-line muted">
           สถานะธุรกิจ: ${escapeHtml(o.commercial_status || "ยังไม่เปิดใช้งาน")}${o.activated_at ? " · เปิดใช้งานเมื่อ " + thaiDate(o.activated_at) : ""}
         </div>
@@ -738,6 +781,11 @@ async function loadAllOrgs() {
   }
 }
 document.getElementById("orgKybFilter").addEventListener("change", () => loadAllOrgs());
+orgProvinceFilterEl.addEventListener("change", () => {
+  populateOrgDistrictOptions(orgProvinceFilterEl.value);
+  loadAllOrgs();
+});
+orgDistrictFilterEl.addEventListener("change", () => loadAllOrgs());
 
 // ---------- โมเดลคะแนนเครดิต (Machine Learning) ----------
 // Backs GET /admin/credit-model and POST /admin/credit-model/retrain

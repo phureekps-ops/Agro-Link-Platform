@@ -236,13 +236,23 @@ router.post('/farmers/:id/status', async (req, res, next) => {
 });
 
 /**
- * GET /admin/organizations?kyb_status=Pending — list organizations,
- * optionally filtered by kyb_status. Same "platform sees everyone" shape
- * as GET /admin/farmers.
+ * GET /admin/organizations?kyb_status=Pending&province_code=&district_code=
+ * — list organizations, optionally filtered by kyb_status and/or by where
+ * the organization is based. Same "platform sees everyone" shape as
+ * GET /admin/farmers, and the province_code/district_code support here
+ * mirrors that same endpoint's own (added 2026-09-27, same request —
+ * "หน้าแสดงองค์กรให้แสดงแยกจังหวัด อำเภอด้วย") for the same reason:
+ * identity.organization.region_code/district_code have existed since
+ * grant_org_district.sql, but were never selected, filtered, or sorted on
+ * here. Not every org has a value on file — only the org_types in
+ * ORG_TYPES_REQUIRING_LOCATION (auth.js) collect it at self-registration,
+ * and organizations seeded directly (or admin-created, e.g. Cooperative)
+ * predate that requirement entirely — those simply show "-" like any
+ * other farmer or org missing the value.
  */
 router.get('/organizations', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { kyb_status: kybStatus } = req.query;
+  const { kyb_status: kybStatus, province_code: provinceCode, district_code: districtCode } = req.query;
 
   if (kybStatus && !ORG_KYB_STATUSES.includes(kybStatus)) {
     return res.status(400).json({ error: 'invalid_kyb_status', valid: ORG_KYB_STATUSES });
@@ -251,18 +261,28 @@ router.get('/organizations', async (req, res, next) => {
   try {
     const rows = await withSessionContext('platform', subjectId, async (client) => {
       const params = [];
-      let filter = '';
+      const conditions = [];
       if (kybStatus) {
         params.push(kybStatus);
-        filter = 'WHERE o.kyb_status = $1';
+        conditions.push(`o.kyb_status = $${params.length}`);
       }
+      if (provinceCode) {
+        params.push(provinceCode);
+        conditions.push(`o.region_code = $${params.length}`);
+      }
+      if (districtCode) {
+        params.push(districtCode);
+        conditions.push(`o.district_code = $${params.length}`);
+      }
+      const filter = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
       const result = await client.query(
         `SELECT o.org_id, o.org_name, o.org_type, o.kyb_status, o.verified_badge, o.created_at,
+                o.region_code, o.district_code,
                 vp.commercial_status, vp.activated_at
            FROM identity.organization o
            LEFT JOIN partner.vendor_profile vp ON vp.org_id = o.org_id
            ${filter}
-          ORDER BY o.created_at DESC`,
+          ORDER BY o.region_code NULLS LAST, o.district_code NULLS LAST, o.created_at DESC`,
         params,
       );
       await logAccess(client, 'read', 'identity.organization', null);
