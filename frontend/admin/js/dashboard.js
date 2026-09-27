@@ -98,7 +98,7 @@ const ORG_TYPE_LABEL = {
   MachineryService: "ผู้ให้บริการเครื่องจักรกล (รถไถ/โดรน/รถเกี่ยว/รถบรรทุก)",
   TractorService: "บริการรถไถ", DroneService: "บริการโดรน/ฉีดพ่นสารเคมี", HarvesterService: "บริการรถเกี่ยวข้าว",
   TruckService: "บริการรถบรรทุก", DryingYardService: "บริการลานตากข้าว/โกดังและไซโล",
-  MarketVenue: "ผู้ให้บริการพื้นที่ขายสินค้าเกษตร", FertilizerMixingService: "ผู้ให้บริการผสมปุ๋ยสั่งตัด",
+  MarketVenue: "ตลาดค้าส่ง/ผู้ให้บริการพื้นที่ขายสินค้าเกษตร", FertilizerMixingService: "ผู้ให้บริการผสมปุ๋ยสั่งตัด",
   FarmerAidFund: "กองทุนสงเคราะห์เกษตรกร", AgriCommunityEnterprise: "วิสาหกิจชุมชนด้านการเกษตร",
 };
 
