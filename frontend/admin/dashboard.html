@@ -383,9 +383,11 @@
       <div class="admin-page" data-page-content="gov-officers" style="display:none;">
     <div class="section-title">➕ เพิ่มเจ้าหน้าที่ภาครัฐใหม่</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      เจ้าหน้าที่ภาครัฐ (กรมส่งเสริมสหกรณ์/กรมตรวจบัญชีสหกรณ์) มี 2 ระดับสิทธิ์: <strong>ระดับประเทศ (National)</strong> เห็นข้อมูลสหกรณ์ทุกจังหวัด
-      และ <strong>ระดับจังหวัด (Province)</strong> เห็นเฉพาะสหกรณ์ในจังหวัดที่รับผิดชอบ — หลังสร้างบัญชีแล้ว ระบบจะสร้างรหัสเข้าสู่ระบบ (Auth Subject)
-      ให้ท่านนำไปแจ้งเจ้าหน้าที่ท่านนั้นด้วยตนเอง (ยังไม่มีอีเมล/รหัสผ่านจริงในระบบทดลองนี้) — สิทธิ์การใช้งานปัจจุบันเป็นแบบอ่านอย่างเดียว (read-only)
+      เจ้าหน้าที่ภาครัฐมี 2 ระดับสิทธิ์: <strong>ระดับประเทศ (National)</strong> เห็นข้อมูลสหกรณ์ทุกจังหวัด
+      และ <strong>ระดับจังหวัด (Province)</strong> เห็นเฉพาะสหกรณ์ในจังหวัดที่รับผิดชอบ — และสังกัด 1 หน่วยงาน
+      (เช่น กรมส่งเสริมสหกรณ์ หรือ สำนักงานเศรษฐกิจการเกษตร) ซึ่งกำหนดว่าจะเข้าพอร์ทัลใดได้ —
+      หลังสร้างบัญชีแล้ว ระบบจะสร้างรหัสเข้าสู่ระบบ (Auth Subject)
+      ให้ท่านนำไปแจ้งเจ้าหน้าที่ท่านนั้นด้วยตนเอง (ยังไม่มีอีเมล/รหัสผ่านจริงในระบบทดลองนี้) — สิทธิ์การใช้งานปัจจุบันเป็นแบบอ่านอย่างเดียว (read-only) ยกเว้นพอร์ทัล สศก. ซึ่งจัดการรายการข้อมูล/ราคาที่ตนเองเผยแพร่ได้
     </p>
     <div class="panel" style="margin-bottom:24px;">
       <form id="createOfficerForm" class="form-grid">
@@ -396,6 +398,12 @@
         <div class="field">
           <label for="officerNationalId">เลขบัตรประชาชน</label>
           <input type="text" id="officerNationalId" placeholder="เช่น 1234567890123" required />
+        </div>
+        <div class="field">
+          <label for="officerDepartmentSelect">หน่วยงานต้นสังกัด</label>
+          <select id="officerDepartmentSelect" required>
+            <option value="">-- เลือกหน่วยงาน --</option>
+          </select>
         </div>
         <div class="field">
           <label for="officerScopeSelect">ระดับสิทธิ์</label>

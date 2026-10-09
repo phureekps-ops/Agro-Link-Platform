@@ -94,6 +94,10 @@
           <button type="button" class="farmer-nav-item" data-page="group-order">🛒 รวมออเดอร์ซื้อสินค้าเกษตร</button>
         </div>
         <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">ภาครัฐ</div>
+          <button type="button" class="farmer-nav-item" data-page="oae">🌾 ข้อมูลเศรษฐกิจการเกษตร (สศก.)</button>
+        </div>
+        <div class="farmer-nav-group">
           <div class="farmer-nav-group-title">การแจ้งเตือน</div>
           <button type="button" class="farmer-nav-item" data-page="notifications">🔔 แจ้งเตือนที่ยังไม่อ่าน</button>
         </div>
@@ -213,6 +217,17 @@
 
       <div class="farmer-page" data-page-content="group-order" style="display:none;">
         <div id="groupOrderWidget"></div>
+      </div>
+
+      <div class="farmer-page" data-page-content="oae" style="display:none;">
+    <div class="section-title">🌾 ข้อมูลเศรษฐกิจการเกษตร (สำนักงานเศรษฐกิจการเกษตร — สศก.)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ข้อมูลด้านล่างเป็นข้อมูลที่เจ้าหน้าที่ สศก. เลือกแบ่งปันให้พอร์ทัลเกษตรกรเห็นเท่านั้น (อ่านอย่างเดียว) —
+      หมวดหมู่ที่ยังไม่มีราคาแสดงอยู่ แปลว่าเจ้าหน้าที่ สศก. ยังไม่ได้บันทึกตัวเลขจริงเข้ามา ไม่ใช่ข้อผิดพลาดของระบบ
+    </p>
+    <div id="oaeDatasetsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดข้อมูลจาก สศก.…</div>
+    </div>
       </div>
 
       <div class="farmer-page" data-page-content="notifications" style="display:none;">

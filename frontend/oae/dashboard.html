@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลเจ้าหน้าที่ สศก.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>📊</span><span>AgroLink Platform — พอร์ทัลเจ้าหน้าที่ สศก.</span></div>
+    <div class="who">
+      <span class="name" id="officerName">กำลังโหลด…</span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">👤 ข้อมูลของท่าน</div>
+    <div id="profileSection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลเจ้าหน้าที่…</div>
+    </div>
+
+    <div class="section-title">📊 รายการข้อมูลและการแบ่งปัน</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมวดหมู่ด้านล่างเป็น placeholder อ้างอิงหมวดหมู่ข้อมูลที่ สศก. เผยแพร่จริง (ยังไม่เชื่อมฟีดข้อมูลอัตโนมัติจาก สศก.) —
+      เปิดสวิตช์เพื่อแบ่งปันให้พอร์ทัลสหกรณ์และ/หรือพอร์ทัลเกษตรกรเห็นได้ ปิดสวิตช์เพื่อซ่อน
+    </p>
+    <div id="datasetsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดรายการข้อมูล…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:28px;">💰 บันทึกราคาสินค้าเกษตร</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      บันทึกตัวเลขจริงที่ท่านมีอยู่ด้วยตนเอง — ระบบนี้ยังไม่มีการเชื่อมฟีดข้อมูลอัตโนมัติจาก สศก. จึงไม่มีตัวเลขใดๆ จนกว่าเจ้าหน้าที่จะบันทึกเข้ามา
+    </p>
+    <form id="priceForm" class="panel" style="margin-bottom:24px;">
+      <div class="form-grid">
+        <div class="field">
+          <label for="priceDatasetSelect">หมวดหมู่ข้อมูล</label>
+          <select id="priceDatasetSelect" required>
+            <option value="">-- เลือกหมวดหมู่ --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="priceCommodityInput">ชื่อสินค้า</label>
+          <input type="text" id="priceCommodityInput" placeholder="เช่น ข้าวหอมมะลิ" required />
+        </div>
+        <div class="field">
+          <label for="priceDateInput">วันที่ของราคา</label>
+          <input type="date" id="priceDateInput" required />
+        </div>
+        <div class="field">
+          <label for="priceValueInput">ราคา</label>
+          <input type="number" id="priceValueInput" min="0" step="0.01" required />
+        </div>
+        <div class="field">
+          <label for="priceUnitInput">หน่วย</label>
+          <input type="text" id="priceUnitInput" placeholder="เช่น บาท/กก." required />
+        </div>
+        <div class="field">
+          <label for="priceSourceNoteInput">ที่มา/หมายเหตุ (ถ้ามี)</label>
+          <input type="text" id="priceSourceNoteInput" placeholder="เช่น สำนักงานเศรษฐกิจการเกษตร เขต 1" />
+        </div>
+        <div class="field">
+          <label for="priceRecordedByInput">ชื่อผู้บันทึก</label>
+          <input type="text" id="priceRecordedByInput" placeholder="เช่น เจ้าหน้าที่ สศก. ก." required />
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" id="priceSubmitBtn" style="max-width:200px; margin-top:10px;">บันทึกราคา</button>
+    </form>
+
+    <div style="font-weight:700; margin-bottom:8px;">รายการที่บันทึกล่าสุด</div>
+    <div id="pricesSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
+
+    <div class="section-title" style="margin-top:28px;">👁️ ประวัติการใช้ข้อมูล</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      บันทึกว่าสหกรณ์หรือเกษตรกรรายใดเข้าดูข้อมูลหมวดหมู่ใดบ้าง — ช่วยให้ สศก. เห็นว่าข้อมูลที่แบ่งปันถูกนำไปใช้จริง
+    </p>
+    <div id="usageLogSection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติการใช้ข้อมูล…</div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="../js/support-widget.js"></script>
+</body>
+</html>

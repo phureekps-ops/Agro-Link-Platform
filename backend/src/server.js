@@ -21,6 +21,13 @@ const farmerMachineryRouter = require('./routes/farmermachinery');
 const farmerVenueRouter = require('./routes/farmervenue');
 const coopCollectionRouter = require('./routes/coopcollection');
 const governmentRouter = require('./routes/government');
+// oae.js — สศก. (Office of Agricultural Economics) Data Portal, the
+// officer-facing half of grant_oae_data_portal.sql's oae.* schema. A
+// government_officer subject too (same as governmentRouter above), but
+// gated to department_code='OAE' inside the route file itself, so its own
+// prefix rather than sharing '/gov' — an OAE officer and a CPD officer are
+// both government_officer subjects but have no routes in common.
+const oaeRouter = require('./routes/oae');
 const storageRouter = require('./routes/storage');
 // procurement.js — RFQ/RFP (Request for Proposal / Request for Quote)
 // cross-portal marketplace (see backend/db/grant_rfq_marketplace.sql).
@@ -139,6 +146,9 @@ app.use('/coop', coopCollectionRouter);
 // '/admin' (Platform Ops) — a government officer is explicitly NOT
 // Platform Ops, just as a Cooperative is not a private Buyer.
 app.use('/gov', governmentRouter);
+// oae.js — see require() above for why this is its own prefix even
+// though it shares the government_officer subject type with '/gov'.
+app.use('/oae', oaeRouter);
 // storage.js — generic object storage upload/download (M01, see
 // backend/db/grant_object_storage.sql). Its own prefix since it is
 // subject-type agnostic and not owned by any one portal.

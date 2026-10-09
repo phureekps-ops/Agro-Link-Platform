@@ -1138,6 +1138,21 @@ function officerStatusBadge(status) {
 const SCOPE_LABEL = { National: "ระดับประเทศ (National)", Province: "ระดับจังหวัด (Province)" };
 
 let officerProvinceCache = [];
+let officerDepartmentCache = [];
+
+// ---------- หน่วยงานต้นสังกัด (จาก registry.department ผ่าน GET /admin/departments ใหม่) ----------
+async function loadOfficerDepartments() {
+  const select = document.getElementById("officerDepartmentSelect");
+  try {
+    officerDepartmentCache = await AgroLinkAdminAPI.get("/admin/departments");
+    select.innerHTML = officerDepartmentCache.length === 0
+      ? `<option value="">ไม่มีหน่วยงานในระบบ</option>`
+      : `<option value="">-- เลือกหน่วยงาน --</option>` +
+        officerDepartmentCache.map((d) => `<option value="${d.department_code}">${escapeHtml(d.department_name_th)}</option>`).join("");
+  } catch (err) {
+    select.innerHTML = `<option value="">โหลดหน่วยงานไม่สำเร็จ</option>`;
+  }
+}
 
 // ---------- จังหวัด (สำหรับฟอร์มสร้างเจ้าหน้าที่ระดับจังหวัด) — reuses the SAME
 // GET /admin/provinces endpoint the cooperatives form above uses. ----------
@@ -1175,12 +1190,13 @@ document.getElementById("officerScopeSelect").addEventListener("change", (e) => 
 document.getElementById("createOfficerBtn").addEventListener("click", async () => {
   const fullName = document.getElementById("officerFullName").value.trim();
   const nationalId = document.getElementById("officerNationalId").value.trim();
+  const departmentCode = document.getElementById("officerDepartmentSelect").value;
   const scopeType = document.getElementById("officerScopeSelect").value;
   const provinceCode = document.getElementById("officerProvinceSelect").value;
   const roleCode = document.getElementById("officerRoleSelect").value;
   const createdBy = document.getElementById("officerCreatedBy").value.trim();
 
-  if (!fullName || !nationalId || !scopeType || !roleCode || !createdBy) {
+  if (!fullName || !nationalId || !departmentCode || !scopeType || !roleCode || !createdBy) {
     toast("กรุณากรอกข้อมูลให้ครบทุกช่อง", true);
     return;
   }
@@ -1192,6 +1208,7 @@ document.getElementById("createOfficerBtn").addEventListener("click", async () =
   const payload = {
     full_name: fullName,
     national_id: nationalId,
+    department_code: departmentCode,
     scope_type: scopeType,
     province_code: scopeType === "Province" ? provinceCode : undefined,
     role_code: roleCode,
@@ -1225,7 +1242,7 @@ function officerCard(o) {
         <span class="title">${escapeHtml(o.full_name)}</span>
         ${officerStatusBadge(o.status)}
       </div>
-      <div class="detail-line">${scopeLine}</div>
+      <div class="detail-line">${escapeHtml(o.department_name_th || o.department_code || "-")} — ${scopeLine}</div>
       <div class="detail-line muted">บทบาท: ${escapeHtml(o.role_description || o.role_code || "-")}</div>
       <div class="detail-line muted">สร้างเมื่อ ${thaiDate(o.created_at)} โดย ${escapeHtml(o.created_by)}</div>
       <div class="action-row">
@@ -1276,14 +1293,23 @@ async function loadOfficerDetail(officerId) {
       ? `<button type="button" class="btn btn-decline btn-sm" data-deactivate-officer="${o.officer_id}" style="margin-top:10px;">ปิดใช้งานบัญชี</button>`
       : "";
 
+    // OAE officers log into their own portal (frontend/oae/), every other
+    // department still uses the original CPD-flavored gov portal
+    // (frontend/gov/) — see grant_oae_data_portal.sql's header note on why
+    // department_code and the portal a given officer logs into are linked
+    // by convention here, not a DB constraint.
+    const portalHref = o.department_code === "OAE" ? "../oae/index.html" : "../gov/index.html";
+    const portalLabel = o.department_code === "OAE" ? "เปิดพอร์ทัลเจ้าหน้าที่ สศก." : "เปิดพอร์ทัลเจ้าหน้าที่ภาครัฐ";
+
     el.innerHTML = `
       <div class="panel">
         <div style="font-weight:700; font-size:16px; margin-bottom:10px;">${escapeHtml(o.full_name)} ${officerStatusBadge(o.status)}</div>
+        <div class="detail-line">หน่วยงาน: ${escapeHtml(o.department_name_th || o.department_code || "-")}</div>
         <div class="detail-line">${scopeLine}</div>
         <div class="detail-line muted">Auth Subject (สำหรับเข้าสู่ระบบ): ${escapeHtml(o.auth_subject_id)}</div>
         <div class="detail-line muted">สร้างเมื่อ ${thaiDate(o.created_at)} โดย ${escapeHtml(o.created_by)}</div>
         <div class="detail-line" style="margin-top:6px;">
-          <a href="../gov/index.html" target="_blank" rel="noopener">เปิดพอร์ทัลเจ้าหน้าที่ภาครัฐ &rarr;</a>
+          <a href="${portalHref}" target="_blank" rel="noopener">${portalLabel} &rarr;</a>
           — ใช้ Auth Subject ด้านบนเพื่อเข้าสู่ระบบในนามเจ้าหน้าที่ท่านนี้
         </div>
         <div style="font-weight:700; margin-top:16px; margin-bottom:8px;">สิทธิ์การเข้าถึงที่มอบให้</div>
@@ -1314,7 +1340,7 @@ document.getElementById("officerDetailSection").addEventListener("click", async 
 });
 
 async function initGovernmentOfficers() {
-  await Promise.all([loadOfficerProvinces(), loadGovRoles()]);
+  await Promise.all([loadOfficerDepartments(), loadOfficerProvinces(), loadGovRoles()]);
   await loadOfficers();
 }
 

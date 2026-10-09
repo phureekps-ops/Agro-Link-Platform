@@ -1334,4 +1334,55 @@ router.get('/buy-campaigns/my-sales', async (req, res, next) => {
   }
 });
 
+/**
+ * ============================================================================
+ * สศก. Data Portal, farmer-facing read side — see grant_oae_data_portal.
+ * sql for the full oae.* schema, src/routes/oae.js for the officer-facing
+ * (write) side, and the identical GET /coop/oae/datasets in
+ * coopcollection.js for the cooperative-facing counterpart this mirrors.
+ * Read-only: a farmer never writes to oae.*, only ever sees whatever an
+ * OAE officer has switched ON for the 'farmer' audience.
+ * ============================================================================
+ */
+
+/**
+ * GET /farmer/oae/datasets — datasets สศก. currently shares with farmers,
+ * each with its most recent commodity-price entries (if any have been
+ * recorded yet). Every dataset returned is logged via oae.log_dataset_
+ * usage() so สศก. can see farmers are actually using it.
+ */
+router.get('/oae/datasets', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('farmer', subjectId, async (client) => {
+      const datasets = await client.query(
+        `SELECT d.dataset_id, d.dataset_code, d.dataset_name_th, d.description, d.update_frequency_th
+           FROM oae.dataset d
+           JOIN oae.dataset_sharing s ON s.dataset_id = d.dataset_id
+          WHERE s.audience = 'farmer' AND s.is_enabled = true AND d.status = 'Active'
+          ORDER BY d.dataset_name_th`,
+      );
+
+      for (const d of datasets.rows) {
+        const prices = await client.query(
+          `SELECT commodity_name_th, price_date, price_value, unit, source_note, created_at
+             FROM oae.commodity_price
+            WHERE dataset_id = $1
+            ORDER BY price_date DESC, created_at DESC
+            LIMIT 20`,
+          [d.dataset_id],
+        );
+        d.recent_prices = prices.rows;
+        await client.query('SELECT oae.log_dataset_usage($1, $2, $3)', [d.dataset_id, 'farmer', subjectId]);
+      }
+
+      await logAccess(client, 'read', 'oae.dataset', null);
+      return datasets.rows;
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

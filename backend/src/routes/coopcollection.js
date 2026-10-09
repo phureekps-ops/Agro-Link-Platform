@@ -4216,5 +4216,57 @@ router.post('/input-products/orders/:id/cancel', async (req, res, next) => {
   }
 });
 
+/**
+ * ============================================================================
+ * สศก. Data Portal, cooperative-facing read side — see grant_oae_data_
+ * portal.sql for the full oae.* schema and src/routes/oae.js for the
+ * officer-facing (write) side. Read-only here, same conservative default
+ * as GET /gov/* in government.js: a cooperative never writes to oae.*, it
+ * only ever sees whatever an OAE officer has switched ON for the
+ * 'cooperative' audience via POST /oae/datasets/:id/sharing.
+ * ============================================================================
+ */
+
+/**
+ * GET /coop/oae/datasets — datasets สศก. currently shares with cooperatives,
+ * each with its most recent commodity-price entries (if any exist yet —
+ * see oae.commodity_price's own "left empty until a real officer records
+ * a real figure" note). Every dataset returned is also logged via
+ * oae.log_dataset_usage() so สศก. can see this cooperative actually looked
+ * at it — see that function's own doc comment.
+ */
+router.get('/oae/datasets', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('organization', subjectId, async (client) => {
+      const datasets = await client.query(
+        `SELECT d.dataset_id, d.dataset_code, d.dataset_name_th, d.description, d.update_frequency_th
+           FROM oae.dataset d
+           JOIN oae.dataset_sharing s ON s.dataset_id = d.dataset_id
+          WHERE s.audience = 'cooperative' AND s.is_enabled = true AND d.status = 'Active'
+          ORDER BY d.dataset_name_th`,
+      );
+
+      for (const d of datasets.rows) {
+        const prices = await client.query(
+          `SELECT commodity_name_th, price_date, price_value, unit, source_note, created_at
+             FROM oae.commodity_price
+            WHERE dataset_id = $1
+            ORDER BY price_date DESC, created_at DESC
+            LIMIT 20`,
+          [d.dataset_id],
+        );
+        d.recent_prices = prices.rows;
+        await client.query('SELECT oae.log_dataset_usage($1, $2, $3)', [d.dataset_id, 'organization', subjectId]);
+      }
+
+      await logAccess(client, 'read', 'oae.dataset', null);
+      return datasets.rows;
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
 
 module.exports = router;

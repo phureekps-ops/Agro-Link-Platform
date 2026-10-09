@@ -1113,6 +1113,27 @@ router.get('/roles', async (req, res, next) => {
 });
 
 /**
+ * GET /admin/departments — the registry.department catalog (see
+ * grant_oae_data_portal.sql). Exists so the government-officer creation
+ * form can offer a department picker without hardcoding the list a second
+ * time in the frontend — same reasoning as GET /admin/roles above it.
+ */
+router.get('/departments', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        'SELECT department_code, department_name_th FROM registry.department WHERE is_active ORDER BY department_name_th',
+      );
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * GET /admin/cooperatives — every Cooperative-typed organization, joined
  * with its registry.cooperative_profile + province. This is deliberately
  * the FIRST thing in the codebase that lists cooperatives as their own
@@ -1395,9 +1416,11 @@ router.get('/government-officers', async (req, res, next) => {
     const rows = await withSessionContext('platform', subjectId, async (client) => {
       const result = await client.query(
         `SELECT g.officer_id, g.full_name, g.scope_type, g.province_code, p.province_name_th, g.status,
-                g.created_by, g.created_at, sr.role_code, r.description AS role_description
+                g.department_code, dept.department_name_th, g.created_by, g.created_at,
+                sr.role_code, r.description AS role_description
            FROM identity.government_officer g
            LEFT JOIN registry.province p ON p.province_code = g.province_code
+           LEFT JOIN registry.department dept ON dept.department_code = g.department_code
            LEFT JOIN identity.subject_role sr ON sr.subject_type = 'government_officer' AND sr.subject_id = g.officer_id
            LEFT JOIN identity.role r ON r.role_code = sr.role_code
           ORDER BY g.created_at DESC`,
@@ -1423,9 +1446,10 @@ router.get('/government-officers/:id', async (req, res, next) => {
     const result = await withSessionContext('platform', subjectId, async (client) => {
       const officerRes = await client.query(
         `SELECT g.officer_id, g.full_name, g.scope_type, g.province_code, p.province_name_th, g.status,
-                g.auth_subject_id, g.created_by, g.created_at
+                g.department_code, dept.department_name_th, g.auth_subject_id, g.created_by, g.created_at
            FROM identity.government_officer g
            LEFT JOIN registry.province p ON p.province_code = g.province_code
+           LEFT JOIN registry.department dept ON dept.department_code = g.department_code
           WHERE g.officer_id = $1`,
         [officerId],
       );
@@ -1453,7 +1477,9 @@ router.get('/government-officers/:id', async (req, res, next) => {
 /**
  * POST /admin/government-officers
  * Body: { full_name, national_id, scope_type: National|Province,
- *         province_code? (required iff Province), role_code, created_by }
+ *         province_code? (required iff Province), role_code,
+ *         department_code (registry.department, see GET /admin/departments),
+ *         created_by }
  * Returns auth_subject_id for Platform Ops to relay to the officer
  * out-of-band — same shape as POST /admin/cooperatives.
  */
@@ -1461,13 +1487,14 @@ router.post('/government-officers', async (req, res, next) => {
   const { subjectId } = req.subject;
   const {
     full_name: fullName, national_id: nationalId, scope_type: scopeType,
-    province_code: provinceCode, role_code: roleCode, created_by: createdBy,
+    province_code: provinceCode, role_code: roleCode, department_code: departmentCode,
+    created_by: createdBy,
   } = req.body || {};
 
-  if (!fullName || !nationalId || !scopeType || !roleCode || !createdBy) {
+  if (!fullName || !nationalId || !scopeType || !roleCode || !departmentCode || !createdBy) {
     return res.status(400).json({
       error: 'missing_required_fields',
-      required: ['full_name', 'national_id', 'scope_type', 'role_code', 'created_by'],
+      required: ['full_name', 'national_id', 'scope_type', 'role_code', 'department_code', 'created_by'],
     });
   }
   if (!['National', 'Province'].includes(scopeType)) {
@@ -1484,8 +1511,8 @@ router.post('/government-officers', async (req, res, next) => {
     const result = await withSessionContext('platform', subjectId, async (client) => {
       try {
         const { rows } = await client.query(
-          'SELECT identity.register_government_officer($1, $2, $3, $4, $5, $6, $7) AS officer_id',
-          [fullName, nationalIdHash, scopeType, provinceCode || null, authSubjectId, roleCode, createdBy],
+          'SELECT identity.register_government_officer($1, $2, $3, $4, $5, $6, $7, $8) AS officer_id',
+          [fullName, nationalIdHash, scopeType, provinceCode || null, authSubjectId, roleCode, departmentCode, createdBy],
         );
         await logAccess(client, 'write', 'identity.government_officer', rows[0].officer_id);
         return { officerId: rows[0].officer_id };

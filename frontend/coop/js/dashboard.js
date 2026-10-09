@@ -15,6 +15,7 @@ const COOP_PAGE_BREADCRUMB_TH = {
   members: "ข้อมูลเกษตรกร (Farmer 360°)",
   "org-staff": "องค์กร &amp; เจ้าหน้าที่",
   government: "ประตูเชื่อมต่อภาครัฐ",
+  oae: "ข้อมูลเศรษฐกิจการเกษตร (สศก.)",
   "group-order": "รวมออเดอร์ซื้อสินค้าเกษตร",
   carbon: "คาร์บอนเครดิต",
 };
@@ -2133,6 +2134,40 @@ async function loadGovDeadLetter() {
 async function refreshGovGateway() {
   await loadGovEndpoints();
   await Promise.all([loadGovConsents(), loadGovCredentials(), loadGovSubmissions(), loadGovDeadLetter()]);
+}
+
+// ---------- ข้อมูลเศรษฐกิจการเกษตร (สศก.) — GET /coop/oae/datasets, read-only ----------
+// See grant_oae_data_portal.sql / src/routes/oae.js — a completely separate
+// schema and route file from the Government Integration Gateway above
+// (govgw.*), even though both live under "ภาครัฐ" in this sidebar: that
+// module is OUTBOUND (this cooperative submitting data to CPD/CAD), this
+// one is INBOUND (สศก. sharing data down to this cooperative).
+function oaeDatasetCard(d) {
+  const pricesHtml = (d.recent_prices || []).length === 0
+    ? `<div class="detail-line muted">ยังไม่มีข้อมูลราคาที่เจ้าหน้าที่ สศก. บันทึกไว้</div>`
+    : d.recent_prices.map((p) => `
+        <div class="detail-line">${escapeHtml(p.commodity_name_th)}: ${Number(p.price_value).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.unit)} <span class="muted">(ณ ${thaiDate(p.price_date)})</span></div>
+      `).join("");
+  return `
+    <div class="item-card">
+      <div class="row"><span class="title">${escapeHtml(d.dataset_name_th)}</span></div>
+      ${d.description ? `<div class="detail-line muted">${escapeHtml(d.description)}</div>` : ""}
+      <div class="detail-line muted">ความถี่ในการอัปเดต: ${escapeHtml(d.update_frequency_th || "-")}</div>
+      <div style="margin-top:8px;">${pricesHtml}</div>
+    </div>
+  `;
+}
+
+async function loadOaeDatasets() {
+  const el = document.getElementById("oaeDatasetsSection");
+  try {
+    const datasets = await AgroLinkCoopAPI.get("/coop/oae/datasets");
+    el.innerHTML = datasets.length === 0
+      ? `<div class="empty-state">ขณะนี้ สศก. ยังไม่ได้เปิดแบ่งปันข้อมูลให้พอร์ทัลสหกรณ์</div>`
+      : datasets.map(oaeDatasetCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลจาก สศก. ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
 }
 
 document.getElementById("govSubmissionForm").addEventListener("submit", async (e) => {
@@ -5472,6 +5507,7 @@ async function init() {
   refreshProcessing();
   refreshLogistics();
   refreshGovGateway();
+  loadOaeDatasets();
   loadStaffRoles();
   loadStaff();
   loadRegistrationDocument();

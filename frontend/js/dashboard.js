@@ -13,6 +13,7 @@ const FARMER_PAGE_BREADCRUMB_TH = {
   loans: "คำขอสินเชื่อ",
   notifications: "แจ้งเตือนที่ยังไม่อ่าน",
   "group-order": "รวมออเดอร์ซื้อสินค้าเกษตร",
+  oae: "ข้อมูลเศรษฐกิจการเกษตร (สศก.)",
 };
 
 function showFarmerPage(pageKey) {
@@ -477,6 +478,37 @@ async function loadNotifications() {
   }
 }
 
+// ---------- ข้อมูลเศรษฐกิจการเกษตร (สศก.) — GET /farmer/oae/datasets, read-only ----------
+// Mirrors coop/js/dashboard.js's own loadOaeDatasets() exactly — see
+// grant_oae_data_portal.sql / src/routes/oae.js for the full oae.* schema.
+function oaeDatasetCard(d) {
+  const pricesHtml = (d.recent_prices || []).length === 0
+    ? `<div class="detail-line muted">ยังไม่มีข้อมูลราคาที่เจ้าหน้าที่ สศก. บันทึกไว้</div>`
+    : d.recent_prices.map((p) => `
+        <div class="detail-line">${escapeHtml(p.commodity_name_th)}: ${Number(p.price_value).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ${escapeHtml(p.unit)} <span class="muted">(ณ ${thaiDate(p.price_date)})</span></div>
+      `).join("");
+  return `
+    <div class="item-card">
+      <div class="row"><span class="title">${escapeHtml(d.dataset_name_th)}</span></div>
+      ${d.description ? `<div class="detail-line muted">${escapeHtml(d.description)}</div>` : ""}
+      <div class="detail-line muted">ความถี่ในการอัปเดต: ${escapeHtml(d.update_frequency_th || "-")}</div>
+      <div style="margin-top:8px;">${pricesHtml}</div>
+    </div>
+  `;
+}
+
+async function loadOaeDatasets() {
+  const el = document.getElementById("oaeDatasetsSection");
+  try {
+    const datasets = await AgroLinkAPI.get("/farmer/oae/datasets");
+    el.innerHTML = datasets.length === 0
+      ? `<div class="empty-state">ขณะนี้ สศก. ยังไม่ได้เปิดแบ่งปันข้อมูลให้พอร์ทัลเกษตรกร</div>`
+      : datasets.map(oaeDatasetCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลจาก สศก. ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkAPI.logout());
 
 /**
@@ -502,6 +534,7 @@ async function init() {
   loadCreditScore();
   loadContracts();
   loadNotifications();
+  loadOaeDatasets();
 
   // Units and lenders both feed the loan-application form's dropdowns AND
   // the name lookups applicationCard() needs, so load them before the
