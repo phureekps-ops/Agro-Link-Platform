@@ -118,6 +118,7 @@ psql -d agrolink_test -f db/grant_machinery_service_consolidation.sql
 psql -d agrolink_test -f db/grant_ledger_revenue_segregation.sql
 psql -d agrolink_test -f db/grant_sealed_bid_auction.sql
 psql -d agrolink_test -f db/grant_logistics_marketplace.sql
+psql -d agrolink_test -f db/grant_oae_data_portal.sql
 ```
 
 (This continues the same file-by-file order as `DEPLOY.md`'s ordered list at
