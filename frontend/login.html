@@ -22,7 +22,7 @@
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    background: var(--gray-300);
+    background: var(--gray-50);
     border: 1px solid var(--gray-300);
     border-radius: 12px;
     padding: 14px 16px;
@@ -36,8 +36,6 @@
   .portal-card .desc { font-size: 12.5px; color: var(--gray-500); }
   .portal-card.featured { background: var(--green-100); border-color: var(--green-600); }
   .portal-card.admin-card { opacity: .82; }
-  .signup-btn { background: var(--gray-300); }
-  .signup-btn:hover:not(:disabled) { background: #c3cbc0; }
   .portal-section-label {
     font-size: 12px; font-weight: 700; color: var(--gray-500);
     text-transform: uppercase; letter-spacing: .04em;
@@ -101,7 +99,7 @@
       </a>
       <a href="marketvenue/index.html" class="portal-card">
         <span class="icon">🏪</span>
-        <span><span class="label">ตลาดค้าส่ง/ผู้ให้บริการพื้นที่ขายสินค้าเกษตร</span><span class="desc">พื้นที่ซื้อขายและกระจายสินค้า</span></span>
+        <span><span class="label">ผู้ให้บริการพื้นที่ขายสินค้าเกษตร</span><span class="desc">พื้นที่ซื้อขายและกระจายสินค้า</span></span>
       </a>
       <a href="fertilizermixing/index.html" class="portal-card">
         <span class="icon">⚗️</span>
@@ -123,6 +121,10 @@
         <span class="icon">🏛️</span>
         <span><span class="label">เจ้าหน้าที่ภาครัฐ</span><span class="desc">ติดตามข้อมูลระดับพื้นที่และนโยบาย</span></span>
       </a>
+      <a href="oae/index.html" class="portal-card">
+        <span class="icon">🌾</span>
+        <span><span class="label">สำนักงานเศรษฐกิจการเกษตร (สศก.)</span><span class="desc">บริหารข้อมูลเศรษฐกิจการเกษตรและราคาสินค้าโภคภัณฑ์</span></span>
+      </a>
       <a href="admin/index.html" class="portal-card admin-card">
         <span class="icon">⚙️</span>
         <span><span class="label">ผู้ดูแลระบบ</span><span class="desc">ตั้งค่าและดูแลระบบส่วนกลาง</span></span>
@@ -130,8 +132,8 @@
     </div>
 
     <div class="divider">ยังไม่มีบัญชี?</div>
-    <a href="register.html" class="btn btn-ghost signup-btn" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">สมัครสมาชิกเกษตรกร</a>
-    <a href="register-provider.html" class="btn btn-ghost signup-btn" style="width:100%; text-align:center; display:block; box-sizing:border-box;">สมัครเป็นผู้ให้บริการ</a>
+    <a href="register.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">สมัครสมาชิกเกษตรกร</a>
+    <a href="register-provider.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">สมัครเป็นผู้ให้บริการ</a>
   </div>
 </body>
 </html>
