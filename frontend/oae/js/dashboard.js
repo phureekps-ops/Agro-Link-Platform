@@ -1,3 +1,30 @@
+// ============================================================
+// Sidebar navigation — same "UI-only show/hide" pattern as
+// frontend/communityenterprise/js/dashboard.js's showHubPage().
+// ============================================================
+const HUB_PAGE_BREADCRUMB_TH = {
+  overview: "ภาพรวม",
+  catalog: "บัญชีข้อมูล (Data Catalog)",
+  prices: "ราคาสินค้าโภคภัณฑ์",
+  "usage-log": "บันทึกการเข้าถึงข้อมูล",
+};
+
+function showHubPage(pageKey) {
+  document.querySelectorAll("[data-page-content]").forEach((el) => {
+    el.style.display = el.dataset.pageContent === pageKey ? "" : "none";
+  });
+  document.querySelectorAll("[data-page]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.page === pageKey);
+  });
+  const crumb = document.getElementById("hubBreadcrumbCurrent");
+  if (crumb) crumb.textContent = HUB_PAGE_BREADCRUMB_TH[pageKey] || pageKey;
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll("[data-page]").forEach((btn) => {
+  btn.addEventListener("click", () => showHubPage(btn.dataset.page));
+});
+
 const toastEl = document.getElementById("toast");
 function toast(message, isError = false) {
   toastEl.textContent = message;
@@ -31,8 +58,8 @@ function thaiDateTime(iso) {
  * this page.
  */
 function showInactiveNotice() {
-  document.getElementById("mainContainer").innerHTML = `
-    <div class="empty-state" style="padding:60px 24px;">
+  document.querySelector(".hub-shell").innerHTML = `
+    <div class="empty-state" style="padding:60px 24px; width:100%;">
       <div style="font-size:40px; margin-bottom:14px;">⏳</div>
       <div style="font-size:17px; font-weight:700; color:var(--green-900); margin-bottom:8px;">
         บัญชีของท่านถูกปิดใช้งาน หรือไม่ใช่บัญชีเจ้าหน้าที่ สศก.
@@ -102,6 +129,7 @@ async function loadDatasets() {
       ? `<div class="empty-state">ยังไม่มีหมวดหมู่ข้อมูลในระบบ</div>`
       : datasetCache.map(datasetCard).join("");
     populatePriceDatasetSelect();
+    renderOverviewStats();
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดรายการข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
@@ -118,6 +146,14 @@ document.getElementById("datasetsSection").addEventListener("change", async (e) 
     await AgroLinkOaeAPI.post(`/oae/datasets/${datasetId}/sharing`, { audience, is_enabled: isEnabled });
     const audienceLabel = audience === "cooperative" ? "พอร์ทัลสหกรณ์" : "พอร์ทัลเกษตรกร";
     toast(isEnabled ? `เปิดแบ่งปันให้${audienceLabel}แล้ว` : `ปิดแบ่งปันให้${audienceLabel}แล้ว`);
+    // Keep the local cache (and therefore the overview KPI tiles) in sync
+    // with the toggle the officer just flipped, without a full re-fetch.
+    const ds = datasetCache.find((x) => String(x.dataset_id) === String(datasetId));
+    if (ds) {
+      if (audience === "cooperative") ds.shared_with_cooperatives = isEnabled;
+      else ds.shared_with_farmers = isEnabled;
+      renderOverviewStats();
+    }
   } catch (err) {
     checkbox.checked = !isEnabled;
     toast("เปลี่ยนสถานะการแบ่งปันไม่สำเร็จ: " + ((err.body && err.body.detail) || err.message), true);
@@ -189,6 +225,7 @@ document.getElementById("priceSubmitBtn").addEventListener("click", async () => 
 
 // ---------- ประวัติการใช้ข้อมูล ----------
 const USAGE_VIEWER_LABEL_TH = { organization: "สหกรณ์", farmer: "เกษตรกร" };
+let usageCache = [];
 
 function usageCard(u) {
   return `
@@ -207,12 +244,53 @@ async function loadUsageLog() {
   const el = document.getElementById("usageLogSection");
   try {
     const d = await AgroLinkOaeAPI.get("/oae/usage-log");
-    el.innerHTML = d.usage.length === 0
+    usageCache = d.usage;
+    el.innerHTML = usageCache.length === 0
       ? `<div class="empty-state">ยังไม่มีการเข้าดูข้อมูลที่แบ่งปัน</div>`
-      : d.usage.map(usageCard).join("");
+      : usageCache.map(usageCard).join("");
+    renderOverviewStats();
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดประวัติการใช้ข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+// ---------- ภาพรวม (Overview KPI tiles) ----------
+// Every number here is derived from datasetCache/usageCache — the same
+// data already fetched for the Data Catalog and Usage Log pages — never a
+// fabricated figure. GET /oae/usage-log caps at 200 rows (see oae.js), so
+// anything built from usageCache is explicitly labelled as coming from
+// "the latest 200 log entries," not a true all-time total.
+function renderOverviewStats() {
+  const el = document.getElementById("overviewStatsSection");
+  if (!el) return;
+  // Wait until both the dataset catalog and the usage log have loaded at
+  // least once, so the tiles never flash a false "0" before data arrives.
+  if (!loadDatasets.hasLoadedOnce || !loadUsageLog.hasLoadedOnce) return;
+
+  const totalDatasets = datasetCache.length;
+  const sharedDatasets = datasetCache.filter((d) => d.shared_with_cooperatives || d.shared_with_farmers).length;
+  const totalPriceEntries = datasetCache.reduce((sum, d) => sum + Number(d.price_entry_count || 0), 0);
+  const uniqueViewers = new Set(usageCache.map((u) => `${u.viewer_subject_type}:${u.viewer_name}`)).size;
+
+  el.innerHTML = `
+    <div class="stat-card">
+      <div class="label">ชุดข้อมูลทั้งหมด</div>
+      <div class="value">${totalDatasets.toLocaleString("th-TH")} ชุด</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">ชุดข้อมูลที่เปิดแบ่งปันอยู่</div>
+      <div class="value">${sharedDatasets.toLocaleString("th-TH")} / ${totalDatasets.toLocaleString("th-TH")} ชุด</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">รายการราคาที่บันทึกสะสม</div>
+      <div class="value">${totalPriceEntries.toLocaleString("th-TH")} รายการ</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">ผู้เข้าถึงข้อมูลที่ไม่ซ้ำกัน</div>
+      <div class="value">${uniqueViewers.toLocaleString("th-TH")} ราย</div>
+      <div class="sub">จาก log ล่าสุดสูงสุด 200 รายการ</div>
+    </div>
+  `;
 }
 
 // ---------- เริ่มต้น ----------
@@ -226,7 +304,10 @@ async function init() {
   if (!ok) return;
 
   await loadDatasets();
+  loadDatasets.hasLoadedOnce = true;
   await Promise.all([loadPrices(), loadUsageLog()]);
+  loadUsageLog.hasLoadedOnce = true;
+  renderOverviewStats();
 }
 
 init();
