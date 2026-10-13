@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการทุเรียนครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+          </div>
+        </div>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-durian-business_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-tree"></i><span data-i18n="integrated-durian-business_2"> คู่มือแนะนำโครงการ</span></div>
+    <h1 class="section-title" data-i18n="integrated-durian-business_3">โครงการพัฒนาระบบนิเวศเศรษฐกิจทุเรียนครบวงจรด้วยเทคโนโลยีดิจิทัล</h1>
+    <p class="section-sub" data-i18n="integrated-durian-business_4">"ทุเรียนคุณภาพ เกษตรกรมั่นคง ตลาดเป็นธรรม ตรวจสอบได้ ลดโลกร้อน" — เอกสารแนวคิดโครงการ (Concept Paper) เสนอต่อกระทรวงเกษตรและสหกรณ์</p>
+    <span class="draft-tag" data-i18n="integrated-durian-business_5">ฉบับร่างเพื่อพิจารณา — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-durian-business_6">สารบัญ</h4>
+      <ol>
+        <li><a href="#sec-1" data-i18n="integrated-durian-business_7">1. บทสรุปผู้บริหาร</a></li>
+<li><a href="#sec-2" data-i18n="integrated-durian-business_8">2. หลักการและเหตุผล</a></li>
+<li><a href="#sec-3" data-i18n="integrated-durian-business_9">3. วัตถุประสงค์</a></li>
+<li><a href="#sec-4" data-i18n="integrated-durian-business_10">4. โครงสร้างระบบนิเวศและบทบาทผู้เกี่ยวข้อง</a></li>
+<li><a href="#sec-5" data-i18n="integrated-durian-business_11">5. ระบบงานหลักของ AgroLink Smart Durian Ecosystem</a></li>
+<li><a href="#sec-6" data-i18n="integrated-durian-business_12">6. AgroLink Durian Quality &amp; Trading Center</a></li>
+<li><a href="#sec-7" data-i18n="integrated-durian-business_13">7. บทบาทหน่วยงานภาครัฐ</a></li>
+<li><a href="#sec-8" data-i18n="integrated-durian-business_14">8. ผลประโยชน์ที่คาดว่าจะได้รับ</a></li>
+<li><a href="#sec-9" data-i18n="integrated-durian-business_15">9. ความเสี่ยงและแนวทางบริหาร</a></li>
+<li><a href="#sec-10" data-i18n="integrated-durian-business_16">10. ข้อเสนอเชิงนโยบายและสิ่งที่ขอรับการพิจารณา</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_17">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="integrated-durian-business_18">ปัจจุบันเกษตรกร ล้ง ผู้ส่งออก และหน่วยงานรัฐในห่วงโซ่ทุเรียนทำงานแยกกัน ข้อมูลการผลิต คุณภาพ และราคาไม่เชื่อมโยงกัน ทำให้เกษตรกรมีอำนาจต่อรองต่ำ ต้นทุนการผลิตสูง เกิดข้อพิพาทเรื่องการคัดเกรด และยังมีปัญหาทุเรียนอ่อนที่กระทบความเชื่อมั่นของตลาดส่งออก</p>
+<p data-i18n="integrated-durian-business_19">โครงการนี้เสนอให้พัฒนา AgroLink Smart Durian Ecosystem เป็นระบบนิเวศเศรษฐกิจทุเรียนที่เชื่อมโยงข้อมูล การผลิต เงินทุน คุณภาพ การซื้อขาย และการส่งออกไว้ในโครงสร้างเดียว โดย AgroLink ทำหน้าที่เป็นผู้พัฒนาโครงสร้างพื้นฐานดิจิทัล ไม่ปล่อยสินเชื่อและไม่กำหนดราคาเอง แนวคิดหลักประกอบด้วย 5 ด้าน</p>
+<ul class="check-list">
+<li><strong data-i18n="integrated-durian-business_20">ระบบสแกนและคัดเกรดทุเรียนที่เป็นธรรม</strong><span data-i18n="integrated-durian-business_21"> ใช้เทคโนโลยีตรวจคุณภาพแบบไม่ทำลายผลผลิต ให้เกษตรกรและล้งใช้ข้อมูลคุณภาพชุดเดียวกัน ตรวจสอบได้ผ่านมือถือ และป้องกันทุเรียนอ่อนตั้งแต่ต้นทาง</span></li>
+<li><strong data-i18n="integrated-durian-business_22">ตลาดประมูลดิจิทัลตามเกรด</strong><span data-i18n="integrated-durian-business_23"> ล้ง ผู้ส่งออก และ Modern Trade แข่งขันเสนอราคารับซื้อผลผลิตที่มีข้อมูลคุณภาพชัดเจน เกษตรกรมีทางเลือกในการขายมากขึ้น แทนการพึ่งพาผู้รับซื้อรายเดียว</span></li>
+<li><strong data-i18n="integrated-durian-business_24">สวนทุเรียนคาร์บอนต่ำแบบรวมกลุ่ม</strong><span data-i18n="integrated-durian-business_25"> ลดการใช้ปุ๋ย น้ำ และพลังงานอย่างมีประสิทธิภาพก่อน แล้วต่อยอดสู่ Carbon Credit แบบรวมกลุ่มเมื่อผ่านกระบวนการรับรอง</span></li>
+<li><strong data-i18n="integrated-durian-business_26">ปุ๋ยสั่งตัดเพื่อลดต้นทุนการผลิต</strong><span data-i18n="integrated-durian-business_27"> ปุ๋ยเป็นต้นทุนหลักของสวนทุเรียน แต่เกษตรกรส่วนใหญ่ยังใส่ปุ๋ยสูตรสำเร็จตามความเคยชิน ไม่ได้อิงค่าวิเคราะห์ดินจริง AgroLink จะทำให้นโยบายปุ๋ยสั่งตัดเกิดผลจริงในระดับแปลง ผ่านวงจรเดียวที่ต่อเนื่องกัน (รายละเอียดหัวข้อ 5.3)</span></li>
+</ul>
+<p data-i18n="integrated-durian-business_28">Digital Infrastructure เชื่อมโยงผู้เกี่ยวข้องในระบบนิเวศ — ปัญหาเชิงโครงสร้างของอุตสาหกรรมทุเรียนคือข้อมูลสำคัญกระจัดกระจายอยู่ในหลายหน่วยงานและหลายรูปแบบ AgroLink จะสร้างโครงสร้างพื้นฐานดิจิทัลกลางที่ผู้เกี่ยวข้องทุกฝ่ายใช้ร่วมกัน ประกอบด้วย</p>
+<ul class="check-list">
+<li><strong data-i18n="integrated-durian-business_29">ข้อมูลเรียลไทม์ 3 ชั้น</strong><span data-i18n="integrated-durian-business_30"> ภาพถ่ายดาวเทียม (ขอบเขตสวน สุขภาพพืช การใช้ที่ดิน) เซ็นเซอร์ IoT ภาคสนาม (ความชื้นดิน น้ำ สภาพอากาศ) และข้อมูลกิจกรรมจริงของเกษตรกร (การใส่ปุ๋ย การเก็บเกี่ยว การซื้อขาย)</span></li>
+<li><strong data-i18n="integrated-durian-business_31">ตัวตนดิจิทัลของสวนและสมาชิก</strong><span data-i18n="integrated-durian-business_32"> Durian Farm Digital ID ผูกข้อมูลสวน ผลผลิต ผลตรวจคุณภาพ และธุรกรรมทั้งหมดเข้าด้วยกัน ตรวจสอบย้อนกลับได้ตั้งแต่สวนถึงผู้บริโภค</span></li>
+<li><strong data-i18n="integrated-durian-business_33">การเชื่อมโยงข้อมูลกับหน่วยงานรัฐ</strong><span data-i18n="integrated-durian-business_34"> เชื่อมทะเบียนเกษตรกร ข้อมูล GAP ข้อมูลดิน และข้อมูลส่งออก ภายใต้ข้อตกลงการใช้ข้อมูลและกฎหมายคุ้มครองข้อมูลส่วนบุคคล โดยไม่สร้างระบบซ้ำซ้อนกับหน่วยงานเดิม</span></li>
+<li><strong data-i18n="integrated-durian-business_35">บริการต่อยอดบนฐานข้อมูลเดียวกัน</strong><span data-i18n="integrated-durian-business_36"> ตลาดประมูล ตลาดปัจจัยการผลิต ปุ๋ยสั่งตัด สินเชื่อตามวงจรการผลิต Credit Scoring ของสมาชิก Traceability และ Carbon MRV ล้วนใช้ข้อมูลชุดเดียวกัน</span></li>
+</ul>
+<p data-i18n="integrated-durian-business_37">ผู้เกี่ยวข้องแต่ละฝ่ายได้ประโยชน์ต่างกัน: เกษตรกรได้ข้อมูลประกอบการตัดสินใจและการต่อรอง ล้งและผู้ส่งออกได้ผลผลิตที่ตรวจสอบคุณภาพและแหล่งที่มาได้ สถาบันการเงินประเมินความเสี่ยงได้แม่นยำขึ้น และภาครัฐได้ฐานข้อมูลทุเรียนระดับประเทศสำหรับวางแผนผลผลิตและกำหนดนโยบาย</p>
+<div class="note-block" style="margin-top:22px;"><strong data-i18n="integrated-durian-business_38">สิ่งที่ขอรับการพิจารณา:</strong><span data-i18n="integrated-durian-business_39"> เห็นชอบในหลักการของแนวคิดโครงการ แต่งตั้งคณะทำงานร่วม และสนับสนุนการเชื่อมโยงข้อมูลภาครัฐ (รายละเอียดหัวข้อ 10)</span></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_40">2. หลักการและเหตุผล</h2>
+<p data-i18n="integrated-durian-business_41">ทุเรียนเป็นสินค้าเกษตรเศรษฐกิจสำคัญของไทย มีความต้องการสูงทั้งในประเทศและต่างประเทศ โดยเฉพาะตลาดจีน แต่ห่วงโซ่อุปทานยังเผชิญปัญหาเชิงโครงสร้างใน 4 ด้าน</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:30px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_50">ด้าน</th>
+<th data-i18n="integrated-durian-business_51">ปัญหาหลัก</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-durian-business_42">การผลิต</strong></td><td data-i18n="integrated-durian-business_43">ต้นทุนปุ๋ย สารเคมี แรงงาน และน้ำสูง; การใช้ปุ๋ยไม่อิงค่าวิเคราะห์ดินจริง; ขาดต้นพันธุ์คุณภาพที่ตรวจสอบแหล่งที่มาได้; โรครากเน่าโคนเน่า</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_44">คุณภาพและมาตรฐาน</strong></td><td data-i18n="integrated-durian-business_45">ทุเรียนอ่อนและสารตกค้างกระทบความเชื่อมั่น; การคัดเกรดระหว่างเกษตรกรกับล้งมีข้อโต้แย้ง; Traceability ยังไม่ครอบคลุมสวนถึงผู้บริโภค</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_46">ตลาดและการเงิน</strong></td><td data-i18n="integrated-durian-business_47">เกษตรกรมีอำนาจต่อรองจำกัด; ข้อมูลผลผลิตล่วงหน้าไม่เชื่อมโยงกัน; เข้าถึงสินเชื่อและประกันภัยไม่ทั่วถึง</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_48">ข้อมูลและสิ่งแวดล้อม</strong></td><td data-i18n="integrated-durian-business_49">ข้อมูลกระจัดกระจายในหลายหน่วยงาน; การจัดการเศษวัสดุ น้ำ และการปล่อยก๊าซเรือนกระจกยังมีโอกาสพัฒนาอีกมาก</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-durian-business_52">จึงเสนอให้กระทรวงเกษตรและสหกรณ์ร่วมกับภาคเอกชน สหกรณ์ กลุ่มเกษตรกร ล้ง ผู้ส่งออก และสถาบันการเงิน พัฒนา AgroLink Smart Durian Ecosystem เพื่อยกระดับอุตสาหกรรมทุเรียนไทยอย่างครบวงจร</p>
+</div></section>
+
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_53">3. วัตถุประสงค์</h2>
+<p data-i18n="integrated-durian-business_54">วัตถุประสงค์หลัก: สร้างระบบนิเวศเศรษฐกิจทุเรียนที่ทำให้เกษตรกรมีรายได้มั่นคง มีตลาดรองรับ ผลิตทุเรียนคุณภาพสูง และแข่งขันในตลาดโลกได้อย่างยั่งยืน</p>
+<h3 data-i18n="integrated-durian-business_55">วัตถุประสงค์เฉพาะ</h3>
+<ul class="check-list">
+<li data-i18n="integrated-durian-business_56">สร้างโครงสร้างพื้นฐานดิจิทัลที่เชื่อมข้อมูลเกษตรกร สวน ล้ง ผู้ส่งออก ผู้ซื้อ และหน่วยงานรัฐ</li>
+<li data-i18n="integrated-durian-business_57">ติดตามการผลิตตั้งแต่การปลูกจนถึงการจำหน่าย</li>
+<li data-i18n="integrated-durian-business_58">ลดต้นทุนการผลิตด้วยปุ๋ยสั่งตัดและการรวมซื้อปัจจัยการผลิต</li>
+<li data-i18n="integrated-durian-business_59">สร้างระบบคัดเกรดที่โปร่งใสและตรวจสอบได้</li>
+<li data-i18n="integrated-durian-business_60">พัฒนาตลาดประมูลซื้อขายตามคุณภาพและเกรด</li>
+<li data-i18n="integrated-durian-business_61">เพิ่มโอกาสเข้าถึงสินเชื่อและประกันภัยการเกษตร</li>
+<li data-i18n="integrated-durian-business_62">พัฒนาระบบตรวจสอบย้อนกลับรองรับตลาดส่งออก</li>
+<li data-i18n="integrated-durian-business_63">ส่งเสริมการลดก๊าซเรือนกระจกและ Carbon Credit แบบรวมกลุ่ม</li>
+<li data-i18n="integrated-durian-business_64">สร้างฐานข้อมูลทุเรียนระดับประเทศสนับสนุนการวางแผนและการตัดสินใจของภาครัฐ</li>
+</ul>
+</div></section>
+
+<section class="prose-section alt" id="sec-4">
+<div class="container">
+<div class="section-head reveal" style="margin-bottom:30px;">
+<div class="eyebrow"><i class="fa-solid fa-people-group"></i><span data-i18n="integrated-durian-business_65"> ผู้เกี่ยวข้อง</span></div>
+<h2 class="section-title" data-i18n="integrated-durian-business_66">4. โครงสร้างระบบนิเวศและบทบาทผู้เกี่ยวข้อง</h2>
+<p class="section-sub" data-i18n="integrated-durian-business_67">AgroLink เป็นศูนย์กลางเชื่อมข้อมูลและธุรกรรมตลอดห่วงโซ่ โดยไม่ทำหน้าที่ปล่อยสินเชื่อหรือกำหนดราคาทุเรียน แต่พัฒนาโครงสร้างพื้นฐานดิจิทัลให้ผู้เกี่ยวข้องทำธุรกรรมอย่างโปร่งใสและเป็นธรรม</p>
+</div>
+<div class="data-table-wrap" style="max-width:980px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_101">กลุ่ม</th>
+<th data-i18n="integrated-durian-business_102">ผู้เกี่ยวข้อง</th>
+<th data-i18n="integrated-durian-business_103">บทบาทในโครงการ</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-durian-business_68">ต้นน้ำ</strong></td><td data-i18n="integrated-durian-business_69">เกษตรกรผู้ปลูกทุเรียน</td><td data-i18n="integrated-durian-business_70">ผลิตตามมาตรฐาน บันทึกข้อมูลการผลิต จำหน่ายผ่านระบบ</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_71">ต้นน้ำ</strong></td><td data-i18n="integrated-durian-business_72">กลุ่มเกษตรกร / สหกรณ์</td><td data-i18n="integrated-durian-business_73">รวมซื้อปัจจัยการผลิต ผสมปุ๋ยสั่งตัด รวมขายผลผลิต บริหารสมาชิก</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_74">ต้นน้ำ</strong></td><td data-i18n="integrated-durian-business_75">ผู้ผลิตต้นพันธุ์</td><td data-i18n="integrated-durian-business_76">จำหน่ายต้นพันธุ์คุณภาพพร้อมตรวจสอบแหล่งที่มา</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_77">ต้นน้ำ</strong></td><td data-i18n="integrated-durian-business_78">ผู้นำเข้าแม่ปุ๋ย / ผู้จำหน่ายปัจจัยการผลิต</td><td data-i18n="integrated-durian-business_79">แม่ปุ๋ย สารป้องกันกำจัดศัตรูพืช อุปกรณ์ ระบบน้ำ บริการผสมปุ๋ย</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_80">ต้นน้ำ</strong></td><td data-i18n="integrated-durian-business_81">ผู้ให้บริการเทคโนโลยี</td><td data-i18n="integrated-durian-business_82">IoT, AI, Drone และระบบตรวจสอบคุณภาพ</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_83">กลางน้ำ</strong></td><td data-i18n="integrated-durian-business_84">ล้งทุเรียน</td><td data-i18n="integrated-durian-business_85">รับซื้อ ตรวจคุณภาพ คัดเกรด บรรจุ</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_86">ปลายน้ำ</strong></td><td data-i18n="integrated-durian-business_87">ผู้ส่งออก</td><td data-i18n="integrated-durian-business_88">ซื้อผลผลิตตามมาตรฐานและส่งออก</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_89">ปลายน้ำ</strong></td><td data-i18n="integrated-durian-business_90">Modern Trade / ผู้ซื้อในประเทศ</td><td data-i18n="integrated-durian-business_91">รับซื้อและเข้าร่วมตลาดประมูล</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_92">สนับสนุน</strong></td><td data-i18n="integrated-durian-business_93">สถาบันการเงิน / ประกันภัย</td><td data-i18n="integrated-durian-business_94">สินเชื่อ เงินทุนหมุนเวียน ประกันภัยพืชผล</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_95">สนับสนุน</strong></td><td data-i18n="integrated-durian-business_96">หน่วยงานภาครัฐ</td><td data-i18n="integrated-durian-business_97">ส่งเสริม กำกับมาตรฐาน ตรวจสอบ วางแผนนโยบาย</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_98">แกนกลาง</strong></td><td data-i18n="integrated-durian-business_99">AgroLink Platform</td><td data-i18n="integrated-durian-business_100">Digital Infrastructure เชื่อมโยงข้อมูล บริหารธุรกรรม สนับสนุนการตรวจสอบตลอดห่วงโซ่</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section" id="sec-5">
+<div class="container">
+<div class="section-head reveal" style="margin-bottom:30px;">
+<div class="eyebrow"><i class="fa-solid fa-microchip"></i><span data-i18n="integrated-durian-business_104"> ระบบงานหลัก</span></div>
+<h2 class="section-title" data-i18n="integrated-durian-business_105">5. ระบบงานหลักของ AgroLink Smart Durian Ecosystem</h2>
+<p class="section-sub" data-i18n="integrated-durian-business_106">ทุกระบบทำงานบนโครงสร้างพื้นฐานดิจิทัลและฐานข้อมูลชุดเดียวกัน</p>
+</div>
+<div class="role-grid">
+<div class="role-card"><h4><span class="badge-num">1</span> Digital Durian Farm Registry</h4><ul><li data-i18n="integrated-durian-business_108">ทะเบียนเกษตรกรและแปลง: พิกัด พื้นที่ จำนวนต้น สายพันธุ์ อายุต้น GAP ข้อมูลดิน ประวัติปุ๋ย/สาร ประวัติขาย; ออก Durian Farm Digital ID</li><li><strong data-i18n="integrated-durian-business_110">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_109">ฐานข้อมูลสวนที่เชื่อมกับทะเบียนเกษตรกรของกรมส่งเสริมการเกษตรได้ (ตาม PDPA และข้อตกลงข้อมูล)</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">2</span> Smart Durian Farm Management</h4><ul><li data-i18n="integrated-durian-business_112">บริหารการผลิตตลอดฤดูกาล ตั้งแต่บำรุงต้นถึงเก็บเกี่ยว พร้อมแจ้งเตือนการให้น้ำ ความเสี่ยงโรค การใส่ปุ๋ย สภาพอากาศ และช่วงเก็บเกี่ยว</li><li><strong data-i18n="integrated-durian-business_114">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_113">ลดต้นทุน เพิ่มสัดส่วนผลผลิตผ่านเกณฑ์คุณภาพ</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">3</span> Satellite &amp; IoT Monitoring</h4><ul><li data-i18n="integrated-durian-business_116">ดาวเทียม: ขอบเขตสวน สภาพพืชพรรณ ภัยแล้ง การใช้ที่ดิน; IoT: ความชื้นดิน อุณหภูมิ ฝน น้ำ EC/pH</li><li><strong data-i18n="integrated-durian-business_118">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_117">Dashboard ติดตามสวน (ใช้ร่วมกับข้อมูลภาคสนาม เพราะดาวเทียมยืนยันความแก่ของผลไม่ได้)</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">4</span> Durian AI Quality Grading &amp; Scanning</h4><ul><li data-i18n="integrated-durian-business_120">AI Camera ตรวจภายนอก ชั่งน้ำหนักอัตโนมัติ เทคโนโลยีสแกนภายใน อ้างอิงเปอร์เซ็นต์เนื้อแห้ง</li><li><strong data-i18n="integrated-durian-business_122">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_121">คัดเกรดโปร่งใส ลดข้อพิพาท (รายละเอียด 5.1)</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">5</span> Durian Digital Auction Marketplace</h4><ul><li data-i18n="integrated-durian-business_124">ประมูลล่วงหน้า ประมูลตามเกรด และสัญญาซื้อขายล่วงหน้า พร้อมราคาอ้างอิงจากธุรกรรมจริง</li><li><strong data-i18n="integrated-durian-business_126">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_125">เกษตรกรมีทางเลือกและข้อมูลต่อรอง (รายละเอียด 5.2)</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">6</span> Prescription Fertilizer &amp; Input Marketplace</h4><ul><li data-i18n="integrated-durian-business_128">ปุ๋ยสั่งตัดตามค่าวิเคราะห์ดิน จับคู่ผู้ผสมปุ๋ย รวมซื้อแม่ปุ๋ย และตลาดต้นพันธุ์ สาร ระบบน้ำ เซนเซอร์ โดรน</li><li><strong data-i18n="integrated-durian-business_130">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_129">ลดต้นทุนปัจจัยการผลิต ใช้ปุ๋ยตรงความต้องการพืช (รายละเอียด 5.3)</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">7</span> Durian Digital Finance</h4><ul><li data-i18n="integrated-durian-business_132">ข้อมูลสนับสนุนสินเชื่อแบบเบิกเป็นงวดตามวงจรการผลิต Agri Credit Score และเชื่อมประกันภัยพืชผล</li><li><strong data-i18n="integrated-durian-business_134">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_133">เข้าถึงเงินทุนดีขึ้น (สถาบันการเงินเป็นผู้อนุมัติ)</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">8</span> Durian Traceability System</h4><ul><li data-i18n="integrated-durian-business_136">บันทึกทุกขั้น สวน → เก็บเกี่ยว → ตรวจความแก่ → ล้ง → คัดเกรด → บรรจุ → ส่งออก; QR Code เชื่อมล็อตแปลง/เก็บเกี่ยว/บรรจุ/ส่งออก</li><li><strong data-i18n="integrated-durian-business_138">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_137">รองรับข้อกำหนดตลาดส่งออก</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">9</span> Low Carbon Durian Program</h4><ul><li data-i18n="integrated-durian-business_140">MRV กิจกรรมลดก๊าซ: ปุ๋ยเหมาะสม น้ำอัจฉริยะ พลังงานแสงอาทิตย์ จัดการเศษวัสดุ คาร์บอนในดิน</li><li><strong data-i18n="integrated-durian-business_142">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-durian-business_141">ลดต้นทุนและเตรียมเข้าสู่ Carbon Credit (รายละเอียด 5.4)</span></li></ul></div>
+</div>
+</div></section>
+<section class="prose-section alt" id="sec-5-1">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-durian-business_143">5.1 ระบบคัดเกรดที่เป็นธรรม</h3>
+<p data-i18n="integrated-durian-business_144">ปัจจุบันเมื่อเกษตรกรนำทุเรียนไปขายให้ล้ง ผลผลิตจะถูกคัดแยกเป็นเกรดต่าง ๆ และส่วนที่ตกเกรด โดยเกษตรกรมักตรวจสอบกระบวนการคัดเกรดไม่ได้ จึงเกิดข้อโต้แย้งเรื่องคุณภาพ น้ำหนัก และราคา</p>
+<p data-i18n="integrated-durian-business_145">ระบบจะบันทึกทุกครั้งที่คัดเกรด ได้แก่ รหัสเกษตรกรและสวน วันเก็บเกี่ยว น้ำหนัก ภาพถ่าย ผลตรวจคุณภาพ เกรด ราคาต่อกิโลกรัม ผู้ตรวจ เวลาและสถานที่ เกษตรกรดูผลผ่านมือถือ และขอตรวจซ้ำได้ตามกระบวนการที่กำหนดล่วงหน้า เกณฑ์คัดเกรดกำหนดร่วมกันระหว่างเกษตรกร ล้ง ผู้ส่งออก และหน่วยงานมาตรฐาน อ้างอิงมาตรฐานสินค้าเกษตรเรื่องทุเรียนของ มกอช.</p>
+<div class="note-block"><strong data-i18n="integrated-durian-business_146">ข้อควรทราบ:</strong><span data-i18n="integrated-durian-business_147"> เทคโนโลยีสแกนภายในทุกชนิดต้องทดสอบความแม่นยำกับพันธุ์และเกณฑ์จริงก่อนใช้ตัดสินเกรดเชิงพาณิชย์</span></div>
+<h3 data-i18n="integrated-durian-business_148" style="margin-top:30px;">เทคโนโลยีสแกนคุณภาพทุเรียนแบบไม่ทำลายผลผลิต</h3>
+<p data-i18n="integrated-durian-business_149">เครื่องสแกนคุณภาพเป็นการตรวจแบบไม่ทำลายผลผลิต (Non-Destructive Testing) ตรวจได้โดยไม่ต้องเจาะหรือปอกเปลือก ช่วยแก้ปัญหาทุเรียนอ่อนและเร่งการคัดเกรดก่อนจำหน่ายหรือส่งออก โครงการจะเลือกเทคโนโลยีให้เหมาะกับแต่ละจุดในห่วงโซ่</p>
+<p data-i18n="integrated-durian-business_150">แนวทางของโครงการ: ใช้ NIR แบบพกพาคัดกรองความแก่ตั้งแต่ก่อนตัดที่สวน เพื่อป้องกันทุเรียนอ่อนต้นทาง แล้วใช้ X-ray / CT-Scan ที่ศูนย์ตรวจคุณภาพเพื่อตรวจตำหนิภายในและยืนยันเกรดก่อนเข้าประมูล ผลสแกนทุกครั้งผูกกับรหัสสวนและล็อตสินค้า เป็นหลักฐานอ้างอิงคุณภาพร่วมกันระหว่างเกษตรกร ล้ง ผู้ส่งออก และผู้บริโภค</p>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:100%;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_175">เทคโนโลยี</th>
+<th data-i18n="integrated-durian-business_176">หลักการ</th>
+<th data-i18n="integrated-durian-business_177">สิ่งที่ตรวจได้</th>
+<th data-i18n="integrated-durian-business_178">จุดเด่น</th>
+<th data-i18n="integrated-durian-business_179">ข้อจำกัด</th>
+<th data-i18n="integrated-durian-business_180">จุดติดตั้งที่เสนอ</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-durian-business_151">NIR / NIRS Scanner</strong></td><td data-i18n="integrated-durian-business_152">ยิงแสงอินฟราเรดย่านใกล้ผ่านเปลือก วิเคราะห์ค่าการดูดกลืนแสง</td><td data-i18n="integrated-durian-business_153">ปริมาณแป้ง น้ำตาล เปอร์เซ็นต์น้ำหนักเนื้อแห้ง (% Dry Matter)</td><td data-i18n="integrated-durian-business_154">รู้ผลเร็ว พกพาได้ สแกนบนต้นหรือหน้าสวนได้</td><td data-i18n="integrated-durian-business_155">เปลือกหนาและหนามยาวบางสายพันธุ์อาจลดความแม่นยำ</td><td data-i18n="integrated-durian-business_156">สวน จุดรวบรวมผลผลิต เจ้าหน้าที่ภาคสนาม</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_157">X-ray / CT-Scan</strong></td><td data-i18n="integrated-durian-business_158">รังสีเอกซ์สร้างภาพตัดขวางแบบสองหรือสามมิติ</td><td data-i18n="integrated-durian-business_159">จำนวนพู ความหนาแน่นเนื้อ ขนาดเมล็ด ตำหนิภายใน เช่น แก่นเต่า เต่าเผา หนอนเจาะเมล็ด ช่องว่างในพู</td><td data-i18n="integrated-durian-business_160">เห็นโครงสร้างภายในทั้งหมด ตรวจตำหนิภายในได้ชัด</td><td data-i18n="integrated-durian-business_161">เครื่องใหญ่ ราคาสูง ต้องมีระบบป้องกันรังสี</td><td data-i18n="integrated-durian-business_162">Durian Quality &amp; Trading Center และล้งขนาดใหญ่</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_163">Acoustic Wave</strong></td><td data-i18n="integrated-durian-business_164">วิเคราะห์ความถี่เสียงจากการเคาะหรือยิงคลื่นเสียง</td><td data-i18n="integrated-durian-business_165">ความหลวมของเนื้อจากเปลือก ซึ่งบ่งบอกระดับความแก่-สุก</td><td data-i18n="integrated-durian-business_166">ใช้เสริมการประเมินความแก่</td><td data-i18n="integrated-durian-business_167">ใช้ประกอบกับวิธีอื่น</td><td data-i18n="integrated-durian-business_168">จุดรวบรวมผลผลิต (เสริม NIR)</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_169">MRI</strong></td><td data-i18n="integrated-durian-business_170">สแกนการกระจายตัวของน้ำและไขมันในเนื้อ</td><td data-i18n="integrated-durian-business_171">องค์ประกอบภายในเนื้อ</td><td data-i18n="integrated-durian-business_172">แม่นยำสูงมาก</td><td data-i18n="integrated-durian-business_173">ใช้ในห้องปฏิบัติการวิจัยมากกว่าเชิงพาณิชย์</td><td data-i18n="integrated-durian-business_174">ห้องปฏิบัติการ ใช้สร้างข้อมูลอ้างอิงสอบเทียบ AI</td></tr>
+</tbody></table></div>
+</div></section>
+<section class="prose-section" id="sec-5-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-durian-business_181">5.2 รูปแบบการซื้อขายในตลาดประมูล</h3>
+<p data-i18n="integrated-durian-business_182">ระบบแสดงราคาซื้อขายจริงจำแนกตามจังหวัด พันธุ์ เกรด วันที่ และประเภทผู้ซื้อ พร้อมกลไกป้องกันการฮั้วประมูล การเสนอราคาปลอม และการเปิดเผยข้อมูลการค้าที่ไม่เหมาะสม</p>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_189">รูปแบบ</th>
+<th data-i18n="integrated-durian-business_190">กลไก</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-durian-business_183">A: ประมูลผลผลิตล่วงหน้า</strong></td><td data-i18n="integrated-durian-business_184">เกษตรกรลงทะเบียนผลผลิตคาดการณ์ (พันธุ์ ปริมาณ ช่วงเก็บเกี่ยว GAP ประวัติการผลิต) ให้ล้งและผู้ส่งออกเสนอราคา</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_185">B: ประมูลตามเกรดหลังตรวจคุณภาพ</strong></td><td data-i18n="integrated-durian-business_186">ผู้ซื้อแข่งเสนอราคาแยกตามเกรด ปริมาณ และเงื่อนไขส่งมอบ</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_187">C: สัญญาซื้อขายล่วงหน้า</strong></td><td data-i18n="integrated-durian-business_188">สหกรณ์ทำข้อตกลงกับล้ง ผู้ส่งออก หรือ Modern Trade กำหนดปริมาณ เกณฑ์คุณภาพ สูตรราคา กำหนดส่งมอบ การชำระเงิน เงื่อนไขปฏิเสธสินค้า</td></tr>
+</tbody></table></div>
+</div></section>
+<section class="prose-section alt" id="sec-5-3">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-durian-business_191">5.3 ปุ๋ยสั่งตัดและตลาดปัจจัยการผลิต</h3>
+<p data-i18n="integrated-durian-business_192">ระบบต่อยอดนโยบายปุ๋ยสั่งตัดของกระทรวงเกษตรและสหกรณ์ โดยวางตำแหน่ง AgroLink เป็นเครื่องมือเร่งการขยายผลถึงเกษตรกรรายแปลง ไม่ใช่โครงการคู่ขนาน</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:26px;">
+<div class="data-table-wrap" style="max-width:980px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_208">ขั้นตอน</th>
+<th data-i18n="integrated-durian-business_209">การทำงาน</th>
+<th data-i18n="integrated-durian-business_210">พันธมิตรหลัก</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-durian-business_193">ข้อมูลดิน</strong></td><td data-i18n="integrated-durian-business_194">แผนที่ธาตุอาหารพืชเป็นค่าตั้งต้น ยืนยันด้วยชุดตรวจ NPK แบบรวดเร็วรายแปลง และใช้ภาพดาวเทียมเป็นสัญญาณเตือนระหว่างฤดู</td><td data-i18n="integrated-durian-business_195">กรมพัฒนาที่ดิน, เกษตรตำบล (กรมส่งเสริมการเกษตร), มหาวิทยาลัยเกษตรศาสตร์</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_196">คำนวณสูตร</strong></td><td data-i18n="integrated-durian-business_197">คำนวณปริมาณแม่ปุ๋ยแต่ละชนิดตามผลตรวจดิน พันธุ์ และระยะการผลิตของต้นทุเรียน พร้อมประมาณการต้นทุนตามราคาตลาด</td><td data-i18n="integrated-durian-business_198">กรมวิชาการเกษตร (ระเบียบวิธีและตารางผสมปุ๋ย)</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_199">ผสมปุ๋ย</strong></td><td data-i18n="integrated-durian-business_200">จับคู่คำสั่งผสมกับสหกรณ์หรือร้านปัจจัยการผลิตที่ผ่านการรับรองในพื้นที่ หรือรวมคำสั่งซื้อในพื้นที่ที่ยังไม่มีผู้ให้บริการ</td><td data-i18n="integrated-durian-business_201">สหกรณ์การเกษตร, ร้านเคมีเกษตรในพื้นที่, กรมส่งเสริมสหกรณ์</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_202">จัดหาแม่ปุ๋ย</strong></td><td data-i18n="integrated-durian-business_203">รวมความต้องการเพื่อจัดซื้อหรือประมูลแม่ปุ๋ยกับผู้นำเข้าโดยตรง</td><td data-i18n="integrated-durian-business_204">ผู้นำเข้าและผู้ค้าส่งแม่ปุ๋ย</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_205">ชำระเงิน</strong></td><td data-i18n="integrated-durian-business_206">ค่าปุ๋ยเบิกเป็นส่วนหนึ่งของงวดสินเชื่อช่วงบำรุงต้น และหักคืนจากรายได้ขายผลผลิตปลายฤดู</td><td data-i18n="integrated-durian-business_207">สถาบันการเงิน, สหกรณ์</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-durian-business_211">นอกจากปุ๋ยแล้ว ตลาดยังครอบคลุมต้นพันธุ์คุณภาพ สารป้องกันกำจัดศัตรูพืชที่ขึ้นทะเบียน ระบบน้ำ เซนเซอร์ IoT โดรน และบริการที่ปรึกษา โดยต้องมีกลไกรับรองคุณภาพผู้ผสมปุ๋ย (อบรม ตรวจเครื่องชั่งและเครื่องผสม) และปฏิบัติตามกฎหมายว่าด้วยปุ๋ย</p>
+<p data-i18n="integrated-durian-business_212">ผลที่ได้คือเกษตรกรใช้ปุ๋ยตรงความต้องการของต้นทุเรียนและสภาพดินจริง ลดต้นทุนปัจจัยการผลิต ดินเสื่อมน้อยลง และยังเป็นข้อมูลยืนยันกิจกรรมลดการใช้ปุ๋ยไนโตรเจนสำหรับโครงการคาร์บอนต่ำ (ข้อ 5.4)</p>
+</div></section>
+<section class="prose-section" id="sec-5-4">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-durian-business_213">5.4 Carbon Credit แบบรวมกลุ่ม</h3>
+<p data-i18n="integrated-durian-business_214">โครงการสวนทุเรียนคาร์บอนต่ำใช้สหกรณ์หรือกลุ่มเกษตรกรเป็นศูนย์กลาง AgroLink ประสานด้านเทคโนโลยีและข้อมูลร่วมกับผู้พัฒนาโครงการคาร์บอนที่มีความเชี่ยวชาญ ขั้นตอนคือ</p>
+<ul class="check-list">
+<li data-i18n="integrated-durian-business_215">สำรวจและทำข้อมูลฐาน</li>
+<li data-i18n="integrated-durian-business_216">เลือกกิจกรรมที่มีระเบียบวิธีรองรับ</li>
+<li data-i18n="integrated-durian-business_217">จัดทำเอกสารโครงการ</li>
+<li data-i18n="integrated-durian-business_218">ดำเนินกิจกรรมและเก็บหลักฐาน</li>
+<li data-i18n="integrated-durian-business_219">ทวนสอบ</li>
+<li data-i18n="integrated-durian-business_220">ขอรับรองและขายเครดิต</li>
+<li data-i18n="integrated-durian-business_221">แบ่งรายได้ตามข้อตกลง</li>
+</ul>
+<div class="note-block"><strong data-i18n="integrated-durian-business_222">ข้อควรทราบ:</strong><span data-i18n="integrated-durian-business_223"> ไม่ใช่ทุกกิจกรรมจะออก Carbon Credit ได้ ต้องพิสูจน์ส่วนเพิ่ม ป้องกันการนับซ้ำ และรับต้นทุนการทวนสอบ จึงถือเป็นรายได้เสริมระยะกลางถึงยาว ไม่ใช่รายได้ที่รับประกันตั้งแต่ต้น</span></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_224">6. AgroLink Durian Quality &amp; Trading Center</h2>
+<p data-i18n="integrated-durian-business_225">เสนอจัดตั้งศูนย์ต้นแบบในพื้นที่ปลูกทุเรียนสำคัญ ตั้งที่สหกรณ์ กลุ่มแปลงใหญ่ หรือศูนย์รวบรวมผลผลิต เพื่อเป็นจุดเชื่อมระหว่างการผลิตจริงกับแพลตฟอร์ม และเป็นแหล่งรายได้จากบริการตรวจคุณภาพและธุรกรรม</p>
+<p data-i18n="integrated-durian-business_226">บริการของศูนย์เรียงตามลำดับงาน</p>
+<ul class="check-list">
+<li data-i18n="integrated-durian-business_227">รับผลผลิตจากเกษตรกร</li>
+<li data-i18n="integrated-durian-business_228">ตรวจความแก่และคุณภาพ</li>
+<li data-i18n="integrated-durian-business_229">ชั่งน้ำหนักและคัดเกรดด้วยเทคโนโลยี</li>
+<li data-i18n="integrated-durian-business_230">ออกใบรับรองผลตรวจตามขอบเขตที่ได้รับการรับรอง</li>
+<li data-i18n="integrated-durian-business_231">นำผลผลิตเข้าระบบประมูลออนไลน์</li>
+<li data-i18n="integrated-durian-business_232">เชื่อมผู้ซื้อและการขนส่ง</li>
+<li data-i18n="integrated-durian-business_233">บันทึกการชำระเงิน</li>
+<li data-i18n="integrated-durian-business_234">ส่งข้อมูลธุรกรรมกลับเข้าประวัติการผลิตของเกษตรกร</li>
+</ul>
+<p data-i18n="integrated-durian-business_235">ประเมินความคุ้มค่าของศูนย์ต้นแบบก่อนขยายผล</p>
+</div></section>
+
+<section class="prose-section" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_236">7. บทบาทหน่วยงานภาครัฐ</h2>
+<p data-i18n="integrated-durian-business_237">เสนอให้กระทรวงเกษตรและสหกรณ์เป็นหน่วยงานหลักกำหนดกรอบความร่วมมือ โดยไม่เปลี่ยนแปลงอำนาจหน้าที่ตามกฎหมายของหน่วยงานใด และการเชื่อมโยงข้อมูลต้องได้รับความเห็นชอบจากเจ้าของข้อมูล</p>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_258">หน่วยงาน</th>
+<th data-i18n="integrated-durian-business_259">บทบาทในโครงการ</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-durian-business_238">กรมส่งเสริมการเกษตร</strong></td><td data-i18n="integrated-durian-business_239">ส่งเสริมเกษตรกร แปลงใหญ่ ประกาศวันเก็บเกี่ยว ตรวจเปอร์เซ็นต์เนื้อแห้งก่อนตัด ทะเบียนเกษตรกร เครือข่ายเกษตรตำบลร่วมตรวจดิน</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_240">กรมวิชาการเกษตร</strong></td><td data-i18n="integrated-durian-business_241">GAP, GMP โรงคัดบรรจุ งานวิจัย ใบรับรองสุขอนามัยพืช ตรวจสารตกค้าง ระเบียบวิธีคำนวณสูตรปุ๋ย</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_242">มกอช.</strong></td><td data-i18n="integrated-durian-business_243">มาตรฐานสินค้าทุเรียนและระบบข้อมูลมาตรฐาน</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_244">สศก.</strong></td><td data-i18n="integrated-durian-business_245">วิเคราะห์ผลผลิต ต้นทุน ราคา และแนวโน้มตลาด</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_246">กรมพัฒนาที่ดิน</strong></td><td data-i18n="integrated-durian-business_247">แผนที่ธาตุอาหารพืช วิเคราะห์ดิน และส่งเสริมการจัดการดิน</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_248">กรมส่งเสริมสหกรณ์ / กรมตรวจบัญชีสหกรณ์</strong></td><td data-i18n="integrated-durian-business_249">ส่งเสริมการรวมกลุ่ม สหกรณ์ต้นแบบปุ๋ยสั่งตัด ระบบบัญชีและการเงินสหกรณ์</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_250">กรมชลประทาน</strong></td><td data-i18n="integrated-durian-business_251">ข้อมูลและการบริหารจัดการน้ำ</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_252">ธ.ก.ส.</strong></td><td data-i18n="integrated-durian-business_253">พิจารณาสินเชื่อและผลิตภัณฑ์ทางการเงิน</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_254">อบก.</strong></td><td data-i18n="integrated-durian-business_255">กรอบมาตรฐานและการรับรอง Carbon Credit</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_256">กรมส่งเสริมการค้าระหว่างประเทศ</strong></td><td data-i18n="integrated-durian-business_257">เชื่อมโยงตลาดส่งออก</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_260">8. ผลประโยชน์ที่คาดว่าจะได้รับ</h2>
+<p data-i18n="integrated-durian-business_261">ตัวชี้วัดความสำเร็จ (กำหนดค่าเป้าหมายหลังสำรวจข้อมูลฐาน)</p>
+<ul class="check-list">
+<li data-i18n="integrated-durian-business_262">จำนวนเกษตรกรและพื้นที่สวนที่มีข้อมูลดิจิทัลในระบบ</li>
+<li data-i18n="integrated-durian-business_263">ต้นทุนการผลิตต่อไร่ของสมาชิกเทียบกับค่าฐาน โดยเฉพาะต้นทุนปุ๋ย</li>
+<li data-i18n="integrated-durian-business_264">ราคาขายสุทธิที่เกษตรกรได้รับเทียบกับค่าฐาน</li>
+<li data-i18n="integrated-durian-business_265">สัดส่วนผลผลิตที่ตรวจสอบย้อนกลับได้</li>
+<li data-i18n="integrated-durian-business_266">จำนวนข้อพิพาทด้านการคัดเกรด</li>
+<li data-i18n="integrated-durian-business_267">จำนวนล้ง ผู้ส่งออก และผู้ซื้อที่เข้าร่วมระบบ</li>
+<li data-i18n="integrated-durian-business_268">พื้นที่ที่ดำเนินกิจกรรมลดคาร์บอน</li>
+</ul>
+<div class="note-block"><strong data-i18n="integrated-durian-business_269">ข้อควรทราบ:</strong><span data-i18n="integrated-durian-business_270"> ควรเก็บข้อมูลฐานก่อนดำเนินโครงการ และให้หน่วยงานอิสระเป็นผู้ประเมินผล</span></div>
+</div>
+<div class="container" style="margin-top:26px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_283">ผู้ได้รับประโยชน์</th>
+<th data-i18n="integrated-durian-business_284">ประโยชน์หลัก</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-durian-business_271">เกษตรกร</strong></td><td data-i18n="integrated-durian-business_272">ต้นทุนปุ๋ยและปัจจัยการผลิตลดลง ขายได้ราคาเป็นธรรมขึ้น ลดข้อพิพาทเรื่องเกรด เข้าถึงเงินทุนและประกันภัย มีรายได้เสริมจากคาร์บอน</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_273">สหกรณ์ / กลุ่มเกษตรกร</strong></td><td data-i18n="integrated-durian-business_274">เป็นศูนย์กลางบริการดิจิทัลของชุมชน มีรายได้จากบริการผสมปุ๋ยและรวมซื้อรวมขาย</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_275">ล้ง / ผู้ส่งออก / Modern Trade</strong></td><td data-i18n="integrated-durian-business_276">ได้ผลผลิตที่ตรวจสอบคุณภาพและแหล่งที่มาได้ ลดความเสี่ยงทุเรียนอ่อนหลุดไปต่างประเทศ วางแผนรับซื้อล่วงหน้าได้</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_277">สถาบันการเงิน</strong></td><td data-i18n="integrated-durian-business_278">ประเมินความเสี่ยงจากข้อมูลการผลิตจริง ติดตามสินเชื่อได้ตลอดฤดู ลดหนี้ค้างชำระ</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_279">ภาครัฐ</strong></td><td data-i18n="integrated-durian-business_280">ฐานข้อมูลทุเรียนระดับประเทศสำหรับวางแผนผลผลิต กำหนดนโยบาย และยกระดับภาพลักษณ์ทุเรียนไทยในตลาดโลก</td></tr>
+<tr><td><strong data-i18n="integrated-durian-business_281">สิ่งแวดล้อม</strong></td><td data-i18n="integrated-durian-business_282">ลดการใช้ปุ๋ยเกินจำเป็น ใช้น้ำและพลังงานอย่างมีประสิทธิภาพ ลดการเผาเศษวัสดุ</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section" id="sec-9">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_285">9. ความเสี่ยงและแนวทางบริหาร</h2>
+<p data-i18n="integrated-durian-business_286">ความเสี่ยงหลักของโครงการและแนวทางบริหารจัดการมีดังนี้</p>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-durian-business_303">ความเสี่ยง</th>
+<th data-i18n="integrated-durian-business_304">แนวทางบริหาร</th>
+</tr></thead><tbody>
+<tr><td data-i18n="integrated-durian-business_287">เทคโนโลยีสแกนภายในยังไม่แม่นยำพอสำหรับตัดสินเกรดเชิงพาณิชย์</td><td data-i18n="integrated-durian-business_288">ทดสอบในฤดูผลผลิตจริงเทียบกับวิธีอ้างอิง (เปอร์เซ็นต์เนื้อแห้ง) ใช้ AI เป็นข้อมูลประกอบจนกว่าจะผ่านเกณฑ์</td></tr>
+<tr><td data-i18n="integrated-durian-business_289">ล้งและผู้ซื้อไม่เข้าร่วมตลาดประมูล</td><td data-i18n="integrated-durian-business_290">ร่วมกำหนดเกณฑ์เกรดตั้งแต่ต้น เริ่มจากสัญญาล่วงหน้ากับผู้ซื้อที่พร้อม</td></tr>
+<tr><td data-i18n="integrated-durian-business_291">คุณภาพการผสมปุ๋ยสั่งตัดไม่สม่ำเสมอ</td><td data-i18n="integrated-durian-business_292">รับรองผู้ผสมปุ๋ยก่อนขึ้นทะเบียน อบรมและตรวจเครื่องชั่ง ขออนุญาตใช้ระเบียบวิธีคำนวณจากกรมวิชาการเกษตร</td></tr>
+<tr><td data-i18n="integrated-durian-business_293">การเชื่อมข้อมูลภาครัฐล่าช้า</td><td data-i18n="integrated-durian-business_294">ทำ MOU และข้อตกลงใช้ข้อมูลตั้งแต่ระยะแรก ออกแบบระบบให้ทำงานได้แม้ยังไม่เชื่อมครบ</td></tr>
+<tr><td data-i18n="integrated-durian-business_295">ความเป็นส่วนตัวและความปลอดภัยของข้อมูล</td><td data-i18n="integrated-durian-business_296">ปฏิบัติตาม PDPA ขอความยินยอม กำหนดสิทธิเข้าถึงข้อมูลการค้า</td></tr>
+<tr><td data-i18n="integrated-durian-business_297">การฮั้วประมูลหรือเสนอราคาปลอม</td><td data-i18n="integrated-durian-business_298">ยืนยันตัวตนผู้ซื้อ ตรวจจับพฤติกรรมผิดปกติ กำหนดบทลงโทษในข้อตกลงสมาชิก</td></tr>
+<tr><td data-i18n="integrated-durian-business_299">Carbon Credit ไม่ผ่านการรับรองหรือคุ้มทุน</td><td data-i18n="integrated-durian-business_300">เลือกกิจกรรมที่มีระเบียบวิธี อบก. รองรับ ถือเป็นรายได้เสริมระยะยาว</td></tr>
+<tr><td data-i18n="integrated-durian-business_301">เกษตรกรใช้งานเทคโนโลยีได้จำกัด</td><td data-i18n="integrated-durian-business_302">อบรมผ่านสหกรณ์ ใช้แอปที่เรียบง่าย มีเจ้าหน้าที่ภาคสนามสนับสนุน</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-10">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-durian-business_305">10. ข้อเสนอเชิงนโยบายและสิ่งที่ขอรับการพิจารณา</h2>
+<p data-i18n="integrated-durian-business_306">เสนอให้กระทรวงเกษตรและสหกรณ์พิจารณาแนวคิดโครงการนี้ในฐานะ "การยกระดับห่วงโซ่อุปทานทุเรียนไทยด้วย Digital Agriculture, Fair Trade และ Low Carbon Agriculture" โดยขอรับการพิจารณา 5 ประการ</p>
+<ul class="check-list">
+<li data-i18n="integrated-durian-business_307">เห็นชอบในหลักการ และแต่งตั้งคณะทำงานร่วมระหว่างหน่วยงานภาครัฐ เกษตรกร สหกรณ์ ผู้ประกอบการ และ AgroLink</li>
+<li data-i18n="integrated-durian-business_308">สนับสนุนการเชื่อมโยงข้อมูลที่จำเป็นจากหน่วยงานภาครัฐภายใต้กรอบกฎหมายและข้อตกลงการใช้ข้อมูล</li>
+<li data-i18n="integrated-durian-business_309">พัฒนาจุดต้นแบบตรวจสอบคุณภาพทุเรียนด้วย AI และเทคโนโลยีสแกน เพื่อสร้างมาตรฐานการคัดเกรดที่เป็นธรรม</li>
+<li data-i18n="integrated-durian-business_310">สนับสนุนการขยายผลนโยบายปุ๋ยสั่งตัดผ่านสหกรณ์ในพื้นที่ปลูกทุเรียน ควบคู่กับตลาดประมูลดิจิทัลและกิจกรรมสวนคาร์บอนต่ำ</li>
+<li data-i18n="integrated-durian-business_311">ทดลองนำร่องในพื้นที่ที่มีความพร้อม และประเมินผลก่อนขยายสู่พื้นที่ปลูกทุเรียนทั่วประเทศ</li>
+</ul>
+<div class="note-block" style="margin-top:22px;"><strong data-i18n="integrated-durian-business_312">เป้าหมายสูงสุด:</strong><span data-i18n="integrated-durian-business_313"> เกษตรกรผลิตทุเรียนได้คุณภาพ มีต้นทุนที่เหมาะสม ขายได้ราคาที่เป็นธรรม มีตลาดรองรับ มีข้อมูลประกอบการตัดสินใจ และมีอาชีพที่มั่นคงอย่างยั่งยืน</span></div>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 class="section-title" data-i18n="integrated-durian-business_314">สนใจเข้าร่วมโครงการทุเรียนครบวงจร</h2>
+<p class="section-sub" data-i18n="integrated-durian-business_315">ไม่ว่าจะในฐานะสหกรณ์ เกษตรกร ล้ง ผู้ส่งออก หรือพันธมิตรทางธุรกิจ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-durian-business_316">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-durian-business_317">กลับหน้าแรก</a>
+</div></div></section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-tree"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-durian-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
