@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการข้าวโพดครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+          </div>
+        </div>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-corn-business_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-wheat-awn"></i><span data-i18n="integrated-corn-business_2"> คู่มือแนะนำโครงการ</span></div>
+    <h1 class="section-title" data-i18n="integrated-corn-business_3">เอกสารแนวคิดโครงการ: การพัฒนาระบบนิเวศข้าวโพดเลี้ยงสัตว์ครบวงจรด้วยโครงสร้างพื้นฐานดิจิทัล</h1>
+    <p class="section-sub" data-i18n="integrated-corn-business_4">"ไม่เผาแล้วได้มากกว่า" — เชื่อมเกษตรกรกับสินเชื่อเป็นงวด ปุ๋ยสั่งตัด ดาวเทียมติดตามแปลง และตลาดข้าวโพดปลอดการเผาทั้งในและข้ามพรมแดน</p>
+    <span class="draft-tag" data-i18n="integrated-corn-business_5">ฉบับร่างเพื่อพิจารณา — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-corn-business_6">สารบัญ</h4>
+      <ol>
+        <li><a href="#sec-1" data-i18n="integrated-corn-business_7">1. หลักการและเหตุผล</a></li>
+<li><a href="#sec-2" data-i18n="integrated-corn-business_8">2. วัตถุประสงค์</a></li>
+<li><a href="#sec-3" data-i18n="integrated-corn-business_9">3. การลดต้นทุนเกษตรกร</a></li>
+<li><a href="#sec-4" data-i18n="integrated-corn-business_10">4. ดาวเทียมติดตามกิจกรรมแปลง</a></li>
+<li><a href="#sec-5" data-i18n="integrated-corn-business_11">5. ระบบบริการเครื่องจักรกลและการเชื่อมโยงการซื้อขาย</a></li>
+<li><a href="#sec-6" data-i18n="integrated-corn-business_12">6. ระบบ Incentive จูงใจไม่เผาต้นข้าวโพด</a></li>
+<li><a href="#sec-7" data-i18n="integrated-corn-business_13">7. บทบาทสหกรณ์ ตัวชี้วัด และแผนดำเนินงาน</a></li>
+<li><a href="#sec-8" data-i18n="integrated-corn-business_14">8. ประโยชน์ที่คาดว่าจะได้รับ</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_15">1. หลักการและเหตุผล</h2>
+<p data-i18n="integrated-corn-business_16">ไทยผลิตข้าวโพดเลี้ยงสัตว์ได้ราว 4–5 ล้านตันต่อปี แต่มีความต้องการใช้ราว 9 ล้านตัน จึงขาดแคลนปีละ 3–4 ล้านตันและต้องนำเข้าจากประเทศเพื่อนบ้าน ขณะเดียวกัน ตั้งแต่ 1 มกราคม 2569 ข้าวโพดนำเข้าทุกประเทศต้องมาจากแหล่งผลิตที่ “ปลอดการเผา” โดยผู้นำเข้าต้องแสดงหนังสือรับรองตนเองที่ระบุที่ตั้งแปลงปลูกและเก็บหลักฐานไว้ 5 ปีเพื่อตรวจสอบย้อนกลับ แต่ยังขาดเครื่องมือกลางที่ยืนยันข้อมูลแปลงได้จริง</p>
+<p data-i18n="integrated-corn-business_17">ปัญหาเชิงโครงสร้างที่โครงการมุ่งแก้มี 5 ด้าน:</p>
+<ul class="check-list">
+<li><strong data-i18n="integrated-corn-business_18">การเผาเศษเหลือทางการเกษตรและ PM2.5:</strong><span data-i18n="integrated-corn-business_19"> การเผาตอซังและต้นข้าวโพดยังเกิดต่อเนื่องทั้งในประเทศและพื้นที่ชายแดน/ประเทศเพื่อนบ้าน ก่อหมอกควันข้ามแดน เพราะการเผาเป็นวิธีที่ถูกและเร็วที่สุดสำหรับเกษตรกร หากไม่มีแรงจูงใจทางเศรษฐกิจที่ดีกว่า</span></li>
+<li><strong data-i18n="integrated-corn-business_20">ภาระดอกเบี้ยสูง:</strong><span data-i18n="integrated-corn-business_21"> เกษตรกรมักได้รับสินเชื่อก้อนเดียวตั้งแต่ต้นฤดู ต้องจ่ายดอกเบี้ยเต็มวงเงินทั้งที่ยังไม่ได้ใช้เงิน และจำนวนมากพึ่งเงินกู้นอกระบบหรือเครดิตปัจจัยการผลิตจากร้านค้าที่ดอกเบี้ยแฝงสูง</span></li>
+<li><strong data-i18n="integrated-corn-business_22">ใช้ปุ๋ยไม่ตรงความต้องการของดิน:</strong><span data-i18n="integrated-corn-business_23"> ไม่มีข้อมูลวิเคราะห์ดิน จึงใส่ปุ๋ยสูตรเดียวทั้งแปลง เกิดปุ๋ยส่วนเกิน ต้นทุนสูง และกระทบสิ่งแวดล้อม</span></li>
+<li><strong data-i18n="integrated-corn-business_24">ห่วงโซ่อุปทานแยกส่วน:</strong><span data-i18n="integrated-corn-business_25"> เกษตรกร สหกรณ์ ลานพืชไร่ ไซโล โรงงานอาหารสัตว์ และผู้ให้บริการเครื่องจักรทำงานแยกกัน ไม่มีมาตรฐานคุณภาพร่วม และราคาไม่โปร่งใส</span></li>
+<li><strong data-i18n="integrated-corn-business_26">ตรวจสอบย้อนกลับข้ามพรมแดนไม่ได้:</strong><span data-i18n="integrated-corn-business_27"> ผลผลิตจากเมียนมา สปป.ลาว และกัมพูชาไม่มีข้อมูลแปลงที่ตรวจสอบได้อิสระ ทำให้มาตรการปลอดการเผาพึ่งการรับรองตนเองเป็นหลัก</span></li>
+</ul>
+<p data-i18n="integrated-corn-business_28">โครงการจึงเสนอใช้ Agrolink เป็นโครงสร้างพื้นฐานดิจิทัล (Digital Infrastructure) ที่เชื่อมข้อมูลแปลง การเงิน ปัจจัยการผลิต การค้า และการตรวจสอบการเผา เข้าเป็นระบบเดียว ทั้งในประเทศและข้ามพรมแดน</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_29">2. วัตถุประสงค์</h2>
+<ul class="check-list">
+<li data-i18n="integrated-corn-business_30">ลดต้นทุนการผลิตของเกษตรกรผ่านสินเชื่อเป็นงวดที่ลดภาระดอกเบี้ย และปุ๋ยสั่งตัดที่ลดปุ๋ยส่วนเกิน</li>
+<li data-i18n="integrated-corn-business_31">สร้างระบบติดตามแปลงด้วยดาวเทียมที่ครอบคลุมทั้งแปลงในประเทศและแปลงในประเทศเพื่อนบ้านที่ส่งออกมาไทย</li>
+<li data-i18n="integrated-corn-business_32">เชื่อมโยงระบบซื้อขายข้าวโพดในประเทศและจากประเทศเพื่อนบ้านบนมาตรฐานคุณภาพและการตรวจสอบย้อนกลับเดียวกัน รองรับมาตรการนำเข้าข้าวโพดปลอดการเผา</li>
+<li data-i18n="integrated-corn-business_33">สร้างระบบแรงจูงใจ (Incentive) ที่ทำให้การไม่เผาได้ผลตอบแทนสูงกว่าการเผา ลด PM2.5 และหมอกควันข้ามแดน</li>
+<li data-i18n="integrated-corn-business_34">สร้างเศรษฐกิจชีวมวลจากต้นและซังข้าวโพด เพื่อเป็นรายได้เสริมของเกษตรกรและชุมชน</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_35">3. การลดต้นทุนเกษตรกร</h2>
+<p data-i18n="integrated-corn-business_36">โครงการลดต้นทุนจาก 2 รายการใหญ่ที่สุดที่เกษตรกรควบคุมได้: ดอกเบี้ยเงินทุนหมุนเวียน และค่าปุ๋ย โดยใช้ข้อมูลแปลงจากดาวเทียมเป็นตัวเชื่อมระหว่างสองระบบ</p>
+</div></section>
+<section class="prose-section alt" id="sec-3-1">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-corn-business_37">3.1 สินเชื่อเป็นงวดตามระยะการเจริญเติบโต (Tranche-based Financing)</h3>
+<p data-i18n="integrated-corn-business_38">แทนการปล่อยเงินกู้ก้อนเดียวตั้งแต่ต้นฤดู สถาบันการเงินหรือสหกรณ์อนุมัติวงเงินทั้งฤดู แต่เบิกจ่ายจริงเป็นงวดตามความต้องการใช้เงินของแต่ละช่วง ดอกเบี้ยคิดเฉพาะยอดที่เบิกแล้วและตามจำนวนวันที่ใช้จริง</p>
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-corn-business_55">งวด</th>
+<th data-i18n="integrated-corn-business_56">ระยะของพืช</th>
+<th data-i18n="integrated-corn-business_57">ใช้เงินเพื่อ</th>
+<th data-i18n="integrated-corn-business_58">เงื่อนไขปลดงวด (ยืนยันผ่านระบบ)</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-corn-business_39">1</strong></td><td data-i18n="integrated-corn-business_40">เตรียมดิน–ปลูก</td><td data-i18n="integrated-corn-business_41">ไถเตรียมดิน เมล็ดพันธุ์ ปุ๋ยรองพื้นสั่งตัด</td><td data-i18n="integrated-corn-business_42">ผลวิเคราะห์ดิน + ภาพดาวเทียมยืนยันการเตรียมแปลง</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_43">2</strong></td><td data-i18n="integrated-corn-business_44">ต้นอ่อน–เจริญเติบโต (ประมาณ 20–45 วัน)</td><td data-i18n="integrated-corn-business_45">ปุ๋ยแต่งหน้า สารป้องกันศัตรูพืช โดรนพ่น</td><td data-i18n="integrated-corn-business_46">ดัชนีพืชพรรณ (NDVI) ยืนยันการงอกและการเจริญเติบโต</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_47">3</strong></td><td data-i18n="integrated-corn-business_48">ออกดอก–ติดฝัก</td><td data-i18n="integrated-corn-business_49">ปุ๋ยเสริมตามดัชนีพืช ค่าแรง</td><td data-i18n="integrated-corn-business_50">NDVI และการประเมินผลผลิตเบื้องต้น</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_51">4</strong></td><td data-i18n="integrated-corn-business_52">เก็บเกี่ยว–ขาย</td><td data-i18n="integrated-corn-business_53">รถเกี่ยว รถขนส่ง</td><td data-i18n="integrated-corn-business_54">คิวรถเกี่ยวและคิวขายในระบบ; หักชำระคืนอัตโนมัติ ณ จุดขาย</td></tr>
+</tbody></table></div>
+<div class="prose-block" style="margin-top:28px;">
+<p data-i18n="integrated-corn-business_59">กลไกนี้ลดต้นทุนได้ 3 ทาง:</p>
+</div>
+<ul class="check-list">
+<li><strong data-i18n="integrated-corn-business_60">ดอกเบี้ยลดลงจากฐานเงินกู้เฉลี่ยที่ต่ำลง:</strong><span data-i18n="integrated-corn-business_61"> ตัวอย่างการคำนวณ: วงเงิน 40,000 บาท ดอกเบี้ย 7% ต่อปี ระยะ 6 เดือน หากรับก้อนเดียวเสียดอกเบี้ยราว 1,400 บาท หากเบิก 4 งวดเท่ากันตามรอบเดือนที่ 0, 1.5, 3 และ 4.5 ยอดเงินกู้เฉลี่ยเหลือราว 25,000 บาท ดอกเบี้ยลดเหลือราว 875 บาท หรือลดลงราว 37% (ตัวเลขสมมติเพื่อแสดงกลไก)</span></li>
+<li><strong data-i18n="integrated-corn-business_62">ลดการพึ่งเงินกู้นอกระบบและเครดิตร้านค้า:</strong><span data-i18n="integrated-corn-business_63"> เงินถึงมือตรงจังหวะที่ต้องใช้ จึงไม่ต้องซื้อปัจจัยแบบเงินเชื่อราคาแพง</span></li>
+<li><strong data-i18n="integrated-corn-business_64">ดอกเบี้ยต่ำลงจากความเสี่ยงที่ลดลง:</strong><span data-i18n="integrated-corn-business_65"> ผู้ให้กู้เห็นสถานะแปลงผ่านดาวเทียมและหักชำระคืน ณ จุดขาย ความเสี่ยงหนี้เสียต่ำลง จึงเปิดทางให้คิดอัตราดอกเบี้ยพิเศษ และใช้ประวัติแปลงเป็นเครดิตสกอร์ทางเลือกสำหรับเกษตรกรที่ไม่มีหลักทรัพย์</span></li>
+</ul>
+</div></section>
+<section class="prose-section" id="sec-3-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-corn-business_66">3.2 ปุ๋ยสั่งตัดจากการวิเคราะห์ดิน (Tailor-made Fertilizer)</h3>
+<p data-i18n="integrated-corn-business_67">เกษตรกรได้รับการวิเคราะห์ดิน (N-P-K, pH, อินทรียวัตถุ) ผ่านสหกรณ์หรือหน่วยตรวจดินเคลื่อนที่ ระบบออกสูตรปุ๋ยเฉพาะแปลงและปริมาณที่ต้องใช้ตามเป้าผลผลิต แล้วสั่งผสมผ่านสหกรณ์หรือโรงงานปุ๋ยผสมในเครือข่าย</p>
+<ul class="check-list">
+<li data-i18n="integrated-corn-business_68">ลดปุ๋ยส่วนเกิน — ใส่เฉพาะธาตุที่ดินขาด แทนการใส่สูตรเดียวทั้งแปลง</li>
+<li data-i18n="integrated-corn-business_69">ลดต้นทุนต่อไร่ — ซื้อเฉพาะแม่ปุ๋ยที่ต้องใช้ และสั่งรวมผ่านสหกรณ์เพื่อต่อรองราคา</li>
+<li data-i18n="integrated-corn-business_70">ปรับปุ๋ยตามสภาพพืชจริง — ใช้ดัชนีพืชจากดาวเทียมกำหนดว่าโซนใดในแปลงต้องเสริมปุ๋ยแต่งหน้า (Variable Rate) และสั่งโดรนพ่นผ่านระบบ</li>
+<li data-i18n="integrated-corn-business_71">ผูกกับสินเชื่อเป็นงวด — เงินงวดที่ 1–3 จ่ายเป็นปุ๋ยสั่งตัดได้โดยตรง ทำให้เงินกู้ถูกใช้ตรงวัตถุประสงค์</li>
+</ul>
+<p data-i18n="integrated-corn-business_72">ตัวเลขการลดต้นทุนปุ๋ยจริงจะวัดจากแปลงนำร่องเทียบกับแปลงควบคุม (ดูตัวชี้วัดในหัวข้อ 7)</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-4">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_73">4. ดาวเทียมติดตามกิจกรรมแปลง ทั้งในประเทศและต่างประเทศ</h2>
+<p data-i18n="integrated-corn-business_74">ดาวเทียมคือแหล่งข้อมูลกลางที่ทุกโมดูลใช้ร่วมกัน: ปลดงวดเงินกู้ กำหนดปุ๋ย ประเมินผลผลิต และยืนยันการไม่เผา โดยไม่ต้องลงพื้นที่ทุกแปลง ซึ่งสำคัญมากสำหรับแปลงในประเทศเพื่อนบ้านที่เข้าตรวจได้ยาก</p>
+<h3 data-i18n="integrated-corn-business_75">4.1 สิ่งที่ระบบติดตาม</h3>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:34px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-corn-business_94">กิจกรรม</th>
+<th data-i18n="integrated-corn-business_95">ข้อมูลที่ใช้</th>
+<th data-i18n="integrated-corn-business_96">นำไปใช้กับ</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-corn-business_76">ขอบเขตและพื้นที่แปลง</strong></td><td data-i18n="integrated-corn-business_77">ภาพถ่ายดาวเทียมความละเอียดสูง + พิกัด GPS ที่เกษตรกร/สหกรณ์ลงทะเบียน</td><td data-i18n="integrated-corn-business_78">ทะเบียนแปลง, หนังสือรับรองแหล่งผลิต</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_79">การเตรียมดินและวันปลูก</strong></td><td data-i18n="integrated-corn-business_80">ภาพหลายช่วงเวลา (Optical + Radar ซึ่งมองทะลุเมฆได้ในฤดูฝน)</td><td data-i18n="integrated-corn-business_81">ปลดเงินงวด 1, ปฏิทินการผลิต</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_82">การเจริญเติบโตและสุขภาพพืช</strong></td><td data-i18n="integrated-corn-business_83">ดัชนีพืชพรรณ (NDVI) รายสัปดาห์</td><td data-i18n="integrated-corn-business_84">ปลดเงินงวด 2–3, ปุ๋ยแต่งหน้า</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_85">การประเมินผลผลิต</strong></td><td data-i18n="integrated-corn-business_86">แบบจำลองผลผลิตจากดัชนีพืช + ข้อมูลอากาศ</td><td data-i18n="integrated-corn-business_87">วางแผนรับซื้อของไซโล/โรงงาน, วงเงินสินเชื่อ</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_88">การเก็บเกี่ยวและการจัดการตอซัง</strong></td><td data-i18n="integrated-corn-business_89">การเปลี่ยนแปลงของแปลงหลังเก็บเกี่ยว</td><td data-i18n="integrated-corn-business_90">Incentive ไม่เผา, การรวบรวมชีวมวล</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_91">จุดความร้อนและรอยเผา</strong></td><td data-i18n="integrated-corn-business_92">Hotspot (เช่น VIIRS/MODIS) + ดัชนีรอยไหม้ (Burn Scar)</td><td data-i18n="integrated-corn-business_93">ยืนยันสถานะปลอดการเผาของแปลง</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-corn-business_97">4.2 แปลงในประเทศ</h3>
+<p data-i18n="integrated-corn-business_98">เกษตรกรลงทะเบียนแปลงผ่านสหกรณ์หรือแอป Agrolink ข้อมูลเชื่อมกับทะเบียนเกษตรกรของกรมส่งเสริมการเกษตร และใช้ข้อมูลจุดความร้อนร่วมกับ GISTDA เพื่อให้ภาครัฐเห็นภาพรวมการผลิตและความเสี่ยงการเผารายอำเภอ</p>
+<h3 data-i18n="integrated-corn-business_99">4.3 แปลงในประเทศเพื่อนบ้าน</h3>
+<p data-i18n="integrated-corn-business_100">ระบบเดียวกันขยายไปยังแปลงปลูกข้าวโพดในเมียนมา สปป.ลาว และกัมพูชาที่ส่งผลผลิตเข้าไทย:</p>
+<ul class="check-list">
+<li data-i18n="integrated-corn-business_101">ผู้รวบรวมหรือคู่ค้าต่างประเทศลงทะเบียนแปลงพร้อมพิกัดและผู้ปลูก ผ่านเครือข่ายผู้ส่งออก หรือหน่วยงานที่ได้รับมอบหมายจากประเทศผู้ส่งออก</li>
+<li data-i18n="integrated-corn-business_102">ระบบตรวจย้อนหลังทั้งฤดูว่ามีจุดความร้อนหรือรอยเผาในแปลงหรือไม่ แล้วออก “รายงานสถานะแปลง” ประกอบหนังสือรับรองตนเองของผู้นำเข้า</li>
+<li data-i18n="integrated-corn-business_103">ข้อมูลเก็บในระบบไม่น้อยกว่า 5 ปี สอดคล้องกับระยะเวลาเก็บหลักฐานที่ประกาศกำหนด</li>
+<li data-i18n="integrated-corn-business_104">เสนอให้ Agrolink ทำงานร่วมกับหน่วยงานรัฐที่มีอำนาจ (Competent Authority) ที่กระทรวงเกษตรฯ มอบหมาย เพื่อให้รายงานจากระบบเป็นหลักฐานประกอบที่หน่วยงานยอมรับ</li>
+</ul>
+<p data-i18n="integrated-corn-business_105">ผลคือมาตรการปลอดการเผาเปลี่ยนจากการรับรองตนเองที่ตรวจสอบได้ยาก เป็นการรับรองที่มีข้อมูลดาวเทียมรายแปลงรองรับ</p>
+</div></section>
+
+<section class="prose-section" id="sec-5">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_106">5. ระบบบริการเครื่องจักรกลและการเชื่อมโยงการซื้อขาย</h2>
+<h3 data-i18n="integrated-corn-business_107">5.1 AI Matching บริการเครื่องจักรกลเกษตร</h3>
+<p data-i18n="integrated-corn-business_108">แพลตฟอร์มจับคู่เกษตรกรและสหกรณ์กับผู้ให้บริการรถไถ โดรนพ่น รถเกี่ยว และเครื่องอัดฟาง/เครื่องสับตอซัง โดยใช้ปฏิทินการผลิตจากดาวเทียมจัดคิวล่วงหน้าตามเส้นทาง ช่วยเพิ่มอัตราการใช้เครื่องจักรและลดค่าบริการต่อไร่ ค่าบริการจ่ายจากเงินกู้งวดที่เกี่ยวข้องได้โดยตรง</p>
+</div></section>
+<section class="prose-section alt" id="sec-5-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-corn-business_109">5.2 ตลาดซื้อขายในประเทศ (Offer &amp; Bid)</h3>
+<ul class="check-list">
+<li data-i18n="integrated-corn-business_110">ลานพืชไร่ ไซโล และโรงงานอาหารสัตว์ประกาศราคารับซื้อ เกษตรกร/สหกรณ์เสนอขายพร้อมปริมาณคาดการณ์จากดาวเทียม</li>
+<li data-i18n="integrated-corn-business_111">ตรวจคุณภาพ (ความชื้น สิ่งเจือปน เมล็ดเสีย สารอะฟลาทอกซิน) ด้วยเครื่องมือที่ควบคุมด้วย AI ตามมาตรฐานเดียวกัน (Shared Standard) ผลตรวจบันทึกในระบบและผูกกับแปลงต้นทาง</li>
+<li data-i18n="integrated-corn-business_112">จองรถบรรทุกผ่านแพลตฟอร์ม และชำระเงิน ณ จุดรับซื้อ (PoS Settlement) โดยระบบหักชำระสินเชื่อคืนอัตโนมัติก่อนโอนส่วนที่เหลือให้เกษตรกร</li>
+</ul>
+</div></section>
+<section class="prose-section" id="sec-5-3">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-corn-business_113">5.3 การเชื่อมโยงระบบซื้อข้าวโพดจากประเทศเพื่อนบ้าน (Cross-border Sourcing)</h3>
+<p data-i18n="integrated-corn-business_114">โครงการขยายตลาดเดียวกันไปยังการนำเข้า เพื่อให้ไทยได้วัตถุดิบที่ขาดแคลนจากแหล่งที่ตรวจสอบได้ และไม่กระทบเกษตรกรไทยในฤดูผลิตหลัก</p>
+<ul class="check-list">
+<li data-i18n="integrated-corn-business_115">ทะเบียนคู่ค้าและแปลงต่างประเทศ — ผู้รวบรวม ผู้ส่งออก และแปลงต้นทางในเมียนมา สปป.ลาว และกัมพูชาลงทะเบียนในระบบ พร้อมพิกัดแปลงและสถานะปลอดการเผาจากดาวเทียม (หัวข้อ 4.3)</li>
+<li data-i18n="integrated-corn-business_116">ซื้อขายล่วงหน้าแบบมีเงื่อนไข — ผู้นำเข้าและโรงงานอาหารสัตว์ทำสัญญาซื้อจากแปลงที่ลงทะเบียน กำหนดราคาตามคุณภาพและสถานะปลอดการเผา</li>
+<li data-i18n="integrated-corn-business_117">เอกสารนำเข้าดิจิทัล — ระบบรวมข้อมูลแหล่งผลิต ที่ตั้งแปลง ปริมาณ ผลตรวจคุณภาพ และรายงานดาวเทียม เป็นชุดเอกสารประกอบหนังสือรับรองตนเอง และเก็บไว้ 5 ปี</li>
+<li data-i18n="integrated-corn-business_118">ตรวจรับที่ด่านด้วยมาตรฐานเดียวกัน — ตรวจคุณภาพ ณ จุดรับซื้อชายแดนด้วยเครื่องมือ AI ชุดเดียวกับในประเทศ และตรวจสอบย้อนกลับถึงแปลงต้นทางได้</li>
+<li data-i18n="integrated-corn-business_119">บริหารช่วงเวลานำเข้า — ข้อมูลผลผลิตไทยจากดาวเทียมช่วยภาครัฐวางแผนปริมาณและช่วงเวลานำเข้า ให้สอดคล้องกับนโยบายของคณะกรรมการนโยบายและบริหารจัดการข้าวโพดเลี้ยงสัตว์ (นบขพ.) ที่จำกัดช่วงนำเข้าของผู้นำเข้าทั่วไปภายใต้ AFTA ไว้ที่ 1 ก.พ.–30 มิ.ย. ในปี 2569</li>
+</ul>
+<p data-i18n="integrated-corn-business_120">โครงการนำร่องควรเริ่มที่ด่านหลัก 1–2 แห่งต่อประเทศ โดยด่านที่เหมาะสมต้องหารือกับกรมการค้าต่างประเทศและผู้ประกอบการในพื้นที่</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_121">6. ระบบ Incentive จูงใจไม่เผาต้นข้าวโพด</h2>
+<p data-i18n="integrated-corn-business_122">หลักการคือทำให้ “ไม่เผา” ได้เงินมากกว่าและต้นทุนต่ำกว่า “เผา” โดยรวมแรงจูงใจหลายชั้นเข้าด้วยกัน และใช้ดาวเทียมยืนยันสถานะรายแปลงอัตโนมัติ ทั้งแปลงในประเทศและแปลงต่างประเทศที่ลงทะเบียน</p>
+<h3 data-i18n="integrated-corn-business_123">6.1 แรงจูงใจ 5 ชั้น</h3>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:34px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-corn-business_144">ชั้น</th>
+<th data-i18n="integrated-corn-business_145">แรงจูงใจ</th>
+<th data-i18n="integrated-corn-business_146">ผู้จ่าย/ผู้ให้</th>
+<th data-i18n="integrated-corn-business_147">เงื่อนไข</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-corn-business_124">1. ราคา</strong></td><td data-i18n="integrated-corn-business_125">ราคาพิเศษ (Green Premium) ต่อกิโลกรัม สำหรับข้าวโพดจากแปลงปลอดการเผา</td><td data-i18n="integrated-corn-business_126">โรงงานอาหารสัตว์ ผู้ส่งออกเนื้อสัตว์ที่ต้องการวัตถุดิบยั่งยืน</td><td data-i18n="integrated-corn-business_127">ไม่พบจุดความร้อน/รอยเผาในแปลงตลอดรอบการผลิต</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_128">2. สินเชื่อ</strong></td><td data-i18n="integrated-corn-business_129">ส่วนลดดอกเบี้ยหรือเพิ่มวงเงินในฤดูถัดไป</td><td data-i18n="integrated-corn-business_130">สถาบันการเงิน สหกรณ์</td><td data-i18n="integrated-corn-business_131">ประวัติปลอดการเผาต่อเนื่อง</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_132">3. ชีวมวล</strong></td><td data-i18n="integrated-corn-business_133">รายได้จากการขายต้นและซังข้าวโพดเป็นวัตถุดิบ Biochar / Biomass Pellets</td><td data-i18n="integrated-corn-business_134">โรงไฟฟ้าชีวมวล โรงงานแปรรูป</td><td data-i18n="integrated-corn-business_135">ส่งมอบชีวมวลผ่านจุดรวบรวมในระบบ</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_136">4. บริการ</strong></td><td data-i18n="integrated-corn-business_137">ค่าบริการเครื่องอัดฟาง/สับกลบตอซังราคาพิเศษ หรือไม่มีค่าใช้จ่าย</td><td data-i18n="integrated-corn-business_138">กองทุนโครงการ ผู้ซื้อชีวมวล</td><td data-i18n="integrated-corn-business_139">จองคิวผ่าน AI Matching</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_140">5. คาร์บอน</strong></td><td data-i18n="integrated-corn-business_141">ส่วนแบ่งรายได้คาร์บอนเครดิตจากการลดการเผาและการฝัง Biochar</td><td data-i18n="integrated-corn-business_142">ผู้ซื้อคาร์บอนเครดิต (ผ่านกลไก T-VER)</td><td data-i18n="integrated-corn-business_143">ข้อมูลแปลงและการตรวจวัดที่ทวนสอบได้</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-corn-business_148">6.2 ขั้นตอนการทำงาน</h3>
+<ul class="check-list">
+<li><strong data-i18n="integrated-corn-business_149">ลงทะเบียน:</strong><span data-i18n="integrated-corn-business_150"> เกษตรกรลงทะเบียนแปลงและเข้าร่วมโครงการปลอดการเผา</span></li>
+<li><strong data-i18n="integrated-corn-business_151">จัดเก็บชีวมวล:</strong><span data-i18n="integrated-corn-business_152"> หลังเก็บเกี่ยว จองเครื่องอัด/สับตอซังผ่านระบบ ชีวมวลถูกส่งไปจุดรวบรวมของสหกรณ์</span></li>
+<li><strong data-i18n="integrated-corn-business_153">ตรวจติดตามด้วยดาวเทียม:</strong><span data-i18n="integrated-corn-business_154"> ดาวเทียมตรวจจุดความร้อนและรอยเผาตลอดรอบการผลิตและหลังเก็บเกี่ยว</span></li>
+<li><strong data-i18n="integrated-corn-business_155">ออกสถานะอัตโนมัติ:</strong><span data-i18n="integrated-corn-business_156"> ระบบออกสถานะ “แปลงปลอดการเผา” อัตโนมัติ ซึ่งติดไปกับผลผลิตทุกล็อตที่ขาย</span></li>
+<li><strong data-i18n="integrated-corn-business_157">จ่ายผลตอบแทน:</strong><span data-i18n="integrated-corn-business_158"> ณ จุดรับซื้อ ระบบจ่าย Green Premium พร้อมเงินขายชีวมวล และบันทึกประวัติไว้ใช้ขอสิทธิประโยชน์สินเชื่อและคาร์บอนเครดิตในฤดูถัดไป</span></li>
+</ul>
+<h3 data-i18n="integrated-corn-business_159" style="margin-top:30px;">6.3 แหล่งทุนของแรงจูงใจ</h3>
+<p data-i18n="integrated-corn-business_160">แรงจูงใจต้องมีแหล่งเงินที่ยั่งยืน ไม่พึ่งงบอุดหนุนอย่างเดียว เสนอให้มาจาก (1) ส่วนต่างราคาที่โรงงานอาหารสัตว์และผู้ส่งออกยินดีจ่ายเพื่อลดความเสี่ยงด้านมาตรการนำเข้าและข้อกำหนดตลาดปลายทาง (2) รายได้ชีวมวลและคาร์บอนเครดิต และ (3) กองทุนหรืองบประมาณภาครัฐในช่วงเริ่มต้นสำหรับพื้นที่เสี่ยงสูง</p>
+<h3 data-i18n="integrated-corn-business_161" style="margin-top:30px;">6.4 การขยายไปยังประเทศเพื่อนบ้าน</h3>
+<p data-i18n="integrated-corn-business_162">แปลงต่างประเทศที่ลงทะเบียนและผ่านการตรวจปลอดการเผาได้รับแรงจูงใจชั้นที่ 1 ผ่านราคารับซื้อของผู้นำเข้าไทย ทำให้การแก้หมอกควันข้ามแดนใช้กลไกตลาดแทนการบังคับเพียงอย่างเดียว และสอดคล้องกับข้อเสนอของประเทศคู่ค้าให้หารือมาตรการในกรอบอาเซียนและมีช่วงปรับตัว</p>
+</div></section>
+
+<section class="prose-section" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_163">7. บทบาทสหกรณ์ ตัวชี้วัด และแผนดำเนินงาน</h2>
+<h3 data-i18n="integrated-corn-business_164">7.1 บทบาทของสหกรณ์การเกษตร</h3>
+<ul class="check-list">
+<li data-i18n="integrated-corn-business_165">ศูนย์ลงทะเบียนแปลง ตรวจดิน และกระจายปุ๋ยสั่งตัด/เมล็ดพันธุ์</li>
+<li data-i18n="integrated-corn-business_166">ตัวกลางสินเชื่อเป็นงวดและหักชำระคืน ณ จุดขาย</li>
+<li data-i18n="integrated-corn-business_167">ผู้บริหารคิวเครื่องจักรกลระดับชุมชน รวมถึงเครื่องอัดฟาง/สับตอซัง</li>
+<li data-i18n="integrated-corn-business_168">จุดรวบรวมผลผลิตและชีวมวลเพื่อแปรรูปในระดับชุมชน</li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-7-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-corn-business_169">7.2 ตัวชี้วัด (KPIs) ที่เสนอสำหรับระยะนำร่อง</h3>
+<p data-i18n="integrated-corn-business_170">ค่าเป้าหมายจะกำหนดร่วมกับหน่วยงานหลังได้ข้อมูลฐาน (Baseline) ของพื้นที่นำร่อง</p>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:760px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-corn-business_183">ด้าน</th>
+<th data-i18n="integrated-corn-business_184">ตัวชี้วัด</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-corn-business_171">ต้นทุน</strong></td><td data-i18n="integrated-corn-business_172">ดอกเบี้ยจ่ายต่อไร่ เทียบสินเชื่อก้อนเดียว; ปริมาณและค่าปุ๋ยต่อไร่ เทียบแปลงควบคุม</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_173">ผลผลิต</strong></td><td data-i18n="integrated-corn-business_174">ผลผลิตต่อไร่ และรายได้สุทธิต่อไร่</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_175">การเผา</strong></td><td data-i18n="integrated-corn-business_176">จำนวนจุดความร้อนและพื้นที่รอยเผาในพื้นที่โครงการ เทียบปีฐาน</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_177">ชีวมวล</strong></td><td data-i18n="integrated-corn-business_178">ตันชีวมวลที่รวบรวมได้ และรายได้เสริมต่อครัวเรือน</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_179">การค้า</strong></td><td data-i18n="integrated-corn-business_180">สัดส่วนผลผลิตที่ซื้อขายผ่านระบบพร้อมผลตรวจคุณภาพ; ปริมาณนำเข้าที่ตรวจสอบย้อนกลับถึงแปลงได้</td></tr>
+<tr><td><strong data-i18n="integrated-corn-business_181">การเงิน</strong></td><td data-i18n="integrated-corn-business_182">อัตราหนี้เสียของสินเชื่อในโครงการ</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in" style="margin-top:34px;">
+<h3 data-i18n="integrated-corn-business_185">7.3 แผนดำเนินงาน</h3>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="role-grid">
+<div class="role-card"><h4><span class="badge-num">1</span><span data-i18n="integrated-corn-business_186"> ระยะที่ 1 (ปีที่ 1): นำร่อง</span></h4><ul>
+<li data-i18n="integrated-corn-business_187">1–2 จังหวัดที่ปลูกข้าวโพดมากและมีปัญหาการเผาสูง ร่วมกับสหกรณ์ 2–3 แห่ง สถาบันการเงิน 1 แห่ง และโรงงานอาหารสัตว์อย่างน้อย 1 ราย</li>
+<li data-i18n="integrated-corn-business_188">ทดสอบสินเชื่อเป็นงวด ปุ๋ยสั่งตัด และ Incentive ไม่เผา</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">2</span><span data-i18n="integrated-corn-business_189"> ระยะที่ 2 (ปีที่ 2): ขยายและเชื่อมการนำเข้า</span></h4><ul>
+<li data-i18n="integrated-corn-business_190">ขยายจังหวัด และนำร่องระบบลงทะเบียนแปลงต่างประเทศผ่านด่านชายแดน 1–2 แห่ง</li>
+<li data-i18n="integrated-corn-business_191">ร่วมกับกรมการค้าต่างประเทศและหน่วยงานที่มีอำนาจ</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">3</span><span data-i18n="integrated-corn-business_192"> ระยะที่ 3 (ปีที่ 3): ขยายระดับประเทศและภูมิภาค</span></h4><ul>
+<li data-i18n="integrated-corn-business_193">เชื่อมระบบกับฐานข้อมูลภาครัฐและตลาดคาร์บอน</li>
+<li data-i18n="integrated-corn-business_194">เสนอใช้เป็นต้นแบบในกรอบความร่วมมืออาเซียนด้านหมอกควันข้ามแดน</li>
+</ul></div>
+</div>
+</div>
+<div class="container prose-block reveal in" style="margin-top:34px;">
+<h3 data-i18n="integrated-corn-business_195">7.4 หน่วยงานที่เสนอให้ร่วมดำเนินการ</h3>
+<p data-i18n="integrated-corn-business_196">กระทรวงเกษตรและสหกรณ์ (กรมส่งเสริมการเกษตร กรมพัฒนาที่ดิน กรมส่งเสริมสหกรณ์) กระทรวงพาณิชย์ (กรมการค้าต่างประเทศ) GISTDA ธ.ก.ส. องค์การบริหารจัดการก๊าซเรือนกระจก (อบก.) สมาคมผู้ผลิตอาหารสัตว์ไทย และสหกรณ์การเกษตรในพื้นที่</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-corn-business_197">8. ประโยชน์ที่คาดว่าจะได้รับ</h2>
+<ul class="check-list">
+<li><strong data-i18n="integrated-corn-business_198">เกษตรกร:</strong><span data-i18n="integrated-corn-business_199"> ภาระดอกเบี้ยลดลงจากสินเชื่อเป็นงวด ค่าปุ๋ยลดลงและไม่มีปุ๋ยส่วนเกิน ราคาขายเป็นธรรมพร้อม Green Premium และมีรายได้เสริมจากชีวมวล</span></li>
+<li><strong data-i18n="integrated-corn-business_200">อุตสาหกรรมอาหารสัตว์และผู้นำเข้า:</strong><span data-i18n="integrated-corn-business_201"> วัตถุดิบคุณภาพสม่ำเสมอ ตรวจสอบย้อนกลับได้ถึงแปลง และมีหลักฐานรองรับมาตรการนำเข้าปลอดการเผา</span></li>
+<li><strong data-i18n="integrated-corn-business_202">ภาครัฐ:</strong><span data-i18n="integrated-corn-business_203"> เห็นข้อมูลผลผลิตและความเสี่ยงการเผารายพื้นที่ ใช้วางแผนการนำเข้าและบังคับใช้มาตรการได้แม่นยำขึ้น</span></li>
+<li><strong data-i18n="integrated-corn-business_204">สิ่งแวดล้อมและสังคม:</strong><span data-i18n="integrated-corn-business_205"> การเผาและ PM2.5 ลดลงทั้งในประเทศและหมอกควันข้ามแดน ลดการใช้ปุ๋ยเกินจำเป็น และเพิ่มการกักเก็บคาร์บอนจาก Biochar</span></li>
+</ul>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 class="section-title" data-i18n="integrated-corn-business_206">สนใจเข้าร่วมโครงการข้าวโพดครบวงจร</h2>
+<p class="section-sub" data-i18n="integrated-corn-business_207">ไม่ว่าจะในฐานะเกษตรกร สหกรณ์ ลานพืชไร่ ไซโล โรงงานอาหารสัตว์ หรือพันธมิตรทางธุรกิจ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-corn-business_208">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-corn-business_209">กลับหน้าแรก</a>
+</div></div></section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-corn-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
