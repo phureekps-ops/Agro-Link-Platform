@@ -68,6 +68,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -111,7 +113,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -184,26 +187,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="terms-of-use_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -213,45 +217,45 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-file-contract"></i> ข้อกำหนดการใช้งาน</div>
-    <h1 class="section-title">ข้อกำหนดการใช้งาน (Terms of Use)</h1>
-    <p class="section-sub" style="margin-left:auto;margin-right:auto;">
+    <div class="eyebrow"><i class="fa-solid fa-file-contract"></i><span data-i18n="terms-of-use_1"> ข้อกำหนดการใช้งาน</span></div>
+    <h1 class="section-title" data-i18n="terms-of-use_2">ข้อกำหนดการใช้งาน (Terms of Use)</h1>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;" data-i18n="terms-of-use_3">
       ข้อกำหนดฉบับนี้กำหนดสิทธิ หน้าที่ และเงื่อนไขการใช้งานแพลตฟอร์ม AgroLink
       โปรดอ่านให้เข้าใจก่อนเข้าใช้งานหรือลงทะเบียนเป็นสมาชิก
     </p>
-    <div class="updated">ปรับปรุงล่าสุด: กันยายน 2569 (ฉบับร่าง)</div>
+    <div class="updated" data-i18n="terms-of-use_4">ปรับปรุงล่าสุด: กันยายน 2569 (ฉบับร่าง)</div>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in">
     <div class="note-block">
-      <strong>หมายเหตุสำคัญ:</strong> เอกสารนี้เป็น<strong>ร่างเบื้องต้น</strong>จัดทำขึ้นเพื่อเป็นแนวทางประกอบการพัฒนาเว็บไซต์เท่านั้น
+      <strong data-i18n="terms-of-use_5">หมายเหตุสำคัญ:</strong><span data-i18n="terms-of-use_6"> เอกสารนี้เป็น</span><strong data-i18n="terms-of-use_7">ร่างเบื้องต้น</strong><span data-i18n="terms-of-use_8">จัดทำขึ้นเพื่อเป็นแนวทางประกอบการพัฒนาเว็บไซต์เท่านั้น
       ไม่ถือเป็นคำแนะนำทางกฎหมาย และยังไม่ผ่านการตรวจสอบจากที่ปรึกษากฎหมาย ก่อนเผยแพร่ใช้งานจริงบนเว็บไซต์
       ขอแนะนำให้บริษัทตรวจสอบเนื้อหาร่วมกับที่ปรึกษากฎหมาย โดยเฉพาะส่วนการจำกัดความรับผิด บทบาทของแพลตฟอร์ม
       และเงื่อนไขที่เกี่ยวข้องกับธุรกรรมทางการเงินและการซื้อขาย เพื่อให้สอดคล้องกับกฎหมายไทยที่เกี่ยวข้องอย่างครบถ้วน
       ก่อนนำไปใช้อ้างอิงกับผู้ใช้งานจริง
-    </div>
+    </span></div>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in">
     <div class="toc">
-      <h3>สารบัญ</h3>
+      <h3 data-i18n="terms-of-use_9">สารบัญ</h3>
       <ol>
-        <li><a href="#acceptance">การยอมรับข้อกำหนด</a></li>
-        <li><a href="#definitions">คำนิยาม</a></li>
-        <li><a href="#eligibility">คุณสมบัติผู้ใช้งานและการลงทะเบียน</a></li>
-        <li><a href="#role">บทบาทของ AgroLink</a></li>
-        <li><a href="#acceptable-use">การใช้งานแพลตฟอร์มอย่างเหมาะสม</a></li>
-        <li><a href="#data-accuracy">ความถูกต้องของข้อมูลที่ผู้ใช้ให้ไว้</a></li>
-        <li><a href="#ip">ทรัพย์สินทางปัญญา</a></li>
-        <li><a href="#liability">การจำกัดความรับผิด</a></li>
-        <li><a href="#suspension">การระงับหรือยกเลิกการใช้งาน</a></li>
-        <li><a href="#changes">การเปลี่ยนแปลงข้อกำหนด</a></li>
-        <li><a href="#law">กฎหมายที่ใช้บังคับ</a></li>
-        <li><a href="#contact">ช่องทางติดต่อ</a></li>
+        <li><a href="#acceptance" data-i18n="terms-of-use_10">การยอมรับข้อกำหนด</a></li>
+        <li><a href="#definitions" data-i18n="terms-of-use_11">คำนิยาม</a></li>
+        <li><a href="#eligibility" data-i18n="terms-of-use_12">คุณสมบัติผู้ใช้งานและการลงทะเบียน</a></li>
+        <li><a href="#role" data-i18n="terms-of-use_13">บทบาทของ AgroLink</a></li>
+        <li><a href="#acceptable-use" data-i18n="terms-of-use_14">การใช้งานแพลตฟอร์มอย่างเหมาะสม</a></li>
+        <li><a href="#data-accuracy" data-i18n="terms-of-use_15">ความถูกต้องของข้อมูลที่ผู้ใช้ให้ไว้</a></li>
+        <li><a href="#ip" data-i18n="terms-of-use_16">ทรัพย์สินทางปัญญา</a></li>
+        <li><a href="#liability" data-i18n="terms-of-use_17">การจำกัดความรับผิด</a></li>
+        <li><a href="#suspension" data-i18n="terms-of-use_18">การระงับหรือยกเลิกการใช้งาน</a></li>
+        <li><a href="#changes" data-i18n="terms-of-use_19">การเปลี่ยนแปลงข้อกำหนด</a></li>
+        <li><a href="#law" data-i18n="terms-of-use_20">กฎหมายที่ใช้บังคับ</a></li>
+        <li><a href="#contact" data-i18n="terms-of-use_21">ช่องทางติดต่อ</a></li>
       </ol>
     </div>
   </div>
@@ -259,118 +263,118 @@
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="acceptance">
-    <h2><span class="num">1</span> การยอมรับข้อกำหนด</h2>
-    <p>การเข้าใช้งานเว็บไซต์หรือแพลตฟอร์ม AgroLink ไม่ว่าในฐานะผู้เยี่ยมชมหรือสมาชิกที่ลงทะเบียนแล้ว ถือว่าท่านได้อ่าน เข้าใจ และยอมรับที่จะปฏิบัติตามข้อกำหนดการใช้งานฉบับนี้ รวมถึงนโยบายความเป็นส่วนตัวของเรา หากท่านไม่เห็นด้วยกับข้อกำหนดฉบับนี้ไม่ว่าส่วนใดส่วนหนึ่ง ขอให้ท่านหลีกเลี่ยงการใช้งานแพลตฟอร์ม</p>
+    <h2><span class="num">1</span><span data-i18n="terms-of-use_22"> การยอมรับข้อกำหนด</span></h2>
+    <p data-i18n="terms-of-use_23">การเข้าใช้งานเว็บไซต์หรือแพลตฟอร์ม AgroLink ไม่ว่าในฐานะผู้เยี่ยมชมหรือสมาชิกที่ลงทะเบียนแล้ว ถือว่าท่านได้อ่าน เข้าใจ และยอมรับที่จะปฏิบัติตามข้อกำหนดการใช้งานฉบับนี้ รวมถึงนโยบายความเป็นส่วนตัวของเรา หากท่านไม่เห็นด้วยกับข้อกำหนดฉบับนี้ไม่ว่าส่วนใดส่วนหนึ่ง ขอให้ท่านหลีกเลี่ยงการใช้งานแพลตฟอร์ม</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="definitions">
-    <h2><span class="num">2</span> คำนิยาม</h2>
+    <h2><span class="num">2</span><span data-i18n="terms-of-use_24"> คำนิยาม</span></h2>
     <ul>
-      <li><strong>"แพลตฟอร์ม" หรือ "AgroLink"</strong> หมายถึง เว็บไซต์และระบบซอฟต์แวร์ AgroLink ที่ให้บริการเชื่อมโยงข้อมูลระหว่างเกษตรกร สหกรณ์ ผู้ให้บริการ สถาบันการเงิน และผู้ซื้อ</li>
-      <li><strong>"บริษัท"</strong> หมายถึง บริษัท ภักดี คอร์ปอเรชั่น จำกัด ผู้พัฒนาและให้บริการแพลตฟอร์ม AgroLink</li>
-      <li><strong>"ผู้ใช้งาน"</strong> หมายถึง บุคคลหรือนิติบุคคลที่เข้าใช้งานแพลตฟอร์ม ไม่ว่าจะลงทะเบียนในบทบาทใดก็ตาม เช่น เกษตรกร สหกรณ์ ผู้ให้บริการ ผู้ให้สินเชื่อ หรือผู้ซื้อ</li>
-      <li><strong>"พันธมิตร"</strong> หมายถึง สถาบันการเงิน ผู้ให้บริการ หรือผู้ซื้อที่เข้าร่วมเป็นส่วนหนึ่งของระบบนิเวศบนแพลตฟอร์ม</li>
+      <li><strong data-i18n="terms-of-use_25">"แพลตฟอร์ม" หรือ "AgroLink"</strong><span data-i18n="terms-of-use_26"> หมายถึง เว็บไซต์และระบบซอฟต์แวร์ AgroLink ที่ให้บริการเชื่อมโยงข้อมูลระหว่างเกษตรกร สหกรณ์ ผู้ให้บริการ สถาบันการเงิน และผู้ซื้อ</span></li>
+      <li><strong data-i18n="terms-of-use_27">"บริษัท"</strong><span data-i18n="terms-of-use_28"> หมายถึง บริษัท ภักดี คอร์ปอเรชั่น จำกัด ผู้พัฒนาและให้บริการแพลตฟอร์ม AgroLink</span></li>
+      <li><strong data-i18n="terms-of-use_29">"ผู้ใช้งาน"</strong><span data-i18n="terms-of-use_30"> หมายถึง บุคคลหรือนิติบุคคลที่เข้าใช้งานแพลตฟอร์ม ไม่ว่าจะลงทะเบียนในบทบาทใดก็ตาม เช่น เกษตรกร สหกรณ์ ผู้ให้บริการ ผู้ให้สินเชื่อ หรือผู้ซื้อ</span></li>
+      <li><strong data-i18n="terms-of-use_31">"พันธมิตร"</strong><span data-i18n="terms-of-use_32"> หมายถึง สถาบันการเงิน ผู้ให้บริการ หรือผู้ซื้อที่เข้าร่วมเป็นส่วนหนึ่งของระบบนิเวศบนแพลตฟอร์ม</span></li>
     </ul>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="eligibility">
-    <h2><span class="num">3</span> คุณสมบัติผู้ใช้งานและการลงทะเบียน</h2>
-    <p>ผู้ใช้งานต้องให้ข้อมูลที่ถูกต้อง เป็นจริง และเป็นปัจจุบันในการลงทะเบียนบัญชีผู้ใช้ ผู้ใช้งานมีหน้าที่รักษาความปลอดภัยของบัญชีของตนเอง รวมถึงรหัสยืนยันตัวตน (OTP) ที่ใช้ในการเข้าสู่ระบบ และต้องรับผิดชอบต่อกิจกรรมทั้งหมดที่เกิดขึ้นภายใต้บัญชีของตน หากพบการใช้งานที่ไม่ได้รับอนุญาต ผู้ใช้งานต้องแจ้งให้เราทราบโดยทันที</p>
+    <h2><span class="num">3</span><span data-i18n="terms-of-use_33"> คุณสมบัติผู้ใช้งานและการลงทะเบียน</span></h2>
+    <p data-i18n="terms-of-use_34">ผู้ใช้งานต้องให้ข้อมูลที่ถูกต้อง เป็นจริง และเป็นปัจจุบันในการลงทะเบียนบัญชีผู้ใช้ ผู้ใช้งานมีหน้าที่รักษาความปลอดภัยของบัญชีของตนเอง รวมถึงรหัสยืนยันตัวตน (OTP) ที่ใช้ในการเข้าสู่ระบบ และต้องรับผิดชอบต่อกิจกรรมทั้งหมดที่เกิดขึ้นภายใต้บัญชีของตน หากพบการใช้งานที่ไม่ได้รับอนุญาต ผู้ใช้งานต้องแจ้งให้เราทราบโดยทันที</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="role">
-    <h2><span class="num">4</span> บทบาทของ AgroLink</h2>
-    <p>AgroLink เป็น<strong>แพลตฟอร์มและโครงสร้างพื้นฐานด้านข้อมูล</strong> ที่เชื่อมโยงข้อมูลการผลิตจริงระหว่างผู้ใช้งานกลุ่มต่าง ๆ เพื่ออำนวยความสะดวกในการติดต่อ พิจารณา และทำธุรกรรมระหว่างกัน โดยมีขอบเขตบทบาทที่ชัดเจนดังนี้</p>
+    <h2><span class="num">4</span><span data-i18n="terms-of-use_35"> บทบาทของ AgroLink</span></h2>
+    <p><span data-i18n="terms-of-use_36">AgroLink เป็น</span><strong data-i18n="terms-of-use_37">แพลตฟอร์มและโครงสร้างพื้นฐานด้านข้อมูล</strong><span data-i18n="terms-of-use_38"> ที่เชื่อมโยงข้อมูลการผลิตจริงระหว่างผู้ใช้งานกลุ่มต่าง ๆ เพื่ออำนวยความสะดวกในการติดต่อ พิจารณา และทำธุรกรรมระหว่างกัน โดยมีขอบเขตบทบาทที่ชัดเจนดังนี้</span></p>
     <ul>
-      <li><strong>AgroLink ไม่ใช่ผู้ให้สินเชื่อ</strong> การอนุมัติสินเชื่อ วงเงิน อัตราดอกเบี้ย และเงื่อนไขต่าง ๆ เป็นการพิจารณาและดำเนินการโดยผู้ให้บริการทางการเงินแต่ละรายเอง</li>
-      <li><strong>AgroLink ไม่ใช่ผู้ซื้อหรือผู้ขายผลผลิต</strong> และไม่รับประกันราคาซื้อขายหรือคุณภาพของสินค้าที่ซื้อขายผ่านตลาดกลางบนแพลตฟอร์ม การทำธุรกรรมเป็นความรับผิดชอบระหว่างผู้ซื้อและผู้ขายโดยตรง</li>
-      <li>การจับคู่ในตลาดคาร์บอนเครดิตและธุรกรรมบางประเภทดำเนินการโดยทีมงาน Platform Ops ของเราเพื่อความถูกต้อง แต่ไม่ถือเป็นการรับประกันผลลัพธ์ของธุรกรรมนั้น ๆ</li>
-      <li>รายชื่อพันธมิตรที่ปรากฏบนแพลตฟอร์มเป็นหมวดหมู่พันธมิตรเป้าหมายหรือพันธมิตรที่เข้าร่วมระบบ ณ ขณะนั้น อาจมีการเปลี่ยนแปลงได้</li>
+      <li><strong data-i18n="terms-of-use_39">AgroLink ไม่ใช่ผู้ให้สินเชื่อ</strong><span data-i18n="terms-of-use_40"> การอนุมัติสินเชื่อ วงเงิน อัตราดอกเบี้ย และเงื่อนไขต่าง ๆ เป็นการพิจารณาและดำเนินการโดยผู้ให้บริการทางการเงินแต่ละรายเอง</span></li>
+      <li><strong data-i18n="terms-of-use_41">AgroLink ไม่ใช่ผู้ซื้อหรือผู้ขายผลผลิต</strong><span data-i18n="terms-of-use_42"> และไม่รับประกันราคาซื้อขายหรือคุณภาพของสินค้าที่ซื้อขายผ่านตลาดกลางบนแพลตฟอร์ม การทำธุรกรรมเป็นความรับผิดชอบระหว่างผู้ซื้อและผู้ขายโดยตรง</span></li>
+      <li data-i18n="terms-of-use_43">การจับคู่ในตลาดคาร์บอนเครดิตและธุรกรรมบางประเภทดำเนินการโดยทีมงาน Platform Ops ของเราเพื่อความถูกต้อง แต่ไม่ถือเป็นการรับประกันผลลัพธ์ของธุรกรรมนั้น ๆ</li>
+      <li data-i18n="terms-of-use_44">รายชื่อพันธมิตรที่ปรากฏบนแพลตฟอร์มเป็นหมวดหมู่พันธมิตรเป้าหมายหรือพันธมิตรที่เข้าร่วมระบบ ณ ขณะนั้น อาจมีการเปลี่ยนแปลงได้</li>
     </ul>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="acceptable-use">
-    <h2><span class="num">5</span> การใช้งานแพลตฟอร์มอย่างเหมาะสม</h2>
-    <p>ผู้ใช้งานตกลงจะไม่กระทำการดังต่อไปนี้ในระหว่างการใช้งานแพลตฟอร์ม</p>
+    <h2><span class="num">5</span><span data-i18n="terms-of-use_45"> การใช้งานแพลตฟอร์มอย่างเหมาะสม</span></h2>
+    <p data-i18n="terms-of-use_46">ผู้ใช้งานตกลงจะไม่กระทำการดังต่อไปนี้ในระหว่างการใช้งานแพลตฟอร์ม</p>
     <ul>
-      <li>ให้ข้อมูลอันเป็นเท็จเกี่ยวกับตนเอง แปลง/หน่วยผลิต การผลิต หรือธุรกรรมใด ๆ บนระบบ</li>
-      <li>ใช้แพลตฟอร์มเพื่อกระทำการที่ผิดกฎหมาย ฉ้อโกง หรือละเมิดสิทธิของผู้อื่น</li>
-      <li>พยายามเข้าถึงระบบ ข้อมูล หรือบัญชีของผู้ใช้งานรายอื่นโดยไม่ได้รับอนุญาต</li>
-      <li>รบกวนหรือขัดขวางการทำงานปกติของแพลตฟอร์ม เช่น การโจมตีระบบหรือใช้โปรแกรมอัตโนมัติโดยไม่ได้รับอนุญาต</li>
-      <li>คัดลอก ทำซ้ำ หรือเผยแพร่เนื้อหาบนแพลตฟอร์มเพื่อวัตถุประสงค์ทางการค้าโดยไม่ได้รับอนุญาตจากเรา</li>
+      <li data-i18n="terms-of-use_47">ให้ข้อมูลอันเป็นเท็จเกี่ยวกับตนเอง แปลง/หน่วยผลิต การผลิต หรือธุรกรรมใด ๆ บนระบบ</li>
+      <li data-i18n="terms-of-use_48">ใช้แพลตฟอร์มเพื่อกระทำการที่ผิดกฎหมาย ฉ้อโกง หรือละเมิดสิทธิของผู้อื่น</li>
+      <li data-i18n="terms-of-use_49">พยายามเข้าถึงระบบ ข้อมูล หรือบัญชีของผู้ใช้งานรายอื่นโดยไม่ได้รับอนุญาต</li>
+      <li data-i18n="terms-of-use_50">รบกวนหรือขัดขวางการทำงานปกติของแพลตฟอร์ม เช่น การโจมตีระบบหรือใช้โปรแกรมอัตโนมัติโดยไม่ได้รับอนุญาต</li>
+      <li data-i18n="terms-of-use_51">คัดลอก ทำซ้ำ หรือเผยแพร่เนื้อหาบนแพลตฟอร์มเพื่อวัตถุประสงค์ทางการค้าโดยไม่ได้รับอนุญาตจากเรา</li>
     </ul>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="data-accuracy">
-    <h2><span class="num">6</span> ความถูกต้องของข้อมูลที่ผู้ใช้ให้ไว้</h2>
-    <p>ข้อมูลการผลิต ข้อมูลแปลง ข้อมูลทางการเงิน และข้อมูลอื่นใดที่ผู้ใช้งานกรอกหรืออัปโหลดเข้าสู่ระบบ เป็นความรับผิดชอบของผู้ใช้งานในความถูกต้องและครบถ้วน AgroLink อาจใช้ข้อมูลดังกล่าวประกอบการวิเคราะห์ด้วย AI หรือภาพถ่ายดาวเทียม แต่ผลลัพธ์ที่ได้เป็นเพียงข้อมูลประกอบการตัดสินใจ ไม่ถือเป็นการรับรองความถูกต้องแบบสมบูรณ์ และไม่ทดแทนการตรวจสอบหรือดุลยพินิจของผู้ใช้งานหรือพันธมิตรที่เกี่ยวข้อง</p>
+    <h2><span class="num">6</span><span data-i18n="terms-of-use_52"> ความถูกต้องของข้อมูลที่ผู้ใช้ให้ไว้</span></h2>
+    <p data-i18n="terms-of-use_53">ข้อมูลการผลิต ข้อมูลแปลง ข้อมูลทางการเงิน และข้อมูลอื่นใดที่ผู้ใช้งานกรอกหรืออัปโหลดเข้าสู่ระบบ เป็นความรับผิดชอบของผู้ใช้งานในความถูกต้องและครบถ้วน AgroLink อาจใช้ข้อมูลดังกล่าวประกอบการวิเคราะห์ด้วย AI หรือภาพถ่ายดาวเทียม แต่ผลลัพธ์ที่ได้เป็นเพียงข้อมูลประกอบการตัดสินใจ ไม่ถือเป็นการรับรองความถูกต้องแบบสมบูรณ์ และไม่ทดแทนการตรวจสอบหรือดุลยพินิจของผู้ใช้งานหรือพันธมิตรที่เกี่ยวข้อง</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="ip">
-    <h2><span class="num">7</span> ทรัพย์สินทางปัญญา</h2>
-    <p>เนื้อหา โลโก้ เครื่องหมายการค้า และซอฟต์แวร์ทั้งหมดบนแพลตฟอร์ม AgroLink เป็นทรัพย์สินของบริษัท ภักดี คอร์ปอเรชั่น จำกัด หรือผู้อนุญาตให้ใช้สิทธิ ห้ามมิให้ผู้ใดทำซ้ำ ดัดแปลง หรือนำไปใช้ในเชิงพาณิชย์โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษรจากเราก่อน ข้อมูลการผลิตที่ผู้ใช้งานป้อนเข้าสู่ระบบยังคงเป็นของผู้ใช้งาน โดยเราจะใช้ข้อมูลดังกล่าวตามที่ระบุไว้ในนโยบายความเป็นส่วนตัว</p>
+    <h2><span class="num">7</span><span data-i18n="terms-of-use_54"> ทรัพย์สินทางปัญญา</span></h2>
+    <p data-i18n="terms-of-use_55">เนื้อหา โลโก้ เครื่องหมายการค้า และซอฟต์แวร์ทั้งหมดบนแพลตฟอร์ม AgroLink เป็นทรัพย์สินของบริษัท ภักดี คอร์ปอเรชั่น จำกัด หรือผู้อนุญาตให้ใช้สิทธิ ห้ามมิให้ผู้ใดทำซ้ำ ดัดแปลง หรือนำไปใช้ในเชิงพาณิชย์โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษรจากเราก่อน ข้อมูลการผลิตที่ผู้ใช้งานป้อนเข้าสู่ระบบยังคงเป็นของผู้ใช้งาน โดยเราจะใช้ข้อมูลดังกล่าวตามที่ระบุไว้ในนโยบายความเป็นส่วนตัว</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="liability">
-    <h2><span class="num">8</span> การจำกัดความรับผิด</h2>
-    <p>แพลตฟอร์ม AgroLink ให้บริการในลักษณะ "ตามสภาพที่เป็นอยู่" (as is) เราจะพยายามอย่างเต็มที่เพื่อให้ข้อมูลและบริการมีความถูกต้องและพร้อมใช้งาน แต่ไม่รับประกันว่าแพลตฟอร์มจะปราศจากข้อผิดพลาดหรือทำงานได้อย่างต่อเนื่องตลอดเวลา เราไม่รับผิดชอบต่อความเสียหายทางตรง ทางอ้อม หรือที่เกิดขึ้นตามมา อันเกิดจากการตัดสินใจของผู้ใช้งานหรือพันธมิตรที่อ้างอิงจากข้อมูลบนแพลตฟอร์ม รวมถึงผลของธุรกรรมทางการเงินหรือการซื้อขายที่เกิดขึ้นระหว่างผู้ใช้งานด้วยกันเอง เว้นแต่กรณีที่กฎหมายกำหนดไว้เป็นอย่างอื่น</p>
+    <h2><span class="num">8</span><span data-i18n="terms-of-use_56"> การจำกัดความรับผิด</span></h2>
+    <p data-i18n="terms-of-use_57">แพลตฟอร์ม AgroLink ให้บริการในลักษณะ "ตามสภาพที่เป็นอยู่" (as is) เราจะพยายามอย่างเต็มที่เพื่อให้ข้อมูลและบริการมีความถูกต้องและพร้อมใช้งาน แต่ไม่รับประกันว่าแพลตฟอร์มจะปราศจากข้อผิดพลาดหรือทำงานได้อย่างต่อเนื่องตลอดเวลา เราไม่รับผิดชอบต่อความเสียหายทางตรง ทางอ้อม หรือที่เกิดขึ้นตามมา อันเกิดจากการตัดสินใจของผู้ใช้งานหรือพันธมิตรที่อ้างอิงจากข้อมูลบนแพลตฟอร์ม รวมถึงผลของธุรกรรมทางการเงินหรือการซื้อขายที่เกิดขึ้นระหว่างผู้ใช้งานด้วยกันเอง เว้นแต่กรณีที่กฎหมายกำหนดไว้เป็นอย่างอื่น</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="suspension">
-    <h2><span class="num">9</span> การระงับหรือยกเลิกการใช้งาน</h2>
-    <p>เราขอสงวนสิทธิ์ในการระงับหรือยกเลิกบัญชีผู้ใช้งาน หากพบว่ามีการฝ่าฝืนข้อกำหนดฉบับนี้ ให้ข้อมูลอันเป็นเท็จ หรือใช้งานแพลตฟอร์มในลักษณะที่อาจก่อให้เกิดความเสียหายต่อผู้ใช้งานรายอื่นหรือต่อระบบ โดยจะแจ้งให้ทราบตามความเหมาะสม เว้นแต่กรณีเร่งด่วนที่จำเป็นต้องระงับการใช้งานทันที</p>
+    <h2><span class="num">9</span><span data-i18n="terms-of-use_58"> การระงับหรือยกเลิกการใช้งาน</span></h2>
+    <p data-i18n="terms-of-use_59">เราขอสงวนสิทธิ์ในการระงับหรือยกเลิกบัญชีผู้ใช้งาน หากพบว่ามีการฝ่าฝืนข้อกำหนดฉบับนี้ ให้ข้อมูลอันเป็นเท็จ หรือใช้งานแพลตฟอร์มในลักษณะที่อาจก่อให้เกิดความเสียหายต่อผู้ใช้งานรายอื่นหรือต่อระบบ โดยจะแจ้งให้ทราบตามความเหมาะสม เว้นแต่กรณีเร่งด่วนที่จำเป็นต้องระงับการใช้งานทันที</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="changes">
-    <h2><span class="num">10</span> การเปลี่ยนแปลงข้อกำหนด</h2>
-    <p>เราอาจปรับปรุงข้อกำหนดการใช้งานฉบับนี้เป็นครั้งคราว เพื่อให้สอดคล้องกับการเปลี่ยนแปลงของบริการหรือกฎหมายที่เกี่ยวข้อง โดยจะแจ้งวันที่ปรับปรุงล่าสุดไว้ที่ด้านบนของหน้านี้ การใช้งานแพลตฟอร์มต่อไปหลังจากมีการเปลี่ยนแปลง ถือว่าท่านยอมรับข้อกำหนดฉบับปรับปรุงนั้นแล้ว</p>
+    <h2><span class="num">10</span><span data-i18n="terms-of-use_60"> การเปลี่ยนแปลงข้อกำหนด</span></h2>
+    <p data-i18n="terms-of-use_61">เราอาจปรับปรุงข้อกำหนดการใช้งานฉบับนี้เป็นครั้งคราว เพื่อให้สอดคล้องกับการเปลี่ยนแปลงของบริการหรือกฎหมายที่เกี่ยวข้อง โดยจะแจ้งวันที่ปรับปรุงล่าสุดไว้ที่ด้านบนของหน้านี้ การใช้งานแพลตฟอร์มต่อไปหลังจากมีการเปลี่ยนแปลง ถือว่าท่านยอมรับข้อกำหนดฉบับปรับปรุงนั้นแล้ว</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="law">
-    <h2><span class="num">11</span> กฎหมายที่ใช้บังคับ</h2>
-    <p>ข้อกำหนดการใช้งานฉบับนี้อยู่ภายใต้บังคับและตีความตามกฎหมายไทย ข้อพิพาทใด ๆ ที่เกิดขึ้นจากหรือเกี่ยวเนื่องกับข้อกำหนดฉบับนี้ ให้อยู่ในเขตอำนาจของศาลไทย</p>
+    <h2><span class="num">11</span><span data-i18n="terms-of-use_62"> กฎหมายที่ใช้บังคับ</span></h2>
+    <p data-i18n="terms-of-use_63">ข้อกำหนดการใช้งานฉบับนี้อยู่ภายใต้บังคับและตีความตามกฎหมายไทย ข้อพิพาทใด ๆ ที่เกิดขึ้นจากหรือเกี่ยวเนื่องกับข้อกำหนดฉบับนี้ ให้อยู่ในเขตอำนาจของศาลไทย</p>
   </div>
 </section>
 
 <section class="prose-section" id="contact">
   <div class="container prose-block reveal in">
-    <h2><span class="num">12</span> ช่องทางติดต่อ</h2>
-    <p>หากท่านมีข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งานฉบับนี้ สามารถติดต่อบริษัท ภักดี คอร์ปอเรชั่น จำกัด ได้ตามช่องทางต่อไปนี้</p>
+    <h2><span class="num">12</span><span data-i18n="terms-of-use_64"> ช่องทางติดต่อ</span></h2>
+    <p data-i18n="terms-of-use_65">หากท่านมีข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งานฉบับนี้ สามารถติดต่อบริษัท ภักดี คอร์ปอเรชั่น จำกัด ได้ตามช่องทางต่อไปนี้</p>
     <ul>
-      <li>อีเมล: management@agrolinkthai.com</li>
-      <li>โทรศัพท์: 092-654-9935</li>
-      <li>ที่อยู่: 49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</li>
+      <li data-i18n="terms-of-use_66">อีเมล: management@agrolinkthai.com</li>
+      <li data-i18n="terms-of-use_67">โทรศัพท์: 092-654-9935</li>
+      <li data-i18n="terms-of-use_68">ที่อยู่: 49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</li>
     </ul>
   </div>
 </section>
 
 <section class="cta-final">
   <div class="container">
-    <h2>มีคำถามเกี่ยวกับการใช้งานแพลตฟอร์ม?</h2>
-    <p>ติดต่อทีมงาน AgroLink ได้โดยตรง เราพร้อมช่วยตอบข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งาน</p>
+    <h2 data-i18n="terms-of-use_69">มีคำถามเกี่ยวกับการใช้งานแพลตฟอร์ม?</h2>
+    <p data-i18n="terms-of-use_70">ติดต่อทีมงาน AgroLink ได้โดยตรง เราพร้อมช่วยตอบข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งาน</p>
     <div class="cta-actions">
-      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i> ติดต่อทีมงาน</a>
-      <a href="index.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-house"></i> กลับหน้าแรก</a>
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i><span data-i18n="terms-of-use_71"> ติดต่อทีมงาน</span></a>
+      <a href="index.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-house"></i><span data-i18n="terms-of-use_72"> กลับหน้าแรก</span></a>
     </div>
   </div>
 </section>
@@ -380,55 +384,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-terms-of-use.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });

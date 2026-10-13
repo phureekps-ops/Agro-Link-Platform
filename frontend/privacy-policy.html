@@ -68,6 +68,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -111,7 +113,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -187,26 +190,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="privacy-policy_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -216,43 +220,43 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-user-shield"></i> ความเป็นส่วนตัว</div>
-    <h1 class="section-title">นโยบายความเป็นส่วนตัว (Privacy Policy)</h1>
-    <p class="section-sub" style="margin-left:auto;margin-right:auto;">
+    <div class="eyebrow"><i class="fa-solid fa-user-shield"></i><span data-i18n="privacy-policy_1"> ความเป็นส่วนตัว</span></div>
+    <h1 class="section-title" data-i18n="privacy-policy_2">นโยบายความเป็นส่วนตัว (Privacy Policy)</h1>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;" data-i18n="privacy-policy_3">
       นโยบายฉบับนี้อธิบายว่า AgroLink เก็บรวบรวม ใช้ เปิดเผย และดูแลรักษาข้อมูลส่วนบุคคลของผู้ใช้งานอย่างไร
       สอดคล้องกับพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)
     </p>
-    <div class="updated">ปรับปรุงล่าสุด: กันยายน 2569 (ฉบับร่าง)</div>
+    <div class="updated" data-i18n="privacy-policy_4">ปรับปรุงล่าสุด: กันยายน 2569 (ฉบับร่าง)</div>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in">
     <div class="note-block">
-      <strong>หมายเหตุสำคัญ:</strong> เอกสารนี้เป็น<strong>ร่างเบื้องต้น</strong>จัดทำขึ้นเพื่อเป็นแนวทางประกอบการพัฒนาเว็บไซต์เท่านั้น
+      <strong data-i18n="privacy-policy_5">หมายเหตุสำคัญ:</strong><span data-i18n="privacy-policy_6"> เอกสารนี้เป็น</span><strong data-i18n="privacy-policy_7">ร่างเบื้องต้น</strong><span data-i18n="privacy-policy_8">จัดทำขึ้นเพื่อเป็นแนวทางประกอบการพัฒนาเว็บไซต์เท่านั้น
       ไม่ถือเป็นคำแนะนำทางกฎหมาย และยังไม่ผ่านการตรวจสอบจากที่ปรึกษากฎหมาย ก่อนเผยแพร่ใช้งานจริงบนเว็บไซต์
       ขอแนะนำให้บริษัทตรวจสอบเนื้อหาร่วมกับที่ปรึกษากฎหมายหรือเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO)
       เพื่อให้สอดคล้องกับพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) และแนวปฏิบัติของหน่วยงานกำกับดูแลอย่างครบถ้วน
       ก่อนนำไปใช้อ้างอิงกับผู้ใช้งานจริง
-    </div>
+    </span></div>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in">
     <div class="toc">
-      <h3>สารบัญ</h3>
+      <h3 data-i18n="privacy-policy_9">สารบัญ</h3>
       <ol>
-        <li><a href="#scope">ขอบเขตของนโยบายนี้</a></li>
-        <li><a href="#collect">ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม</a></li>
-        <li><a href="#purpose">วัตถุประสงค์ในการใช้ข้อมูล</a></li>
-        <li><a href="#share">การเปิดเผยข้อมูลแก่บุคคลที่สาม</a></li>
-        <li><a href="#retention">การเก็บรักษาและความปลอดภัยของข้อมูล</a></li>
-        <li><a href="#rights">สิทธิของเจ้าของข้อมูลส่วนบุคคล</a></li>
-        <li><a href="#cookies">คุกกี้และเทคโนโลยีติดตามที่คล้ายกัน</a></li>
-        <li><a href="#minors">ข้อมูลของผู้เยาว์</a></li>
-        <li><a href="#changes">การเปลี่ยนแปลงนโยบาย</a></li>
-        <li><a href="#contact">ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล</a></li>
+        <li><a href="#scope" data-i18n="privacy-policy_10">ขอบเขตของนโยบายนี้</a></li>
+        <li><a href="#collect" data-i18n="privacy-policy_11">ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม</a></li>
+        <li><a href="#purpose" data-i18n="privacy-policy_12">วัตถุประสงค์ในการใช้ข้อมูล</a></li>
+        <li><a href="#share" data-i18n="privacy-policy_13">การเปิดเผยข้อมูลแก่บุคคลที่สาม</a></li>
+        <li><a href="#retention" data-i18n="privacy-policy_14">การเก็บรักษาและความปลอดภัยของข้อมูล</a></li>
+        <li><a href="#rights" data-i18n="privacy-policy_15">สิทธิของเจ้าของข้อมูลส่วนบุคคล</a></li>
+        <li><a href="#cookies" data-i18n="privacy-policy_16">คุกกี้และเทคโนโลยีติดตามที่คล้ายกัน</a></li>
+        <li><a href="#minors" data-i18n="privacy-policy_17">ข้อมูลของผู้เยาว์</a></li>
+        <li><a href="#changes" data-i18n="privacy-policy_18">การเปลี่ยนแปลงนโยบาย</a></li>
+        <li><a href="#contact" data-i18n="privacy-policy_19">ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล</a></li>
       </ol>
     </div>
   </div>
@@ -260,122 +264,124 @@
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="scope">
-    <h2><span class="num">1</span> ขอบเขตของนโยบายนี้</h2>
-    <p>นโยบายความเป็นส่วนตัวฉบับนี้ใช้กับข้อมูลส่วนบุคคลของผู้ใช้งานเว็บไซต์และแพลตฟอร์ม AgroLink ทุกกลุ่ม ได้แก่ เกษตรกร สหกรณ์/กลุ่มเกษตรกร ผู้ให้บริการ (เครื่องจักรกล ปัจจัยการผลิต ลานตาก ขนส่ง) สถาบันการเงินและผู้ให้สินเชื่อ ผู้ซื้อผลผลิต และผู้เยี่ยมชมเว็บไซต์ทั่วไป ดูแลและบริหารจัดการโดยบริษัท ภักดี คอร์ปอเรชั่น จำกัด ("บริษัท" หรือ "เรา") ผู้พัฒนาและให้บริการแพลตฟอร์ม AgroLink</p>
+    <h2><span class="num">1</span><span data-i18n="privacy-policy_20"> ขอบเขตของนโยบายนี้</span></h2>
+    <p data-i18n="privacy-policy_21">นโยบายความเป็นส่วนตัวฉบับนี้ใช้กับข้อมูลส่วนบุคคลของผู้ใช้งานเว็บไซต์และแพลตฟอร์ม AgroLink ทุกกลุ่ม ได้แก่ เกษตรกร สหกรณ์/กลุ่มเกษตรกร ผู้ให้บริการ (เครื่องจักรกล ปัจจัยการผลิต ลานตาก ขนส่ง) สถาบันการเงินและผู้ให้สินเชื่อ ผู้ซื้อผลผลิต และผู้เยี่ยมชมเว็บไซต์ทั่วไป ดูแลและบริหารจัดการโดยบริษัท ภักดี คอร์ปอเรชั่น จำกัด ("บริษัท" หรือ "เรา") ผู้พัฒนาและให้บริการแพลตฟอร์ม AgroLink</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="collect">
-    <h2><span class="num">2</span> ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม</h2>
-    <p>เราเก็บรวบรวมข้อมูลเท่าที่จำเป็นต่อการให้บริการในแต่ละส่วนของแพลตฟอร์ม โดยแบ่งตามลักษณะการใช้งานได้ดังนี้</p>
+    <h2><span class="num">2</span><span data-i18n="privacy-policy_22"> ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม</span></h2>
+    <p data-i18n="privacy-policy_23">เราเก็บรวบรวมข้อมูลเท่าที่จำเป็นต่อการให้บริการในแต่ละส่วนของแพลตฟอร์ม โดยแบ่งตามลักษณะการใช้งานได้ดังนี้</p>
+    <div style="overflow-x:auto;">
     <table>
-      <tr><th>ประเภทข้อมูล</th><th>ตัวอย่างข้อมูล</th></tr>
-      <tr><td>ข้อมูลบัญชีผู้ใช้</td><td>เบอร์โทรศัพท์ ชื่อ-นามสกุล รหัสยืนยันตัวตน (OTP) และประเภทบทบาทผู้ใช้งาน (เกษตรกร/สหกรณ์/ผู้ให้บริการ/ผู้ให้สินเชื่อ/ผู้ซื้อ ฯลฯ)</td></tr>
-      <tr><td>ข้อมูลแปลง/หน่วยผลิต</td><td>ชื่อแปลง พิกัดที่ตั้ง จังหวัด/อำเภอ ขนาดพื้นที่ ชนิดพืชหรือสัตว์ที่ผลิต</td></tr>
-      <tr><td>ข้อมูลการผลิตและกิจกรรมในแปลง</td><td>ปฏิทินแผนการผลิต บันทึกรอบเปียกสลับแห้ง (AWD) ข้อมูลจากภาพถ่ายดาวเทียมและการวิเคราะห์ AI ที่เกี่ยวข้องกับแปลงของผู้ใช้</td></tr>
-      <tr><td>ข้อมูลทางการเงิน</td><td>คำขอสินเชื่อ วงเงินที่ขอ วัตถุประสงค์การกู้ยืม คะแนนความน่าเชื่อถือทางสินเชื่อที่ประเมินจากข้อมูลการผลิต และประวัติการทำธุรกรรมกับผู้ให้สินเชื่อบนระบบ</td></tr>
-      <tr><td>ข้อมูลการซื้อขายและตลาด</td><td>ประกาศซื้อ-ขายผลผลิต คำขอใบเสนอราคา (RFQ) ราคาที่เสนอ และประวัติการทำธุรกรรมบนตลาดกลาง</td></tr>
-      <tr><td>ข้อมูลการใช้งานเว็บไซต์</td><td>ข้อความที่พิมพ์หรือพูดผ่านช่องแชทสอบถาม (Quick Chat) บันทึกการเข้าใช้งาน และข้อมูลทางเทคนิคพื้นฐาน เช่น ประเภทอุปกรณ์และเบราว์เซอร์</td></tr>
+      <tr><th data-i18n="privacy-policy_24">ประเภทข้อมูล</th><th data-i18n="privacy-policy_25">ตัวอย่างข้อมูล</th></tr>
+      <tr><td data-i18n="privacy-policy_26">ข้อมูลบัญชีผู้ใช้</td><td data-i18n="privacy-policy_27">เบอร์โทรศัพท์ ชื่อ-นามสกุล รหัสยืนยันตัวตน (OTP) และประเภทบทบาทผู้ใช้งาน (เกษตรกร/สหกรณ์/ผู้ให้บริการ/ผู้ให้สินเชื่อ/ผู้ซื้อ ฯลฯ)</td></tr>
+      <tr><td data-i18n="privacy-policy_28">ข้อมูลแปลง/หน่วยผลิต</td><td data-i18n="privacy-policy_29">ชื่อแปลง พิกัดที่ตั้ง จังหวัด/อำเภอ ขนาดพื้นที่ ชนิดพืชหรือสัตว์ที่ผลิต</td></tr>
+      <tr><td data-i18n="privacy-policy_30">ข้อมูลการผลิตและกิจกรรมในแปลง</td><td data-i18n="privacy-policy_31">ปฏิทินแผนการผลิต บันทึกรอบเปียกสลับแห้ง (AWD) ข้อมูลจากภาพถ่ายดาวเทียมและการวิเคราะห์ AI ที่เกี่ยวข้องกับแปลงของผู้ใช้</td></tr>
+      <tr><td data-i18n="privacy-policy_32">ข้อมูลทางการเงิน</td><td data-i18n="privacy-policy_33">คำขอสินเชื่อ วงเงินที่ขอ วัตถุประสงค์การกู้ยืม คะแนนความน่าเชื่อถือทางสินเชื่อที่ประเมินจากข้อมูลการผลิต และประวัติการทำธุรกรรมกับผู้ให้สินเชื่อบนระบบ</td></tr>
+      <tr><td data-i18n="privacy-policy_34">ข้อมูลการซื้อขายและตลาด</td><td data-i18n="privacy-policy_35">ประกาศซื้อ-ขายผลผลิต คำขอใบเสนอราคา (RFQ) ราคาที่เสนอ และประวัติการทำธุรกรรมบนตลาดกลาง</td></tr>
+      <tr><td data-i18n="privacy-policy_36">ข้อมูลการใช้งานเว็บไซต์</td><td data-i18n="privacy-policy_37">ข้อความที่พิมพ์หรือพูดผ่านช่องแชทสอบถาม (Quick Chat) บันทึกการเข้าใช้งาน และข้อมูลทางเทคนิคพื้นฐาน เช่น ประเภทอุปกรณ์และเบราว์เซอร์</td></tr>
     </table>
-    <p>เราเก็บข้อมูลจากผู้ใช้งานโดยตรง (เช่น ตอนลงทะเบียนหรือกรอกแบบฟอร์ม) และจากการใช้งานฟีเจอร์ต่าง ๆ บนแพลตฟอร์ม เราไม่ซื้อข้อมูลส่วนบุคคลจากบุคคลภายนอกเพื่อนำมาใช้ในการให้บริการ</p>
+    </div>
+    <p data-i18n="privacy-policy_38">เราเก็บข้อมูลจากผู้ใช้งานโดยตรง (เช่น ตอนลงทะเบียนหรือกรอกแบบฟอร์ม) และจากการใช้งานฟีเจอร์ต่าง ๆ บนแพลตฟอร์ม เราไม่ซื้อข้อมูลส่วนบุคคลจากบุคคลภายนอกเพื่อนำมาใช้ในการให้บริการ</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="purpose">
-    <h2><span class="num">3</span> วัตถุประสงค์ในการใช้ข้อมูล</h2>
-    <p>เราใช้ข้อมูลส่วนบุคคลของท่านเพื่อวัตถุประสงค์ดังต่อไปนี้</p>
+    <h2><span class="num">3</span><span data-i18n="privacy-policy_39"> วัตถุประสงค์ในการใช้ข้อมูล</span></h2>
+    <p data-i18n="privacy-policy_40">เราใช้ข้อมูลส่วนบุคคลของท่านเพื่อวัตถุประสงค์ดังต่อไปนี้</p>
     <ul>
-      <li>เพื่อสร้างและดูแลบัญชีผู้ใช้งาน ยืนยันตัวตน และให้เข้าถึงฟีเจอร์ตามบทบาทของผู้ใช้แต่ละประเภท</li>
-      <li>เพื่อประมวลผลข้อมูลการผลิต รวมถึงการวิเคราะห์ด้วย AI และภาพถ่ายดาวเทียม สำหรับการวางแผนการผลิตและประเมินคาร์บอนเครดิตเบื้องต้น</li>
-      <li>เพื่อประเมินคะแนนความน่าเชื่อถือทางสินเชื่อ และส่งต่อคำขอสินเชื่อไปยังผู้ให้บริการทางการเงินที่ท่านเลือก</li>
-      <li>เพื่อจับคู่และอำนวยความสะดวกในการซื้อขายผลผลิตหรือปัจจัยการผลิตระหว่างผู้ใช้งานบนตลาดกลาง</li>
-      <li>เพื่อสื่อสาร แจ้งเตือนสถานะ และตอบข้อสอบถามผ่านช่องทางต่าง ๆ รวมถึงช่องแชทบนเว็บไซต์</li>
-      <li>เพื่อรักษาความปลอดภัยของระบบ ป้องกันการทุจริต และปฏิบัติตามกฎหมายที่เกี่ยวข้อง</li>
-      <li>เพื่อปรับปรุงและพัฒนาคุณภาพของแพลตฟอร์มในภาพรวม</li>
+      <li data-i18n="privacy-policy_41">เพื่อสร้างและดูแลบัญชีผู้ใช้งาน ยืนยันตัวตน และให้เข้าถึงฟีเจอร์ตามบทบาทของผู้ใช้แต่ละประเภท</li>
+      <li data-i18n="privacy-policy_42">เพื่อประมวลผลข้อมูลการผลิต รวมถึงการวิเคราะห์ด้วย AI และภาพถ่ายดาวเทียม สำหรับการวางแผนการผลิตและประเมินคาร์บอนเครดิตเบื้องต้น</li>
+      <li data-i18n="privacy-policy_43">เพื่อประเมินคะแนนความน่าเชื่อถือทางสินเชื่อ และส่งต่อคำขอสินเชื่อไปยังผู้ให้บริการทางการเงินที่ท่านเลือก</li>
+      <li data-i18n="privacy-policy_44">เพื่อจับคู่และอำนวยความสะดวกในการซื้อขายผลผลิตหรือปัจจัยการผลิตระหว่างผู้ใช้งานบนตลาดกลาง</li>
+      <li data-i18n="privacy-policy_45">เพื่อสื่อสาร แจ้งเตือนสถานะ และตอบข้อสอบถามผ่านช่องทางต่าง ๆ รวมถึงช่องแชทบนเว็บไซต์</li>
+      <li data-i18n="privacy-policy_46">เพื่อรักษาความปลอดภัยของระบบ ป้องกันการทุจริต และปฏิบัติตามกฎหมายที่เกี่ยวข้อง</li>
+      <li data-i18n="privacy-policy_47">เพื่อปรับปรุงและพัฒนาคุณภาพของแพลตฟอร์มในภาพรวม</li>
     </ul>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="share">
-    <h2><span class="num">4</span> การเปิดเผยข้อมูลแก่บุคคลที่สาม</h2>
-    <p>AgroLink เป็นแพลตฟอร์มที่เชื่อมโยงข้อมูลระหว่างผู้ใช้งานหลายกลุ่ม เราจึงอาจเปิดเผยข้อมูลส่วนบุคคลบางส่วนแก่บุคคลที่สามในกรณีดังต่อไปนี้เท่านั้น</p>
+    <h2><span class="num">4</span><span data-i18n="privacy-policy_48"> การเปิดเผยข้อมูลแก่บุคคลที่สาม</span></h2>
+    <p data-i18n="privacy-policy_49">AgroLink เป็นแพลตฟอร์มที่เชื่อมโยงข้อมูลระหว่างผู้ใช้งานหลายกลุ่ม เราจึงอาจเปิดเผยข้อมูลส่วนบุคคลบางส่วนแก่บุคคลที่สามในกรณีดังต่อไปนี้เท่านั้น</p>
     <ul>
-      <li><strong>ผู้ให้สินเชื่อ/สถาบันการเงิน</strong> — เฉพาะเมื่อท่านยื่นคำขอสินเชื่อและเลือกผู้ให้สินเชื่อรายนั้นด้วยตนเอง โดยจะส่งข้อมูลเท่าที่จำเป็นต่อการพิจารณาสินเชื่อ ทั้งนี้ AgroLink ไม่ใช่ผู้ให้สินเชื่อและไม่มีส่วนในการตัดสินใจอนุมัติสินเชื่อ</li>
-      <li><strong>ผู้ซื้อ/ผู้ให้บริการในตลาดกลาง</strong> — เฉพาะข้อมูลที่จำเป็นต่อการทำธุรกรรมซื้อขาย เช่น รายละเอียดประกาศขายและช่องทางติดต่อ</li>
-      <li><strong>สหกรณ์หรือหน่วยงานต้นสังกัด</strong> — กรณีผู้ใช้งานเป็นสมาชิกของสหกรณ์หรือกลุ่มเกษตรกรที่เชื่อมต่อกับระบบ</li>
-      <li><strong>ผู้ให้บริการระบบและโครงสร้างพื้นฐาน</strong> — เช่น ผู้ให้บริการเซิร์ฟเวอร์/คลาวด์ที่ประมวลผลข้อมูลแทนเราภายใต้ข้อตกลงรักษาความลับ</li>
-      <li><strong>หน่วยงานราชการ</strong> — กรณีมีกฎหมายกำหนดหรือมีคำสั่งจากหน่วยงานที่มีอำนาจตามกฎหมาย</li>
+      <li><strong data-i18n="privacy-policy_50">ผู้ให้สินเชื่อ/สถาบันการเงิน</strong><span data-i18n="privacy-policy_51"> — เฉพาะเมื่อท่านยื่นคำขอสินเชื่อและเลือกผู้ให้สินเชื่อรายนั้นด้วยตนเอง โดยจะส่งข้อมูลเท่าที่จำเป็นต่อการพิจารณาสินเชื่อ ทั้งนี้ AgroLink ไม่ใช่ผู้ให้สินเชื่อและไม่มีส่วนในการตัดสินใจอนุมัติสินเชื่อ</span></li>
+      <li><strong data-i18n="privacy-policy_52">ผู้ซื้อ/ผู้ให้บริการในตลาดกลาง</strong><span data-i18n="privacy-policy_53"> — เฉพาะข้อมูลที่จำเป็นต่อการทำธุรกรรมซื้อขาย เช่น รายละเอียดประกาศขายและช่องทางติดต่อ</span></li>
+      <li><strong data-i18n="privacy-policy_54">สหกรณ์หรือหน่วยงานต้นสังกัด</strong><span data-i18n="privacy-policy_55"> — กรณีผู้ใช้งานเป็นสมาชิกของสหกรณ์หรือกลุ่มเกษตรกรที่เชื่อมต่อกับระบบ</span></li>
+      <li><strong data-i18n="privacy-policy_56">ผู้ให้บริการระบบและโครงสร้างพื้นฐาน</strong><span data-i18n="privacy-policy_57"> — เช่น ผู้ให้บริการเซิร์ฟเวอร์/คลาวด์ที่ประมวลผลข้อมูลแทนเราภายใต้ข้อตกลงรักษาความลับ</span></li>
+      <li><strong data-i18n="privacy-policy_58">หน่วยงานราชการ</strong><span data-i18n="privacy-policy_59"> — กรณีมีกฎหมายกำหนดหรือมีคำสั่งจากหน่วยงานที่มีอำนาจตามกฎหมาย</span></li>
     </ul>
-    <p>เราจะไม่ขายข้อมูลส่วนบุคคลของท่านให้แก่บุคคลภายนอกเพื่อวัตถุประสงค์ทางการตลาดโดยไม่ได้รับความยินยอมจากท่านก่อน</p>
+    <p data-i18n="privacy-policy_60">เราจะไม่ขายข้อมูลส่วนบุคคลของท่านให้แก่บุคคลภายนอกเพื่อวัตถุประสงค์ทางการตลาดโดยไม่ได้รับความยินยอมจากท่านก่อน</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="retention">
-    <h2><span class="num">5</span> การเก็บรักษาและความปลอดภัยของข้อมูล</h2>
-    <p>เราจัดเก็บข้อมูลส่วนบุคคลของท่านไว้ในระบบที่มีมาตรการรักษาความปลอดภัยตามความเหมาะสม และเก็บรักษาข้อมูลไว้ตราบเท่าที่จำเป็นต่อวัตถุประสงค์ในการเก็บรวบรวม หรือตามระยะเวลาที่กฎหมายกำหนด เมื่อพ้นระยะเวลาดังกล่าวหรือไม่มีความจำเป็นต้องใช้ข้อมูลอีกต่อไป เราจะดำเนินการลบหรือทำให้ข้อมูลไม่สามารถระบุตัวตนได้</p>
+    <h2><span class="num">5</span><span data-i18n="privacy-policy_61"> การเก็บรักษาและความปลอดภัยของข้อมูล</span></h2>
+    <p data-i18n="privacy-policy_62">เราจัดเก็บข้อมูลส่วนบุคคลของท่านไว้ในระบบที่มีมาตรการรักษาความปลอดภัยตามความเหมาะสม และเก็บรักษาข้อมูลไว้ตราบเท่าที่จำเป็นต่อวัตถุประสงค์ในการเก็บรวบรวม หรือตามระยะเวลาที่กฎหมายกำหนด เมื่อพ้นระยะเวลาดังกล่าวหรือไม่มีความจำเป็นต้องใช้ข้อมูลอีกต่อไป เราจะดำเนินการลบหรือทำให้ข้อมูลไม่สามารถระบุตัวตนได้</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="rights">
-    <h2><span class="num">6</span> สิทธิของเจ้าของข้อมูลส่วนบุคคล</h2>
-    <p>ภายใต้พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 ท่านมีสิทธิดังต่อไปนี้เกี่ยวกับข้อมูลส่วนบุคคลของท่าน</p>
+    <h2><span class="num">6</span><span data-i18n="privacy-policy_63"> สิทธิของเจ้าของข้อมูลส่วนบุคคล</span></h2>
+    <p data-i18n="privacy-policy_64">ภายใต้พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 ท่านมีสิทธิดังต่อไปนี้เกี่ยวกับข้อมูลส่วนบุคคลของท่าน</p>
     <ul>
-      <li>สิทธิขอเข้าถึงและขอรับสำเนาข้อมูลส่วนบุคคลของท่าน</li>
-      <li>สิทธิขอให้แก้ไขข้อมูลส่วนบุคคลให้ถูกต้องและเป็นปัจจุบัน</li>
-      <li>สิทธิขอให้ลบหรือทำลายข้อมูลส่วนบุคคล เมื่อหมดความจำเป็นในการเก็บรักษา</li>
-      <li>สิทธิขอถอนความยินยอมที่เคยให้ไว้ ในกรณีที่การประมวลผลข้อมูลนั้นอาศัยความยินยอมของท่าน</li>
-      <li>สิทธิขอให้ระงับการใช้ หรือคัดค้านการประมวลผลข้อมูลในบางกรณี</li>
-      <li>สิทธิร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล หากเห็นว่าเราไม่ปฏิบัติตามกฎหมาย</li>
+      <li data-i18n="privacy-policy_65">สิทธิขอเข้าถึงและขอรับสำเนาข้อมูลส่วนบุคคลของท่าน</li>
+      <li data-i18n="privacy-policy_66">สิทธิขอให้แก้ไขข้อมูลส่วนบุคคลให้ถูกต้องและเป็นปัจจุบัน</li>
+      <li data-i18n="privacy-policy_67">สิทธิขอให้ลบหรือทำลายข้อมูลส่วนบุคคล เมื่อหมดความจำเป็นในการเก็บรักษา</li>
+      <li data-i18n="privacy-policy_68">สิทธิขอถอนความยินยอมที่เคยให้ไว้ ในกรณีที่การประมวลผลข้อมูลนั้นอาศัยความยินยอมของท่าน</li>
+      <li data-i18n="privacy-policy_69">สิทธิขอให้ระงับการใช้ หรือคัดค้านการประมวลผลข้อมูลในบางกรณี</li>
+      <li data-i18n="privacy-policy_70">สิทธิร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล หากเห็นว่าเราไม่ปฏิบัติตามกฎหมาย</li>
     </ul>
-    <p>ท่านสามารถใช้สิทธิดังกล่าวได้โดยติดต่อเราผ่านช่องทางในหัวข้อ "ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล" ด้านล่าง</p>
+    <p data-i18n="privacy-policy_71">ท่านสามารถใช้สิทธิดังกล่าวได้โดยติดต่อเราผ่านช่องทางในหัวข้อ "ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล" ด้านล่าง</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="cookies">
-    <h2><span class="num">7</span> คุกกี้และเทคโนโลยีติดตามที่คล้ายกัน</h2>
-    <p>เว็บไซต์ของเราอาจใช้คุกกี้หรือเทคโนโลยีที่คล้ายกันในระดับพื้นฐาน เพื่อให้เว็บไซต์ทำงานได้อย่างถูกต้อง จดจำการตั้งค่าเบื้องต้นของผู้ใช้งาน และปรับปรุงประสบการณ์การใช้งาน ท่านสามารถตั้งค่าเบราว์เซอร์เพื่อปฏิเสธคุกกี้ได้ แต่การทำเช่นนั้นอาจส่งผลต่อการใช้งานบางฟีเจอร์ของเว็บไซต์</p>
+    <h2><span class="num">7</span><span data-i18n="privacy-policy_72"> คุกกี้และเทคโนโลยีติดตามที่คล้ายกัน</span></h2>
+    <p data-i18n="privacy-policy_73">เว็บไซต์ของเราอาจใช้คุกกี้หรือเทคโนโลยีที่คล้ายกันในระดับพื้นฐาน เพื่อให้เว็บไซต์ทำงานได้อย่างถูกต้อง จดจำการตั้งค่าเบื้องต้นของผู้ใช้งาน และปรับปรุงประสบการณ์การใช้งาน ท่านสามารถตั้งค่าเบราว์เซอร์เพื่อปฏิเสธคุกกี้ได้ แต่การทำเช่นนั้นอาจส่งผลต่อการใช้งานบางฟีเจอร์ของเว็บไซต์</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in" id="minors">
-    <h2><span class="num">8</span> ข้อมูลของผู้เยาว์</h2>
-    <p>แพลตฟอร์ม AgroLink ออกแบบมาสำหรับการใช้งานโดยเกษตรกร ผู้ประกอบการ และหน่วยงานที่เกี่ยวข้องกับภาคเกษตร ซึ่งโดยทั่วไปเป็นผู้ใช้งานที่บรรลุนิติภาวะแล้ว หากท่านเป็นผู้เยาว์และประสงค์จะใช้งานแพลตฟอร์ม ควรดำเนินการภายใต้ความยินยอมและการดูแลของผู้ปกครองหรือผู้แทนโดยชอบธรรมตามกฎหมาย</p>
+    <h2><span class="num">8</span><span data-i18n="privacy-policy_74"> ข้อมูลของผู้เยาว์</span></h2>
+    <p data-i18n="privacy-policy_75">แพลตฟอร์ม AgroLink ออกแบบมาสำหรับการใช้งานโดยเกษตรกร ผู้ประกอบการ และหน่วยงานที่เกี่ยวข้องกับภาคเกษตร ซึ่งโดยทั่วไปเป็นผู้ใช้งานที่บรรลุนิติภาวะแล้ว หากท่านเป็นผู้เยาว์และประสงค์จะใช้งานแพลตฟอร์ม ควรดำเนินการภายใต้ความยินยอมและการดูแลของผู้ปกครองหรือผู้แทนโดยชอบธรรมตามกฎหมาย</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container prose-block reveal in" id="changes">
-    <h2><span class="num">9</span> การเปลี่ยนแปลงนโยบาย</h2>
-    <p>เราอาจปรับปรุงนโยบายความเป็นส่วนตัวฉบับนี้เป็นครั้งคราว เพื่อให้สอดคล้องกับการเปลี่ยนแปลงของบริการหรือกฎหมายที่เกี่ยวข้อง โดยจะแจ้งวันที่ปรับปรุงล่าสุดไว้ที่ด้านบนของหน้านี้ ขอแนะนำให้ท่านตรวจสอบนโยบายนี้เป็นระยะ</p>
+    <h2><span class="num">9</span><span data-i18n="privacy-policy_76"> การเปลี่ยนแปลงนโยบาย</span></h2>
+    <p data-i18n="privacy-policy_77">เราอาจปรับปรุงนโยบายความเป็นส่วนตัวฉบับนี้เป็นครั้งคราว เพื่อให้สอดคล้องกับการเปลี่ยนแปลงของบริการหรือกฎหมายที่เกี่ยวข้อง โดยจะแจ้งวันที่ปรับปรุงล่าสุดไว้ที่ด้านบนของหน้านี้ ขอแนะนำให้ท่านตรวจสอบนโยบายนี้เป็นระยะ</p>
   </div>
 </section>
 
 <section class="prose-section" id="contact">
   <div class="container prose-block reveal in">
-    <h2><span class="num">10</span> ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล</h2>
-    <p>หากท่านมีข้อสงสัยเกี่ยวกับนโยบายความเป็นส่วนตัวฉบับนี้ หรือต้องการใช้สิทธิเกี่ยวกับข้อมูลส่วนบุคคลของท่าน สามารถติดต่อบริษัท ภักดี คอร์ปอเรชั่น จำกัด ได้ตามช่องทางต่อไปนี้</p>
+    <h2><span class="num">10</span><span data-i18n="privacy-policy_78"> ช่องทางติดต่อเรื่องข้อมูลส่วนบุคคล</span></h2>
+    <p data-i18n="privacy-policy_79">หากท่านมีข้อสงสัยเกี่ยวกับนโยบายความเป็นส่วนตัวฉบับนี้ หรือต้องการใช้สิทธิเกี่ยวกับข้อมูลส่วนบุคคลของท่าน สามารถติดต่อบริษัท ภักดี คอร์ปอเรชั่น จำกัด ได้ตามช่องทางต่อไปนี้</p>
     <ul>
-      <li>อีเมล: management@agrolinkthai.com</li>
-      <li>โทรศัพท์: 092-654-9935</li>
-      <li>ที่อยู่: 49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</li>
+      <li data-i18n="privacy-policy_80">อีเมล: management@agrolinkthai.com</li>
+      <li data-i18n="privacy-policy_81">โทรศัพท์: 092-654-9935</li>
+      <li data-i18n="privacy-policy_82">ที่อยู่: 49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</li>
     </ul>
   </div>
 </section>
 
 <section class="cta-final">
   <div class="container">
-    <h2>มีคำถามเกี่ยวกับข้อมูลส่วนบุคคลของท่าน?</h2>
-    <p>ติดต่อทีมงาน AgroLink ได้โดยตรง เราพร้อมช่วยตอบข้อสงสัยและดำเนินการตามสิทธิของท่าน</p>
+    <h2 data-i18n="privacy-policy_83">มีคำถามเกี่ยวกับข้อมูลส่วนบุคคลของท่าน?</h2>
+    <p data-i18n="privacy-policy_84">ติดต่อทีมงาน AgroLink ได้โดยตรง เราพร้อมช่วยตอบข้อสงสัยและดำเนินการตามสิทธิของท่าน</p>
     <div class="cta-actions">
-      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i> ติดต่อทีมงาน</a>
-      <a href="index.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-house"></i> กลับหน้าแรก</a>
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i><span data-i18n="privacy-policy_85"> ติดต่อทีมงาน</span></a>
+      <a href="index.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-house"></i><span data-i18n="privacy-policy_86"> กลับหน้าแรก</span></a>
     </div>
   </div>
 </section>
@@ -385,55 +391,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-privacy-policy.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });

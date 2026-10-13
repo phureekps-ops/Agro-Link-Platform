@@ -71,6 +71,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -114,7 +116,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER (dark, matches .template-section in index.html) */
@@ -175,25 +178,26 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
-        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
-          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ติดต่อสอบถาม</a></div>
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="carbon-credit-article_nav_1">ติดต่อสอบถาม</a></div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
@@ -202,74 +206,74 @@
 
 <section class="page-header">
   <div class="container section-head reveal">
-    <div class="eyebrow"><i class="fa-solid fa-seedling"></i> คลังความรู้ · ข้าวคาร์บอนต่ำ</div>
-    <h1 class="section-title">ข้าวคาร์บอนต่ำ และคาร์บอนเครดิต</h1>
-    <p class="section-sub">ทำความเข้าใจว่าทำไมนาข้าวจึงเกี่ยวข้องกับก๊าซเรือนกระจก เทคนิค "เปียกสลับแห้ง" (AWD) ช่วยลดการปล่อยก๊าซได้อย่างไร และคาร์บอนเครดิตที่ซื้อขายได้จริงเกิดขึ้นจากกลไกแบบไหน — ก่อนเข้าใช้เครื่องมือบันทึกข้อมูลจริงของ AgroLink</p>
+    <div class="eyebrow"><i class="fa-solid fa-seedling"></i><span data-i18n="carbon-credit-article_1"> คลังความรู้ · ข้าวคาร์บอนต่ำ</span></div>
+    <h1 class="section-title" data-i18n="carbon-credit-article_2">ข้าวคาร์บอนต่ำ และคาร์บอนเครดิต</h1>
+    <p class="section-sub" data-i18n="carbon-credit-article_3">ทำความเข้าใจว่าทำไมนาข้าวจึงเกี่ยวข้องกับก๊าซเรือนกระจก เทคนิค "เปียกสลับแห้ง" (AWD) ช่วยลดการปล่อยก๊าซได้อย่างไร และคาร์บอนเครดิตที่ซื้อขายได้จริงเกิดขึ้นจากกลไกแบบไหน — ก่อนเข้าใช้เครื่องมือบันทึกข้อมูลจริงของ AgroLink</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:30px;">
-      <div class="eyebrow"><i class="fa-solid fa-chart-line"></i> ภาพรวมตลาด</div>
-      <h2 class="section-title" style="font-size:26px;">ตลาดคาร์บอนเครดิตไทย: จากการตื่นตัวสู่การปรับฐานและทิศทางแห่งคุณภาพ</h2>
+      <div class="eyebrow"><i class="fa-solid fa-chart-line"></i><span data-i18n="carbon-credit-article_4"> ภาพรวมตลาด</span></div>
+      <h2 class="section-title" style="font-size:26px;" data-i18n="carbon-credit-article_5">ตลาดคาร์บอนเครดิตไทย: จากการตื่นตัวสู่การปรับฐานและทิศทางแห่งคุณภาพ</h2>
     </div>
     <div class="prose-block" style="margin-bottom:30px;">
-      <p>สภาวการณ์ของตลาดคาร์บอนเครดิตภาคสมัครใจของประเทศไทย ในช่วงปีงบประมาณ 2563-2568 สะท้อนถึงพัฒนาการที่น่าสนใจในมิติของราคาและปริมาณ โดยหากย้อนรอยสถิติจะพบว่าตลาดเคยผ่านจุดสูงสุดในปี 2565 ซึ่งมีปริมาณการซื้อขายสูงถึง 1.18 ล้านตันคาร์บอนไดออกไซด์เทียบเท่า (MtCO₂eq) จากกระแสการตื่นตัวของการกำหนดเป้าหมาย Net Zero ของแต่ละประเทศหลังการประชุม COP26 ที่กระตุ้นให้ภาคธุรกิจเร่งกักตุนเครดิตในราคาที่ยังอยู่ในระดับต่ำ อย่างไรก็ตาม ในปี 2566-2567 ตลาดเข้าสู่ช่วงปรับฐาน (Market Correction) โดยปริมาณการซื้อขายลดลงมาอยู่ที่ระดับประมาณ 6-8 แสนตันคาร์บอนไดออกไซด์เทียบเท่าต่อปี แต่สิ่งที่น่าจับตามองคือ ราคาเฉลี่ยต่อหน่วย ที่ปรับตัวสูงขึ้นอย่างมีนัยสำคัญ จากราคาเฉลี่ยทั้งตลาดเพียงไม่กี่สิบบาทพุ่งขึ้นมาอยู่ในช่วง 80–125 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า หรือประมาณ 2.5-4 US$/tCO₂eq และในบางกลุ่มโครงการที่มีคุณภาพสูงอย่าง "ภาคป่าไม้" ราคาเฉลี่ยอยู่ที่ 279.06 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า หรือประมาณ 8.7 US$/tCO₂eq โดยราคาเคยทะยานไปถึง 3,000 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า หรือประมาณ 93 US$/tCO₂eq สะท้อนว่าผู้ซื้อไม่ได้ให้ความสำคัญเพียงแค่ปริมาณการชดเชย แต่เริ่มพิจารณาถึงความพรีเมียม คุณภาพสูง และผลประโยชน์ร่วม (Co-benefits) ของโครงการมากขึ้น</p>
-      <p>เมื่อเจาะลึกเชิงโครงสร้างอุปสงค์และอุปทาน ข้อมูลล่าสุดระบุว่าโครงการด้านพลังงานหมุนเวียน (ชีวมวลและแสงอาทิตย์) ยังคงเป็นอุปทานหลักของตลาดเนื่องจากต้นทุนการพัฒนาที่คุ้มค่ากว่า แต่ในฝั่งอุปสงค์ ความต้องการกลับเทไปหาเครดิตประเภท Carbon Removal หรือการกักเก็บคาร์บอนจากธรรมชาติ (Nature-based Solutions) เช่น ป่าไม้และเกษตรกรรมยืนต้น ซึ่งมีซัพพลายจำกัดและใช้ระยะเวลานานในการผลิต ความไม่สมดุลนี้ส่งผลให้ราคาเครดิตป่าไม้สูงกว่าเครดิตด้านพลังงานถึง 3-5 เท่าตัว ขณะเดียวกัน อุปสรรคสำคัญที่ตลาดกำลังเผชิญคือความไม่แน่นอนในการเข้าถึงตลาดของ SMEs และข้อจำกัดด้านองค์ความรู้และงบประมาณสำหรับองค์กรขนาดเล็กในการพัฒนาโครงการ แต่ในภาพรวมระดับประเทศ การผลักดันพระราชบัญญัติการเปลี่ยนแปลงสภาพภูมิอากาศ พ.ศ.... (หรือพ.ร.บ. โลกร้อน) ที่กำลังจะเกิดขึ้น จะเปลี่ยนโฉมหน้าจากตลาดภาคสมัครใจ (Voluntary) ไปสู่ตลาดภาคบังคับ (Compliance) มากขึ้น ซึ่งจะเป็นแรงขับเคลื่อนมหาศาลที่ทำให้ตลาดคาร์บอนไทยเติบโตอย่างก้าวกระโดดในอนาคตอันใกล้</p>
-      <p>ปีงบประมาณ 2568 ที่ผ่านมา ตลาดคาร์บอนเครดิตไทยเข้าสู่ช่วง Market Realignment หรือการปรับสมดุลตลาดอย่างแท้จริง แม้ในเชิงปริมาณจะดูชะลอตัวลงเมื่อเทียบกับปี 2565 ที่มีการซื้อกักตุนเป็นจำนวนมาก แต่มิติของราคา กลับแสดงสัญญาณบวกอย่างมีนัยสำคัญ สะท้อนว่าผู้ซื้อในตลาดปัจจุบันคือผู้ใช้งานจริง (End-users) ที่ต้องการชดเชยคาร์บอนเพื่อเป้าหมาย ESG และ Net Zero ไม่ใช่กลุ่มที่เข้ามาเก็งกำไรเหมือนในอดีต ภาคป่าไม้ยังคงเป็นกลุ่มพรีเมียมที่ตลาดโหยหา โครงการ P-REDD+ แม้ปริมาณจะมีไม่มากแต่ครองสัดส่วนมูลค่าตลาดสูงสุด ภาคพลังงานหมุนเวียนเป็นกลุ่มที่มีปริมาณการซื้อขายหนาแน่นที่สุด โดยเฉพาะชีวมวล (Biomass) ที่มียอดซื้อขายกว่า 1.3 แสนตัน ในช่วงราคา 35-500 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า ตามด้วยพลังงานแสงอาทิตย์</p>
+      <p data-i18n="carbon-credit-article_6">สภาวการณ์ของตลาดคาร์บอนเครดิตภาคสมัครใจของประเทศไทย ในช่วงปีงบประมาณ 2563-2568 สะท้อนถึงพัฒนาการที่น่าสนใจในมิติของราคาและปริมาณ โดยหากย้อนรอยสถิติจะพบว่าตลาดเคยผ่านจุดสูงสุดในปี 2565 ซึ่งมีปริมาณการซื้อขายสูงถึง 1.18 ล้านตันคาร์บอนไดออกไซด์เทียบเท่า (MtCO₂eq) จากกระแสการตื่นตัวของการกำหนดเป้าหมาย Net Zero ของแต่ละประเทศหลังการประชุม COP26 ที่กระตุ้นให้ภาคธุรกิจเร่งกักตุนเครดิตในราคาที่ยังอยู่ในระดับต่ำ อย่างไรก็ตาม ในปี 2566-2567 ตลาดเข้าสู่ช่วงปรับฐาน (Market Correction) โดยปริมาณการซื้อขายลดลงมาอยู่ที่ระดับประมาณ 6-8 แสนตันคาร์บอนไดออกไซด์เทียบเท่าต่อปี แต่สิ่งที่น่าจับตามองคือ ราคาเฉลี่ยต่อหน่วย ที่ปรับตัวสูงขึ้นอย่างมีนัยสำคัญ จากราคาเฉลี่ยทั้งตลาดเพียงไม่กี่สิบบาทพุ่งขึ้นมาอยู่ในช่วง 80–125 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า หรือประมาณ 2.5-4 US$/tCO₂eq และในบางกลุ่มโครงการที่มีคุณภาพสูงอย่าง "ภาคป่าไม้" ราคาเฉลี่ยอยู่ที่ 279.06 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า หรือประมาณ 8.7 US$/tCO₂eq โดยราคาเคยทะยานไปถึง 3,000 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า หรือประมาณ 93 US$/tCO₂eq สะท้อนว่าผู้ซื้อไม่ได้ให้ความสำคัญเพียงแค่ปริมาณการชดเชย แต่เริ่มพิจารณาถึงความพรีเมียม คุณภาพสูง และผลประโยชน์ร่วม (Co-benefits) ของโครงการมากขึ้น</p>
+      <p data-i18n="carbon-credit-article_7">เมื่อเจาะลึกเชิงโครงสร้างอุปสงค์และอุปทาน ข้อมูลล่าสุดระบุว่าโครงการด้านพลังงานหมุนเวียน (ชีวมวลและแสงอาทิตย์) ยังคงเป็นอุปทานหลักของตลาดเนื่องจากต้นทุนการพัฒนาที่คุ้มค่ากว่า แต่ในฝั่งอุปสงค์ ความต้องการกลับเทไปหาเครดิตประเภท Carbon Removal หรือการกักเก็บคาร์บอนจากธรรมชาติ (Nature-based Solutions) เช่น ป่าไม้และเกษตรกรรมยืนต้น ซึ่งมีซัพพลายจำกัดและใช้ระยะเวลานานในการผลิต ความไม่สมดุลนี้ส่งผลให้ราคาเครดิตป่าไม้สูงกว่าเครดิตด้านพลังงานถึง 3-5 เท่าตัว ขณะเดียวกัน อุปสรรคสำคัญที่ตลาดกำลังเผชิญคือความไม่แน่นอนในการเข้าถึงตลาดของ SMEs และข้อจำกัดด้านองค์ความรู้และงบประมาณสำหรับองค์กรขนาดเล็กในการพัฒนาโครงการ แต่ในภาพรวมระดับประเทศ การผลักดันพระราชบัญญัติการเปลี่ยนแปลงสภาพภูมิอากาศ พ.ศ.... (หรือพ.ร.บ. โลกร้อน) ที่กำลังจะเกิดขึ้น จะเปลี่ยนโฉมหน้าจากตลาดภาคสมัครใจ (Voluntary) ไปสู่ตลาดภาคบังคับ (Compliance) มากขึ้น ซึ่งจะเป็นแรงขับเคลื่อนมหาศาลที่ทำให้ตลาดคาร์บอนไทยเติบโตอย่างก้าวกระโดดในอนาคตอันใกล้</p>
+      <p data-i18n="carbon-credit-article_8">ปีงบประมาณ 2568 ที่ผ่านมา ตลาดคาร์บอนเครดิตไทยเข้าสู่ช่วง Market Realignment หรือการปรับสมดุลตลาดอย่างแท้จริง แม้ในเชิงปริมาณจะดูชะลอตัวลงเมื่อเทียบกับปี 2565 ที่มีการซื้อกักตุนเป็นจำนวนมาก แต่มิติของราคา กลับแสดงสัญญาณบวกอย่างมีนัยสำคัญ สะท้อนว่าผู้ซื้อในตลาดปัจจุบันคือผู้ใช้งานจริง (End-users) ที่ต้องการชดเชยคาร์บอนเพื่อเป้าหมาย ESG และ Net Zero ไม่ใช่กลุ่มที่เข้ามาเก็งกำไรเหมือนในอดีต ภาคป่าไม้ยังคงเป็นกลุ่มพรีเมียมที่ตลาดโหยหา โครงการ P-REDD+ แม้ปริมาณจะมีไม่มากแต่ครองสัดส่วนมูลค่าตลาดสูงสุด ภาคพลังงานหมุนเวียนเป็นกลุ่มที่มีปริมาณการซื้อขายหนาแน่นที่สุด โดยเฉพาะชีวมวล (Biomass) ที่มียอดซื้อขายกว่า 1.3 แสนตัน ในช่วงราคา 35-500 บาทต่อตันคาร์บอนไดออกไซด์เทียบเท่า ตามด้วยพลังงานแสงอาทิตย์</p>
     </div>
     <div class="stat-grid reveal in" style="margin-bottom:30px;">
-      <div class="stat-card"><span class="num">595,486 ตัน</span><span class="label">ปริมาณการซื้อขายคาร์บอนเครดิตสะสม ปีงบประมาณ 2568 (คิดเป็นมูลค่ารวมประมาณ 86,555,414 บาท)</span></div>
-      <div class="stat-card"><span class="num">145 บาท/ตัน</span><span class="label">ราคาเฉลี่ยรวมทั้งตลาด ปีงบประมาณ 2568 เพิ่มขึ้นจาก 125 บาทต่อตัน ในปี 2567</span></div>
-      <div class="stat-card"><span class="num">2,076 บาท/ตัน</span><span class="label">ราคาเครดิตภาคป่าไม้สูงสุด ปีงบประมาณ 2568 กลุ่มพรีเมียมที่ตลาดยังคงโหยหา</span></div>
+      <div class="stat-card"><span class="num" data-i18n="carbon-credit-article_9">595,486 ตัน</span><span class="label" data-i18n="carbon-credit-article_10">ปริมาณการซื้อขายคาร์บอนเครดิตสะสม ปีงบประมาณ 2568 (คิดเป็นมูลค่ารวมประมาณ 86,555,414 บาท)</span></div>
+      <div class="stat-card"><span class="num" data-i18n="carbon-credit-article_11">145 บาท/ตัน</span><span class="label" data-i18n="carbon-credit-article_12">ราคาเฉลี่ยรวมทั้งตลาด ปีงบประมาณ 2568 เพิ่มขึ้นจาก 125 บาทต่อตัน ในปี 2567</span></div>
+      <div class="stat-card"><span class="num" data-i18n="carbon-credit-article_13">2,076 บาท/ตัน</span><span class="label" data-i18n="carbon-credit-article_14">ราคาเครดิตภาคป่าไม้สูงสุด ปีงบประมาณ 2568 กลุ่มพรีเมียมที่ตลาดยังคงโหยหา</span></div>
     </div>
     <div class="section-head reveal" style="margin-bottom:20px;">
-      <h3 style="font-size:19px;color:var(--navy);">3 ปัจจัยหลักที่จะกำหนดทิศทางตลาดในอนาคต</h3>
+      <h3 style="font-size:19px;color:var(--navy);" data-i18n="carbon-credit-article_15">3 ปัจจัยหลักที่จะกำหนดทิศทางตลาดในอนาคต</h3>
     </div>
     <div class="info-grid reveal in" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:30px;">
       <div class="info-card">
-        <h4>1. ยกระดับสู่ Premium T-VER</h4>
-        <p>การยกระดับให้สอดคล้องกับมาตรฐานสากล (CORSIA หรือ Article 6 ของความตกลงปารีส) จะทำให้คาร์บอนเครดิตไทยส่งออกหรือขายให้องค์กรต่างประเทศได้ในราคาสูงขึ้น</p>
+        <h4 data-i18n="carbon-credit-article_16">1. ยกระดับสู่ Premium T-VER</h4>
+        <p data-i18n="carbon-credit-article_17">การยกระดับให้สอดคล้องกับมาตรฐานสากล (CORSIA หรือ Article 6 ของความตกลงปารีส) จะทำให้คาร์บอนเครดิตไทยส่งออกหรือขายให้องค์กรต่างประเทศได้ในราคาสูงขึ้น</p>
       </div>
       <div class="info-card">
-        <h4>2. ต้นทุนลดก๊าซที่สูงขึ้น</h4>
-        <p>ราคาจะขยับตัวสูงขึ้นต่อเนื่องตามต้นทุนการลดก๊าซเรือนกระจกที่ยากขึ้น (Marginal Abatement Cost) อาจทำให้ราคาเฉลี่ยแตะ 300–500 บาทต่อตันภายใน 3 ปีข้างหน้า</p>
+        <h4 data-i18n="carbon-credit-article_18">2. ต้นทุนลดก๊าซที่สูงขึ้น</h4>
+        <p data-i18n="carbon-credit-article_19">ราคาจะขยับตัวสูงขึ้นต่อเนื่องตามต้นทุนการลดก๊าซเรือนกระจกที่ยากขึ้น (Marginal Abatement Cost) อาจทำให้ราคาเฉลี่ยแตะ 300–500 บาทต่อตันภายใน 3 ปีข้างหน้า</p>
       </div>
       <div class="info-card">
-        <h4>3. การเข้ามาของสถาบันการเงิน</h4>
-        <p>จะเห็นผลิตภัณฑ์ทางการเงินที่อิงกับคาร์บอนเครดิตมากขึ้น เช่น Carbon Credit Link Loan ซึ่งจะช่วยเสริมสภาพคล่องให้กับตลาด</p>
+        <h4 data-i18n="carbon-credit-article_20">3. การเข้ามาของสถาบันการเงิน</h4>
+        <p data-i18n="carbon-credit-article_21">จะเห็นผลิตภัณฑ์ทางการเงินที่อิงกับคาร์บอนเครดิตมากขึ้น เช่น Carbon Credit Link Loan ซึ่งจะช่วยเสริมสภาพคล่องให้กับตลาด</p>
       </div>
     </div>
     <div class="prose-block">
-      <p>สรุปได้ว่า ตลาดคาร์บอนไทยกำลังเปลี่ยนผ่านจากช่วง "ทดลองและเรียนรู้" เข้าสู่ช่วง "เติบโตอย่างยั่งยืน" โดยมีกลไกราคาที่เป็นธรรมและการรับรองที่เข้มงวดเป็นหัวใจสำคัญในการขับเคลื่อนประเทศไทยสู่เป้าหมาย Carbon Neutrality และ Net Zero ในปี 2050 ต่อไป</p>
-      <p style="font-size:13px;color:var(--muted);margin-top:20px;margin-bottom:0;">ที่มา: ศูนย์ซื้อขายคาร์บอนเครดิตไทย, องค์การบริหารจัดการก๊าซเรือนกระจก (TGO) — <a href="https://carbonmarket.tgo.or.th/" target="_blank" rel="noopener noreferrer" style="color:var(--green);font-weight:700;">carbonmarket.tgo.or.th</a></p>
+      <p data-i18n="carbon-credit-article_22">สรุปได้ว่า ตลาดคาร์บอนไทยกำลังเปลี่ยนผ่านจากช่วง "ทดลองและเรียนรู้" เข้าสู่ช่วง "เติบโตอย่างยั่งยืน" โดยมีกลไกราคาที่เป็นธรรมและการรับรองที่เข้มงวดเป็นหัวใจสำคัญในการขับเคลื่อนประเทศไทยสู่เป้าหมาย Carbon Neutrality และ Net Zero ในปี 2050 ต่อไป</p>
+      <p style="font-size:13px;color:var(--muted);margin-top:20px;margin-bottom:0;"><span data-i18n="carbon-credit-article_23">ที่มา: ศูนย์ซื้อขายคาร์บอนเครดิตไทย, องค์การบริหารจัดการก๊าซเรือนกระจก (TGO) — </span><a href="https://carbonmarket.tgo.or.th/" target="_blank" rel="noopener noreferrer" style="color:var(--green);font-weight:700;">carbonmarket.tgo.or.th</a></p>
     </div>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in">
-    <h2>ทำไมนาข้าวถึงเป็นแหล่งปล่อยก๊าซมีเทนที่สำคัญ</h2>
-    <p>นาข้าวแบบทำน้ำขังตลอดฤดูปลูก (continuous flooding) สร้างสภาวะไร้ออกซิเจนในดิน ซึ่งเหมาะกับแบคทีเรียกลุ่มที่ผลิตก๊าซมีเทน (methanogens) ในการย่อยสลายอินทรียวัตถุ ก๊าซมีเทนที่เกิดขึ้นจึงถูกปล่อยออกจากแปลงนาอย่างต่อเนื่องตลอดฤดูปลูก</p>
-    <p>ในภาพรวมระดับโลก การปลูกข้าวแบบทำน้ำขังคิดเป็นสัดส่วนราวร้อยละ 11 ของการปล่อยก๊าซมีเทนทั้งหมด หรือประมาณ 1 พันล้านตันต่อปี และก๊าซมีเทนมีศักยภาพในการกักเก็บความร้อนสูงกว่าก๊าซคาร์บอนไดออกไซด์ราว 85 เท่า เมื่อคำนวณในกรอบเวลา 20 ปี นาข้าวจึงเป็นหนึ่งในเป้าหมายสำคัญของความพยายามลดก๊าซเรือนกระจกภาคเกษตรทั่วโลก รวมถึงในประเทศไทยที่มีพื้นที่นาข้าวขนาดใหญ่</p>
+    <h2 data-i18n="carbon-credit-article_24">ทำไมนาข้าวถึงเป็นแหล่งปล่อยก๊าซมีเทนที่สำคัญ</h2>
+    <p data-i18n="carbon-credit-article_25">นาข้าวแบบทำน้ำขังตลอดฤดูปลูก (continuous flooding) สร้างสภาวะไร้ออกซิเจนในดิน ซึ่งเหมาะกับแบคทีเรียกลุ่มที่ผลิตก๊าซมีเทน (methanogens) ในการย่อยสลายอินทรียวัตถุ ก๊าซมีเทนที่เกิดขึ้นจึงถูกปล่อยออกจากแปลงนาอย่างต่อเนื่องตลอดฤดูปลูก</p>
+    <p data-i18n="carbon-credit-article_26">ในภาพรวมระดับโลก การปลูกข้าวแบบทำน้ำขังคิดเป็นสัดส่วนราวร้อยละ 11 ของการปล่อยก๊าซมีเทนทั้งหมด หรือประมาณ 1 พันล้านตันต่อปี และก๊าซมีเทนมีศักยภาพในการกักเก็บความร้อนสูงกว่าก๊าซคาร์บอนไดออกไซด์ราว 85 เท่า เมื่อคำนวณในกรอบเวลา 20 ปี นาข้าวจึงเป็นหนึ่งในเป้าหมายสำคัญของความพยายามลดก๊าซเรือนกระจกภาคเกษตรทั่วโลก รวมถึงในประเทศไทยที่มีพื้นที่นาข้าวขนาดใหญ่</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:36px;">
-      <div class="eyebrow"><i class="fa-solid fa-droplet"></i> เทคนิคหลัก</div>
-      <h2 class="section-title">เปียกสลับแห้ง (Alternate Wetting and Drying, AWD)</h2>
-      <p class="section-sub">แทนที่จะขังน้ำในแปลงตลอดฤดู เทคนิค AWD ปล่อยให้น้ำในแปลงแห้งลงถึงระดับหนึ่งก่อนสูบน้ำกลับเข้าแปลงใหม่ วนเป็นรอบๆ ตลอดฤดูปลูก</p>
+      <div class="eyebrow"><i class="fa-solid fa-droplet"></i><span data-i18n="carbon-credit-article_27"> เทคนิคหลัก</span></div>
+      <h2 class="section-title" data-i18n="carbon-credit-article_28">เปียกสลับแห้ง (Alternate Wetting and Drying, AWD)</h2>
+      <p class="section-sub" data-i18n="carbon-credit-article_29">แทนที่จะขังน้ำในแปลงตลอดฤดู เทคนิค AWD ปล่อยให้น้ำในแปลงแห้งลงถึงระดับหนึ่งก่อนสูบน้ำกลับเข้าแปลงใหม่ วนเป็นรอบๆ ตลอดฤดูปลูก</p>
     </div>
     <div class="prose-block" style="margin-bottom:34px;">
-      <p>วิธีวัดที่ใช้กันทั่วไปคือการปักท่อวัดระดับน้ำ (มักเป็นท่อ PVC เจาะรู) ลงในดินบริเวณแปลงนา แล้วสังเกตระดับน้ำผ่านท่อ เมื่อระดับน้ำลดลงถึงจุดที่กำหนด (แนวทางที่ใช้กันทั่วไปอยู่ที่ประมาณ 15 ซม. ต่ำกว่าผิวดิน แล้วแต่ชนิดดินและคำแนะนำในแต่ละพื้นที่) จึงสูบน้ำกลับเข้าแปลงจนท่วมขังอีกครั้ง แล้ววนซ้ำไปเรื่อยๆ ยกเว้นช่วงวิกฤต เช่น ช่วงออกดอก ที่ยังต้องรักษาระดับน้ำให้สม่ำเสมอตามปกติ การปล่อยให้ดินแห้งเป็นระยะแบบนี้จะรบกวนวงจรของแบคทีเรียที่ผลิตมีเทน ทำให้ปริมาณก๊าซมีเทนที่ปล่อยออกมาลดลงอย่างมีนัยสำคัญ โดยไม่ต้องเปลี่ยนพันธุ์ข้าวหรือวิธีปลูกอื่นๆ</p>
+      <p data-i18n="carbon-credit-article_30">วิธีวัดที่ใช้กันทั่วไปคือการปักท่อวัดระดับน้ำ (มักเป็นท่อ PVC เจาะรู) ลงในดินบริเวณแปลงนา แล้วสังเกตระดับน้ำผ่านท่อ เมื่อระดับน้ำลดลงถึงจุดที่กำหนด (แนวทางที่ใช้กันทั่วไปอยู่ที่ประมาณ 15 ซม. ต่ำกว่าผิวดิน แล้วแต่ชนิดดินและคำแนะนำในแต่ละพื้นที่) จึงสูบน้ำกลับเข้าแปลงจนท่วมขังอีกครั้ง แล้ววนซ้ำไปเรื่อยๆ ยกเว้นช่วงวิกฤต เช่น ช่วงออกดอก ที่ยังต้องรักษาระดับน้ำให้สม่ำเสมอตามปกติ การปล่อยให้ดินแห้งเป็นระยะแบบนี้จะรบกวนวงจรของแบคทีเรียที่ผลิตมีเทน ทำให้ปริมาณก๊าซมีเทนที่ปล่อยออกมาลดลงอย่างมีนัยสำคัญ โดยไม่ต้องเปลี่ยนพันธุ์ข้าวหรือวิธีปลูกอื่นๆ</p>
     </div>
     <div class="stat-grid reveal in">
-      <div class="stat-card"><span class="num">20–50%</span><span class="label">มีเทนลดลง เทียบกับแปลงขังน้ำตลอดฤดู (บางงานวิจัยรายงานสูงถึง ~70% เมื่อใช้ร่วมกับแนวทางลดก๊าซเรือนกระจกอื่น)</span></div>
-      <div class="stat-card"><span class="num">30–40%</span><span class="label">ปริมาณน้ำชลประทานที่ประหยัดได้โดยประมาณต่อฤดูปลูก</span></div>
-      <div class="stat-card"><span class="num">ใกล้เคียงเดิม</span><span class="label">ผลผลิตต่อไร่ หากทำตามขั้นตอนถูกต้องและไม่ปล่อยแล้งเกินในช่วงวิกฤตของต้นข้าว</span></div>
+      <div class="stat-card"><span class="num">20–50%</span><span class="label" data-i18n="carbon-credit-article_31">มีเทนลดลง เทียบกับแปลงขังน้ำตลอดฤดู (บางงานวิจัยรายงานสูงถึง ~70% เมื่อใช้ร่วมกับแนวทางลดก๊าซเรือนกระจกอื่น)</span></div>
+      <div class="stat-card"><span class="num">30–40%</span><span class="label" data-i18n="carbon-credit-article_32">ปริมาณน้ำชลประทานที่ประหยัดได้โดยประมาณต่อฤดูปลูก</span></div>
+      <div class="stat-card"><span class="num" data-i18n="carbon-credit-article_33">ใกล้เคียงเดิม</span><span class="label" data-i18n="carbon-credit-article_34">ผลผลิตต่อไร่ หากทำตามขั้นตอนถูกต้องและไม่ปล่อยแล้งเกินในช่วงวิกฤตของต้นข้าว</span></div>
     </div>
   </div>
 </section>
@@ -277,10 +281,10 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:30px;">
-      <h2 class="section-title" style="font-size:26px;">จากการลดมีเทน สู่ "คาร์บอนเครดิต" ที่ซื้อขายได้จริง</h2>
+      <h2 class="section-title" style="font-size:26px;" data-i18n="carbon-credit-article_35">จากการลดมีเทน สู่ "คาร์บอนเครดิต" ที่ซื้อขายได้จริง</h2>
     </div>
     <div class="prose-block">
-      <p>การลดก๊าซเรือนกระจกจะกลายเป็น "คาร์บอนเครดิต" ที่ซื้อขายได้จริง ก็ต่อเมื่อผ่านกระบวนการวัด รายงาน และทวนสอบ (Measurement, Reporting, Verification — MRV) ตามระเบียบวิธี (methodology) ที่หน่วยงานรับรองยอมรับ โดย 1 คาร์บอนเครดิตเทียบเท่ากับก๊าซเรือนกระจกที่ลดหรือหลีกเลี่ยงได้จริง 1 ตันคาร์บอนไดออกไซด์เทียบเท่า (tCO2e) ในระดับสากลมีระเบียบวิธีสำหรับนาข้าวโดยเฉพาะ เช่น VCS VM0042 และ VM51 ของ Verra และระเบียบวิธี Methane Emission Reduction in Rice Cultivation ของ Gold Standard ซึ่งล้วนใช้หลักการเปรียบเทียบการปล่อยก๊าซจากแปลงที่ทำ AWD กับแปลงอ้างอิงที่ขังน้ำตามปกติ (baseline) เพื่อคำนวณส่วนต่างที่ลดได้จริง</p>
+      <p data-i18n="carbon-credit-article_36">การลดก๊าซเรือนกระจกจะกลายเป็น "คาร์บอนเครดิต" ที่ซื้อขายได้จริง ก็ต่อเมื่อผ่านกระบวนการวัด รายงาน และทวนสอบ (Measurement, Reporting, Verification — MRV) ตามระเบียบวิธี (methodology) ที่หน่วยงานรับรองยอมรับ โดย 1 คาร์บอนเครดิตเทียบเท่ากับก๊าซเรือนกระจกที่ลดหรือหลีกเลี่ยงได้จริง 1 ตันคาร์บอนไดออกไซด์เทียบเท่า (tCO2e) ในระดับสากลมีระเบียบวิธีสำหรับนาข้าวโดยเฉพาะ เช่น VCS VM0042 และ VM51 ของ Verra และระเบียบวิธี Methane Emission Reduction in Rice Cultivation ของ Gold Standard ซึ่งล้วนใช้หลักการเปรียบเทียบการปล่อยก๊าซจากแปลงที่ทำ AWD กับแปลงอ้างอิงที่ขังน้ำตามปกติ (baseline) เพื่อคำนวณส่วนต่างที่ลดได้จริง</p>
     </div>
   </div>
 </section>
@@ -288,18 +292,18 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:30px;">
-      <div class="eyebrow"><i class="fa-solid fa-landmark"></i> กลไกในประเทศไทย</div>
-      <h2 class="section-title">โครงการ T-VER โดย อบก. (TGO)</h2>
-      <p class="section-sub">กลไกคาร์บอนเครดิตภาคสมัครใจของไทย ที่เกษตรกร กลุ่มเกษตรกร หรือสหกรณ์ที่ทำนาแบบลดก๊าซเรือนกระจกสามารถเข้าร่วมได้</p>
+      <div class="eyebrow"><i class="fa-solid fa-landmark"></i><span data-i18n="carbon-credit-article_37"> กลไกในประเทศไทย</span></div>
+      <h2 class="section-title" data-i18n="carbon-credit-article_38">โครงการ T-VER โดย อบก. (TGO)</h2>
+      <p class="section-sub" data-i18n="carbon-credit-article_39">กลไกคาร์บอนเครดิตภาคสมัครใจของไทย ที่เกษตรกร กลุ่มเกษตรกร หรือสหกรณ์ที่ทำนาแบบลดก๊าซเรือนกระจกสามารถเข้าร่วมได้</p>
     </div>
     <div class="info-grid reveal in">
       <div class="info-card">
-        <h4>T-VER คืออะไร</h4>
-        <p>T-VER (Thailand Voluntary Emission Reduction Program) คือโครงการลดก๊าซเรือนกระจกภาคสมัครใจของไทย พัฒนาและบริหารโดยองค์การบริหารจัดการก๊าซเรือนกระจก (องค์การมหาชน) หรือ อบก./TGO ผู้ที่ลดก๊าซเรือนกระจกได้จริงตามระเบียบวิธีที่ อบก. รับรอง สามารถขึ้นทะเบียนโครงการและขอออกคาร์บอนเครดิต (T-VER) เพื่อซื้อขายในตลาดคาร์บอนภาคสมัครใจภายในประเทศได้</p>
+        <h4 data-i18n="carbon-credit-article_40">T-VER คืออะไร</h4>
+        <p data-i18n="carbon-credit-article_41">T-VER (Thailand Voluntary Emission Reduction Program) คือโครงการลดก๊าซเรือนกระจกภาคสมัครใจของไทย พัฒนาและบริหารโดยองค์การบริหารจัดการก๊าซเรือนกระจก (องค์การมหาชน) หรือ อบก./TGO ผู้ที่ลดก๊าซเรือนกระจกได้จริงตามระเบียบวิธีที่ อบก. รับรอง สามารถขึ้นทะเบียนโครงการและขอออกคาร์บอนเครดิต (T-VER) เพื่อซื้อขายในตลาดคาร์บอนภาคสมัครใจภายในประเทศได้</p>
       </div>
       <div class="info-card">
-        <h4>ขั้นตอนโดยสรุป</h4>
-        <p>ต้องขึ้นทะเบียนโครงการกับ อบก. ภายใต้ระเบียบวิธีที่ได้รับอนุมัติ เก็บข้อมูลตามรอบ (เช่น บันทึกระดับน้ำ AWD ต่อรอบปลูก) แล้วผ่านการตรวจสอบและทวนสอบ (validation/verification) โดยผู้ประเมินภายนอกที่ อบก. ขึ้นทะเบียนไว้ ก่อนจะได้รับคาร์บอนเครดิตที่ซื้อขายได้จริง โดยทั่วไปเกษตรกรรายย่อยมักเข้าร่วมผ่านการรวมกลุ่ม เช่น สหกรณ์ หรือผู้พัฒนาโครงการ (project developer) แทนการยื่นเรื่องเดี่ยว เนื่องจากมีต้นทุนการทวนสอบต่อโครงการ</p>
+        <h4 data-i18n="carbon-credit-article_42">ขั้นตอนโดยสรุป</h4>
+        <p data-i18n="carbon-credit-article_43">ต้องขึ้นทะเบียนโครงการกับ อบก. ภายใต้ระเบียบวิธีที่ได้รับอนุมัติ เก็บข้อมูลตามรอบ (เช่น บันทึกระดับน้ำ AWD ต่อรอบปลูก) แล้วผ่านการตรวจสอบและทวนสอบ (validation/verification) โดยผู้ประเมินภายนอกที่ อบก. ขึ้นทะเบียนไว้ ก่อนจะได้รับคาร์บอนเครดิตที่ซื้อขายได้จริง โดยทั่วไปเกษตรกรรายย่อยมักเข้าร่วมผ่านการรวมกลุ่ม เช่น สหกรณ์ หรือผู้พัฒนาโครงการ (project developer) แทนการยื่นเรื่องเดี่ยว เนื่องจากมีต้นทุนการทวนสอบต่อโครงการ</p>
       </div>
     </div>
   </div>
@@ -308,19 +312,19 @@
 <section class="prose-section">
   <div class="container prose-block reveal in">
     <div class="note-block">
-      <strong>ข้อควรทราบเกี่ยวกับเครื่องมือของ AgroLink:</strong> ระบบ "ยืนยันการปลูกข้าวคาร์บอนต่ำ (AWD)" ของ AgroLink เป็นเครื่องมือ<strong>บันทึกและประเมินภายในแพลตฟอร์มเท่านั้น</strong> ใช้สำหรับบันทึกรอบเปียกสลับแห้งของแต่ละแปลง แล้วส่งให้ทีมงาน Platform Ops ตรวจสอบเบื้องต้น เพื่อประเมินปริมาณคาร์บอนเครดิตที่แปลงอาจมีสิทธิ์ได้รับ <strong>ระบบนี้ไม่ใช่การขึ้นทะเบียนคาร์บอนเครดิตจริงกับหน่วยงานใด</strong> การขอคาร์บอนเครดิตที่ซื้อขายได้จริงต้องยื่นเรื่องแยกต่างหากกับหน่วยงานรับรอง เช่น อบก./TGO ภายใต้โครงการ T-VER — สำหรับรายละเอียดกลไกการทำงานเชิงเทคนิคทั้งหมดของระบบ (สูตรคำนวณ, state machine, โครงสร้างข้อมูล) ดูได้ที่ <a href="carbon-module-guide.html">เอกสารกลไกการทำงานของ Carbon Module</a>
+      <strong data-i18n="carbon-credit-article_44">ข้อควรทราบเกี่ยวกับเครื่องมือของ AgroLink:</strong><span data-i18n="carbon-credit-article_45"> ระบบ "ยืนยันการปลูกข้าวคาร์บอนต่ำ (AWD)" ของ AgroLink เป็นเครื่องมือ</span><strong data-i18n="carbon-credit-article_46">บันทึกและประเมินภายในแพลตฟอร์มเท่านั้น</strong><span data-i18n="carbon-credit-article_47"> ใช้สำหรับบันทึกรอบเปียกสลับแห้งของแต่ละแปลง แล้วส่งให้ทีมงาน Platform Ops ตรวจสอบเบื้องต้น เพื่อประเมินปริมาณคาร์บอนเครดิตที่แปลงอาจมีสิทธิ์ได้รับ </span><strong data-i18n="carbon-credit-article_48">ระบบนี้ไม่ใช่การขึ้นทะเบียนคาร์บอนเครดิตจริงกับหน่วยงานใด</strong><span data-i18n="carbon-credit-article_49"> การขอคาร์บอนเครดิตที่ซื้อขายได้จริงต้องยื่นเรื่องแยกต่างหากกับหน่วยงานรับรอง เช่น อบก./TGO ภายใต้โครงการ T-VER — สำหรับรายละเอียดกลไกการทำงานเชิงเทคนิคทั้งหมดของระบบ (สูตรคำนวณ, state machine, โครงสร้างข้อมูล) ดูได้ที่ </span><a href="carbon-module-guide.html" data-i18n="carbon-credit-article_50">เอกสารกลไกการทำงานของ Carbon Module</a>
     </div>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container section-head reveal">
-    <h2 class="section-title">เริ่มบันทึกรอบปลูกข้าวคาร์บอนต่ำของท่าน</h2>
-    <p class="section-sub">เกษตรกรที่ทำนาข้าวและต้องการเริ่มบันทึกรอบเปียกสลับแห้ง (AWD) เพื่อประเมินคาร์บอนเครดิตเบื้องต้น สามารถเข้าใช้งานเครื่องมือของ AgroLink ได้ทันที (ต้องเข้าสู่ระบบเกษตรกรก่อน)</p>
+    <h2 class="section-title" data-i18n="carbon-credit-article_51">เริ่มบันทึกรอบปลูกข้าวคาร์บอนต่ำของท่าน</h2>
+    <p class="section-sub" data-i18n="carbon-credit-article_52">เกษตรกรที่ทำนาข้าวและต้องการเริ่มบันทึกรอบเปียกสลับแห้ง (AWD) เพื่อประเมินคาร์บอนเครดิตเบื้องต้น สามารถเข้าใช้งานเครื่องมือของ AgroLink ได้ทันที (ต้องเข้าสู่ระบบเกษตรกรก่อน)</p>
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-      <a href="carbon-credit.html" class="btn btn-gold">🌾 เริ่มบันทึกรอบปลูก AWD</a>
-      <a href="carbon-module-guide.html" class="btn btn-outline">⚙️ กลไกการทำงานของระบบ (เชิงเทคนิค)</a>
-      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+      <a href="carbon-credit.html" class="btn btn-gold" data-i18n="carbon-credit-article_53">🌾 เริ่มบันทึกรอบปลูก AWD</a>
+      <a href="carbon-module-guide.html" class="btn btn-outline" data-i18n="carbon-credit-article_54">⚙️ กลไกการทำงานของระบบ (เชิงเทคนิค)</a>
+      <a href="index.html" class="btn btn-outline" data-i18n="carbon-credit-article_55">กลับหน้าแรก</a>
     </div>
   </div>
 </section>
@@ -330,55 +334,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-carbon-credit-article.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

@@ -71,6 +71,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -114,7 +116,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER (dark, matches .template-section in index.html) */
@@ -190,25 +193,26 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
-        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
-          <a href="farmer-login.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">เข้าสู่ระบบเกษตรกร</a></div>
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="farmer-login.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_farmer_login">เข้าสู่ระบบเกษตรกร</a></div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
@@ -217,23 +221,23 @@
 
 <section class="page-header">
   <div class="container section-head reveal">
-    <div class="eyebrow"><i class="fa-solid fa-diagram-project"></i> แนวคิดหลัก — เจาะลึก</div>
-    <h1 class="section-title">แม่แบบวงจรการผลิตสากล<br>(Universal Production-Cycle Template)</h1>
-    <p class="section-sub">โครงสร้างเดียวที่เชื่อมบัญชีหน่วยผลิต แผนงาน บริการ สินเชื่อ การเตือนภัย และการหักบัญชี เข้าเป็นวงจรเดียวกัน แล้วนำกลับมาใช้ซ้ำได้กับสินค้าเกษตรทุกชนิด — ตั้งแต่ข้าว ทุเรียน กุ้ง ไปจนถึงโคนม</p>
+    <div class="eyebrow"><i class="fa-solid fa-diagram-project"></i><span data-i18n="production-cycle-template_1"> แนวคิดหลัก — เจาะลึก</span></div>
+    <h1 class="section-title"><span data-i18n="production-cycle-template_2">แม่แบบวงจรการผลิตสากล</span><br>(Universal Production-Cycle Template)</h1>
+    <p class="section-sub" data-i18n="production-cycle-template_3">โครงสร้างเดียวที่เชื่อมบัญชีหน่วยผลิต แผนงาน บริการ สินเชื่อ การเตือนภัย และการหักบัญชี เข้าเป็นวงจรเดียวกัน แล้วนำกลับมาใช้ซ้ำได้กับสินค้าเกษตรทุกชนิด — ตั้งแต่ข้าว ทุเรียน กุ้ง ไปจนถึงโคนม</p>
   </div>
   <div class="container cycle-nav">
     <div class="cycle-nav-row">
-      <a href="#unit-account" class="cycle-chip"><span class="num">01</span> บัญชีหน่วยผลิต</a>
+      <a href="#unit-account" class="cycle-chip"><span class="num">01</span><span data-i18n="production-cycle-template_4"> บัญชีหน่วยผลิต</span></a>
       <span class="cycle-arrow">→</span>
-      <a href="#stage-calendar" class="cycle-chip"><span class="num">02</span> ปฏิทินระยะ</a>
+      <a href="#stage-calendar" class="cycle-chip"><span class="num">02</span><span data-i18n="production-cycle-template_5"> ปฏิทินระยะ</span></a>
       <span class="cycle-arrow">→</span>
-      <a href="#service-marketplace" class="cycle-chip"><span class="num">03</span> ตลาดบริการ</a>
+      <a href="#service-marketplace" class="cycle-chip"><span class="num">03</span><span data-i18n="production-cycle-template_6"> ตลาดบริการ</span></a>
       <span class="cycle-arrow">→</span>
-      <a href="#tranche-credit" class="cycle-chip"><span class="num">04</span> สินเชื่อเป็นงวด</a>
+      <a href="#tranche-credit" class="cycle-chip"><span class="num">04</span><span data-i18n="production-cycle-template_7"> สินเชื่อเป็นงวด</span></a>
       <span class="cycle-arrow">→</span>
-      <a href="#early-warning" class="cycle-chip"><span class="num">05</span> เตือนภัยร่วม</a>
+      <a href="#early-warning" class="cycle-chip"><span class="num">05</span><span data-i18n="production-cycle-template_8"> เตือนภัยร่วม</span></a>
       <span class="cycle-arrow">→</span>
-      <a href="#auto-settlement" class="cycle-chip"><span class="num">06</span> หักบัญชีอัตโนมัติ</a>
+      <a href="#auto-settlement" class="cycle-chip"><span class="num">06</span><span data-i18n="production-cycle-template_9"> หักบัญชีอัตโนมัติ</span></a>
       <span class="cycle-arrow">↻</span>
     </div>
   </div>
@@ -241,18 +245,18 @@
 
 <section class="prose-section">
   <div class="container prose-block reveal in">
-    <h2>ทำไมต้องมี "แม่แบบ"</h2>
-    <p>เกษตรกรไทยผลิตสินค้าที่หลากหลายมาก แต่ปัญหาเชิงโครงสร้างที่ซ้ำกันในแทบทุกสินค้ามีอยู่สี่เรื่องหลัก: ไม่มีบัญชีหน่วยผลิตที่เป็นทางการไว้อ้างอิงสิทธิ์และประวัติ ขาดปฏิทินการผลิตที่ใช้วางแผนล่วงหน้าและตรวจสอบย้อนหลังได้ บริการแต่ละขั้นตอน เช่น เตรียมดิน พ่นยา เก็บเกี่ยว ขนส่ง แปรรูป กระจัดกระจายจนหาผู้ให้บริการที่เหมาะสมได้ยาก และการเข้าถึงแหล่งทุนมักมาในรูปเงินก้อนที่ตรวจสอบการใช้จริงไม่ได้ ทำให้มีความเสี่ยงทั้งฝั่งผู้ให้กู้และผู้กู้</p>
-    <p>AgroLink จึงออกแบบ "แม่แบบวงจรการผลิต" ขึ้นมาหนึ่งชุด โดยแยกส่วนที่ "เปลี่ยนตามชนิดสินค้า" ออกจากส่วนที่ "เหมือนกันทุกสินค้า" อย่างชัดเจน สิ่งที่เปลี่ยนคือพารามิเตอร์ เช่น ระยะเวลาของแต่ละขั้นตอน ชนิดบริการที่ต้องใช้ในแต่ละระยะ และตัวชี้วัดเตือนภัยที่เกี่ยวข้อง ส่วนโครงสร้างข้อมูลและกระบวนการเบื้องหลังทั้งหมดเหมือนกัน ไม่ว่าจะเป็นนาข้าว สวนทุเรียน บ่อกุ้ง หรือฟาร์มโคนม ผลคือเมื่อจะเพิ่มสินค้าใหม่เข้าระบบ ทีมงานเพียงกำหนดชุดพารามิเตอร์ของสินค้านั้น โดยไม่ต้องพัฒนาระบบขึ้นใหม่ทั้งหมด</p>
+    <h2 data-i18n="production-cycle-template_10">ทำไมต้องมี "แม่แบบ"</h2>
+    <p data-i18n="production-cycle-template_11">เกษตรกรไทยผลิตสินค้าที่หลากหลายมาก แต่ปัญหาเชิงโครงสร้างที่ซ้ำกันในแทบทุกสินค้ามีอยู่สี่เรื่องหลัก: ไม่มีบัญชีหน่วยผลิตที่เป็นทางการไว้อ้างอิงสิทธิ์และประวัติ ขาดปฏิทินการผลิตที่ใช้วางแผนล่วงหน้าและตรวจสอบย้อนหลังได้ บริการแต่ละขั้นตอน เช่น เตรียมดิน พ่นยา เก็บเกี่ยว ขนส่ง แปรรูป กระจัดกระจายจนหาผู้ให้บริการที่เหมาะสมได้ยาก และการเข้าถึงแหล่งทุนมักมาในรูปเงินก้อนที่ตรวจสอบการใช้จริงไม่ได้ ทำให้มีความเสี่ยงทั้งฝั่งผู้ให้กู้และผู้กู้</p>
+    <p data-i18n="production-cycle-template_12">AgroLink จึงออกแบบ "แม่แบบวงจรการผลิต" ขึ้นมาหนึ่งชุด โดยแยกส่วนที่ "เปลี่ยนตามชนิดสินค้า" ออกจากส่วนที่ "เหมือนกันทุกสินค้า" อย่างชัดเจน สิ่งที่เปลี่ยนคือพารามิเตอร์ เช่น ระยะเวลาของแต่ละขั้นตอน ชนิดบริการที่ต้องใช้ในแต่ละระยะ และตัวชี้วัดเตือนภัยที่เกี่ยวข้อง ส่วนโครงสร้างข้อมูลและกระบวนการเบื้องหลังทั้งหมดเหมือนกัน ไม่ว่าจะเป็นนาข้าว สวนทุเรียน บ่อกุ้ง หรือฟาร์มโคนม ผลคือเมื่อจะเพิ่มสินค้าใหม่เข้าระบบ ทีมงานเพียงกำหนดชุดพารามิเตอร์ของสินค้านั้น โดยไม่ต้องพัฒนาระบบขึ้นใหม่ทั้งหมด</p>
   </div>
 </section>
 
 <section id="detail" class="prose-section alt" style="padding-bottom:0;">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:0;">
-      <div class="eyebrow"><i class="fa-solid fa-list-ol"></i> 6 องค์ประกอบของแม่แบบ</div>
-      <h2 class="section-title">แต่ละองค์ประกอบทำหน้าที่อะไร และเชื่อมกันอย่างไร</h2>
-      <p class="section-sub">แต่ละส่วนออกแบบให้ส่งต่อข้อมูลและเงื่อนไขให้กันเป็นทอด ๆ ครบหนึ่งรอบแล้ววนกลับไปเริ่มรอบใหม่ได้ทันที</p>
+      <div class="eyebrow"><i class="fa-solid fa-list-ol"></i><span data-i18n="production-cycle-template_13"> 6 องค์ประกอบของแม่แบบ</span></div>
+      <h2 class="section-title" data-i18n="production-cycle-template_14">แต่ละองค์ประกอบทำหน้าที่อะไร และเชื่อมกันอย่างไร</h2>
+      <p class="section-sub" data-i18n="production-cycle-template_15">แต่ละส่วนออกแบบให้ส่งต่อข้อมูลและเงื่อนไขให้กันเป็นทอด ๆ ครบหนึ่งรอบแล้ววนกลับไปเริ่มรอบใหม่ได้ทันที</p>
     </div>
 
     <div class="detail-list">
@@ -260,79 +264,79 @@
       <article id="unit-account" class="detail-block reveal in">
         <span class="detail-num">01</span>
         <div class="icn"><i class="fa-solid fa-map-location-dot"></i></div>
-        <h3>บัญชีหน่วยผลิต</h3>
+        <h3 data-i18n="production-cycle-template_16">บัญชีหน่วยผลิต</h3>
         <span class="en-name">Production Unit Account</span>
-        <h4>คืออะไร</h4>
-        <p>หนึ่งบัญชีต่อแปลงนา สวน คอก หรือบ่อ ต่อหนึ่งรอบการผลิต บันทึกพิกัดที่ตั้ง ขนาดพื้นที่หรือจำนวนสัตว์ ชนิดสินค้า และเชื่อมโยงประวัติของรอบก่อนหน้า เช่น ผลผลิตที่เคยได้ ปัญหาที่เคยเกิด และผู้ให้บริการที่เคยใช้งาน</p>
-        <h4>ทำไมสำคัญ</h4>
-        <p>เป็นกุญแจอ้างอิงเดียวที่ทุกส่วนของแม่แบบผูกเข้าด้วยกัน หากไม่มีบัญชีนี้ ข้อมูลแผนการผลิต การใช้บริการ สินเชื่อ และการหักบัญชี จะแยกกระจัดกระจายเหมือนระบบเดิมที่ตรวจสอบย้อนกลับไม่ได้</p>
-        <h4>เชื่อมต่อขั้นถัดไป</h4>
-        <p>เมื่อเปิดบัญชีหน่วยผลิตใหม่สำหรับรอบการผลิตใหม่ ระบบจะดึงปฏิทินระยะที่เหมาะกับชนิดสินค้านั้นมาผูกให้อัตโนมัติ</p>
+        <h4 data-i18n="production-cycle-template_17">คืออะไร</h4>
+        <p data-i18n="production-cycle-template_18">หนึ่งบัญชีต่อแปลงนา สวน คอก หรือบ่อ ต่อหนึ่งรอบการผลิต บันทึกพิกัดที่ตั้ง ขนาดพื้นที่หรือจำนวนสัตว์ ชนิดสินค้า และเชื่อมโยงประวัติของรอบก่อนหน้า เช่น ผลผลิตที่เคยได้ ปัญหาที่เคยเกิด และผู้ให้บริการที่เคยใช้งาน</p>
+        <h4 data-i18n="production-cycle-template_19">ทำไมสำคัญ</h4>
+        <p data-i18n="production-cycle-template_20">เป็นกุญแจอ้างอิงเดียวที่ทุกส่วนของแม่แบบผูกเข้าด้วยกัน หากไม่มีบัญชีนี้ ข้อมูลแผนการผลิต การใช้บริการ สินเชื่อ และการหักบัญชี จะแยกกระจัดกระจายเหมือนระบบเดิมที่ตรวจสอบย้อนกลับไม่ได้</p>
+        <h4 data-i18n="production-cycle-template_21">เชื่อมต่อขั้นถัดไป</h4>
+        <p data-i18n="production-cycle-template_22">เมื่อเปิดบัญชีหน่วยผลิตใหม่สำหรับรอบการผลิตใหม่ ระบบจะดึงปฏิทินระยะที่เหมาะกับชนิดสินค้านั้นมาผูกให้อัตโนมัติ</p>
       </article>
 
       <article id="stage-calendar" class="detail-block reveal in">
         <span class="detail-num">02</span>
         <div class="icn"><i class="fa-solid fa-calendar-days"></i></div>
-        <h3>แผนการผลิต / ปฏิทินระยะ</h3>
+        <h3 data-i18n="production-cycle-template_23">แผนการผลิต / ปฏิทินระยะ</h3>
         <span class="en-name">Stage Calendar</span>
-        <h4>คืออะไร</h4>
-        <p>ระบบกำหนดขั้นตอนและกรอบเวลาของสินค้าแต่ละชนิดให้โดยอัตโนมัติ เช่น ข้าว: เตรียมดิน → หว่าน/ดำ → ดูแลรักษา → เก็บเกี่ยว หรือกุ้ง: เตรียมบ่อ → ปล่อยลูกกุ้ง → ให้อาหาร → จับ แต่ละระยะมีเป้าหมาย ระยะเวลาโดยประมาณ และรายการบริการหรือปัจจัยการผลิตที่มักต้องใช้ในระยะนั้น</p>
-        <h4>ทำไมสำคัญ</h4>
-        <p>ทำให้ทุกฝ่ายที่เกี่ยวข้อง ไม่ว่าจะเป็นเกษตรกร ผู้ให้บริการ ผู้ให้สินเชื่อ หรือหน่วยงานภาครัฐ เห็นภาพเดียวกันว่าขณะนี้อยู่ระยะไหน ควรทำอะไรต่อ และคาดว่าจะเก็บเกี่ยวหรือจับได้เมื่อไร</p>
-        <h4>เชื่อมต่อขั้นถัดไป</h4>
-        <p>ปฏิทินระยะเป็นตัวกำหนดว่าจะเปิดตลาดบริการของขั้นตอนใดเมื่อไร และเป็นเงื่อนไขหลักที่ใช้ปลดล็อกสินเชื่อแต่ละงวด</p>
+        <h4 data-i18n="production-cycle-template_24">คืออะไร</h4>
+        <p data-i18n="production-cycle-template_25">ระบบกำหนดขั้นตอนและกรอบเวลาของสินค้าแต่ละชนิดให้โดยอัตโนมัติ เช่น ข้าว: เตรียมดิน → หว่าน/ดำ → ดูแลรักษา → เก็บเกี่ยว หรือกุ้ง: เตรียมบ่อ → ปล่อยลูกกุ้ง → ให้อาหาร → จับ แต่ละระยะมีเป้าหมาย ระยะเวลาโดยประมาณ และรายการบริการหรือปัจจัยการผลิตที่มักต้องใช้ในระยะนั้น</p>
+        <h4 data-i18n="production-cycle-template_26">ทำไมสำคัญ</h4>
+        <p data-i18n="production-cycle-template_27">ทำให้ทุกฝ่ายที่เกี่ยวข้อง ไม่ว่าจะเป็นเกษตรกร ผู้ให้บริการ ผู้ให้สินเชื่อ หรือหน่วยงานภาครัฐ เห็นภาพเดียวกันว่าขณะนี้อยู่ระยะไหน ควรทำอะไรต่อ และคาดว่าจะเก็บเกี่ยวหรือจับได้เมื่อไร</p>
+        <h4 data-i18n="production-cycle-template_28">เชื่อมต่อขั้นถัดไป</h4>
+        <p data-i18n="production-cycle-template_29">ปฏิทินระยะเป็นตัวกำหนดว่าจะเปิดตลาดบริการของขั้นตอนใดเมื่อไร และเป็นเงื่อนไขหลักที่ใช้ปลดล็อกสินเชื่อแต่ละงวด</p>
       </article>
 
       <article id="service-marketplace" class="detail-block reveal in">
         <span class="detail-num">03</span>
         <div class="icn"><i class="fa-solid fa-store"></i></div>
-        <h3>ตลาดบริการเฉพาะขั้นตอน</h3>
+        <h3 data-i18n="production-cycle-template_30">ตลาดบริการเฉพาะขั้นตอน</h3>
         <span class="en-name">Stage-Specific Service Marketplace</span>
-        <h4>คืออะไร</h4>
-        <p>แทนที่เกษตรกรจะต้องหาแรงงาน เครื่องจักร หรือปัจจัยการผลิตเองแบบกระจัดกระจาย ระบบจับคู่ผู้ผลิตกับผู้ให้บริการที่ตรงกับระยะปัจจุบันของแปลงหรือบ่อ เช่น โดรนพ่นยา รถเกี่ยว รถขนส่ง หรือห้องเย็น ด้วยการจับคู่แบบ AI Matching โดยพิจารณาพื้นที่ใกล้เคียง คิวที่ว่าง และคะแนนความน่าเชื่อถือของผู้ให้บริการ</p>
-        <h4>ทำไมสำคัญ</h4>
-        <p>ลดเวลาค้นหา ลดการพึ่งพาคนกลางที่ไม่โปร่งใส และสร้างข้อมูลธุรกรรมที่ตรวจสอบได้ว่าใครทำงานอะไร เมื่อไร และในราคาเท่าไร</p>
-        <h4>เชื่อมต่อขั้นถัดไป</h4>
-        <p>การใช้บริการแต่ละครั้งถูกบันทึกเป็นหลักฐานว่า "งานเสร็จจริงแล้ว" ซึ่งใช้ปลดล็อกงวดสินเชื่อถัดไป และเก็บไว้เป็นข้อมูลประกอบการหักบัญชีเมื่อขายผลผลิต</p>
+        <h4 data-i18n="production-cycle-template_31">คืออะไร</h4>
+        <p data-i18n="production-cycle-template_32">แทนที่เกษตรกรจะต้องหาแรงงาน เครื่องจักร หรือปัจจัยการผลิตเองแบบกระจัดกระจาย ระบบจับคู่ผู้ผลิตกับผู้ให้บริการที่ตรงกับระยะปัจจุบันของแปลงหรือบ่อ เช่น โดรนพ่นยา รถเกี่ยว รถขนส่ง หรือห้องเย็น ด้วยการจับคู่แบบ AI Matching โดยพิจารณาพื้นที่ใกล้เคียง คิวที่ว่าง และคะแนนความน่าเชื่อถือของผู้ให้บริการ</p>
+        <h4 data-i18n="production-cycle-template_33">ทำไมสำคัญ</h4>
+        <p data-i18n="production-cycle-template_34">ลดเวลาค้นหา ลดการพึ่งพาคนกลางที่ไม่โปร่งใส และสร้างข้อมูลธุรกรรมที่ตรวจสอบได้ว่าใครทำงานอะไร เมื่อไร และในราคาเท่าไร</p>
+        <h4 data-i18n="production-cycle-template_35">เชื่อมต่อขั้นถัดไป</h4>
+        <p data-i18n="production-cycle-template_36">การใช้บริการแต่ละครั้งถูกบันทึกเป็นหลักฐานว่า "งานเสร็จจริงแล้ว" ซึ่งใช้ปลดล็อกงวดสินเชื่อถัดไป และเก็บไว้เป็นข้อมูลประกอบการหักบัญชีเมื่อขายผลผลิต</p>
       </article>
 
       <article id="tranche-credit" class="detail-block reveal in">
         <span class="detail-num">04</span>
         <div class="icn"><i class="fa-solid fa-sack-dollar"></i></div>
-        <h3>สินเชื่อเป็นงวดตรวจสอบได้จริง</h3>
+        <h3 data-i18n="production-cycle-template_37">สินเชื่อเป็นงวดตรวจสอบได้จริง</h3>
         <span class="en-name">Verifiable Tranche-Based Credit</span>
-        <h4>คืออะไร</h4>
-        <p>ผู้ให้สินเชื่อไม่ปล่อยเงินก้อนเดียวตั้งแต่ต้น แต่ปลดล็อกเป็นงวดตามระยะในปฏิทินการผลิต โดยเบิกใช้เป็นบริการหรือปัจจัยการผลิตผ่านตลาดบริการโดยตรง เช่น ค่าเช่ารถไถหรือค่าปุ๋ย มากกว่าจะโอนเป็นเงินสดเข้าบัญชี และปลดล็อกงวดถัดไปก็ต่อเมื่อมีหลักฐานว่างวดก่อนหน้าใช้จริงและถึงระยะที่กำหนดจริง</p>
-        <h4>ทำไมสำคัญ</h4>
-        <p>ลดความเสี่ยงที่เงินจะถูกใช้ผิดวัตถุประสงค์ ผู้ให้กู้เห็นความคืบหน้าจริงตลอดรอบการผลิต ส่วนเกษตรกรก็ได้ต้นทุนทางการเงินที่ต่ำลง เพราะความเสี่ยงของผู้ให้กู้ลดลงตามไปด้วย</p>
-        <h4>เชื่อมต่อขั้นถัดไป</h4>
-        <p>ทุกงวดที่เบิกใช้จะเชื่อมกับรายรับที่คาดว่าจะได้ตอนขายผลผลิต ซึ่งจะถูกหักคืนอัตโนมัติที่จุดขายในภายหลัง และหากเกิดเหตุการณ์เตือนภัย เงื่อนไขของงวดจะถูกทบทวนหรือปรับใหม่ตามความเหมาะสม</p>
+        <h4 data-i18n="production-cycle-template_38">คืออะไร</h4>
+        <p data-i18n="production-cycle-template_39">ผู้ให้สินเชื่อไม่ปล่อยเงินก้อนเดียวตั้งแต่ต้น แต่ปลดล็อกเป็นงวดตามระยะในปฏิทินการผลิต โดยเบิกใช้เป็นบริการหรือปัจจัยการผลิตผ่านตลาดบริการโดยตรง เช่น ค่าเช่ารถไถหรือค่าปุ๋ย มากกว่าจะโอนเป็นเงินสดเข้าบัญชี และปลดล็อกงวดถัดไปก็ต่อเมื่อมีหลักฐานว่างวดก่อนหน้าใช้จริงและถึงระยะที่กำหนดจริง</p>
+        <h4 data-i18n="production-cycle-template_40">ทำไมสำคัญ</h4>
+        <p data-i18n="production-cycle-template_41">ลดความเสี่ยงที่เงินจะถูกใช้ผิดวัตถุประสงค์ ผู้ให้กู้เห็นความคืบหน้าจริงตลอดรอบการผลิต ส่วนเกษตรกรก็ได้ต้นทุนทางการเงินที่ต่ำลง เพราะความเสี่ยงของผู้ให้กู้ลดลงตามไปด้วย</p>
+        <h4 data-i18n="production-cycle-template_42">เชื่อมต่อขั้นถัดไป</h4>
+        <p data-i18n="production-cycle-template_43">ทุกงวดที่เบิกใช้จะเชื่อมกับรายรับที่คาดว่าจะได้ตอนขายผลผลิต ซึ่งจะถูกหักคืนอัตโนมัติที่จุดขายในภายหลัง และหากเกิดเหตุการณ์เตือนภัย เงื่อนไขของงวดจะถูกทบทวนหรือปรับใหม่ตามความเหมาะสม</p>
       </article>
 
       <article id="early-warning" class="detail-block reveal in">
         <span class="detail-num">05</span>
         <div class="icn"><i class="fa-solid fa-tower-broadcast"></i></div>
-        <h3>ระบบเตือนภัยร่วม</h3>
+        <h3 data-i18n="production-cycle-template_44">ระบบเตือนภัยร่วม</h3>
         <span class="en-name">Shared Early-Warning System</span>
-        <h4>คืออะไร</h4>
-        <p>เชื่อมข้อมูลภาครัฐและแหล่งข้อมูลสาธารณะที่เกี่ยวข้องกับสินค้านั้น ๆ เช่น สภาพอากาศ โรคระบาด ราคาตลาด หรือปริมาณน้ำ เข้ากับบัญชีหน่วยผลิตที่อยู่ในพื้นที่หรือช่วงเวลาที่มีความเสี่ยง แล้วแจ้งเตือนทุกฝ่ายที่เกี่ยวข้องพร้อมกันในเวลาเดียวกัน ทั้งเกษตรกร ผู้ให้บริการ และผู้ให้สินเชื่อ</p>
-        <h4>ทำไมสำคัญ</h4>
-        <p>ทำให้ทุกฝ่ายเห็นสถานการณ์เดียวกันแบบเรียลไทม์ ลดข้อพิพาทที่มักเกิดจากการ "ไม่รู้ก่อน" และช่วยให้ตัดสินใจร่วมกันได้เร็วขึ้น เช่น เลื่อนกำหนดเก็บเกี่ยว หรือปรับแผนสินเชื่อล่วงหน้า</p>
-        <h4>เชื่อมต่อขั้นถัดไป</h4>
-        <p>เหตุการณ์เตือนภัยที่กระทบขั้นตอนใดขั้นตอนหนึ่งจะย้อนกลับไปปรับปฏิทินระยะและเงื่อนไขสินเชื่อโดยอัตโนมัติหรือกึ่งอัตโนมัติ เพื่อให้แผนยังสอดคล้องกับสถานการณ์จริง</p>
+        <h4 data-i18n="production-cycle-template_45">คืออะไร</h4>
+        <p data-i18n="production-cycle-template_46">เชื่อมข้อมูลภาครัฐและแหล่งข้อมูลสาธารณะที่เกี่ยวข้องกับสินค้านั้น ๆ เช่น สภาพอากาศ โรคระบาด ราคาตลาด หรือปริมาณน้ำ เข้ากับบัญชีหน่วยผลิตที่อยู่ในพื้นที่หรือช่วงเวลาที่มีความเสี่ยง แล้วแจ้งเตือนทุกฝ่ายที่เกี่ยวข้องพร้อมกันในเวลาเดียวกัน ทั้งเกษตรกร ผู้ให้บริการ และผู้ให้สินเชื่อ</p>
+        <h4 data-i18n="production-cycle-template_47">ทำไมสำคัญ</h4>
+        <p data-i18n="production-cycle-template_48">ทำให้ทุกฝ่ายเห็นสถานการณ์เดียวกันแบบเรียลไทม์ ลดข้อพิพาทที่มักเกิดจากการ "ไม่รู้ก่อน" และช่วยให้ตัดสินใจร่วมกันได้เร็วขึ้น เช่น เลื่อนกำหนดเก็บเกี่ยว หรือปรับแผนสินเชื่อล่วงหน้า</p>
+        <h4 data-i18n="production-cycle-template_49">เชื่อมต่อขั้นถัดไป</h4>
+        <p data-i18n="production-cycle-template_50">เหตุการณ์เตือนภัยที่กระทบขั้นตอนใดขั้นตอนหนึ่งจะย้อนกลับไปปรับปฏิทินระยะและเงื่อนไขสินเชื่อโดยอัตโนมัติหรือกึ่งอัตโนมัติ เพื่อให้แผนยังสอดคล้องกับสถานการณ์จริง</p>
       </article>
 
       <article id="auto-settlement" class="detail-block reveal in">
         <span class="detail-num">06</span>
         <div class="icn"><i class="fa-solid fa-scale-balanced"></i></div>
-        <h3>หักบัญชีอัตโนมัติ</h3>
+        <h3 data-i18n="production-cycle-template_51">หักบัญชีอัตโนมัติ</h3>
         <span class="en-name">Automatic Settlement</span>
-        <h4>คืออะไร</h4>
-        <p>เมื่อขายผลผลิตที่จุดขาย เช่น โรงสี ล้ง ตลาดกลาง หรือผู้รับซื้อ ระบบจะกระทบยอดหนี้คงค้างของบัญชีหน่วยผลิตนั้นโดยอัตโนมัติ หักคืนต้นทุนหรือสินเชื่อที่เบิกไปตามงวด แล้วโอนยอดสุทธิที่เหลือให้ผู้ผลิตทันที พร้อมประวัติการหักที่ตรวจสอบย้อนหลังได้ทุกรายการ (Audit Trail)</p>
-        <h4>ทำไมสำคัญ</h4>
-        <p>ปิดวงจรให้ครบโดยไม่ต้องให้เกษตรกรเดินไปจ่ายหนี้เองหลังขายแล้ว ลดปัญหาการเบี้ยวหนี้ และทำให้ผู้ให้สินเชื่อมั่นใจมากพอที่จะลดอัตราดอกเบี้ยลงได้ในระยะยาว</p>
-        <h4>เชื่อมต่อขั้นถัดไป</h4>
-        <p>ยอดและประวัติจากขั้นตอนนี้จะกลายเป็นส่วนหนึ่งของประวัติบัญชีหน่วยผลิต ซึ่งใช้ประกอบการพิจารณาสินเชื่อและวางแผนในรอบการผลิตถัดไป ปิดวงจรที่หมุนต่อไปได้เรื่อย ๆ</p>
+        <h4 data-i18n="production-cycle-template_52">คืออะไร</h4>
+        <p data-i18n="production-cycle-template_53">เมื่อขายผลผลิตที่จุดขาย เช่น โรงสี ล้ง ตลาดกลาง หรือผู้รับซื้อ ระบบจะกระทบยอดหนี้คงค้างของบัญชีหน่วยผลิตนั้นโดยอัตโนมัติ หักคืนต้นทุนหรือสินเชื่อที่เบิกไปตามงวด แล้วโอนยอดสุทธิที่เหลือให้ผู้ผลิตทันที พร้อมประวัติการหักที่ตรวจสอบย้อนหลังได้ทุกรายการ (Audit Trail)</p>
+        <h4 data-i18n="production-cycle-template_54">ทำไมสำคัญ</h4>
+        <p data-i18n="production-cycle-template_55">ปิดวงจรให้ครบโดยไม่ต้องให้เกษตรกรเดินไปจ่ายหนี้เองหลังขายแล้ว ลดปัญหาการเบี้ยวหนี้ และทำให้ผู้ให้สินเชื่อมั่นใจมากพอที่จะลดอัตราดอกเบี้ยลงได้ในระยะยาว</p>
+        <h4 data-i18n="production-cycle-template_56">เชื่อมต่อขั้นถัดไป</h4>
+        <p data-i18n="production-cycle-template_57">ยอดและประวัติจากขั้นตอนนี้จะกลายเป็นส่วนหนึ่งของประวัติบัญชีหน่วยผลิต ซึ่งใช้ประกอบการพิจารณาสินเชื่อและวางแผนในรอบการผลิตถัดไป ปิดวงจรที่หมุนต่อไปได้เรื่อย ๆ</p>
       </article>
 
     </div>
@@ -341,18 +345,18 @@
 
 <section class="prose-section">
   <div class="container prose-block reveal in">
-    <h2>ทำไมต้องเรียกว่า "สากล" (Universal)</h2>
-    <p>เพราะโครงสร้างข้อมูลและกระบวนการทั้งหกส่วน คือ บัญชี แผน บริการ สินเชื่อ เตือนภัย และหักบัญชี เหมือนกันในทุกสินค้าเกษตร สิ่งที่เปลี่ยนไปตามชนิดสินค้ามีเพียงพารามิเตอร์ เช่น ระยะเวลาของแต่ละขั้น ชนิดบริการที่ต้องใช้ในแต่ละระยะ และตัวชี้วัดเตือนภัยที่เกี่ยวข้อง เมื่อ AgroLink จะขยายไปยังสินค้าใหม่ เช่น ปาล์มน้ำมัน โคเนื้อ หรือผลไม้ส่งออก ทีมงานจึงเพิ่มเฉพาะชุดพารามิเตอร์ของสินค้านั้นเข้าไปในแม่แบบเดิม แทนที่จะต้องพัฒนาระบบขึ้นใหม่ทั้งหมด ทำให้ขยายสินค้าใหม่ได้เร็ว และยังใช้งานได้กับผู้ใช้กลุ่มเดิมทั้งเกษตรกร สหกรณ์ ผู้ให้บริการ และผู้ให้สินเชื่อ โดยไม่ต้องเรียนรู้ระบบใหม่</p>
+    <h2 data-i18n="production-cycle-template_58">ทำไมต้องเรียกว่า "สากล" (Universal)</h2>
+    <p data-i18n="production-cycle-template_59">เพราะโครงสร้างข้อมูลและกระบวนการทั้งหกส่วน คือ บัญชี แผน บริการ สินเชื่อ เตือนภัย และหักบัญชี เหมือนกันในทุกสินค้าเกษตร สิ่งที่เปลี่ยนไปตามชนิดสินค้ามีเพียงพารามิเตอร์ เช่น ระยะเวลาของแต่ละขั้น ชนิดบริการที่ต้องใช้ในแต่ละระยะ และตัวชี้วัดเตือนภัยที่เกี่ยวข้อง เมื่อ AgroLink จะขยายไปยังสินค้าใหม่ เช่น ปาล์มน้ำมัน โคเนื้อ หรือผลไม้ส่งออก ทีมงานจึงเพิ่มเฉพาะชุดพารามิเตอร์ของสินค้านั้นเข้าไปในแม่แบบเดิม แทนที่จะต้องพัฒนาระบบขึ้นใหม่ทั้งหมด ทำให้ขยายสินค้าใหม่ได้เร็ว และยังใช้งานได้กับผู้ใช้กลุ่มเดิมทั้งเกษตรกร สหกรณ์ ผู้ให้บริการ และผู้ให้สินเชื่อ โดยไม่ต้องเรียนรู้ระบบใหม่</p>
   </div>
 </section>
 
 <section class="prose-section alt">
   <div class="container section-head reveal">
-    <h2 class="section-title">พร้อมเริ่มรอบการผลิตแรกของคุณแล้วหรือยัง</h2>
-    <p class="section-sub">ดูว่าสินค้าใดใช้แม่แบบนี้แล้วบ้าง หรือเริ่มสมัครใช้งานเพื่อเปิดบัญชีหน่วยผลิตแรกของคุณ</p>
+    <h2 class="section-title" data-i18n="production-cycle-template_60">พร้อมเริ่มรอบการผลิตแรกของคุณแล้วหรือยัง</h2>
+    <p class="section-sub" data-i18n="production-cycle-template_61">ดูว่าสินค้าใดใช้แม่แบบนี้แล้วบ้าง หรือเริ่มสมัครใช้งานเพื่อเปิดบัญชีหน่วยผลิตแรกของคุณ</p>
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-      <a href="index.html#roadmap" class="btn btn-outline">ดูแผนสินค้าที่รองรับ</a>
-      <a href="index.html#contact" class="btn btn-primary">สมัครใช้งาน</a>
+      <a href="index.html#roadmap" class="btn btn-outline" data-i18n="production-cycle-template_62">ดูแผนสินค้าที่รองรับ</a>
+      <a href="index.html#contact" class="btn btn-primary" data-i18n="production-cycle-template_63">สมัครใช้งาน</a>
     </div>
   </div>
 </section>
@@ -362,55 +366,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-production-cycle-template.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

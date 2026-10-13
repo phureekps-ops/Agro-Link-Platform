@@ -70,6 +70,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -113,7 +115,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -225,26 +228,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="biomass-portal_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -254,15 +258,15 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-bolt"></i> พอร์ทัลผู้รับซื้อชีวมวล</div>
-    <h1 class="section-title">พอร์ทัลผู้รับซื้อชีวมวล (Bio Mass)</h1>
-    <p class="section-sub">
+    <div class="eyebrow"><i class="fa-solid fa-bolt"></i><span data-i18n="biomass-portal_1"> พอร์ทัลผู้รับซื้อชีวมวล</span></div>
+    <h1 class="section-title" data-i18n="biomass-portal_2">พอร์ทัลผู้รับซื้อชีวมวล (Bio Mass)</h1>
+    <p class="section-sub" data-i18n="biomass-portal_3">
       เชื่อมโรงไฟฟ้าชีวมวล โรงงานปูนซีเมนต์ และผู้ใช้เชื้อเพลิงชีวมวลรายใหญ่ เข้ากับแหล่งวัตถุดิบเหลือใช้ทางการเกษตร
       (ฟางข้าวและเศษวัสดุเกษตรอื่นๆ) จากเครือข่ายเกษตรกรและสหกรณ์ของ AgroLink พร้อมข้อมูลตรวจสอบย้อนกลับได้
     </p>
     <div class="hero-cta">
-      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-handshake"></i> ติดต่อทีมงานเพื่อเป็นพันธมิตร</a>
-      <a href="integrated-rice-business.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-wheat-awn"></i> ดูโครงการธุรกิจข้าวครบวงจร</a>
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-handshake"></i><span data-i18n="biomass-portal_4"> ติดต่อทีมงานเพื่อเป็นพันธมิตร</span></a>
+      <a href="integrated-rice-business.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-wheat-awn"></i><span data-i18n="biomass-portal_5"> ดูโครงการธุรกิจข้าวครบวงจร</span></a>
     </div>
   </div>
 </section>
@@ -271,28 +275,28 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-chart-line"></i> ทำไมต้องชีวมวล</div>
-      <h2 class="section-title">ตลาดชีวมวลไทยกำลังเติบโต</h2>
-      <p class="section-sub">
+      <div class="eyebrow"><i class="fa-solid fa-chart-line"></i><span data-i18n="biomass-portal_6"> ทำไมต้องชีวมวล</span></div>
+      <h2 class="section-title" data-i18n="biomass-portal_7">ตลาดชีวมวลไทยกำลังเติบโต</h2>
+      <p class="section-sub" data-i18n="biomass-portal_8">
         เชื้อเพลิงชีวมวลจากเศษวัสดุเหลือใช้ทางการเกษตรเป็นแหล่งพลังงานหมุนเวียนที่มีปริมาณซื้อขายหนาแน่นที่สุดกลุ่มหนึ่ง
         ในตลาดคาร์บอนเครดิตภาคสมัครใจของไทย และยังเป็นทางเลือกทดแทนถ่านหินในภาคอุตสาหกรรม
       </p>
     </div>
     <div class="stat-grid reveal">
       <div class="stat-card">
-        <div class="num">1.3 แสนตัน</div>
-        <div class="lbl">ปริมาณซื้อขายเครดิตจากพลังงานชีวมวลในตลาดคาร์บอนภาคสมัครใจไทยต่อปี</div>
+        <div class="num" data-i18n="biomass-portal_9">1.3 แสนตัน</div>
+        <div class="lbl" data-i18n="biomass-portal_10">ปริมาณซื้อขายเครดิตจากพลังงานชีวมวลในตลาดคาร์บอนภาคสมัครใจไทยต่อปี</div>
       </div>
       <div class="stat-card">
-        <div class="num">35–500 บาท</div>
-        <div class="lbl">ช่วงราคาเครดิตต่อตันคาร์บอนไดออกไซด์เทียบเท่า (tCO₂eq) ของกลุ่มพลังงานหมุนเวียน</div>
+        <div class="num" data-i18n="biomass-portal_11">35–500 บาท</div>
+        <div class="lbl" data-i18n="biomass-portal_12">ช่วงราคาเครดิตต่อตันคาร์บอนไดออกไซด์เทียบเท่า (tCO₂eq) ของกลุ่มพลังงานหมุนเวียน</div>
       </div>
       <div class="stat-card">
-        <div class="num">ลด PM2.5</div>
-        <div class="lbl">เก็บฟางข้าวขายแทนการเผา ช่วยลดมลพิษและก๊าซเรือนกระจกจากภาคเกษตร</div>
+        <div class="num" data-i18n="biomass-portal_13">ลด PM2.5</div>
+        <div class="lbl" data-i18n="biomass-portal_14">เก็บฟางข้าวขายแทนการเผา ช่วยลดมลพิษและก๊าซเรือนกระจกจากภาคเกษตร</div>
       </div>
     </div>
-    <p style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:14px;">
+    <p style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:14px;" data-i18n="biomass-portal_15">
       ข้อมูลอ้างอิงจากบทวิเคราะห์ตลาดคาร์บอนเครดิตไทยของ AgroLink — ดูรายละเอียดเพิ่มเติมที่หน้าคาร์บอนเครดิต
     </p>
   </div>
@@ -302,40 +306,40 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-award"></i> ประโยชน์สำหรับผู้รับซื้อ</div>
-      <h2 class="section-title">ทำไมควรจัดหาชีวมวลผ่าน AgroLink</h2>
-      <p class="section-sub">ลดความเสี่ยงด้านอุปทานและเพิ่มความน่าเชื่อถือของข้อมูลแหล่งที่มา สำหรับทุกการจัดซื้อ</p>
+      <div class="eyebrow"><i class="fa-solid fa-award"></i><span data-i18n="biomass-portal_16"> ประโยชน์สำหรับผู้รับซื้อ</span></div>
+      <h2 class="section-title" data-i18n="biomass-portal_17">ทำไมควรจัดหาชีวมวลผ่าน AgroLink</h2>
+      <p class="section-sub" data-i18n="biomass-portal_18">ลดความเสี่ยงด้านอุปทานและเพิ่มความน่าเชื่อถือของข้อมูลแหล่งที่มา สำหรับทุกการจัดซื้อ</p>
     </div>
     <div class="benefit-grid">
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-        <h4>ข้อมูลตรวจสอบย้อนกลับได้</h4>
-        <p>ทราบแหล่งที่มาของเชื้อเพลิงชีวมวลตั้งแต่ระดับแปลง ผ่านข้อมูลการผลิตจริงที่บันทึกในระบบของเกษตรกร/สหกรณ์ในเครือข่าย</p>
+        <h4 data-i18n="biomass-portal_19">ข้อมูลตรวจสอบย้อนกลับได้</h4>
+        <p data-i18n="biomass-portal_20">ทราบแหล่งที่มาของเชื้อเพลิงชีวมวลตั้งแต่ระดับแปลง ผ่านข้อมูลการผลิตจริงที่บันทึกในระบบของเกษตรกร/สหกรณ์ในเครือข่าย</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-people-group"></i></div>
-        <h4>เข้าถึงเครือข่ายเกษตรกรรายใหญ่</h4>
-        <p>เชื่อมต่อกับเกษตรกรและสหกรณ์ในเครือข่าย AgroLink ที่เก็บฟางข้าวและเศษวัสดุเหลือใช้แทนการเผา เป็นแหล่งวัตถุดิบต่อเนื่อง</p>
+        <h4 data-i18n="biomass-portal_21">เข้าถึงเครือข่ายเกษตรกรรายใหญ่</h4>
+        <p data-i18n="biomass-portal_22">เชื่อมต่อกับเกษตรกรและสหกรณ์ในเครือข่าย AgroLink ที่เก็บฟางข้าวและเศษวัสดุเหลือใช้แทนการเผา เป็นแหล่งวัตถุดิบต่อเนื่อง</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-leaf"></i></div>
-        <h4>สนับสนุนเป้าหมาย ESG/Net Zero</h4>
-        <p>การใช้เชื้อเพลิงชีวมวลทดแทนถ่านหินช่วยลดการปล่อยก๊าซเรือนกระจก สอดคล้องกับเป้าหมายด้านความยั่งยืนขององค์กร</p>
+        <h4 data-i18n="biomass-portal_23">สนับสนุนเป้าหมาย ESG/Net Zero</h4>
+        <p data-i18n="biomass-portal_24">การใช้เชื้อเพลิงชีวมวลทดแทนถ่านหินช่วยลดการปล่อยก๊าซเรือนกระจก สอดคล้องกับเป้าหมายด้านความยั่งยืนขององค์กร</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-        <h4>ช่องทางจัดซื้อที่ชัดเจน</h4>
-        <p>ติดต่อจัดซื้อผ่านทีมงาน AgroLink โดยตรง พร้อมข้อมูลปริมาณและพื้นที่แหล่งผลิตประกอบการวางแผนจัดหา</p>
+        <h4 data-i18n="biomass-portal_25">ช่องทางจัดซื้อที่ชัดเจน</h4>
+        <p data-i18n="biomass-portal_26">ติดต่อจัดซื้อผ่านทีมงาน AgroLink โดยตรง พร้อมข้อมูลปริมาณและพื้นที่แหล่งผลิตประกอบการวางแผนจัดหา</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-scale-balanced"></i></div>
-        <h4>ลดความเสี่ยงด้านอุปทาน</h4>
-        <p>กระจายแหล่งวัตถุดิบจากเครือข่ายเกษตรกรหลายพื้นที่ ลดการพึ่งพาผู้จัดหารายเดียว</p>
+        <h4 data-i18n="biomass-portal_27">ลดความเสี่ยงด้านอุปทาน</h4>
+        <p data-i18n="biomass-portal_28">กระจายแหล่งวัตถุดิบจากเครือข่ายเกษตรกรหลายพื้นที่ ลดการพึ่งพาผู้จัดหารายเดียว</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-handshake"></i></div>
-        <h4>สร้างรายได้เสริมให้เกษตรกร</h4>
-        <p>เกษตรกรมีรายได้เพิ่มจากการขายฟางข้าวแทนการเผาทิ้ง เป็นความร่วมมือที่เกิดประโยชน์กับทุกฝ่าย</p>
+        <h4 data-i18n="biomass-portal_29">สร้างรายได้เสริมให้เกษตรกร</h4>
+        <p data-i18n="biomass-portal_30">เกษตรกรมีรายได้เพิ่มจากการขายฟางข้าวแทนการเผาทิ้ง เป็นความร่วมมือที่เกิดประโยชน์กับทุกฝ่าย</p>
       </div>
     </div>
   </div>
@@ -345,25 +349,25 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-industry"></i> กลุ่มผู้รับซื้อ</div>
-      <h2 class="section-title">เหมาะสำหรับผู้ใช้เชื้อเพลิงชีวมวลรายใหญ่</h2>
-      <p class="section-sub">AgroLink เปิดรับพันธมิตรผู้รับซื้อชีวมวลจากภาคอุตสาหกรรมที่ต้องการแหล่งวัตถุดิบต่อเนื่องและตรวจสอบย้อนกลับได้</p>
+      <div class="eyebrow"><i class="fa-solid fa-industry"></i><span data-i18n="biomass-portal_31"> กลุ่มผู้รับซื้อ</span></div>
+      <h2 class="section-title" data-i18n="biomass-portal_32">เหมาะสำหรับผู้ใช้เชื้อเพลิงชีวมวลรายใหญ่</h2>
+      <p class="section-sub" data-i18n="biomass-portal_33">AgroLink เปิดรับพันธมิตรผู้รับซื้อชีวมวลจากภาคอุตสาหกรรมที่ต้องการแหล่งวัตถุดิบต่อเนื่องและตรวจสอบย้อนกลับได้</p>
     </div>
     <div class="buyer-grid">
       <div class="buyer-card reveal">
         <div class="icn"><i class="fa-solid fa-bolt"></i></div>
-        <h4>โรงไฟฟ้าชีวมวล</h4>
-        <p>ผู้ผลิตไฟฟ้าจากเชื้อเพลิงชีวมวลที่ต้องการวัตถุดิบคุณภาพสม่ำเสมอตลอดทั้งปี</p>
+        <h4 data-i18n="biomass-portal_34">โรงไฟฟ้าชีวมวล</h4>
+        <p data-i18n="biomass-portal_35">ผู้ผลิตไฟฟ้าจากเชื้อเพลิงชีวมวลที่ต้องการวัตถุดิบคุณภาพสม่ำเสมอตลอดทั้งปี</p>
       </div>
       <div class="buyer-card reveal">
         <div class="icn"><i class="fa-solid fa-industry"></i></div>
-        <h4>โรงงานปูนซีเมนต์</h4>
-        <p>ใช้เชื้อเพลิงชีวมวลทดแทนถ่านหินบางส่วนในกระบวนการผลิต เพื่อลดต้นทุนและการปล่อยคาร์บอน</p>
+        <h4 data-i18n="biomass-portal_36">โรงงานปูนซีเมนต์</h4>
+        <p data-i18n="biomass-portal_37">ใช้เชื้อเพลิงชีวมวลทดแทนถ่านหินบางส่วนในกระบวนการผลิต เพื่อลดต้นทุนและการปล่อยคาร์บอน</p>
       </div>
       <div class="buyer-card reveal">
         <div class="icn"><i class="fa-solid fa-warehouse"></i></div>
-        <h4>โรงงานอุตสาหกรรมขนาดใหญ่</h4>
-        <p>ผู้ประกอบการที่ต้องการแหล่งพลังงานทดแทนสำหรับกระบวนการผลิตในโรงงาน</p>
+        <h4 data-i18n="biomass-portal_38">โรงงานอุตสาหกรรมขนาดใหญ่</h4>
+        <p data-i18n="biomass-portal_39">ผู้ประกอบการที่ต้องการแหล่งพลังงานทดแทนสำหรับกระบวนการผลิตในโรงงาน</p>
       </div>
     </div>
   </div>
@@ -373,44 +377,44 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-route"></i> วิธีการทำงาน</div>
-      <h2 class="section-title">จากแปลงนาสู่โรงไฟฟ้า</h2>
-      <p class="section-sub">ภาพรวมการเชื่อมโยงห่วงโซ่อุปทานชีวมวลบนแพลตฟอร์ม AgroLink</p>
+      <div class="eyebrow"><i class="fa-solid fa-route"></i><span data-i18n="biomass-portal_40"> วิธีการทำงาน</span></div>
+      <h2 class="section-title" data-i18n="biomass-portal_41">จากแปลงนาสู่โรงไฟฟ้า</h2>
+      <p class="section-sub" data-i18n="biomass-portal_42">ภาพรวมการเชื่อมโยงห่วงโซ่อุปทานชีวมวลบนแพลตฟอร์ม AgroLink</p>
     </div>
     <div class="flow-wrap">
       <div class="flow-row reveal">
         <div class="flow-num">1</div>
         <div class="flow-body">
-          <h4>เกษตรกรเก็บฟางข้าวแทนการเผา</h4>
-          <p>หลังเก็บเกี่ยว เกษตรกรในเครือข่าย AgroLink เก็บรวบรวมฟางข้าวและเศษวัสดุเหลือใช้ทางการเกษตร แทนการเผาทำลาย</p>
+          <h4 data-i18n="biomass-portal_43">เกษตรกรเก็บฟางข้าวแทนการเผา</h4>
+          <p data-i18n="biomass-portal_44">หลังเก็บเกี่ยว เกษตรกรในเครือข่าย AgroLink เก็บรวบรวมฟางข้าวและเศษวัสดุเหลือใช้ทางการเกษตร แทนการเผาทำลาย</p>
         </div>
       </div>
       <div class="flow-row reveal">
         <div class="flow-num">2</div>
         <div class="flow-body">
-          <h4>สหกรณ์/กลุ่มเกษตรกรรวบรวมวัตถุดิบ</h4>
-          <p>สหกรณ์ในเครือข่ายทำหน้าที่รวบรวมปริมาณจากเกษตรกรหลายราย พร้อมข้อมูลแหล่งที่มาที่บันทึกในระบบ</p>
+          <h4 data-i18n="biomass-portal_45">สหกรณ์/กลุ่มเกษตรกรรวบรวมวัตถุดิบ</h4>
+          <p data-i18n="biomass-portal_46">สหกรณ์ในเครือข่ายทำหน้าที่รวบรวมปริมาณจากเกษตรกรหลายราย พร้อมข้อมูลแหล่งที่มาที่บันทึกในระบบ</p>
         </div>
       </div>
       <div class="flow-row reveal">
         <div class="flow-num">3</div>
         <div class="flow-body">
-          <h4>AgroLink จัดทำข้อมูลตรวจสอบย้อนกลับ</h4>
-          <p>ข้อมูลพื้นที่ ปริมาณ และแหล่งผลิต ถูกบันทึกในระบบเพื่อประกอบการตัดสินใจจัดซื้อของผู้รับซื้อ</p>
+          <h4 data-i18n="biomass-portal_47">AgroLink จัดทำข้อมูลตรวจสอบย้อนกลับ</h4>
+          <p data-i18n="biomass-portal_48">ข้อมูลพื้นที่ ปริมาณ และแหล่งผลิต ถูกบันทึกในระบบเพื่อประกอบการตัดสินใจจัดซื้อของผู้รับซื้อ</p>
         </div>
       </div>
       <div class="flow-row reveal">
         <div class="flow-num">4</div>
         <div class="flow-body">
-          <h4>ผู้รับซื้อติดต่อจัดซื้อผ่านทีมงาน AgroLink</h4>
-          <p>โรงไฟฟ้าชีวมวล โรงงานปูนซีเมนต์ หรือโรงงานอุตสาหกรรม ติดต่อทีมงาน AgroLink เพื่อวางแผนปริมาณและเงื่อนไขการจัดซื้อ</p>
+          <h4 data-i18n="biomass-portal_49">ผู้รับซื้อติดต่อจัดซื้อผ่านทีมงาน AgroLink</h4>
+          <p data-i18n="biomass-portal_50">โรงไฟฟ้าชีวมวล โรงงานปูนซีเมนต์ หรือโรงงานอุตสาหกรรม ติดต่อทีมงาน AgroLink เพื่อวางแผนปริมาณและเงื่อนไขการจัดซื้อ</p>
         </div>
       </div>
     </div>
 
     <div class="note-block reveal">
       <i class="fa-solid fa-circle-info"></i>
-      <div>
+      <div data-i18n="biomass-portal_51">
         ข้อมูลปริมาณและราคาข้างต้นเป็นข้อมูลอ้างอิงจากภาพรวมตลาดคาร์บอนเครดิตไทยเพื่อการนำเสนอแนวคิดเท่านั้น
         การจัดซื้อจริงขึ้นอยู่กับปริมาณผลผลิตตามฤดูกาลและการเจรจาเงื่อนไขระหว่างคู่สัญญาแต่ละราย
         AgroLink ทำหน้าที่เป็นผู้เชื่อมโยงข้อมูลและเครือข่าย ไม่ใช่คู่สัญญาซื้อขายโดยตรง
@@ -421,11 +425,11 @@
 
 <section class="cta-final reveal">
   <div class="container">
-    <h2>สนใจจัดหาเชื้อเพลิงชีวมวลผ่าน AgroLink?</h2>
-    <p>ติดต่อทีมงาน AgroLink เพื่อพูดคุยรายละเอียดปริมาณ พื้นที่แหล่งผลิต และแนวทางความร่วมมือที่เหมาะกับโรงงานหรือโรงไฟฟ้าของท่าน</p>
+    <h2 data-i18n="biomass-portal_52">สนใจจัดหาเชื้อเพลิงชีวมวลผ่าน AgroLink?</h2>
+    <p data-i18n="biomass-portal_53">ติดต่อทีมงาน AgroLink เพื่อพูดคุยรายละเอียดปริมาณ พื้นที่แหล่งผลิต และแนวทางความร่วมมือที่เหมาะกับโรงงานหรือโรงไฟฟ้าของท่าน</p>
     <div class="cta-btns">
-      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-comments"></i> ติดต่อทีมงาน</a>
-      <a href="marketplace-partners.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-store"></i> ดูตลาดกลางทั้งหมด</a>
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-comments"></i><span data-i18n="biomass-portal_54"> ติดต่อทีมงาน</span></a>
+      <a href="marketplace-partners.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-store"></i><span data-i18n="biomass-portal_55"> ดูตลาดกลางทั้งหมด</span></a>
     </div>
   </div>
 </section>
@@ -435,55 +439,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-biomass-portal.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

@@ -70,6 +70,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -113,7 +115,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -237,26 +240,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="for-farmers_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -266,15 +270,15 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-seedling"></i> สำหรับเกษตรกร</div>
-    <h1 class="section-title">AgroLink เพื่อเกษตรกรไทย</h1>
-    <p class="section-sub">
+    <div class="eyebrow"><i class="fa-solid fa-seedling"></i><span data-i18n="for-farmers_1"> สำหรับเกษตรกร</span></div>
+    <h1 class="section-title" data-i18n="for-farmers_2">AgroLink เพื่อเกษตรกรไทย</h1>
+    <p class="section-sub" data-i18n="for-farmers_3">
       ครบทั้งข้อมูลแปลง การเงิน ตลาดขาย และรายได้เสริมจากคาร์บอนเครดิต ในที่เดียว —
       ใช้งานฟรี สมัครง่าย เริ่มต้นได้ในไม่กี่นาที
     </p>
     <div class="hero-cta">
-      <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i> สมัครสมาชิกเกษตรกร</a>
-      <a href="farmer-login.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ (มีบัญชีแล้ว)</a>
+      <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i><span data-i18n="for-farmers_4"> สมัครสมาชิกเกษตรกร</span></a>
+      <a href="farmer-login.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="for-farmers_5"> เข้าสู่ระบบ (มีบัญชีแล้ว)</span></a>
     </div>
   </div>
 </section>
@@ -283,40 +287,40 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-award"></i> ประโยชน์ที่เกษตรกรจะได้รับ</div>
-      <h2 class="section-title">ทำไมเกษตรกรควรใช้ AgroLink</h2>
-      <p class="section-sub">แพลตฟอร์มเดียวที่รวมข้อมูลแปลง การเงิน ตลาด และรายได้เสริม ไว้ให้เกษตรกรจัดการได้ด้วยตัวเอง</p>
+      <div class="eyebrow"><i class="fa-solid fa-award"></i><span data-i18n="for-farmers_6"> ประโยชน์ที่เกษตรกรจะได้รับ</span></div>
+      <h2 class="section-title" data-i18n="for-farmers_7">ทำไมเกษตรกรควรใช้ AgroLink</h2>
+      <p class="section-sub" data-i18n="for-farmers_8">แพลตฟอร์มเดียวที่รวมข้อมูลแปลง การเงิน ตลาด และรายได้เสริม ไว้ให้เกษตรกรจัดการได้ด้วยตัวเอง</p>
     </div>
     <div class="benefit-grid">
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-map-location-dot"></i></div>
-        <h4>บันทึกข้อมูลแปลงของตัวเอง</h4>
-        <p>ลงทะเบียนแปลง/หน่วยผลิตพร้อมปักขอบเขต GPS บนแผนที่ดาวเทียม ระบบคำนวณพื้นที่โดยประมาณให้อัตโนมัติ เก็บเป็นข้อมูลอ้างอิงของท่านเอง</p>
+        <h4 data-i18n="for-farmers_9">บันทึกข้อมูลแปลงของตัวเอง</h4>
+        <p data-i18n="for-farmers_10">ลงทะเบียนแปลง/หน่วยผลิตพร้อมปักขอบเขต GPS บนแผนที่ดาวเทียม ระบบคำนวณพื้นที่โดยประมาณให้อัตโนมัติ เก็บเป็นข้อมูลอ้างอิงของท่านเอง</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-sack-dollar"></i></div>
-        <h4>เข้าถึงแหล่งสินเชื่อได้ง่ายขึ้น</h4>
-        <p>ยื่นคำขอสินเชื่อถึงผู้ให้บริการทางการเงินที่เข้าร่วมได้โดยตรงจากหน้าพอร์ทัลของท่าน พร้อมคะแนนความน่าเชื่อถือที่สะสมจากประวัติการใช้งาน</p>
+        <h4 data-i18n="for-farmers_11">เข้าถึงแหล่งสินเชื่อได้ง่ายขึ้น</h4>
+        <p data-i18n="for-farmers_12">ยื่นคำขอสินเชื่อถึงผู้ให้บริการทางการเงินที่เข้าร่วมได้โดยตรงจากหน้าพอร์ทัลของท่าน พร้อมคะแนนความน่าเชื่อถือที่สะสมจากประวัติการใช้งาน</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-store"></i></div>
-        <h4>ช่องทางขายผลผลิตที่หลากหลาย</h4>
-        <p>เข้าถึงตลาดขอใบเสนอราคา (RFQ) ประกาศรับซื้อด่วน และการประมูลราคา เพื่อเปรียบเทียบและเลือกช่องทางขายที่ได้ราคาดีที่สุด</p>
+        <h4 data-i18n="for-farmers_13">ช่องทางขายผลผลิตที่หลากหลาย</h4>
+        <p data-i18n="for-farmers_14">เข้าถึงตลาดขอใบเสนอราคา (RFQ) ประกาศรับซื้อด่วน และการประมูลราคา เพื่อเปรียบเทียบและเลือกช่องทางขายที่ได้ราคาดีที่สุด</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-leaf"></i></div>
-        <h4>รายได้เสริมจากคาร์บอนเครดิต</h4>
-        <p>ยืนยันการทำนาแบบเปียกสลับแห้ง (AWD) เพื่อลดการปล่อยก๊าซเรือนกระจก และสร้างรายได้เสริมจากคาร์บอนเครดิตในอนาคต</p>
+        <h4 data-i18n="for-farmers_15">รายได้เสริมจากคาร์บอนเครดิต</h4>
+        <p data-i18n="for-farmers_16">ยืนยันการทำนาแบบเปียกสลับแห้ง (AWD) เพื่อลดการปล่อยก๊าซเรือนกระจก และสร้างรายได้เสริมจากคาร์บอนเครดิตในอนาคต</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-flask"></i></div>
-        <h4>ประหยัดต้นทุนปัจจัยการผลิต</h4>
-        <p>คำนวณสูตรปุ๋ยให้เหมาะกับพืชและดินของท่าน รวมกลุ่มสั่งซื้อปุ๋ยกับเกษตรกรรายอื่นเพื่อต่อรองราคาส่ง และใช้บริการผสมปุ๋ยสั่งตัด</p>
+        <h4 data-i18n="for-farmers_17">ประหยัดต้นทุนปัจจัยการผลิต</h4>
+        <p data-i18n="for-farmers_18">คำนวณสูตรปุ๋ยให้เหมาะกับพืชและดินของท่าน รวมกลุ่มสั่งซื้อปุ๋ยกับเกษตรกรรายอื่นเพื่อต่อรองราคาส่ง และใช้บริการผสมปุ๋ยสั่งตัด</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-bell"></i></div>
-        <h4>ข้อมูลและการแจ้งเตือนครบในที่เดียว</h4>
-        <p>ติดตามสัญญา สมาชิกภาพในหน่วยงานต่างๆ และการแจ้งเตือนสำคัญ ได้จากหน้าภาพรวมบัญชีเดียว ไม่ต้องสลับหลายระบบ</p>
+        <h4 data-i18n="for-farmers_19">ข้อมูลและการแจ้งเตือนครบในที่เดียว</h4>
+        <p data-i18n="for-farmers_20">ติดตามสัญญา สมาชิกภาพในหน่วยงานต่างๆ และการแจ้งเตือนสำคัญ ได้จากหน้าภาพรวมบัญชีเดียว ไม่ต้องสลับหลายระบบ</p>
       </div>
     </div>
   </div>
@@ -326,28 +330,28 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-layer-group"></i> บริการต่างๆ ที่มี</div>
-      <h2 class="section-title">บริการทั้งหมดในพอร์ทัลเกษตรกร</h2>
-      <p class="section-sub">หลังสมัครสมาชิก เกษตรกรจะเข้าถึงบริการเหล่านี้ได้ทันทีจากหน้าหลักเกษตรกร</p>
+      <div class="eyebrow"><i class="fa-solid fa-layer-group"></i><span data-i18n="for-farmers_21"> บริการต่างๆ ที่มี</span></div>
+      <h2 class="section-title" data-i18n="for-farmers_22">บริการทั้งหมดในพอร์ทัลเกษตรกร</h2>
+      <p class="section-sub" data-i18n="for-farmers_23">หลังสมัครสมาชิก เกษตรกรจะเข้าถึงบริการเหล่านี้ได้ทันทีจากหน้าหลักเกษตรกร</p>
     </div>
 
     <div class="service-cat reveal">
       <div class="service-cat-head">
         <div class="icn"><i class="fa-solid fa-map"></i></div>
-        <h3>ข้อมูลแปลงและบัญชี</h3>
+        <h3 data-i18n="for-farmers_24">ข้อมูลแปลงและบัญชี</h3>
       </div>
       <div class="service-grid">
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-draw-polygon"></i></div>
-          <div><h5>ลงทะเบียนแปลง/หน่วยผลิต</h5><p>ปักขอบเขต GPS บนแผนที่ดาวเทียม ระบุประเภทหน่วยผลิต พืช/สัตว์หลัก และฤดูกาลปลูก</p></div>
+          <div><h5 data-i18n="for-farmers_25">ลงทะเบียนแปลง/หน่วยผลิต</h5><p data-i18n="for-farmers_26">ปักขอบเขต GPS บนแผนที่ดาวเทียม ระบุประเภทหน่วยผลิต พืช/สัตว์หลัก และฤดูกาลปลูก</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-id-card"></i></div>
-          <div><h5>สมาชิกภาพของฉัน</h5><p>ดูหน่วยงาน (สหกรณ์/ผู้ปล่อยกู้/กองทุนหมู่บ้าน) ที่ท่านเป็นสมาชิกอยู่ในที่เดียว</p></div>
+          <div><h5 data-i18n="for-farmers_27">สมาชิกภาพของฉัน</h5><p data-i18n="for-farmers_28">ดูหน่วยงาน (สหกรณ์/ผู้ปล่อยกู้/กองทุนหมู่บ้าน) ที่ท่านเป็นสมาชิกอยู่ในที่เดียว</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-chart-line"></i></div>
-          <div><h5>คะแนนความน่าเชื่อถือ</h5><p>ติดตามคะแนนความน่าเชื่อถือทางสินเชื่อและประวัติย้อนหลัง</p></div>
+          <div><h5 data-i18n="for-farmers_29">คะแนนความน่าเชื่อถือ</h5><p data-i18n="for-farmers_30">ติดตามคะแนนความน่าเชื่อถือทางสินเชื่อและประวัติย้อนหลัง</p></div>
         </div>
       </div>
     </div>
@@ -355,20 +359,20 @@
     <div class="service-cat reveal">
       <div class="service-cat-head">
         <div class="icn"><i class="fa-solid fa-sack-dollar"></i></div>
-        <h3>การเงินและสัญญา</h3>
+        <h3 data-i18n="for-farmers_31">การเงินและสัญญา</h3>
       </div>
       <div class="service-grid">
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-          <div><h5>ยื่นคำขอสินเชื่อ</h5><p>เลือกผู้ให้สินเชื่อ ระบุวงเงินและวัตถุประสงค์ ยื่นคำขอผูกกับหน่วยผลิตของท่านได้โดยตรง</p></div>
+          <div><h5 data-i18n="for-farmers_32">ยื่นคำขอสินเชื่อ</h5><p data-i18n="for-farmers_33">เลือกผู้ให้สินเชื่อ ระบุวงเงินและวัตถุประสงค์ ยื่นคำขอผูกกับหน่วยผลิตของท่านได้โดยตรง</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-file-contract"></i></div>
-          <div><h5>ติดตามสัญญา</h5><p>ดูสถานะสัญญาที่ทำกับสหกรณ์ ผู้ให้สินเชื่อ หรือผู้รับซื้อ</p></div>
+          <div><h5 data-i18n="for-farmers_34">ติดตามสัญญา</h5><p data-i18n="for-farmers_35">ดูสถานะสัญญาที่ทำกับสหกรณ์ ผู้ให้สินเชื่อ หรือผู้รับซื้อ</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-bell"></i></div>
-          <div><h5>แจ้งเตือนที่ยังไม่อ่าน</h5><p>ไม่พลาดข่าวสารสำคัญจากหน่วยงานที่เกี่ยวข้องกับบัญชีของท่าน</p></div>
+          <div><h5 data-i18n="for-farmers_36">แจ้งเตือนที่ยังไม่อ่าน</h5><p data-i18n="for-farmers_37">ไม่พลาดข่าวสารสำคัญจากหน่วยงานที่เกี่ยวข้องกับบัญชีของท่าน</p></div>
         </div>
       </div>
     </div>
@@ -376,24 +380,24 @@
     <div class="service-cat reveal">
       <div class="service-cat-head">
         <div class="icn"><i class="fa-solid fa-store"></i></div>
-        <h3>ตลาดและช่องทางขาย</h3>
+        <h3 data-i18n="for-farmers_38">ตลาดและช่องทางขาย</h3>
       </div>
       <div class="service-grid">
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-          <div><h5>ตลาดขอใบเสนอราคา (RFQ)</h5><p>ให้ผู้ซื้อยื่นข้อเสนอราคารับซื้อผลผลิตของท่านโดยตรง</p></div>
+          <div><h5 data-i18n="for-farmers_39">ตลาดขอใบเสนอราคา (RFQ)</h5><p data-i18n="for-farmers_40">ให้ผู้ซื้อยื่นข้อเสนอราคารับซื้อผลผลิตของท่านโดยตรง</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-bolt"></i></div>
-          <div><h5>ประกาศรับซื้อด่วน</h5><p>ติดตามประกาศรับซื้อผลผลิตแบบเร่งด่วนจากผู้รับซื้อที่เข้าร่วม</p></div>
+          <div><h5 data-i18n="for-farmers_41">ประกาศรับซื้อด่วน</h5><p data-i18n="for-farmers_42">ติดตามประกาศรับซื้อผลผลิตแบบเร่งด่วนจากผู้รับซื้อที่เข้าร่วม</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-gavel"></i></div>
-          <div><h5>Auction Place (ประมูลราคา)</h5><p>เสนอขายผลผลิต เช่น กุ้ง ผ่านระบบประมูลเพื่อให้ได้ราคาสูงสุด</p></div>
+          <div><h5 data-i18n="for-farmers_43">Auction Place (ประมูลราคา)</h5><p data-i18n="for-farmers_44">เสนอขายผลผลิต เช่น กุ้ง ผ่านระบบประมูลเพื่อให้ได้ราคาสูงสุด</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-scale-balanced"></i></div>
-          <div><h5>เปรียบเทียบราคารับซื้อข้าว</h5><p>ดูราคารับซื้อข้าวจากหลายแหล่งเพื่อประกอบการตัดสินใจขาย</p></div>
+          <div><h5 data-i18n="for-farmers_45">เปรียบเทียบราคารับซื้อข้าว</h5><p data-i18n="for-farmers_46">ดูราคารับซื้อข้าวจากหลายแหล่งเพื่อประกอบการตัดสินใจขาย</p></div>
         </div>
       </div>
     </div>
@@ -401,32 +405,32 @@
     <div class="service-cat reveal">
       <div class="service-cat-head">
         <div class="icn"><i class="fa-solid fa-flask"></i></div>
-        <h3>ปัจจัยการผลิตและคาร์บอน</h3>
+        <h3 data-i18n="for-farmers_47">ปัจจัยการผลิตและคาร์บอน</h3>
       </div>
       <div class="service-grid">
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-cart-shopping"></i></div>
-          <div><h5>ตลาดปัจจัยการผลิต</h5><p>เลือกซื้อปัจจัยการผลิตที่จำเป็นสำหรับรอบผลิตของท่าน</p></div>
+          <div><h5 data-i18n="for-farmers_48">ตลาดปัจจัยการผลิต</h5><p data-i18n="for-farmers_49">เลือกซื้อปัจจัยการผลิตที่จำเป็นสำหรับรอบผลิตของท่าน</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-calculator"></i></div>
-          <div><h5>คำนวณสูตรปุ๋ย</h5><p>คำนวณสูตรปุ๋ยที่เหมาะสมกับพืชและสภาพดินของท่าน</p></div>
+          <div><h5 data-i18n="for-farmers_50">คำนวณสูตรปุ๋ย</h5><p data-i18n="for-farmers_51">คำนวณสูตรปุ๋ยที่เหมาะสมกับพืชและสภาพดินของท่าน</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-blender"></i></div>
-          <div><h5>บริการผสมปุ๋ยสั่งตัด</h5><p>สั่งผสมปุ๋ยสูตรเฉพาะตามผลคำนวณ ไม่ต้องผสมเอง</p></div>
+          <div><h5 data-i18n="for-farmers_52">บริการผสมปุ๋ยสั่งตัด</h5><p data-i18n="for-farmers_53">สั่งผสมปุ๋ยสูตรเฉพาะตามผลคำนวณ ไม่ต้องผสมเอง</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-people-group"></i></div>
-          <div><h5>รวมกลุ่มสั่งซื้อปุ๋ย</h5><p>รวมออเดอร์กับเกษตรกรรายอื่นเพื่อต่อรองราคาซื้อในปริมาณมาก</p></div>
+          <div><h5 data-i18n="for-farmers_54">รวมกลุ่มสั่งซื้อปุ๋ย</h5><p data-i18n="for-farmers_55">รวมออเดอร์กับเกษตรกรรายอื่นเพื่อต่อรองราคาซื้อในปริมาณมาก</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-leaf"></i></div>
-          <div><h5>ยืนยันข้าวคาร์บอนต่ำ (AWD)</h5><p>ยืนยันการทำนาแบบเปียกสลับแห้งเพื่อเตรียมสร้างรายได้จากคาร์บอนเครดิต</p></div>
+          <div><h5 data-i18n="for-farmers_56">ยืนยันข้าวคาร์บอนต่ำ (AWD)</h5><p data-i18n="for-farmers_57">ยืนยันการทำนาแบบเปียกสลับแห้งเพื่อเตรียมสร้างรายได้จากคาร์บอนเครดิต</p></div>
         </div>
         <div class="service-item">
           <div class="icn2"><i class="fa-solid fa-truck-field"></i></div>
-          <div><h5>เช่า/จองเครื่องจักรกล</h5><p>จองบริการเครื่องจักรกลการเกษตรตามช่วงเวลาที่ต้องการใช้งาน</p></div>
+          <div><h5 data-i18n="for-farmers_58">เช่า/จองเครื่องจักรกล</h5><p data-i18n="for-farmers_59">จองบริการเครื่องจักรกลการเกษตรตามช่วงเวลาที่ต้องการใช้งาน</p></div>
         </div>
       </div>
     </div>
@@ -437,21 +441,21 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-list-check"></i> วิธีการสมัครสมาชิก</div>
-      <h2 class="section-title">เริ่มต้นใช้งาน 4 ขั้นตอน</h2>
-      <p class="section-sub">สมัครฟรี ใช้เวลาไม่กี่นาที ไม่ต้องมีเอกสารสิทธิ์ที่ดินก็เริ่มลงทะเบียนได้</p>
+      <div class="eyebrow"><i class="fa-solid fa-list-check"></i><span data-i18n="for-farmers_60"> วิธีการสมัครสมาชิก</span></div>
+      <h2 class="section-title" data-i18n="for-farmers_61">เริ่มต้นใช้งาน 4 ขั้นตอน</h2>
+      <p class="section-sub" data-i18n="for-farmers_62">สมัครฟรี ใช้เวลาไม่กี่นาที ไม่ต้องมีเอกสารสิทธิ์ที่ดินก็เริ่มลงทะเบียนได้</p>
     </div>
 
     <div class="steps-wrap">
       <div class="step-row reveal">
         <div class="step-num">1</div>
         <div class="step-body">
-          <h4>สมัครสมาชิกเกษตรกร <span class="step-page-tag">register.html</span></h4>
-          <p>กรอกข้อมูลพื้นฐานเพื่อเปิดบัญชีผู้ใช้งาน:</p>
+          <h4><span data-i18n="for-farmers_63">สมัครสมาชิกเกษตรกร </span><span class="step-page-tag">register.html</span></h4>
+          <p data-i18n="for-farmers_64">กรอกข้อมูลพื้นฐานเพื่อเปิดบัญชีผู้ใช้งาน:</p>
           <ul class="step-detail">
-            <li>ชื่อ-นามสกุล และเบอร์โทรศัพท์</li>
-            <li>เลขประจำตัวประชาชน — ระบบเก็บเฉพาะค่าแฮช ไม่เก็บเลขจริงในฐานข้อมูล</li>
-            <li>จังหวัดและอำเภอที่อยู่อาศัย/ทำการเกษตร</li>
+            <li data-i18n="for-farmers_65">ชื่อ-นามสกุล และเบอร์โทรศัพท์</li>
+            <li data-i18n="for-farmers_66">เลขประจำตัวประชาชน — ระบบเก็บเฉพาะค่าแฮช ไม่เก็บเลขจริงในฐานข้อมูล</li>
+            <li data-i18n="for-farmers_67">จังหวัดและอำเภอที่อยู่อาศัย/ทำการเกษตร</li>
           </ul>
         </div>
       </div>
@@ -459,20 +463,20 @@
       <div class="step-row reveal">
         <div class="step-num">2</div>
         <div class="step-body">
-          <h4>เข้าสู่ระบบเกษตรกร <span class="step-page-tag">farmer-login.html</span></h4>
-          <p>หลังสมัครสำเร็จ เข้าสู่ระบบด้วยเบอร์โทรศัพท์ที่ลงทะเบียนไว้ เพื่อเริ่มใช้งานพอร์ทัลเกษตรกร</p>
+          <h4><span data-i18n="for-farmers_68">เข้าสู่ระบบเกษตรกร </span><span class="step-page-tag">farmer-login.html</span></h4>
+          <p data-i18n="for-farmers_69">หลังสมัครสำเร็จ เข้าสู่ระบบด้วยเบอร์โทรศัพท์ที่ลงทะเบียนไว้ เพื่อเริ่มใช้งานพอร์ทัลเกษตรกร</p>
         </div>
       </div>
 
       <div class="step-row reveal">
         <div class="step-num">3</div>
         <div class="step-body">
-          <h4>ลงทะเบียนแปลง/หน่วยผลิต <span class="step-page-tag">register-plot.html</span></h4>
-          <p>บันทึกข้อมูลแปลงหรือหน่วยผลิตของท่าน (ไม่บังคับว่าต้องทำก่อนใช้บริการอื่น แต่แนะนำให้ทำเพื่อใช้สิทธิ์ครบทุกบริการ):</p>
+          <h4><span data-i18n="for-farmers_70">ลงทะเบียนแปลง/หน่วยผลิต </span><span class="step-page-tag">register-plot.html</span></h4>
+          <p data-i18n="for-farmers_71">บันทึกข้อมูลแปลงหรือหน่วยผลิตของท่าน (ไม่บังคับว่าต้องทำก่อนใช้บริการอื่น แต่แนะนำให้ทำเพื่อใช้สิทธิ์ครบทุกบริการ):</p>
           <ul class="step-detail">
-            <li>คลิกปักขอบเขตแปลงบนแผนที่ดาวเทียม (อย่างน้อย 3 จุด) — ระบบคำนวณพื้นที่โดยประมาณให้อัตโนมัติ แก้ไขเองได้ภายหลัง</li>
-            <li>เลือกประเภทหน่วยผลิต เช่น แปลงนา/ไร่นา คอกเลี้ยงสัตว์ บ่อเลี้ยง หรือสวนผลไม้</li>
-            <li>ระบุพืช/สัตว์เศรษฐกิจหลัก และฤดูกาล/รอบปลูก</li>
+            <li data-i18n="for-farmers_72">คลิกปักขอบเขตแปลงบนแผนที่ดาวเทียม (อย่างน้อย 3 จุด) — ระบบคำนวณพื้นที่โดยประมาณให้อัตโนมัติ แก้ไขเองได้ภายหลัง</li>
+            <li data-i18n="for-farmers_73">เลือกประเภทหน่วยผลิต เช่น แปลงนา/ไร่นา คอกเลี้ยงสัตว์ บ่อเลี้ยง หรือสวนผลไม้</li>
+            <li data-i18n="for-farmers_74">ระบุพืช/สัตว์เศรษฐกิจหลัก และฤดูกาล/รอบปลูก</li>
           </ul>
         </div>
       </div>
@@ -480,15 +484,15 @@
       <div class="step-row reveal">
         <div class="step-num">4</div>
         <div class="step-body">
-          <h4>เริ่มใช้งานพอร์ทัลเกษตรกร <span class="step-page-tag">dashboard.html</span></h4>
-          <p>เข้าสู่หน้าหลักเกษตรกร ดูภาพรวมบัญชี สมาชิกภาพ คะแนนความน่าเชื่อถือ แปลง สัญญา คำขอสินเชื่อ และเข้าถึงตลาด/บริการทั้งหมดที่กล่าวถึงด้านบนได้จากเมนูเดียว</p>
+          <h4><span data-i18n="for-farmers_75">เริ่มใช้งานพอร์ทัลเกษตรกร </span><span class="step-page-tag">dashboard.html</span></h4>
+          <p data-i18n="for-farmers_76">เข้าสู่หน้าหลักเกษตรกร ดูภาพรวมบัญชี สมาชิกภาพ คะแนนความน่าเชื่อถือ แปลง สัญญา คำขอสินเชื่อ และเข้าถึงตลาด/บริการทั้งหมดที่กล่าวถึงด้านบนได้จากเมนูเดียว</p>
         </div>
       </div>
     </div>
 
     <div class="note-block reveal">
       <i class="fa-solid fa-circle-info"></i>
-      <div>
+      <div data-i18n="for-farmers_77">
         การลงทะเบียนขอบเขตแปลงเป็นการระบุตำแหน่งด้วยตนเอง (manual) เพื่อใช้อ้างอิงภายในระบบเท่านั้น
         ไม่ได้เชื่อมโยงหรือรับรองความถูกต้องร่วมกับข้อมูลของหน่วยงานภายนอกใดๆ
         และ AgroLink ไม่ใช่ผู้ให้สินเชื่อหรือผู้รับซื้อโดยตรง — เป็นเพียงแพลตฟอร์มที่เชื่อมเกษตรกรกับผู้ให้บริการที่เข้าร่วมเท่านั้น
@@ -499,11 +503,11 @@
 
 <section class="cta-final reveal">
   <div class="container">
-    <h2>พร้อมเริ่มต้นใช้งาน AgroLink หรือยัง?</h2>
-    <p>สมัครสมาชิกฟรีวันนี้ เริ่มบันทึกข้อมูลแปลง เข้าถึงแหล่งเงินทุน และเปิดช่องทางขายผลผลิตของท่าน</p>
+    <h2 data-i18n="for-farmers_78">พร้อมเริ่มต้นใช้งาน AgroLink หรือยัง?</h2>
+    <p data-i18n="for-farmers_79">สมัครสมาชิกฟรีวันนี้ เริ่มบันทึกข้อมูลแปลง เข้าถึงแหล่งเงินทุน และเปิดช่องทางขายผลผลิตของท่าน</p>
     <div class="cta-btns">
-      <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i> สมัครสมาชิกเกษตรกร</a>
-      <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-comments"></i> สอบถามทีมงาน</a>
+      <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i><span data-i18n="for-farmers_80"> สมัครสมาชิกเกษตรกร</span></a>
+      <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-comments"></i><span data-i18n="for-farmers_81"> สอบถามทีมงาน</span></a>
     </div>
   </div>
 </section>
@@ -513,55 +517,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-for-farmers.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

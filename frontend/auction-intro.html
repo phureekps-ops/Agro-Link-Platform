@@ -71,6 +71,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -114,7 +116,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER (dark, matches .template-section in index.html) */
@@ -183,25 +186,26 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
-        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;">← กลับหน้าแรก</a>
-          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ติดต่อสอบถาม</a></div>
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="auction-intro_nav_1">ติดต่อสอบถาม</a></div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
@@ -211,54 +215,54 @@
 <section class="page-header">
   <div class="container section-head reveal">
     <div class="eyebrow"><i class="fa-solid fa-gavel"></i> Auction Place</div>
-    <h1 class="section-title">แนะนำระบบการประมูลสินค้า</h1>
-    <p class="section-sub">AgroLink มีกลไก "ประมูล" เป็นแกนกลางเดียวที่นำไปใช้ได้ 2 ทิศทางตรงข้ามกัน — ประมูลขาย (Forward) สำหรับสินค้าที่ผู้ผลิตเป็นผู้เปิดขาย เช่น กุ้งสด และประมูลซื้อ (Reverse) สำหรับปัจจัยการผลิตที่ผู้ซื้อรวมกันเปิดประมูลหาซัพพลายเออร์ เช่น แม่ปุ๋ย ทำความเข้าใจความต่างของทั้งสองแบบที่นี่ ก่อนเลือกเข้าใช้งานระบบจริง</p>
+    <h1 class="section-title" data-i18n="auction-intro_1">แนะนำระบบการประมูลสินค้า</h1>
+    <p class="section-sub" data-i18n="auction-intro_2">AgroLink มีกลไก "ประมูล" เป็นแกนกลางเดียวที่นำไปใช้ได้ 2 ทิศทางตรงข้ามกัน — ประมูลขาย (Forward) สำหรับสินค้าที่ผู้ผลิตเป็นผู้เปิดขาย เช่น กุ้งสด และประมูลซื้อ (Reverse) สำหรับปัจจัยการผลิตที่ผู้ซื้อรวมกันเปิดประมูลหาซัพพลายเออร์ เช่น แม่ปุ๋ย ทำความเข้าใจความต่างของทั้งสองแบบที่นี่ ก่อนเลือกเข้าใช้งานระบบจริง</p>
   </div>
 </section>
 
 <section class="prose-section">
   <div class="container prose-block reveal in">
-    <h2>ทำไม AgroLink ถึงมีระบบประมูล 2 แบบ</h2>
-    <p>สินค้าเกษตรแต่ละชนิดมีจุดที่ "อ่อนไหวต่อราคา" ต่างกัน กุ้งสดเป็นสินค้าที่เจ้าของบ่อ (ผู้ขาย) ต้องหาผู้ซื้อที่ให้ราคาดีที่สุดสำหรับล็อตที่พร้อมจับ ในขณะที่ปัจจัยการผลิตอย่างแม่ปุ๋ยเป็นสิ่งที่ผู้ซื้อ (เช่น สหกรณ์) ต้องการซื้อในราคาถูกที่สุดจากซัพพลายเออร์หลายราย AgroLink จึงใช้กลไกประมูลเดียวกันเป็นแกนกลาง แต่เปิดให้ทำงานได้ทั้ง 2 ทิศทาง ให้เหมาะกับว่าใครเป็นฝ่ายที่ต้องแข่งขันเพื่อได้ราคาที่ดีที่สุด</p>
+    <h2 data-i18n="auction-intro_3">ทำไม AgroLink ถึงมีระบบประมูล 2 แบบ</h2>
+    <p data-i18n="auction-intro_4">สินค้าเกษตรแต่ละชนิดมีจุดที่ "อ่อนไหวต่อราคา" ต่างกัน กุ้งสดเป็นสินค้าที่เจ้าของบ่อ (ผู้ขาย) ต้องหาผู้ซื้อที่ให้ราคาดีที่สุดสำหรับล็อตที่พร้อมจับ ในขณะที่ปัจจัยการผลิตอย่างแม่ปุ๋ยเป็นสิ่งที่ผู้ซื้อ (เช่น สหกรณ์) ต้องการซื้อในราคาถูกที่สุดจากซัพพลายเออร์หลายราย AgroLink จึงใช้กลไกประมูลเดียวกันเป็นแกนกลาง แต่เปิดให้ทำงานได้ทั้ง 2 ทิศทาง ให้เหมาะกับว่าใครเป็นฝ่ายที่ต้องแข่งขันเพื่อได้ราคาที่ดีที่สุด</p>
   </div>
 </section>
 
 <section id="auction-types" class="prose-section alt">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:36px;">
-      <div class="eyebrow"><i class="fa-solid fa-arrows-up-down"></i> เปรียบเทียบกลไก</div>
-      <h2 class="section-title">ประมูล 2 ทิศทาง: "ขาย" (Forward) และ "ซื้อ" (Reverse)</h2>
-      <p class="section-sub">เข้าใจความต่างของทั้งสองแบบก่อน แล้วเลือกเข้าใช้งานระบบจริงจากปุ่มในการ์ดด้านล่างได้ทันที</p>
+      <div class="eyebrow"><i class="fa-solid fa-arrows-up-down"></i><span data-i18n="auction-intro_5"> เปรียบเทียบกลไก</span></div>
+      <h2 class="section-title" data-i18n="auction-intro_6">ประมูล 2 ทิศทาง: "ขาย" (Forward) และ "ซื้อ" (Reverse)</h2>
+      <p class="section-sub" data-i18n="auction-intro_7">เข้าใจความต่างของทั้งสองแบบก่อน แล้วเลือกเข้าใช้งานระบบจริงจากปุ่มในการ์ดด้านล่างได้ทันที</p>
     </div>
 
     <div class="compare-grid">
 
       <div class="compare-card forward reveal in">
         <div class="icn"><i class="fa-solid fa-fish"></i></div>
-        <h3>Forward Auction — ประมูลขาย</h3>
-        <div class="tagline">ราคาวิ่งขึ้น (bid UP) · ตัวอย่างที่ใช้งานจริง: ประมูลกุ้งสด</div>
-        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว — แกนประมูลกุ้ง</span></div>
-        <h4>ใครเปิดประมูล</h4>
-        <p>ฝั่ง "ผู้ขาย" เป็นผู้เปิด — สำหรับกุ้งคือเจ้าของบ่อ ประกาศล็อตกุ้งที่พร้อมจับพร้อมไซส์เป้าหมายที่สุ่มตรวจไว้ล่วงหน้า</p>
-        <h4>กลไกราคา</h4>
-        <p>ผู้ซื้อหลายรายแข่งกันเสนอราคา "สูงขึ้น" แบบปิด (sealed) ต่อ 1 ตาราง 5 ไซส์รอบไซส์เป้าหมาย เห็นเฉพาะสถานะของตัวเอง 🟢นำ/🟡เสมอ/🔴แพ้ ไม่เห็นราคาคู่แข่ง</p>
-        <h4>ใครเป็นผู้ตัดสิน</h4>
-        <p>เมื่อปิดประมูล ระบบ<strong>ไม่</strong>ตัดสินผู้ชนะอัตโนมัติ — เจ้าของบ่อเป็นผู้พิจารณาและเลือกผู้ซื้อเอง จากราคาที่เสนอประกอบกับความน่าเชื่อถือ ไม่ใช่ราคาสูงสุดเสมอไป จากนั้นสุ่มตรวจไซส์จริงวันจับเพื่อคำนวณราคาชำระจริง</p>
-        <a href="auction-place.html" class="btn btn-gold">🦐 ประมูลขายกุ้ง</a>
+        <h3 data-i18n="auction-intro_8">Forward Auction — ประมูลขาย</h3>
+        <div class="tagline" data-i18n="auction-intro_9">ราคาวิ่งขึ้น (bid UP) · ตัวอย่างที่ใช้งานจริง: ประมูลกุ้งสด</div>
+        <div class="badge-row"><span class="badge" data-i18n="auction-intro_10">ใช้งานได้แล้ว — แกนประมูลกุ้ง</span></div>
+        <h4 data-i18n="auction-intro_11">ใครเปิดประมูล</h4>
+        <p data-i18n="auction-intro_12">ฝั่ง "ผู้ขาย" เป็นผู้เปิด — สำหรับกุ้งคือเจ้าของบ่อ ประกาศล็อตกุ้งที่พร้อมจับพร้อมไซส์เป้าหมายที่สุ่มตรวจไว้ล่วงหน้า</p>
+        <h4 data-i18n="auction-intro_13">กลไกราคา</h4>
+        <p data-i18n="auction-intro_14">ผู้ซื้อหลายรายแข่งกันเสนอราคา "สูงขึ้น" แบบปิด (sealed) ต่อ 1 ตาราง 5 ไซส์รอบไซส์เป้าหมาย เห็นเฉพาะสถานะของตัวเอง 🟢นำ/🟡เสมอ/🔴แพ้ ไม่เห็นราคาคู่แข่ง</p>
+        <h4 data-i18n="auction-intro_15">ใครเป็นผู้ตัดสิน</h4>
+        <p><span data-i18n="auction-intro_16">เมื่อปิดประมูล ระบบ</span><strong data-i18n="auction-intro_17">ไม่</strong><span data-i18n="auction-intro_18">ตัดสินผู้ชนะอัตโนมัติ — เจ้าของบ่อเป็นผู้พิจารณาและเลือกผู้ซื้อเอง จากราคาที่เสนอประกอบกับความน่าเชื่อถือ ไม่ใช่ราคาสูงสุดเสมอไป จากนั้นสุ่มตรวจไซส์จริงวันจับเพื่อคำนวณราคาชำระจริง</span></p>
+        <a href="auction-place.html" class="btn btn-gold" data-i18n="auction-intro_19">🦐 ประมูลขายกุ้ง</a>
       </div>
 
       <div class="compare-card reverse reveal in">
         <div class="icn"><i class="fa-solid fa-gavel"></i></div>
-        <h3>Reverse Auction — ประมูลซื้อ</h3>
-        <div class="tagline">ราคาวิ่งลง (bid DOWN) · ตัวอย่างที่ใช้งานจริง: ประมูลซื้อแม่ปุ๋ยของสหกรณ์</div>
-        <div class="badge-row"><span class="badge">ใช้งานได้แล้ว — e-Auction เดิมของแพลตฟอร์ม</span></div>
-        <h4>ใครเปิดประมูล</h4>
-        <p>ฝั่ง "ผู้ซื้อ" เป็นผู้เปิด — เช่น สหกรณ์ที่ต้องการซื้อแม่ปุ๋ยปริมาณมากให้สมาชิกทั้งกลุ่ม ประกาศความต้องการ (RFQ) แล้วเปิดเป็นประมูลแข่งราคา</p>
-        <h4>กลไกราคา</h4>
-        <p>ผู้ขาย/ซัพพลายเออร์หลายรายแข่งกันเสนอราคา "ต่ำลง" ทีละราคา ผู้เสนอราคาต่ำสุด ณ เวลาปิดประมูลเป็นผู้ชนะ</p>
-        <h4>ใครเป็นผู้ตัดสิน</h4>
-        <p>ระบบตัดสินอัตโนมัติทันทีที่ปิดประมูล — ผู้เสนอราคาต่ำสุดชนะและออกสัญญาซื้อขายให้อัตโนมัติ ไม่ต้องรอผู้ซื้อเลือกเอง</p>
-        <a href="coop-portal.html" class="btn btn-primary">🌾 ประมูลซื้อปุ๋ย</a>
+        <h3 data-i18n="auction-intro_20">Reverse Auction — ประมูลซื้อ</h3>
+        <div class="tagline" data-i18n="auction-intro_21">ราคาวิ่งลง (bid DOWN) · ตัวอย่างที่ใช้งานจริง: ประมูลซื้อแม่ปุ๋ยของสหกรณ์</div>
+        <div class="badge-row"><span class="badge" data-i18n="auction-intro_22">ใช้งานได้แล้ว — e-Auction เดิมของแพลตฟอร์ม</span></div>
+        <h4 data-i18n="auction-intro_23">ใครเปิดประมูล</h4>
+        <p data-i18n="auction-intro_24">ฝั่ง "ผู้ซื้อ" เป็นผู้เปิด — เช่น สหกรณ์ที่ต้องการซื้อแม่ปุ๋ยปริมาณมากให้สมาชิกทั้งกลุ่ม ประกาศความต้องการ (RFQ) แล้วเปิดเป็นประมูลแข่งราคา</p>
+        <h4 data-i18n="auction-intro_25">กลไกราคา</h4>
+        <p data-i18n="auction-intro_26">ผู้ขาย/ซัพพลายเออร์หลายรายแข่งกันเสนอราคา "ต่ำลง" ทีละราคา ผู้เสนอราคาต่ำสุด ณ เวลาปิดประมูลเป็นผู้ชนะ</p>
+        <h4 data-i18n="auction-intro_27">ใครเป็นผู้ตัดสิน</h4>
+        <p data-i18n="auction-intro_28">ระบบตัดสินอัตโนมัติทันทีที่ปิดประมูล — ผู้เสนอราคาต่ำสุดชนะและออกสัญญาซื้อขายให้อัตโนมัติ ไม่ต้องรอผู้ซื้อเลือกเอง</p>
+        <a href="coop-portal.html" class="btn btn-primary" data-i18n="auction-intro_29">🌾 ประมูลซื้อปุ๋ย</a>
       </div>
 
     </div>
@@ -268,42 +272,42 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal" style="margin-bottom:28px;">
-      <h2 class="section-title" style="font-size:26px;">สรุปความต่างแบบย่อ</h2>
+      <h2 class="section-title" style="font-size:26px;" data-i18n="auction-intro_30">สรุปความต่างแบบย่อ</h2>
     </div>
     <div class="summary-table-wrap reveal in">
       <table class="summary-table">
         <thead>
           <tr>
             <th></th>
-            <th>Forward Auction (ประมูลขาย)</th>
-            <th>Reverse Auction (ประมูลซื้อ)</th>
+            <th data-i18n="auction-intro_31">Forward Auction (ประมูลขาย)</th>
+            <th data-i18n="auction-intro_32">Reverse Auction (ประมูลซื้อ)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>ผู้เปิดประมูล</td>
-            <td>ผู้ขาย (เจ้าของบ่อ)</td>
-            <td>ผู้ซื้อ (สหกรณ์/องค์กร)</td>
+            <td data-i18n="auction-intro_33">ผู้เปิดประมูล</td>
+            <td data-i18n="auction-intro_34">ผู้ขาย (เจ้าของบ่อ)</td>
+            <td data-i18n="auction-intro_35">ผู้ซื้อ (สหกรณ์/องค์กร)</td>
           </tr>
           <tr>
-            <td>ทิศทางราคา</td>
-            <td>วิ่งขึ้น — แข่งกันเสนอราคาสูง</td>
-            <td>วิ่งลง — แข่งกันเสนอราคาต่ำ</td>
+            <td data-i18n="auction-intro_36">ทิศทางราคา</td>
+            <td data-i18n="auction-intro_37">วิ่งขึ้น — แข่งกันเสนอราคาสูง</td>
+            <td data-i18n="auction-intro_38">วิ่งลง — แข่งกันเสนอราคาต่ำ</td>
           </tr>
           <tr>
-            <td>ผู้ตัดสินผู้ชนะ</td>
-            <td>เจ้าของบ่อเลือกเอง (ไม่ auto-award)</td>
-            <td>ระบบตัดสินอัตโนมัติเมื่อปิดประมูล</td>
+            <td data-i18n="auction-intro_39">ผู้ตัดสินผู้ชนะ</td>
+            <td data-i18n="auction-intro_40">เจ้าของบ่อเลือกเอง (ไม่ auto-award)</td>
+            <td data-i18n="auction-intro_41">ระบบตัดสินอัตโนมัติเมื่อปิดประมูล</td>
           </tr>
           <tr>
-            <td>รูปแบบการเสนอราคา</td>
-            <td>ตารางราคา 5 ไซส์ (sealed bid)</td>
-            <td>ราคาเดียว แข่งขันแบบเปิด/ปิดตามประเภท</td>
+            <td data-i18n="auction-intro_42">รูปแบบการเสนอราคา</td>
+            <td data-i18n="auction-intro_43">ตารางราคา 5 ไซส์ (sealed bid)</td>
+            <td data-i18n="auction-intro_44">ราคาเดียว แข่งขันแบบเปิด/ปิดตามประเภท</td>
           </tr>
           <tr>
-            <td>ตัวอย่างที่ใช้งานจริง</td>
-            <td>ประมูลกุ้งสด (Auction Place)</td>
-            <td>ประมูลซื้อแม่ปุ๋ยของสหกรณ์ (Group Buy → e-Auction)</td>
+            <td data-i18n="auction-intro_45">ตัวอย่างที่ใช้งานจริง</td>
+            <td data-i18n="auction-intro_46">ประมูลกุ้งสด (Auction Place)</td>
+            <td data-i18n="auction-intro_47">ประมูลซื้อแม่ปุ๋ยของสหกรณ์ (Group Buy → e-Auction)</td>
           </tr>
         </tbody>
       </table>
@@ -313,12 +317,12 @@
 
 <section class="prose-section alt">
   <div class="container section-head reveal">
-    <h2 class="section-title">เลือกเข้าใช้งานระบบประมูลที่ตรงกับท่าน</h2>
-    <p class="section-sub">เป็นเจ้าของบ่อกุ้งที่ต้องการเปิดประมูลขาย หรือเป็นสหกรณ์ที่ต้องการรวมออเดอร์ซื้อแม่ปุ๋ย — เลือกได้จากปุ่มด้านล่าง</p>
+    <h2 class="section-title" data-i18n="auction-intro_48">เลือกเข้าใช้งานระบบประมูลที่ตรงกับท่าน</h2>
+    <p class="section-sub" data-i18n="auction-intro_49">เป็นเจ้าของบ่อกุ้งที่ต้องการเปิดประมูลขาย หรือเป็นสหกรณ์ที่ต้องการรวมออเดอร์ซื้อแม่ปุ๋ย — เลือกได้จากปุ่มด้านล่าง</p>
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-      <a href="auction-place.html" class="btn btn-gold">🦐 ประมูลขายกุ้ง</a>
-      <a href="coop-portal.html" class="btn btn-primary">🌾 ประมูลซื้อปุ๋ย</a>
-      <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+      <a href="auction-place.html" class="btn btn-gold" data-i18n="auction-intro_50">🦐 ประมูลขายกุ้ง</a>
+      <a href="coop-portal.html" class="btn btn-primary" data-i18n="auction-intro_51">🌾 ประมูลซื้อปุ๋ย</a>
+      <a href="index.html" class="btn btn-outline" data-i18n="auction-intro_52">กลับหน้าแรก</a>
     </div>
   </div>
 </section>
@@ -328,55 +332,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-auction-intro.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

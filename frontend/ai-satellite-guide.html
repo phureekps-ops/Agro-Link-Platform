@@ -70,6 +70,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -113,7 +115,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -213,26 +216,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="ai-satellite-guide_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -242,15 +246,15 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-satellite-dish"></i> AI และดาวเทียม</div>
-    <h1 class="section-title">AI และดาวเทียมเพื่อการเกษตร</h1>
-    <p class="section-sub">
+    <div class="eyebrow"><i class="fa-solid fa-satellite-dish"></i><span data-i18n="ai-satellite-guide_1"> AI และดาวเทียม</span></div>
+    <h1 class="section-title" data-i18n="ai-satellite-guide_2">AI และดาวเทียมเพื่อการเกษตร</h1>
+    <p class="section-sub" data-i18n="ai-satellite-guide_3">
       รวมเทคโนโลยี หน่วยงาน และองค์ความรู้ที่เกี่ยวข้องกับ AI และข้อมูลดาวเทียมในภาคเกษตรไทย ตั้งแต่บริการของ GISTDA
       ระบบ AI ที่ใช้งานจริง การจัดการคะแนนความน่าเชื่อถือ ไปจนถึงคลังความรู้และแนวคิดคลินิกเกษตร AI
     </p>
     <div class="hero-cta">
-      <a href="knowledge/satellite-yield.html" class="btn btn-gold"><i class="fa-solid fa-satellite"></i> อ่านบทความเชิงลึกเรื่องดาวเทียม</a>
-      <a href="coop-portal.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-people-roof"></i> ดูพอร์ทัลสหกรณ์แบบเต็ม</a>
+      <a href="knowledge/satellite-yield.html" class="btn btn-gold"><i class="fa-solid fa-satellite"></i><span data-i18n="ai-satellite-guide_4"> อ่านบทความเชิงลึกเรื่องดาวเทียม</span></a>
+      <a href="coop-portal.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-people-roof"></i><span data-i18n="ai-satellite-guide_5"> ดูพอร์ทัลสหกรณ์แบบเต็ม</span></a>
     </div>
   </div>
 </section>
@@ -259,24 +263,24 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-satellite"></i> 1. ดาวเทียมเพื่อการเกษตร</div>
-      <h2 class="section-title">บริการดาวเทียมของ GISTDA เพื่อการเกษตร</h2>
+      <div class="eyebrow"><i class="fa-solid fa-satellite"></i><span data-i18n="ai-satellite-guide_6"> 1. ดาวเทียมเพื่อการเกษตร</span></div>
+      <h2 class="section-title" data-i18n="ai-satellite-guide_7">บริการดาวเทียมของ GISTDA เพื่อการเกษตร</h2>
     </div>
     <div class="prose-block reveal in">
-      <p>
-        สำนักงานพัฒนาเทคโนโลยีอวกาศและภูมิสารสนเทศ (องค์การมหาชน) หรือ <strong>GISTDA</strong> เป็นหน่วยงานรัฐไทยที่ดูแล
+      <p><span data-i18n="ai-satellite-guide_8">
+        สำนักงานพัฒนาเทคโนโลยีอวกาศและภูมิสารสนเทศ (องค์การมหาชน) หรือ </span><strong>GISTDA</strong><span data-i18n="ai-satellite-guide_9"> เป็นหน่วยงานรัฐไทยที่ดูแล
         ดาวเทียมสำรวจโลกและข้อมูลภูมิสารสนเทศโดยตรง มีบริการติดตามการใช้น้ำของพืชและประเมินความเสี่ยงภัยแล้งผ่านระบบ
-        <a href="https://cropsdrought.gistda.or.th/" target="_blank" rel="noopener noreferrer">cropsdrought.gistda.or.th</a>
+        </span><a href="https://cropsdrought.gistda.or.th/" target="_blank" rel="noopener noreferrer">cropsdrought.gistda.or.th</a><span data-i18n="ai-satellite-guide_10">
         และร่วมมือกับกรมส่งเสริมการเกษตรใช้ภาพถ่ายดาวเทียมช่วยระบุพื้นที่การเกษตรที่เสียหายจากภัยพิบัติ เพื่อให้เจ้าหน้าที่
         ลงพื้นที่ตรวจสอบเฉพาะจุดที่จำเป็นจริง เกษตรกรที่ต้องการใช้เครื่องมือลักษณะนี้ด้วยตนเองสามารถเข้าใช้งาน
-        <a href="https://dragonfly.gistda.or.th/p/home" target="_blank" rel="noopener noreferrer">Dragonfly</a>
+        </span><a href="https://dragonfly.gistda.or.th/p/home" target="_blank" rel="noopener noreferrer">Dragonfly</a><span data-i18n="ai-satellite-guide_11">
         แพลตฟอร์มเกษตรอัจฉริยะของ GISTDA ได้โดยตรง ซึ่งให้บริการติดตามสุขภาพแปลงรายสัปดาห์ด้วยภาพถ่ายดาวเทียม แจ้งเตือนน้ำท่วม/ภัยแล้ง
         ราคาผลผลิต และคำแนะนำการใส่ปุ๋ยไนโตรเจนในที่เดียว
-      </p>
-      <p>
+      </span></p>
+      <p><span data-i18n="ai-satellite-guide_12">
         AgroLink นำแนวทางเดียวกันมาใช้ประกอบการติดตามแปลงบนแพลตฟอร์ม โดยใช้หลักการดัชนีพืชพรรณ (NDVI) จากภาพถ่ายดาวเทียมมายืนยัน
         ว่าปลูกตรงตามที่แจ้งไว้และพืชเติบโตต่อเนื่องหรือไม่ ซึ่งช่วยให้การอนุมัติสินเชื่อแบบเป็นงวดทำได้เร็วขึ้นโดยไม่ต้องรอ
-        เจ้าหน้าที่ลงพื้นที่ตรวจทุกครั้ง — <a href="knowledge/satellite-yield.html">อ่านรายละเอียดกลไกนี้แบบเต็มได้ที่นี่</a>
+        เจ้าหน้าที่ลงพื้นที่ตรวจทุกครั้ง — </span><a href="knowledge/satellite-yield.html" data-i18n="ai-satellite-guide_13">อ่านรายละเอียดกลไกนี้แบบเต็มได้ที่นี่</a>
       </p>
     </div>
   </div>
@@ -286,45 +290,45 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-robot"></i> 2. ระบบ AI ในภาคเกษตร</div>
-      <h2 class="section-title">ระบบ AI ที่นิยมใช้ในภาคการเกษตรไทยวันนี้</h2>
-      <p class="section-sub">ตัวอย่างระบบ AI จริงที่เกษตรกรไทยเข้าถึงได้ ตั้งแต่แชตบอตวินิจฉัยโรคพืชไปจนถึงแพลตฟอร์มพยากรณ์ผลผลิตระดับประเทศ</p>
+      <div class="eyebrow"><i class="fa-solid fa-robot"></i><span data-i18n="ai-satellite-guide_14"> 2. ระบบ AI ในภาคเกษตร</span></div>
+      <h2 class="section-title" data-i18n="ai-satellite-guide_15">ระบบ AI ที่นิยมใช้ในภาคการเกษตรไทยวันนี้</h2>
+      <p class="section-sub" data-i18n="ai-satellite-guide_16">ตัวอย่างระบบ AI จริงที่เกษตรกรไทยเข้าถึงได้ ตั้งแต่แชตบอตวินิจฉัยโรคพืชไปจนถึงแพลตฟอร์มพยากรณ์ผลผลิตระดับประเทศ</p>
     </div>
     <div class="card-grid">
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-camera"></i></div>
-        <h4>ไลน์บอทโรคข้าว / โรคสตรอว์เบอร์รี</h4>
-        <p>พัฒนาโดย NSTDA ร่วมกับมหาวิทยาลัยเกษตรศาสตร์ ให้เกษตรกรถ่ายภาพต้นพืชส่งผ่าน LINE แล้ว AI วินิจฉัยโรคให้ฟรี เคยได้รับรางวัลระดับนานาชาติที่เจนีวา</p>
+        <h4 data-i18n="ai-satellite-guide_17">ไลน์บอทโรคข้าว / โรคสตรอว์เบอร์รี</h4>
+        <p data-i18n="ai-satellite-guide_18">พัฒนาโดย NSTDA ร่วมกับมหาวิทยาลัยเกษตรศาสตร์ ให้เกษตรกรถ่ายภาพต้นพืชส่งผ่าน LINE แล้ว AI วินิจฉัยโรคให้ฟรี เคยได้รับรางวัลระดับนานาชาติที่เจนีวา</p>
         <a class="src-link" href="https://www.nstda.or.th/home/performance_post/rice-disease-line-bot/" target="_blank" rel="noopener noreferrer">nstda.or.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-comments"></i></div>
-        <h4>AI Chatbot ของกรมวิชาการเกษตร</h4>
-        <p>แชตบอตให้ข้อมูลงานวิจัยด้านทุเรียนและมันสำปะหลังแก่เกษตรกรและประชาชนทั่วไป จากกรมวิชาการเกษตร</p>
+        <h4 data-i18n="ai-satellite-guide_19">AI Chatbot ของกรมวิชาการเกษตร</h4>
+        <p data-i18n="ai-satellite-guide_20">แชตบอตให้ข้อมูลงานวิจัยด้านทุเรียนและมันสำปะหลังแก่เกษตรกรและประชาชนทั่วไป จากกรมวิชาการเกษตร</p>
         <a class="src-link" href="https://www.doa.go.th/th/news_release/90287/" target="_blank" rel="noopener noreferrer">doa.go.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-chart-line"></i></div>
         <h4>Predictive Farming Platform (NECTEC)</h4>
-        <p>แพลตฟอร์ม AI/IoT ของศูนย์เทคโนโลยีอิเล็กทรอนิกส์และคอมพิวเตอร์แห่งชาติ ใช้พยากรณ์ผลผลิตทางการเกษตรระดับประเทศ</p>
+        <p data-i18n="ai-satellite-guide_21">แพลตฟอร์ม AI/IoT ของศูนย์เทคโนโลยีอิเล็กทรอนิกส์และคอมพิวเตอร์แห่งชาติ ใช้พยากรณ์ผลผลิตทางการเกษตรระดับประเทศ</p>
         <a class="src-link" href="https://www.nectec.or.th/en/about/news/predictive-farming-eng.html" target="_blank" rel="noopener noreferrer">nectec.or.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-satellite-dish"></i></div>
         <h4>Ricult</h4>
-        <p>สตาร์ทอัพเกษตรไทย-สหรัฐฯ ที่เชื่อมต่อกับ MIT ให้บริการข้อมูลแปลงจากดาวเทียมและประเมินความน่าเชื่อถือทางเครดิตทางเลือก สำหรับเกษตรกรรายย่อยที่ไม่มีประวัติเครดิตแบบทางการ</p>
+        <p data-i18n="ai-satellite-guide_22">สตาร์ทอัพเกษตรไทย-สหรัฐฯ ที่เชื่อมต่อกับ MIT ให้บริการข้อมูลแปลงจากดาวเทียมและประเมินความน่าเชื่อถือทางเครดิตทางเลือก สำหรับเกษตรกรรายย่อยที่ไม่มีประวัติเครดิตแบบทางการ</p>
         <a class="src-link" href="https://news.mit.edu/2018/ricult-thailand-pakistan-farmers-1115" target="_blank" rel="noopener noreferrer">news.mit.edu ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-microchip"></i></div>
         <h4>ListenField</h4>
-        <p>สตาร์ทอัพเกษตรแม่นยำสัญชาติไทย ใช้ AI สร้างแบบจำลองพืชและพยากรณ์ผลผลิต ได้รับการสนับสนุนเชิงกลยุทธ์จาก Kubota</p>
+        <p data-i18n="ai-satellite-guide_23">สตาร์ทอัพเกษตรแม่นยำสัญชาติไทย ใช้ AI สร้างแบบจำลองพืชและพยากรณ์ผลผลิต ได้รับการสนับสนุนเชิงกลยุทธ์จาก Kubota</p>
         <a class="src-link" href="https://thaipublica.org/2024/06/ai-and-thai-agriculture-listenfield/" target="_blank" rel="noopener noreferrer">thaipublica.org ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-globe"></i></div>
-        <h4>ตัวอย่างระดับโลก: PlantVillage Nuru, Cropin</h4>
-        <p>PlantVillage Nuru (มหาวิทยาลัย Penn State) วินิจฉัยโรคมันสำปะหลังผ่านภาพถ่ายแบบออฟไลน์ ส่วน Cropin (อินเดีย) ให้บริการพยากรณ์ผลผลิตด้วย AI/ดาวเทียมระดับองค์กรทั่วโลก</p>
+        <h4 data-i18n="ai-satellite-guide_24">ตัวอย่างระดับโลก: PlantVillage Nuru, Cropin</h4>
+        <p data-i18n="ai-satellite-guide_25">PlantVillage Nuru (มหาวิทยาลัย Penn State) วินิจฉัยโรคมันสำปะหลังผ่านภาพถ่ายแบบออฟไลน์ ส่วน Cropin (อินเดีย) ให้บริการพยากรณ์ผลผลิตด้วย AI/ดาวเทียมระดับองค์กรทั่วโลก</p>
         <a class="src-link" href="https://www.cropin.com/ai-powered-intelligent-agriculture/" target="_blank" rel="noopener noreferrer">cropin.com ↗</a>
       </div>
     </div>
@@ -335,22 +339,22 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-gauge-high"></i> 3. Scoring สำหรับเกษตรกร</div>
-      <h2 class="section-title">การจัดการระบบ Scoring สำหรับเกษตรกร</h2>
+      <div class="eyebrow"><i class="fa-solid fa-gauge-high"></i><span data-i18n="ai-satellite-guide_26"> 3. Scoring สำหรับเกษตรกร</span></div>
+      <h2 class="section-title" data-i18n="ai-satellite-guide_27">การจัดการระบบ Scoring สำหรับเกษตรกร</h2>
     </div>
     <div class="prose-block reveal in">
-      <p>
+      <p data-i18n="ai-satellite-guide_28">
         เกษตรกรรายย่อยจำนวนมากไม่มีประวัติเครดิตแบบทางการเพียงพอให้สถาบันการเงินประเมินความเสี่ยงตามวิธีดั้งเดิม แนวทาง
         "เครดิตสกอริ่งทางเลือก" (alternative credit scoring) ที่ใช้ข้อมูลการผลิตจริงแทนหรือเสริมประวัติทางการเงิน จึงเป็นแนวทาง
         ที่ฟินเทคเกษตรหลายรายทั่วโลกใช้ รวมถึง Ricult ที่กล่าวถึงด้านบน ซึ่งใช้ข้อมูลแปลงจากดาวเทียมประกอบการประเมิน
       </p>
-      <p>
-        AgroLink นำแนวคิดเดียวกันมาใช้ในระบบ <strong>"คะแนนความน่าเชื่อถือทางสินเชื่อ"</strong> ของเกษตรกรแต่ละราย ซึ่งสะสมจาก
+      <p><span data-i18n="ai-satellite-guide_29">
+        AgroLink นำแนวคิดเดียวกันมาใช้ในระบบ </span><strong data-i18n="ai-satellite-guide_30">"คะแนนความน่าเชื่อถือทางสินเชื่อ"</strong><span data-i18n="ai-satellite-guide_31"> ของเกษตรกรแต่ละราย ซึ่งสะสมจาก
         ประวัติการใช้งานจริงบนแพลตฟอร์ม เช่น ความคืบหน้าของแปลงที่ยืนยันได้ด้วยภาพถ่ายดาวเทียม (ดูหัวข้อที่ 1) และประวัติการเบิก-คืน
         สินเชื่อแบบเป็นงวดที่ผ่านมา เกษตรกรตรวจสอบคะแนนและประวัติของตนเองได้จากหน้าบัญชีส่วนตัว และยื่นคำขอสินเชื่อถึงผู้ให้บริการ
-        ทางการเงินที่เข้าร่วมได้พร้อมคะแนนนี้ประกอบการพิจารณา — <a href="knowledge/credit-line.html">อ่านเพิ่มเติมเรื่องวงเงินสินเชื่อแบบเป็นงวด</a>
+        ทางการเงินที่เข้าร่วมได้พร้อมคะแนนนี้ประกอบการพิจารณา — </span><a href="knowledge/credit-line.html" data-i18n="ai-satellite-guide_32">อ่านเพิ่มเติมเรื่องวงเงินสินเชื่อแบบเป็นงวด</a>
       </p>
-      <p>
+      <p data-i18n="ai-satellite-guide_33">
         เพื่อความเป็นส่วนตัว ข้อมูลคะแนนสินเชื่อรายบุคคลของเกษตรกรจะไม่ถูกเปิดเผยให้หน่วยงานภาครัฐเห็น หน่วยงานที่กำกับดูแล
         สหกรณ์ในพื้นที่จะเห็นเฉพาะข้อมูลสรุปเชิงพรรณนาระดับสหกรณ์เท่านั้น ไม่ใช่คะแนนรายบุคคล
       </p>
@@ -362,49 +366,49 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-building-columns"></i> 4. หน่วยงานที่เกี่ยวข้อง</div>
-      <h2 class="section-title">หน่วยงานที่ให้บริการด้านต่างๆ แก่ภาคเกษตร</h2>
-      <p class="section-sub">หน่วยงานภาครัฐหลักที่เกษตรกรและสหกรณ์ในเครือข่าย AgroLink อาจติดต่อหรือใช้ข้อมูลร่วมด้วย</p>
+      <div class="eyebrow"><i class="fa-solid fa-building-columns"></i><span data-i18n="ai-satellite-guide_34"> 4. หน่วยงานที่เกี่ยวข้อง</span></div>
+      <h2 class="section-title" data-i18n="ai-satellite-guide_35">หน่วยงานที่ให้บริการด้านต่างๆ แก่ภาคเกษตร</h2>
+      <p class="section-sub" data-i18n="ai-satellite-guide_36">หน่วยงานภาครัฐหลักที่เกษตรกรและสหกรณ์ในเครือข่าย AgroLink อาจติดต่อหรือใช้ข้อมูลร่วมด้วย</p>
     </div>
     <div class="card-grid">
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-satellite"></i></div>
         <h4>GISTDA</h4>
-        <p>สำนักงานพัฒนาเทคโนโลยีอวกาศและภูมิสารสนเทศ — ดูแลดาวเทียมสำรวจโลกและข้อมูลภูมิสารสนเทศด้านการเกษตร</p>
+        <p data-i18n="ai-satellite-guide_37">สำนักงานพัฒนาเทคโนโลยีอวกาศและภูมิสารสนเทศ — ดูแลดาวเทียมสำรวจโลกและข้อมูลภูมิสารสนเทศด้านการเกษตร</p>
         <a class="src-link" href="https://www.gistda.or.th/" target="_blank" rel="noopener noreferrer">gistda.or.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-people-group"></i></div>
-        <h4>กรมส่งเสริมการเกษตร (DOAE)</h4>
-        <p>ดูแลงานส่งเสริมและถ่ายทอดความรู้แก่เกษตรกรทั่วประเทศ รวมถึงโครงการคลินิกเกษตรเคลื่อนที่</p>
+        <h4 data-i18n="ai-satellite-guide_38">กรมส่งเสริมการเกษตร (DOAE)</h4>
+        <p data-i18n="ai-satellite-guide_39">ดูแลงานส่งเสริมและถ่ายทอดความรู้แก่เกษตรกรทั่วประเทศ รวมถึงโครงการคลินิกเกษตรเคลื่อนที่</p>
         <a class="src-link" href="https://www.doae.go.th/en/history-2/" target="_blank" rel="noopener noreferrer">doae.go.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-sack-dollar"></i></div>
-        <h4>ธ.ก.ส. (BAAC)</h4>
-        <p>ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร — ธนาคารรัฐเฉพาะทางที่ให้บริการสินเชื่อและการเงินแก่เกษตรกรและสหกรณ์</p>
+        <h4 data-i18n="ai-satellite-guide_40">ธ.ก.ส. (BAAC)</h4>
+        <p data-i18n="ai-satellite-guide_41">ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร — ธนาคารรัฐเฉพาะทางที่ให้บริการสินเชื่อและการเงินแก่เกษตรกรและสหกรณ์</p>
         <a class="src-link" href="https://baac.or.th/" target="_blank" rel="noopener noreferrer">baac.or.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-tree"></i></div>
-        <h4>การยางแห่งประเทศไทย (กยท.)</h4>
-        <p>ดูแลนโยบาย การส่งเสริม และกำกับตลาดยางพาราของประเทศ</p>
+        <h4 data-i18n="ai-satellite-guide_42">การยางแห่งประเทศไทย (กยท.)</h4>
+        <p data-i18n="ai-satellite-guide_43">ดูแลนโยบาย การส่งเสริม และกำกับตลาดยางพาราของประเทศ</p>
         <a class="src-link" href="https://www.raot.co.th/main.php?filename=index" target="_blank" rel="noopener noreferrer">raot.co.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-wheat-awn"></i></div>
-        <h4>กรมการข้าว</h4>
-        <p>วิจัยและพัฒนาสายพันธุ์ข้าว พร้อมสนับสนุนเกษตรกรผู้ปลูกข้าวโดยตรง</p>
+        <h4 data-i18n="ai-satellite-guide_44">กรมการข้าว</h4>
+        <p data-i18n="ai-satellite-guide_45">วิจัยและพัฒนาสายพันธุ์ข้าว พร้อมสนับสนุนเกษตรกรผู้ปลูกข้าวโดยตรง</p>
         <a class="src-link" href="https://www.ricethailand.go.th/web/" target="_blank" rel="noopener noreferrer">ricethailand.go.th ↗</a>
       </div>
       <div class="info-card reveal">
         <div class="icn"><i class="fa-solid fa-flask-vial"></i></div>
-        <h4>กรมวิชาการเกษตร (DOA)</h4>
-        <p>งานวิจัยเชิงเทคนิค การรับรองมาตรฐาน และการตรวจโรค/กักกันพืชเพื่อการส่งออก</p>
+        <h4 data-i18n="ai-satellite-guide_46">กรมวิชาการเกษตร (DOA)</h4>
+        <p data-i18n="ai-satellite-guide_47">งานวิจัยเชิงเทคนิค การรับรองมาตรฐาน และการตรวจโรค/กักกันพืชเพื่อการส่งออก</p>
         <a class="src-link" href="https://www.doa.go.th/plprotect/" target="_blank" rel="noopener noreferrer">doa.go.th ↗</a>
       </div>
     </div>
-    <p style="text-align:center; font-size:13.5px; color:var(--muted); max-width:760px; margin:26px auto 0;">
+    <p style="text-align:center; font-size:13.5px; color:var(--muted); max-width:760px; margin:26px auto 0;" data-i18n="ai-satellite-guide_48">
       สำหรับหน่วยงานภาครัฐที่กำกับดูแลสหกรณ์ในพื้นที่ AgroLink มีพอร์ทัลเจ้าหน้าที่ภาครัฐแยกต่างหาก ให้ดูข้อมูลสรุปเชิงสถิติ
       ของสหกรณ์ในเขตความรับผิดชอบได้ โดยไม่เห็นข้อมูลคะแนนสินเชื่อรายบุคคลของเกษตรกร
     </p>
@@ -415,24 +419,24 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-money-bill-transfer"></i> 5. การเงินข้ามประเทศ</div>
-      <h2 class="section-title">ระบบการเงินข้ามประเทศที่เกี่ยวข้องกับภาคเกษตร</h2>
+      <div class="eyebrow"><i class="fa-solid fa-money-bill-transfer"></i><span data-i18n="ai-satellite-guide_49"> 5. การเงินข้ามประเทศ</span></div>
+      <h2 class="section-title" data-i18n="ai-satellite-guide_50">ระบบการเงินข้ามประเทศที่เกี่ยวข้องกับภาคเกษตร</h2>
     </div>
     <div class="prose-block reveal in">
-      <p>
+      <p><span data-i18n="ai-satellite-guide_51">
         เมื่อผลผลิตหรือสินค้าเกษตรถูกส่งขายให้ผู้ซื้อต่างประเทศ เช่น ยางพารา ปาล์มน้ำมัน หรือแม้แต่คาร์บอนเครดิตที่ขายให้
-        องค์กรต่างชาติ (ดูบทความเรื่อง<a href="carbon-credit-article.html">คาร์บอนเครดิต</a>) การชำระเงินมักผ่านกลไกการเงิน
-        ระหว่างประเทศมาตรฐาน เช่น <strong>Letter of Credit (L/C)</strong> ซึ่งเป็นเครื่องมือการค้าระหว่างประเทศที่ช่วยลดความเสี่ยง
+        องค์กรต่างชาติ (ดูบทความเรื่อง</span><a href="carbon-credit-article.html" data-i18n="ai-satellite-guide_52">คาร์บอนเครดิต</a><span data-i18n="ai-satellite-guide_53">) การชำระเงินมักผ่านกลไกการเงิน
+        ระหว่างประเทศมาตรฐาน เช่น </span><strong>Letter of Credit (L/C)</strong><span data-i18n="ai-satellite-guide_54"> ซึ่งเป็นเครื่องมือการค้าระหว่างประเทศที่ช่วยลดความเสี่ยง
         การไม่ได้รับชำระเงินของผู้ส่งออก และธนาคารเพื่อการส่งออกและนำเข้าแห่งประเทศไทย (EXIM Thailand) เป็นหน่วยงานรัฐที่ให้บริการ
         สินเชื่อและประกันความเสี่ยงด้านการส่งออกโดยตรง
-      </p>
-      <p>
+      </span></p>
+      <p data-i18n="ai-satellite-guide_55">
         สำหรับการโอนเงินแบบรายย่อยข้ามประเทศ ธนาคารแห่งประเทศไทยได้เชื่อมระบบพร้อมเพย์ (PromptPay) กับระบบชำระเงินของประเทศ
         เพื่อนบ้านและพันธมิตรแล้วหลายประเทศ เช่น สิงคโปร์ (เชื่อมกับ PayNow ตั้งแต่ปี 2564) กัมพูชา เวียดนาม ลาว และล่าสุดจีน
         อย่างไรก็ตาม ระบบเหล่านี้ออกแบบมาเพื่อการชำระเงินค้าปลีก/ท่องเที่ยวเป็นหลัก ไม่ใช่กลไกหลักสำหรับการชำระเงินการค้าเกษตร
         ปริมาณมาก
       </p>
-      <p>
+      <p data-i18n="ai-satellite-guide_56">
         ด้านคาร์บอนเครดิต องค์การบริหารจัดการก๊าซเรือนกระจก (TGO) เป็นผู้ดูแลระบบ T-VER ของไทย และคณะรัฐมนตรีได้อนุมัติกรอบ
         การซื้อขายคาร์บอนเครดิตระหว่างประเทศ ที่เกี่ยวข้องกับ Article 6 ของความตกลงปารีสและ CORSIA แล้ว แต่กลไกการซื้อขาย
         ข้ามประเทศในระดับที่เกษตรกรรายย่อยเข้าถึงได้โดยตรงยังอยู่ระหว่างการพัฒนา
@@ -440,7 +444,7 @@
     </div>
     <div class="note-block reveal">
       <i class="fa-solid fa-circle-info"></i>
-      <div>
+      <div data-i18n="ai-satellite-guide_57">
         เนื้อหาส่วนนี้เป็นข้อมูลทั่วไปเพื่อความเข้าใจภาพรวมเท่านั้น ไม่ใช่คำแนะนำทางการเงินหรือกฎหมาย รายละเอียดการโอนเงิน
         ข้ามประเทศ วงเงิน L/C หรือการซื้อขายคาร์บอนเครดิตระหว่างประเทศจริง ควรตรวจสอบกับธนาคาร EXIM Thailand หรือ TGO โดยตรง
       </div>
@@ -452,56 +456,56 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-book-open"></i> 6. องค์ความรู้ด้านการเกษตร</div>
-      <h2 class="section-title">การจัดการองค์ความรู้ด้านการเกษตร</h2>
-      <p class="section-sub">คลังความรู้การเกษตร AgroLink รวมบทความอธิบายง่าย ๆ ที่เกษตรกรใช้ประกอบการตัดสินใจได้จริง</p>
+      <div class="eyebrow"><i class="fa-solid fa-book-open"></i><span data-i18n="ai-satellite-guide_58"> 6. องค์ความรู้ด้านการเกษตร</span></div>
+      <h2 class="section-title" data-i18n="ai-satellite-guide_59">การจัดการองค์ความรู้ด้านการเกษตร</h2>
+      <p class="section-sub" data-i18n="ai-satellite-guide_60">คลังความรู้การเกษตร AgroLink รวมบทความอธิบายง่าย ๆ ที่เกษตรกรใช้ประกอบการตัดสินใจได้จริง</p>
     </div>
     <div class="resource-list">
       <a class="resource-item reveal" href="knowledge/satellite-yield.html">
         <div class="r-icn"><i class="fa-solid fa-satellite"></i></div>
         <div class="r-body">
-          <div class="r-tag">เทคโนโลยีเกษตร</div>
-          <h4>ภาพถ่ายดาวเทียมช่วยยืนยันผลผลิตได้อย่างไร</h4>
+          <div class="r-tag" data-i18n="ai-satellite-guide_61">เทคโนโลยีเกษตร</div>
+          <h4 data-i18n="ai-satellite-guide_62">ภาพถ่ายดาวเทียมช่วยยืนยันผลผลิตได้อย่างไร</h4>
         </div>
         <i class="fa-solid fa-arrow-right"></i>
       </a>
       <a class="resource-item reveal" href="knowledge/credit-line.html">
         <div class="r-icn"><i class="fa-solid fa-sack-dollar"></i></div>
         <div class="r-body">
-          <div class="r-tag">สินเชื่อ/การเงิน</div>
-          <h4>อ่านวงเงินสินเชื่อแบบเป็นงวดให้เข้าใจง่ายใน 5 นาที</h4>
+          <div class="r-tag" data-i18n="ai-satellite-guide_63">สินเชื่อ/การเงิน</div>
+          <h4 data-i18n="ai-satellite-guide_64">อ่านวงเงินสินเชื่อแบบเป็นงวดให้เข้าใจง่ายใน 5 นาที</h4>
         </div>
         <i class="fa-solid fa-arrow-right"></i>
       </a>
       <a class="resource-item reveal" href="knowledge/globalgap-eudr.html">
         <div class="r-icn"><i class="fa-solid fa-stamp"></i></div>
         <div class="r-body">
-          <div class="r-tag">มาตรฐาน/ส่งออก</div>
-          <h4>GLOBALG.A.P. และ EUDR คืออะไร เตรียมตัวอย่างไร</h4>
+          <div class="r-tag" data-i18n="ai-satellite-guide_65">มาตรฐาน/ส่งออก</div>
+          <h4 data-i18n="ai-satellite-guide_66">GLOBALG.A.P. และ EUDR คืออะไร เตรียมตัวอย่างไร</h4>
         </div>
         <i class="fa-solid fa-arrow-right"></i>
       </a>
       <a class="resource-item reveal" href="knowledge/rice-calendar.html">
         <div class="r-icn"><i class="fa-solid fa-seedling"></i></div>
         <div class="r-body">
-          <div class="r-tag">การเพาะปลูก</div>
-          <h4>ปฏิทินการปลูกข้าวนาปี: 6 ระยะที่ต้องรู้</h4>
+          <div class="r-tag" data-i18n="ai-satellite-guide_67">การเพาะปลูก</div>
+          <h4 data-i18n="ai-satellite-guide_68">ปฏิทินการปลูกข้าวนาปี: 6 ระยะที่ต้องรู้</h4>
         </div>
         <i class="fa-solid fa-arrow-right"></i>
       </a>
       <a class="resource-item reveal" href="knowledge/drought-warning.html">
         <div class="r-icn"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
         <div class="r-body">
-          <div class="r-tag">บริหารความเสี่ยง</div>
-          <h4>สังเกตสัญญาณเตือนภัยแล้งล่วงหน้าอย่างไร</h4>
+          <div class="r-tag" data-i18n="ai-satellite-guide_69">บริหารความเสี่ยง</div>
+          <h4 data-i18n="ai-satellite-guide_70">สังเกตสัญญาณเตือนภัยแล้งล่วงหน้าอย่างไร</h4>
         </div>
         <i class="fa-solid fa-arrow-right"></i>
       </a>
       <a class="resource-item reveal" href="knowledge/quarterly-support.html">
         <div class="r-icn"><i class="fa-solid fa-landmark"></i></div>
         <div class="r-body">
-          <div class="r-tag">นโยบายภาครัฐ</div>
-          <h4>สรุปมาตรการช่วยเหลือเกษตรกรที่ควรรู้ประจำไตรมาส</h4>
+          <div class="r-tag" data-i18n="ai-satellite-guide_71">นโยบายภาครัฐ</div>
+          <h4 data-i18n="ai-satellite-guide_72">สรุปมาตรการช่วยเหลือเกษตรกรที่ควรรู้ประจำไตรมาส</h4>
         </div>
         <i class="fa-solid fa-arrow-right"></i>
       </a>
@@ -513,22 +517,22 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-stethoscope"></i> 7. คลินิกเกษตร AI</div>
-      <h2 class="section-title">คลินิกเกษตร AI</h2>
+      <div class="eyebrow"><i class="fa-solid fa-stethoscope"></i><span data-i18n="ai-satellite-guide_73"> 7. คลินิกเกษตร AI</span></div>
+      <h2 class="section-title" data-i18n="ai-satellite-guide_74">คลินิกเกษตร AI</h2>
     </div>
     <div class="prose-block reveal in">
-      <p>
+      <p data-i18n="ai-satellite-guide_75">
         ประเทศไทยมี "โครงการคลินิกเกษตรเคลื่อนที่ในพระราชานุเคราะห์" ซึ่งเป็นโครงการจริงของกระทรวงเกษตรและสหกรณ์ ดำเนินการโดย
         กรมส่งเสริมการเกษตร จัดงานคลินิกเคลื่อนที่หมุนเวียนไปตามจังหวัดต่าง ๆ รวมผู้เชี่ยวชาญหลายด้านไว้ในงานเดียวกัน เช่น
         คลินิกดิน คลินิกพืช คลินิกปศุสัตว์ คลินิกประมง และคลินิกกฎหมาย/ที่ดิน เพื่อให้เกษตรกรที่เข้าถึงบริการภาครัฐได้ยาก
         ได้รับคำปรึกษาครบวงจรในจุดเดียว
       </p>
-      <p>
+      <p data-i18n="ai-satellite-guide_76">
         คู่ขนานกับโครงการนี้ ปัจจุบันมีเครื่องมือ AI จริงที่ช่วยงานลักษณะเดียวกันผ่านช่องทางดิจิทัล เช่น ไลน์บอทวินิจฉัย
         โรคข้าวและโรคสตรอว์เบอร์รีของ NSTDA ที่กล่าวถึงในหัวข้อที่ 2 ซึ่งให้เกษตรกรถ่ายภาพต้นพืชขอคำวินิจฉัยได้ทันทีโดยไม่ต้อง
         รอคิวงานคลินิกเคลื่อนที่ ในต่างประเทศก็มีแนวโน้มคล้ายกัน เช่น ระบบแชตบอต AI ให้คำปรึกษาเกษตรกรในภาษาท้องถิ่นของอินเดีย
       </p>
-      <p>
+      <p data-i18n="ai-satellite-guide_77">
         อย่างไรก็ตาม ยังไม่มีหลักฐานว่าหน่วยงานใดได้รวมโครงการคลินิกเกษตรเคลื่อนที่กับเครื่องมือ AI วินิจฉัยเข้าเป็น
         "คลินิกเกษตร AI" อย่างเป็นทางการ ทั้งสองส่วนยังเป็นบริการคู่ขนานที่แยกจากกัน — แนวคิด "คลินิกเกษตร AI" ในที่นี้จึงหมายถึง
         ทิศทางที่เป็นไปได้ในอนาคต ที่นำจุดแข็งของทั้งสองแบบมารวมกัน คือความครอบคลุมหลายสาขาของคลินิกเคลื่อนที่ บวกกับความรวดเร็ว
@@ -540,14 +544,14 @@
 
 <section class="sources-section">
   <div class="container">
-    <h3>แหล่งข้อมูลอ้างอิง</h3>
+    <h3 data-i18n="ai-satellite-guide_78">แหล่งข้อมูลอ้างอิง</h3>
     <ul class="sources-grid">
       <li><a href="https://www.gistda.or.th/" target="_blank" rel="noopener noreferrer">gistda.or.th</a></li>
       <li><a href="https://cropsdrought.gistda.or.th/" target="_blank" rel="noopener noreferrer">cropsdrought.gistda.or.th</a></li>
       <li><a href="https://dragonfly.gistda.or.th/p/home" target="_blank" rel="noopener noreferrer">dragonfly.gistda.or.th</a></li>
-      <li><a href="https://www.nstda.or.th/home/performance_post/rice-disease-line-bot/" target="_blank" rel="noopener noreferrer">nstda.or.th — ไลน์บอทโรคข้าว</a></li>
-      <li><a href="https://www.nstda.or.th/home/news_post/bcg-delight-strawberry-disease-bot/" target="_blank" rel="noopener noreferrer">nstda.or.th — บอทโรคสตรอว์เบอร์รี</a></li>
-      <li><a href="https://www.doa.go.th/th/news_release/90287/" target="_blank" rel="noopener noreferrer">doa.go.th — AI Chatbot กรมวิชาการเกษตร</a></li>
+      <li><a href="https://www.nstda.or.th/home/performance_post/rice-disease-line-bot/" target="_blank" rel="noopener noreferrer" data-i18n="ai-satellite-guide_79">nstda.or.th — ไลน์บอทโรคข้าว</a></li>
+      <li><a href="https://www.nstda.or.th/home/news_post/bcg-delight-strawberry-disease-bot/" target="_blank" rel="noopener noreferrer" data-i18n="ai-satellite-guide_80">nstda.or.th — บอทโรคสตรอว์เบอร์รี</a></li>
+      <li><a href="https://www.doa.go.th/th/news_release/90287/" target="_blank" rel="noopener noreferrer" data-i18n="ai-satellite-guide_81">doa.go.th — AI Chatbot กรมวิชาการเกษตร</a></li>
       <li><a href="https://www.nectec.or.th/en/about/news/predictive-farming-eng.html" target="_blank" rel="noopener noreferrer">nectec.or.th — Predictive Farming Platform</a></li>
       <li><a href="https://news.mit.edu/2018/ricult-thailand-pakistan-farmers-1115" target="_blank" rel="noopener noreferrer">news.mit.edu — Ricult</a></li>
       <li><a href="https://thaipublica.org/2024/06/ai-and-thai-agriculture-listenfield/" target="_blank" rel="noopener noreferrer">thaipublica.org — ListenField</a></li>
@@ -556,16 +560,16 @@
       <li><a href="https://baac.or.th/" target="_blank" rel="noopener noreferrer">baac.or.th</a></li>
       <li><a href="https://www.raot.co.th/main.php?filename=index" target="_blank" rel="noopener noreferrer">raot.co.th</a></li>
       <li><a href="https://www.ricethailand.go.th/web/" target="_blank" rel="noopener noreferrer">ricethailand.go.th</a></li>
-      <li><a href="https://www.doa.go.th/plprotect/" target="_blank" rel="noopener noreferrer">doa.go.th — กรมวิชาการเกษตร</a></li>
+      <li><a href="https://www.doa.go.th/plprotect/" target="_blank" rel="noopener noreferrer" data-i18n="ai-satellite-guide_82">doa.go.th — กรมวิชาการเกษตร</a></li>
       <li><a href="https://www.trade.gov/country-commercial-guides/thailand-trade-financing" target="_blank" rel="noopener noreferrer">trade.gov — Thailand Trade Financing</a></li>
       <li><a href="https://www.bot.or.th/en/financial-innovation/digital-finance/digital-payment/cross-border-payment.html" target="_blank" rel="noopener noreferrer">bot.or.th — Cross-Border Payment</a></li>
       <li><a href="https://ghgreduction.tgo.or.th/en/project-development-steps/procedure-for-carbon-credit-trading.html" target="_blank" rel="noopener noreferrer">tgo.or.th — T-VER Carbon Credit Trading</a></li>
       <li><a href="https://mahanakornpartners.com/thailands-cabinet-approves-framework-for-international-carbon-credit-trading/" target="_blank" rel="noopener noreferrer">mahanakornpartners.com — International Carbon Trading Framework</a></li>
-      <li><a href="https://www.thaigov.go.th/news/contents/details/96207" target="_blank" rel="noopener noreferrer">thaigov.go.th — คลินิกเกษตรเคลื่อนที่</a></li>
+      <li><a href="https://www.thaigov.go.th/news/contents/details/96207" target="_blank" rel="noopener noreferrer" data-i18n="ai-satellite-guide_83">thaigov.go.th — คลินิกเกษตรเคลื่อนที่</a></li>
       <li><a href="https://clinickaset.doae.go.th/" target="_blank" rel="noopener noreferrer">clinickaset.doae.go.th</a></li>
       <li><a href="https://www.wadhwaniai.org/empowering-millions-of-indian-farmers-with-instant-ai-chatbot-support/" target="_blank" rel="noopener noreferrer">wadhwaniai.org — FarmerChat (India)</a></li>
     </ul>
-    <p style="text-align:center; font-size:12.5px; color:var(--muted); max-width:760px; margin:24px auto 0;">
+    <p style="text-align:center; font-size:12.5px; color:var(--muted); max-width:760px; margin:24px auto 0;" data-i18n="ai-satellite-guide_84">
       เนื้อหาในหน้านี้จัดทำเพื่อให้ความรู้ทั่วไป ไม่ใช่คำแนะนำทางการเงิน กฎหมาย หรือวิชาการโดยผู้เชี่ยวชาญเฉพาะทาง
       ชื่อหน่วยงาน เทคโนโลยี และกฎระเบียบที่กล่าวถึงอาจเปลี่ยนแปลงได้ โปรดตรวจสอบข้อมูลล่าสุดกับหน่วยงานที่เกี่ยวข้องโดยตรงก่อนตัดสินใจ
     </p>
@@ -574,12 +578,12 @@
 
 <section class="cta-final reveal">
   <div class="container">
-    <h2>พร้อมเชื่อมข้อมูลแปลงของท่านกับ AI และดาวเทียมหรือยัง?</h2>
-    <p>เข้าสู่ระบบเกษตรกรเพื่อดูคะแนนความน่าเชื่อถือของท่าน หรือเข้าสู่ระบบสหกรณ์เพื่อเริ่มเชื่อมข้อมูลแปลงของสมาชิก</p>
+    <h2 data-i18n="ai-satellite-guide_85">พร้อมเชื่อมข้อมูลแปลงของท่านกับ AI และดาวเทียมหรือยัง?</h2>
+    <p data-i18n="ai-satellite-guide_86">เข้าสู่ระบบเกษตรกรเพื่อดูคะแนนความน่าเชื่อถือของท่าน หรือเข้าสู่ระบบสหกรณ์เพื่อเริ่มเชื่อมข้อมูลแปลงของสมาชิก</p>
     <div class="cta-btns">
-      <a href="for-farmers.html" class="btn btn-gold"><i class="fa-solid fa-user"></i> สำหรับเกษตรกร</a>
-      <a href="coop-portal.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-people-roof"></i> เข้าสู่ระบบสหกรณ์</a>
-      <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-comments"></i> ติดต่อทีมงาน</a>
+      <a href="for-farmers.html" class="btn btn-gold"><i class="fa-solid fa-user"></i><span data-i18n="ai-satellite-guide_87"> สำหรับเกษตรกร</span></a>
+      <a href="coop-portal.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-people-roof"></i><span data-i18n="ai-satellite-guide_88"> เข้าสู่ระบบสหกรณ์</span></a>
+      <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-comments"></i><span data-i18n="ai-satellite-guide_89"> ติดต่อทีมงาน</span></a>
     </div>
   </div>
 </section>
@@ -589,55 +593,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-ai-satellite-guide.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

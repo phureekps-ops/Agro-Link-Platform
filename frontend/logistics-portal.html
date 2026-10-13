@@ -70,6 +70,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -113,7 +115,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -206,26 +209,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="logistics-portal_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -235,16 +239,16 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-truck-fast"></i> โลจิสติกส์และขนส่ง</div>
-    <h1 class="section-title">โลจิสติกส์ขนส่งผลผลิต ปุ๋ย และชีวมวล เชื่อมรถบรรทุก/รถพ่วงกับงานขนส่งทั่วเครือข่าย</h1>
-    <p class="section-sub">
+    <div class="eyebrow"><i class="fa-solid fa-truck-fast"></i><span data-i18n="logistics-portal_1"> โลจิสติกส์และขนส่ง</span></div>
+    <h1 class="section-title" data-i18n="logistics-portal_2">โลจิสติกส์ขนส่งผลผลิต ปุ๋ย และชีวมวล เชื่อมรถบรรทุก/รถพ่วงกับงานขนส่งทั่วเครือข่าย</h1>
+    <p class="section-sub" data-i18n="logistics-portal_3">
       พอร์ทัลสำหรับผู้ให้บริการรถบรรทุก/รถพ่วงขนาดใหญ่ที่รับงานขนถ่ายผลผลิต ปุ๋ย และชีวมวลระหว่างฟาร์ม สหกรณ์ และผู้รับซื้อ
       บน AgroLink — ทั้งงานที่สหกรณ์มอบหมายโดยตรง และงานที่ประกาศเปิดรับเสนอราคาแข่งขันบนกระดานงานขนส่งกลาง
       พร้อมระบบจับคู่รถเที่ยวเปล่าเพื่อลดเที่ยววิ่งเปล่า
     </p>
     <div class="hero-cta">
-      <a href="logistics/index.html" class="btn btn-gold"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบผู้ให้บริการขนส่ง</a>
-      <a href="register-provider.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-file-signature"></i> สมัครเป็นผู้ให้บริการขนส่ง</a>
+      <a href="logistics/index.html" class="btn btn-gold"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="logistics-portal_4"> เข้าสู่ระบบผู้ให้บริการขนส่ง</span></a>
+      <a href="register-provider.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-file-signature"></i><span data-i18n="logistics-portal_5"> สมัครเป็นผู้ให้บริการขนส่ง</span></a>
     </div>
   </div>
 </section>
@@ -253,17 +257,17 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-book"></i> ความเป็นมา</div>
-      <h2 class="section-title">จากผู้ขนส่งที่สหกรณ์บันทึกเอง สู่บัญชีที่ผู้ให้บริการขนส่งดูแลตัวเอง</h2>
+      <div class="eyebrow"><i class="fa-solid fa-book"></i><span data-i18n="logistics-portal_6"> ความเป็นมา</span></div>
+      <h2 class="section-title" data-i18n="logistics-portal_7">จากผู้ขนส่งที่สหกรณ์บันทึกเอง สู่บัญชีที่ผู้ให้บริการขนส่งดูแลตัวเอง</h2>
     </div>
     <div class="prose-block reveal in">
-      <p>
+      <p data-i18n="logistics-portal_8">
         เดิมทีเมื่อสหกรณ์วางแผนจัดส่งผลผลิต ปุ๋ย หรือชีวมวลให้ผู้รับซื้อ ระบบของ AgroLink ให้สหกรณ์บันทึกข้อมูลผู้ขนส่ง
         (ทะเบียนรถ ชื่อคนขับ) เป็นข้อมูลภายในของสหกรณ์เอง — เพียงพอสำหรับติดตามสถานะการจัดส่ง (รอดำเนินการ / กำลังเดินทาง /
         ส่งมอบแล้ว) บันทึกหลักฐานการส่งมอบ และรายงานปัญหาระหว่างทาง แต่บริษัทขนส่งที่เป็นเจ้าของรถจริงยังไม่มีบัญชีของตัวเอง
         เพื่อเข้ามาดูงานที่ได้รับมอบหมายโดยตรง
       </p>
-      <p>
+      <p data-i18n="logistics-portal_9">
         พอร์ทัลผู้ให้บริการขนส่งเปิดให้บริษัทขนส่ง (ประเภทองค์กร "โลจิสติกส์/ขนส่งทั่วไป") สมัครและเข้าสู่ระบบด้วยบัญชีของตัวเอง
         ผูกกับงานที่สหกรณ์มอบหมายให้ (บันทึกออกเดินทาง หลักฐานส่งมอบ รายงานข้อยกเว้น — เหมือนเดิมทุกขั้นตอน) พร้อมเพิ่ม
         ความสามารถใหม่ 4 อย่างที่เดิมยังไม่มี: ทะเบียนรถของตัวเอง พื้นที่ให้บริการที่ประกาศเอง กระดานงานขนส่งที่เปิดรับเสนอราคา
@@ -278,42 +282,42 @@
 <section class="prose-section alt">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-award"></i> ความสามารถของพอร์ทัล</div>
-      <h2 class="section-title">งานขนส่งทั้งแบบมอบหมายตรง และแบบเปิดตลาดแข่งขันราคา</h2>
-      <p class="section-sub">ครบทั้งฝั่งงานที่สหกรณ์วางแผนให้ และฝั่งที่ผู้ให้บริการขนส่งหางาน/หาผู้รับช่วงต่อได้เอง</p>
+      <div class="eyebrow"><i class="fa-solid fa-award"></i><span data-i18n="logistics-portal_10"> ความสามารถของพอร์ทัล</span></div>
+      <h2 class="section-title" data-i18n="logistics-portal_11">งานขนส่งทั้งแบบมอบหมายตรง และแบบเปิดตลาดแข่งขันราคา</h2>
+      <p class="section-sub" data-i18n="logistics-portal_12">ครบทั้งฝั่งงานที่สหกรณ์วางแผนให้ และฝั่งที่ผู้ให้บริการขนส่งหางาน/หาผู้รับช่วงต่อได้เอง</p>
     </div>
     <div class="benefit-grid">
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-clipboard-list"></i></div>
-        <h4>ติดตามงานที่สหกรณ์มอบหมาย</h4>
-        <p>ดูรายการจัดส่งที่ผูกบัญชีของท่านเป็นผู้ขนส่ง บันทึกออกเดินทาง หลักฐานการส่งมอบ และรายงานปัญหาระหว่างทางได้ทันที</p>
+        <h4 data-i18n="logistics-portal_13">ติดตามงานที่สหกรณ์มอบหมาย</h4>
+        <p data-i18n="logistics-portal_14">ดูรายการจัดส่งที่ผูกบัญชีของท่านเป็นผู้ขนส่ง บันทึกออกเดินทาง หลักฐานการส่งมอบ และรายงานปัญหาระหว่างทางได้ทันที</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-truck-ramp-box"></i></div>
-        <h4>ทะเบียนรถบรรทุก/รถพ่วง</h4>
-        <p>บันทึกประเภทรถ ทะเบียน และน้ำหนักบรรทุกของกองรถของท่านเอง ใช้ประกอบการเสนอราคาและประกาศรถเที่ยวเปล่า</p>
+        <h4 data-i18n="logistics-portal_15">ทะเบียนรถบรรทุก/รถพ่วง</h4>
+        <p data-i18n="logistics-portal_16">บันทึกประเภทรถ ทะเบียน และน้ำหนักบรรทุกของกองรถของท่านเอง ใช้ประกอบการเสนอราคาและประกาศรถเที่ยวเปล่า</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-map-location-dot"></i></div>
-        <h4>ประกาศพื้นที่ให้บริการ</h4>
-        <p>เลือกจังหวัด/อำเภอที่ท่านให้บริการขนส่งถึง เช่นเดียวกับผู้ให้บริการเครื่องจักรกลและร้านค้าปัจจัยการผลิตบนแพลตฟอร์ม</p>
+        <h4 data-i18n="logistics-portal_17">ประกาศพื้นที่ให้บริการ</h4>
+        <p data-i18n="logistics-portal_18">เลือกจังหวัด/อำเภอที่ท่านให้บริการขนส่งถึง เช่นเดียวกับผู้ให้บริการเครื่องจักรกลและร้านค้าปัจจัยการผลิตบนแพลตฟอร์ม</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-bullhorn"></i></div>
-        <h4>กระดานงานขนส่ง / เสนอราคา</h4>
-        <p>สหกรณ์และผู้รับซื้อประกาศงานขนย้ายผลผลิต ปุ๋ย หรือชีวมวลไว้บนตลาดขอใบเสนอราคา (RFQ) กลางของ AgroLink
+        <h4 data-i18n="logistics-portal_19">กระดานงานขนส่ง / เสนอราคา</h4>
+        <p data-i18n="logistics-portal_20">สหกรณ์และผู้รับซื้อประกาศงานขนย้ายผลผลิต ปุ๋ย หรือชีวมวลไว้บนตลาดขอใบเสนอราคา (RFQ) กลางของ AgroLink
           ให้ผู้ให้บริการขนส่งแข่งขันเสนอราคาเข้ามา ท่านเองก็ประกาศงานได้เช่นกัน</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-handshake"></i></div>
-        <h4>ต่อรองราคาและยืนยันการจอง</h4>
-        <p>เสนอราคาต่องานที่สนใจ แก้ไข/ถอนใบเสนอราคาได้ก่อนถูกเลือก เมื่อผู้ประกาศยอมรับใบเสนอราคา ระบบยืนยันการจองและ
+        <h4 data-i18n="logistics-portal_21">ต่อรองราคาและยืนยันการจอง</h4>
+        <p data-i18n="logistics-portal_22">เสนอราคาต่องานที่สนใจ แก้ไข/ถอนใบเสนอราคาได้ก่อนถูกเลือก เมื่อผู้ประกาศยอมรับใบเสนอราคา ระบบยืนยันการจองและ
           สร้างสัญญาบริการให้อัตโนมัติ</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-truck-fast"></i></div>
-        <h4>กระดานรถเที่ยวเปล่า</h4>
-        <p>ประกาศเที่ยวรถที่วิ่งกลับแบบว่างเปล่า ให้สหกรณ์/ผู้ซื้อรายอื่นที่มีของต้องขนในเส้นทางเดียวกันติดต่อขอใช้บริการ
+        <h4 data-i18n="logistics-portal_23">กระดานรถเที่ยวเปล่า</h4>
+        <p data-i18n="logistics-portal_24">ประกาศเที่ยวรถที่วิ่งกลับแบบว่างเปล่า ให้สหกรณ์/ผู้ซื้อรายอื่นที่มีของต้องขนในเส้นทางเดียวกันติดต่อขอใช้บริการ
           ในราคาพิเศษ ช่วยลดต้นทุนเที่ยววิ่งเปล่า</p>
       </div>
     </div>
@@ -324,27 +328,27 @@
 <section class="prose-section">
   <div class="container">
     <div class="section-head reveal">
-      <div class="eyebrow"><i class="fa-solid fa-route"></i> แนวทางการใช้งาน</div>
-      <h2 class="section-title">จากสมัครสมาชิก สู่การรับงานและยืนยันการจอง</h2>
-      <p class="section-sub">4 ขั้นตอนหลักของผู้ให้บริการขนส่งบนพอร์ทัล AgroLink</p>
+      <div class="eyebrow"><i class="fa-solid fa-route"></i><span data-i18n="logistics-portal_25"> แนวทางการใช้งาน</span></div>
+      <h2 class="section-title" data-i18n="logistics-portal_26">จากสมัครสมาชิก สู่การรับงานและยืนยันการจอง</h2>
+      <p class="section-sub" data-i18n="logistics-portal_27">4 ขั้นตอนหลักของผู้ให้บริการขนส่งบนพอร์ทัล AgroLink</p>
     </div>
     <div class="flow-wrap">
       <div class="flow-row reveal">
         <div class="flow-num">1</div>
         <div class="flow-body">
-          <h4>สมัครสมาชิกและเตรียมข้อมูลพื้นฐาน</h4>
-          <p>
-            สมัครเป็นผู้ให้บริการขนส่ง (ประเภทองค์กร "โลจิสติกส์/ขนส่งทั่วไป") ผ่าน<a href="register-provider.html">หน้าสมัครผู้ให้บริการ</a>
+          <h4 data-i18n="logistics-portal_28">สมัครสมาชิกและเตรียมข้อมูลพื้นฐาน</h4>
+          <p><span data-i18n="logistics-portal_29">
+            สมัครเป็นผู้ให้บริการขนส่ง (ประเภทองค์กร "โลจิสติกส์/ขนส่งทั่วไป") ผ่าน</span><a href="register-provider.html" data-i18n="logistics-portal_30">หน้าสมัครผู้ให้บริการ</a><span data-i18n="logistics-portal_31">
             เมื่อผ่านการตรวจสอบข้อมูลธุรกิจ (KYB) แล้ว เข้าสู่ระบบเพื่อเพิ่มทะเบียนรถบรรทุก/รถพ่วง และประกาศพื้นที่ให้บริการ
             จังหวัด/อำเภอที่ท่านรับงานถึง
-          </p>
+          </span></p>
         </div>
       </div>
       <div class="flow-row reveal">
         <div class="flow-num">2</div>
         <div class="flow-body">
-          <h4>รับงานที่มอบหมายตรง หรือค้นหา/ประกาศงานบนกระดานขนส่ง</h4>
-          <p>
+          <h4 data-i18n="logistics-portal_32">รับงานที่มอบหมายตรง หรือค้นหา/ประกาศงานบนกระดานขนส่ง</h4>
+          <p data-i18n="logistics-portal_33">
             หากสหกรณ์ผูกบัญชีของท่านเป็นผู้ขนส่งของสหกรณ์นั้นโดยตรง งานจะปรากฏในรายการ "งานขนส่งที่ได้รับมอบหมาย" ทันที
             หรือค้นหางานที่เปิดรับเสนอราคาแข่งขันจากสหกรณ์/ผู้ซื้อรายอื่นทั่วเครือข่ายได้จากกระดานงานขนส่ง
             (ใช้ตลาดขอใบเสนอราคากลางร่วมกับพอร์ทัลอื่นบน AgroLink)
@@ -354,8 +358,8 @@
       <div class="flow-row reveal">
         <div class="flow-num">3</div>
         <div class="flow-body">
-          <h4>เสนอราคา ต่อรอง และยืนยันการจอง</h4>
-          <p>
+          <h4 data-i18n="logistics-portal_34">เสนอราคา ต่อรอง และยืนยันการจอง</h4>
+          <p data-i18n="logistics-portal_35">
             เสนอราคาต่องานที่สนใจ พร้อมระบุน้ำหนักที่รับได้และข้อความเพิ่มเติม แก้ไขราคาที่เสนอได้จนกว่าจะถูกเลือก
             เมื่อผู้ประกาศงานยอมรับใบเสนอราคาของท่าน ถือเป็นการยืนยันการจอง ใบเสนอราคาอื่นสำหรับงานเดียวกันจะถูกปฏิเสธอัตโนมัติ
           </p>
@@ -364,8 +368,8 @@
       <div class="flow-row reveal">
         <div class="flow-num">4</div>
         <div class="flow-body">
-          <h4>ดำเนินการขนส่ง และประกาศรถเที่ยวเปล่าเพื่อลดเที่ยววิ่งเปล่า</h4>
-          <p>
+          <h4 data-i18n="logistics-portal_36">ดำเนินการขนส่ง และประกาศรถเที่ยวเปล่าเพื่อลดเที่ยววิ่งเปล่า</h4>
+          <p data-i18n="logistics-portal_37">
             บันทึกออกเดินทางเมื่อรถออก บันทึกหลักฐานการส่งมอบเมื่อถึงปลายทาง และรายงานปัญหาระหว่างทางได้จากแดชบอร์ด
             หากรถของท่านต้องวิ่งกลับแบบว่างเปล่า ประกาศไว้บนกระดานรถเที่ยวเปล่าให้ผู้อื่นติดต่อขอใช้บริการในราคาพิเศษได้
           </p>
@@ -375,7 +379,7 @@
 
     <div class="note-block reveal">
       <i class="fa-solid fa-circle-info"></i>
-      <div>
+      <div data-i18n="logistics-portal_38">
         AgroLink ทำหน้าที่เป็นแพลตฟอร์มจับคู่และประสานงานระหว่างผู้ให้บริการขนส่งกับสหกรณ์/ผู้ซื้อ ไม่ใช่ผู้ให้บริการขนส่งเอง
         การชำระเงินค่าขนส่งดำเนินการนอกระบบโดยตรงระหว่างคู่สัญญา และการ "ยอมรับใบเสนอราคา" ทำให้ระบบบันทึกสัญญาบริการ
         ให้อัตโนมัติเป็นหลักฐานความตกลง แต่ยังไม่ได้เชื่อมต่อสร้างใบสั่งงาน/ใบแจ้งหนี้ให้อัตโนมัติในเวอร์ชันนี้
@@ -387,12 +391,12 @@
 
 <section class="cta-final reveal">
   <div class="container">
-    <h2>บริษัทขนส่งของท่านพร้อมรับงานขนย้ายผลผลิต ปุ๋ย และชีวมวลหรือยัง?</h2>
-    <p>เข้าสู่ระบบผู้ให้บริการขนส่งเพื่อเริ่มเพิ่มทะเบียนรถและค้นหางาน หรือสมัครสมาชิกใหม่ได้ทันที</p>
+    <h2 data-i18n="logistics-portal_39">บริษัทขนส่งของท่านพร้อมรับงานขนย้ายผลผลิต ปุ๋ย และชีวมวลหรือยัง?</h2>
+    <p data-i18n="logistics-portal_40">เข้าสู่ระบบผู้ให้บริการขนส่งเพื่อเริ่มเพิ่มทะเบียนรถและค้นหางาน หรือสมัครสมาชิกใหม่ได้ทันที</p>
     <div class="cta-btns">
-      <a href="logistics/index.html" class="btn btn-gold"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบผู้ให้บริการขนส่ง</a>
-      <a href="register-provider.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-file-signature"></i> สมัครเป็นผู้ให้บริการขนส่ง</a>
-      <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-comments"></i> ติดต่อทีมงาน</a>
+      <a href="logistics/index.html" class="btn btn-gold"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="logistics-portal_41"> เข้าสู่ระบบผู้ให้บริการขนส่ง</span></a>
+      <a href="register-provider.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-file-signature"></i><span data-i18n="logistics-portal_42"> สมัครเป็นผู้ให้บริการขนส่ง</span></a>
+      <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-comments"></i><span data-i18n="logistics-portal_43"> ติดต่อทีมงาน</span></a>
     </div>
   </div>
 </section>
@@ -402,55 +406,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-logistics-portal.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

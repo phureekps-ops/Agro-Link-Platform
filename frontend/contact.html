@@ -70,6 +70,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -113,7 +115,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -191,26 +194,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="contact_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -220,9 +224,9 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-address-card"></i> ติดต่อเรา</div>
-    <h1 class="section-title">ติดต่อทีมงาน AgroLink</h1>
-    <p class="section-sub" style="margin-left:auto;margin-right:auto;">
+    <div class="eyebrow"><i class="fa-solid fa-address-card"></i><span data-i18n="contact_1"> ติดต่อเรา</span></div>
+    <h1 class="section-title" data-i18n="contact_2">ติดต่อทีมงาน AgroLink</h1>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;" data-i18n="contact_3">
       สอบถามข้อมูล นัดหมายชม Demo หรือติดต่อเป็นพันธมิตรกับ AgroLink ได้โดยตรงตามช่องทางด้านล่าง
       หรือกรอกแบบฟอร์มเพื่อให้ทีมงานติดต่อกลับ
     </p>
@@ -233,21 +237,21 @@
   <div class="container contact-grid">
 
     <div class="contact-card reveal in">
-      <h3>บริษัท ภักดี คอร์ปอเรชั่น จำกัด</h3>
-      <div class="company-sub">ผู้พัฒนาและดูแลแพลตฟอร์ม AgroLink</div>
+      <h3 data-i18n="contact_4">บริษัท ภักดี คอร์ปอเรชั่น จำกัด</h3>
+      <div class="company-sub" data-i18n="contact_5">ผู้พัฒนาและดูแลแพลตฟอร์ม AgroLink</div>
 
       <div class="contact-row">
         <div class="icn"><i class="fa-solid fa-location-dot"></i></div>
         <div>
-          <div class="lbl">ที่อยู่</div>
-          <div class="val">49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</div>
+          <div class="lbl" data-i18n="contact_6">ที่อยู่</div>
+          <div class="val" data-i18n="contact_7">49/325-326 ม.6 ต.คลองสอง อ.คลองหลวง จ.ปทุมธานี 12120</div>
         </div>
       </div>
 
       <div class="contact-row">
         <div class="icn"><i class="fa-solid fa-envelope"></i></div>
         <div>
-          <div class="lbl">อีเมล</div>
+          <div class="lbl" data-i18n="contact_8">อีเมล</div>
           <div class="val"><a href="mailto:management@agrolinkthai.com">management@agrolinkthai.com</a></div>
         </div>
       </div>
@@ -255,7 +259,7 @@
       <div class="contact-row">
         <div class="icn"><i class="fa-solid fa-phone"></i></div>
         <div>
-          <div class="lbl">โทรศัพท์</div>
+          <div class="lbl" data-i18n="contact_9">โทรศัพท์</div>
           <div class="val"><a href="tel:0926549935">092-654-9935</a></div>
         </div>
       </div>
@@ -271,64 +275,64 @@
       <div class="contact-row">
         <div class="icn"><i class="fa-solid fa-globe"></i></div>
         <div>
-          <div class="lbl">เว็บไซต์</div>
+          <div class="lbl" data-i18n="contact_10">เว็บไซต์</div>
           <div class="val"><a href="https://www.agrolinkthai.com" target="_blank" rel="noopener">www.agrolinkthai.com</a></div>
         </div>
       </div>
     </div>
 
     <div class="form-card reveal in">
-      <h3>กรอกรายละเอียดเพื่อให้ทีมงานติดต่อกลับ</h3>
-      <p class="form-sub">กรอกข้อมูลด้านล่าง แล้วกดส่ง ระบบจะเปิดโปรแกรมอีเมลของท่านพร้อมข้อความที่กรอกไว้ เพื่อส่งถึงทีมงาน AgroLink โดยตรง</p>
+      <h3 data-i18n="contact_11">กรอกรายละเอียดเพื่อให้ทีมงานติดต่อกลับ</h3>
+      <p class="form-sub" data-i18n="contact_12">กรอกข้อมูลด้านล่าง แล้วกดส่ง ระบบจะเปิดโปรแกรมอีเมลของท่านพร้อมข้อความที่กรอกไว้ เพื่อส่งถึงทีมงาน AgroLink โดยตรง</p>
 
       <form id="contactForm">
         <div class="form-row-2">
           <div class="form-field">
-            <label for="cf-name">ชื่อ-นามสกุล <span class="req">*</span></label>
-            <input type="text" id="cf-name" name="name" placeholder="เช่น สมชาย ใจดี" required>
+            <label for="cf-name"><span data-i18n="contact_13">ชื่อ-นามสกุล </span><span class="req">*</span></label>
+            <input type="text" id="cf-name" name="name" placeholder="เช่น สมชาย ใจดี" required data-i18n="contact_attr_1" data-i18n-attr="placeholder">
           </div>
           <div class="form-field">
-            <label for="cf-phone">เบอร์โทรติดต่อกลับ <span class="req">*</span></label>
+            <label for="cf-phone"><span data-i18n="contact_14">เบอร์โทรติดต่อกลับ </span><span class="req">*</span></label>
             <input type="tel" id="cf-phone" name="phone" placeholder="08X-XXX-XXXX" required>
           </div>
         </div>
 
         <div class="form-row-2">
           <div class="form-field">
-            <label for="cf-email">อีเมล (ถ้ามี)</label>
+            <label for="cf-email" data-i18n="contact_15">อีเมล (ถ้ามี)</label>
             <input type="email" id="cf-email" name="email" placeholder="name@example.com">
           </div>
           <div class="form-field">
-            <label for="cf-topic">เรื่องที่ต้องการติดต่อ <span class="req">*</span></label>
+            <label for="cf-topic"><span data-i18n="contact_16">เรื่องที่ต้องการติดต่อ </span><span class="req">*</span></label>
             <select id="cf-topic" name="topic" required>
-              <option value="" selected disabled>เลือกหัวข้อ</option>
-              <option value="ขอนัดชม Demo">ขอนัดชม Demo</option>
-              <option value="สอบถามการเป็นพันธมิตร/ผู้ให้บริการ">สอบถามการเป็นพันธมิตร/ผู้ให้บริการ</option>
-              <option value="สอบถามการใช้งานสำหรับเกษตรกร/สหกรณ์">สอบถามการใช้งานสำหรับเกษตรกร/สหกรณ์</option>
-              <option value="อื่นๆ">อื่นๆ</option>
+              <option value="" selected disabled data-i18n="contact_17">เลือกหัวข้อ</option>
+              <option value="ขอนัดชม Demo" data-i18n="contact_18">ขอนัดชม Demo</option>
+              <option value="สอบถามการเป็นพันธมิตร/ผู้ให้บริการ" data-i18n="contact_19">สอบถามการเป็นพันธมิตร/ผู้ให้บริการ</option>
+              <option value="สอบถามการใช้งานสำหรับเกษตรกร/สหกรณ์" data-i18n="contact_20">สอบถามการใช้งานสำหรับเกษตรกร/สหกรณ์</option>
+              <option value="อื่นๆ" data-i18n="contact_21">อื่นๆ</option>
             </select>
           </div>
         </div>
 
         <div class="form-field">
-          <label for="cf-org">หน่วยงาน/องค์กร (ถ้ามี)</label>
-          <input type="text" id="cf-org" name="org" placeholder="เช่น สหกรณ์การเกษตร... / บริษัท...">
+          <label for="cf-org" data-i18n="contact_22">หน่วยงาน/องค์กร (ถ้ามี)</label>
+          <input type="text" id="cf-org" name="org" placeholder="เช่น สหกรณ์การเกษตร... / บริษัท..." data-i18n="contact_attr_2" data-i18n-attr="placeholder">
         </div>
 
         <div class="form-field">
-          <label for="cf-message">รายละเอียดเพิ่มเติม</label>
-          <textarea id="cf-message" name="message" placeholder="เล่าให้ทีมงานทราบว่าต้องการสอบถามหรือขอความช่วยเหลือเรื่องใด"></textarea>
+          <label for="cf-message" data-i18n="contact_23">รายละเอียดเพิ่มเติม</label>
+          <textarea id="cf-message" name="message" placeholder="เล่าให้ทีมงานทราบว่าต้องการสอบถามหรือขอความช่วยเหลือเรื่องใด" data-i18n="contact_attr_3" data-i18n-attr="placeholder"></textarea>
         </div>
 
-        <button type="submit" class="btn btn-gold"><i class="fa-solid fa-paper-plane"></i> ส่งอีเมลถึงทีมงาน</button>
+        <button type="submit" class="btn btn-gold"><i class="fa-solid fa-paper-plane"></i><span data-i18n="contact_24"> ส่งอีเมลถึงทีมงาน</span></button>
 
         <div id="cfStatus" class="form-status"></div>
 
         <div class="form-note">
-          <i class="fa-solid fa-circle-info"></i>
+          <i class="fa-solid fa-circle-info"></i><span data-i18n="contact_25">
           ปุ่มนี้จะเปิดโปรแกรมอีเมลที่ตั้งค่าไว้ในเครื่องของท่าน พร้อมข้อความที่กรอกไว้ล่วงหน้า ส่งถึง management@agrolinkthai.com —
           หากไม่สะดวกใช้อีเมล สามารถติดต่อผ่านโทรศัพท์หรือ LINE ตามช่องทางด้านซ้ายได้เช่นกัน
-        </div>
+        </span></div>
       </form>
     </div>
 
@@ -340,55 +344,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-contact.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // scroll reveal
   const io = new IntersectionObserver((entries) => {

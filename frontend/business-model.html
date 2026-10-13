@@ -70,6 +70,8 @@
   .nav-links a:hover { color: var(--green); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
   .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
   @media (max-width: 1180px) {
     .nav-links {
       display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
@@ -113,7 +115,8 @@
   }
   @media (max-width: 480px) {
     .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
-    .nav-right { width: 100%; justify-content: space-between; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
   /* PAGE HEADER */
@@ -172,26 +175,27 @@
     <div class="nav-top">
       <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
       <nav class="nav-links">
-        <a href="index.html#top">หน้าแรก</a>
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
         <div class="nav-item-dropdown">
-          <a href="coop-portal.html">สำหรับสหกรณ์ <i class="fa-solid fa-chevron-down"></i></a>
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
           <div class="nav-dropdown-menu">
-            <a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a>
-            <a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a>
-            <a href="carbon-credit-article.html">คาร์บอนเครดิต</a>
-            <a href="biomass-economy.html">เศรษฐกิจชีวมวล</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
           </div>
         </div>
-        <a href="for-farmers.html">สำหรับเกษตรกร</a>
-        <a href="finance-partners.html">การเงิน</a>
-        <a href="marketplace-partners.html">ตลาดกลาง</a>
-        <a href="ai-satellite-guide.html">AI และดาวเทียม</a>
-        <a href="business-model.html" class="active-link">นักลงทุน</a>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" class="active-link" data-i18n="nav_investor">นักลงทุน</a>
       </nav>
       <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta">
-          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</a>
-          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;">ขอชม Demo</a>
+          <a href="login.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="business-model_nav_1"> เข้าสู่ระบบ</span></a>
+          <a href="demo-preview.html" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="nav_demo">ขอชม Demo</a>
         </div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
@@ -201,9 +205,9 @@
 
 <section class="page-header">
   <div class="container reveal in">
-    <div class="eyebrow"><i class="fa-solid fa-chart-pie"></i> สำหรับนักลงทุน</div>
-    <h1 class="section-title">โมเดลรายได้ (Business Model)</h1>
-    <p class="section-sub" style="margin-left:auto;margin-right:auto;">
+    <div class="eyebrow"><i class="fa-solid fa-chart-pie"></i><span data-i18n="business-model_1"> สำหรับนักลงทุน</span></div>
+    <h1 class="section-title" data-i18n="business-model_2">โมเดลรายได้ (Business Model)</h1>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto;" data-i18n="business-model_3">
       รายได้จากหลายช่องทางบนแพลตฟอร์มเดียว — AgroLink ออกแบบให้มีแหล่งรายได้ที่หลากหลายและเสริมกัน
       ครอบคลุมทั้งค่าบริการระบบ ค่าธรรมเนียมธุรกรรม และบริการต่อยอดตลอดห่วงโซ่การผลิต
     </p>
@@ -217,55 +221,55 @@
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-people-roof"></i></div>
         <h4>Cooperative SaaS</h4>
-        <p>ค่าบริการระบบ Digital Cooperative</p>
+        <p data-i18n="business-model_4">ค่าบริการระบบ Digital Cooperative</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-money-bill-transfer"></i></div>
         <h4>Transaction Fee</h4>
-        <p>ค่าธรรมเนียมจากธุรกรรมบน Platform</p>
+        <p data-i18n="business-model_5">ค่าธรรมเนียมจากธุรกรรมบน Platform</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-cart-shopping"></i></div>
         <h4>Procurement Fee</h4>
-        <p>ค่าธรรมเนียมจากการจัดซื้อรวม</p>
+        <p data-i18n="business-model_6">ค่าธรรมเนียมจากการจัดซื้อรวม</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-store"></i></div>
         <h4>Marketplace Fee</h4>
-        <p>ค่าธรรมเนียมจาก Marketplace</p>
+        <p data-i18n="business-model_7">ค่าธรรมเนียมจาก Marketplace</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-tractor"></i></div>
         <h4>Farm Service</h4>
-        <p>รายได้จากบริการเครื่องจักรและบริการการเกษตร</p>
+        <p data-i18n="business-model_8">รายได้จากบริการเครื่องจักรและบริการการเกษตร</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-flask"></i></div>
         <h4>Fertilizer Business</h4>
-        <p>ธุรกิจปุ๋ยสั่งตัดและ Procurement</p>
+        <p data-i18n="business-model_9">ธุรกิจปุ๋ยสั่งตัดและ Procurement</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-satellite-dish"></i></div>
         <h4>Data / AI / Satellite</h4>
-        <p>บริการข้อมูลและ Analytics</p>
+        <p data-i18n="business-model_10">บริการข้อมูลและ Analytics</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-building-columns"></i></div>
         <h4>Financial Ecosystem</h4>
-        <p>รายได้จากการเชื่อมโยง Financial Partners</p>
+        <p data-i18n="business-model_11">รายได้จากการเชื่อมโยง Financial Partners</p>
       </div>
 
       <div class="bm-card reveal in">
         <div class="icn"><i class="fa-solid fa-bullhorn"></i></div>
         <h4>Advertising / Enterprise</h4>
-        <p>รายได้จากธุรกิจโฆษณาและ Enterprise Solutions</p>
+        <p data-i18n="business-model_12">รายได้จากธุรกิจโฆษณาและ Enterprise Solutions</p>
       </div>
 
     </div>
@@ -275,19 +279,19 @@
 <section class="bm-section" style="padding-top:0;">
   <div class="container">
     <div class="note-block reveal in">
-      <strong>หมายเหตุ:</strong> โมเดลรายได้ข้างต้นสะท้อนโครงสร้างช่องทางรายได้ตามแผนธุรกิจปัจจุบันของ AgroLink
+      <strong data-i18n="business-model_13">หมายเหตุ:</strong><span data-i18n="business-model_14"> โมเดลรายได้ข้างต้นสะท้อนโครงสร้างช่องทางรายได้ตามแผนธุรกิจปัจจุบันของ AgroLink
       สัดส่วนและลำดับความสำคัญของแต่ละช่องทางอาจปรับเปลี่ยนตามระยะการเติบโตของแพลตฟอร์มและพื้นที่นำร่อง
-    </div>
+    </span></div>
   </div>
 </section>
 
 <section class="cta-final">
   <div class="container">
-    <h2>สนใจร่วมลงทุนหรือเป็นพันธมิตรกับ AgroLink?</h2>
-    <p>ติดต่อทีมงานเพื่อขอข้อมูลแผนธุรกิจฉบับเต็ม หรือนัดหมายพูดคุยกับทีมผู้บริหาร</p>
+    <h2 data-i18n="business-model_15">สนใจร่วมลงทุนหรือเป็นพันธมิตรกับ AgroLink?</h2>
+    <p data-i18n="business-model_16">ติดต่อทีมงานเพื่อขอข้อมูลแผนธุรกิจฉบับเต็ม หรือนัดหมายพูดคุยกับทีมผู้บริหาร</p>
     <div class="cta-actions">
-      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i> ติดต่อทีมงาน</a>
-      <a href="demo-preview.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-route"></i> ดูตัวอย่างการใช้งานทีละขั้นตอน</a>
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-envelope"></i><span data-i18n="business-model_17"> ติดต่อทีมงาน</span></a>
+      <a href="demo-preview.html" class="btn btn-outline" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4);"><i class="fa-solid fa-route"></i><span data-i18n="business-model_18"> ดูตัวอย่างการใช้งานทีละขั้นตอน</span></a>
     </div>
   </div>
 </section>
@@ -297,55 +301,58 @@
     <div class="footer-grid">
       <div>
         <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
-        <div class="footer-tagline-en">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
-        <p class="desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
       <div>
-        <h5>ผลิตภัณฑ์</h5>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
         <ul>
-          <li><a href="coop-portal.html">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="for-farmers.html">เกษตรกร</a></li>
-          <li><a href="finance-partners.html">การเงิน</a></li>
-          <li><a href="marketplace-partners.html">ตลาดกลาง</a></li>
-          <li><a href="custom-fertilizer.html">ปุ๋ยสั่งตัด</a></li>
-          <li><a href="integrated-rice-business.html">ธุรกิจข้าวครบวงจร</a></li>
-          <li><a href="ai-satellite-guide.html">AI และดาวเทียม</a></li>
-          <li><a href="carbon-credit-article.html">คาร์บอนเครดิต</a></li>
-          <li><a href="biomass-economy.html">เศรษฐกิจชีวมวล</a></li>
-          <li><a href="index.html#roadmap">แผนขยายสินค้า</a></li>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
         </ul>
       </div>
       <div>
-        <h5>พันธมิตร</h5>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
         <ul>
-          <li><a href="index.html#partners">สหกรณ์/กลุ่มเกษตรกร</a></li>
-          <li><a href="finance-partners.html">สถาบันการเงิน</a></li>
-          <li><a href="marketplace-partners.html">ผู้ซื้อ</a></li>
-          <li><a href="index.html#partners">ผู้ให้บริการ</a></li>
-          <li><a href="technology-partners.html">พันธมิตรเทคโนโลยี</a></li>
-          <li><a href="biomass-portal.html">ผู้รับซื้อชีวมวล</a></li>
-          <li><a href="logistics-portal.html">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
         </ul>
       </div>
       <div>
-        <h5>บริษัท</h5>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
         <ul>
-          <li><a href="about.html">เกี่ยวกับเรา</a></li>
-          <li><a href="business-model.html">นักลงทุน</a></li>
-          <li><a href="contact.html">ติดต่อเรา</a></li>
-          <li><a href="privacy-policy.html">นโยบายความเป็นส่วนตัว</a></li>
-          <li><a href="terms-of-use.html">ข้อกำหนดการใช้งาน</a></li>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
-      <span>© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
     </div>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-business-model.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
