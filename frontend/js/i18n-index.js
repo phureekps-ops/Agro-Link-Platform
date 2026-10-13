@@ -1,0 +1,272 @@
+/**
+ * TH/EN dictionary for frontend/index.html (the public homepage).
+ * Loaded before js/i18n.js — see that file for how data-i18n works.
+ */
+window.AGROLINK_I18N = {
+  // ---------- Header / nav ----------
+  logo_alt: { th: "AgroLink", en: "AgroLink" },
+  nav_home: { th: "หน้าแรก", en: "Home" },
+  nav_coop: { th: "สำหรับสหกรณ์", en: "For Cooperatives" },
+  nav_coop_fert: { th: "ปุ๋ยสั่งตัด", en: "Custom Fertilizer" },
+  nav_coop_rice: { th: "ธุรกิจข้าวครบวงจร", en: "Integrated Rice Business" },
+  nav_coop_carbon: { th: "คาร์บอนเครดิต", en: "Carbon Credit" },
+  nav_coop_biomass: { th: "เศรษฐกิจชีวมวล", en: "Biomass Economy" },
+  nav_farmers: { th: "สำหรับเกษตรกร", en: "For Farmers" },
+  nav_finance: { th: "การเงิน", en: "Finance" },
+  nav_marketplace: { th: "ตลาดกลาง", en: "Marketplace" },
+  nav_ai: { th: "AI และดาวเทียม", en: "AI & Satellite" },
+  nav_investor: { th: "นักลงทุน", en: "Investors" },
+  nav_login: { th: "เข้าสู่ระบบ", en: "Log In" },
+  nav_demo: { th: "ขอชม Demo", en: "Request a Demo" },
+
+  // ---------- Hero — quick chat widget ----------
+  qc_title: { th: "สอบถาม AgroLink", en: "Ask AgroLink" },
+  qc_sub: { th: "พิมพ์หรือพูดคำถามของคุณได้เลย", en: "Type or speak your question" },
+  qc_toggle_aria: { th: "ย่อ/ขยายช่องแชท", en: "Collapse/expand chat" },
+  qc_bot_greeting: {
+    th: "สวัสดีค่ะ ต้องการสอบถาม Agrolink พิมพ์หรือกดไมค์พูดได้เลยค่ะ",
+    en: "Hello! Have a question about AgroLink? Type it or tap the mic to speak.",
+  },
+  qc_mic_title_aria: { th: "พูดเพื่อพิมพ์", en: "Speak to type" },
+  qc_input_placeholder: { th: "พิมพ์ข้อความ...", en: "Type a message..." },
+  qc_send_aria: { th: "ส่งข้อความ", en: "Send message" },
+  qc_heart: { th: "AgroLink หัวใจคือเกษตรกร", en: "AgroLink — farmers at heart" },
+  qc_bot_autoreply: {
+    th: "ขอบคุณสำหรับข้อความค่ะ ขณะนี้ระบบแชทเต็มรูปแบบกำลังเปิดให้บริการเร็วๆ นี้ค่ะ",
+    en: "Thanks for your message! The full chat system is launching soon.",
+  },
+
+  // ---------- Hero — art / badges ----------
+  hero_badge_satellite: { th: "ยืนยันด้วยภาพถ่ายดาวเทียม", en: "Verified with satellite imagery" },
+  hero_map_title: { th: "แผนที่จังหวัดนครสวรรค์", en: "Map of Nakhon Sawan Province" },
+  hero_cap_location: { th: "แปลงนำร่อง อ.สรรพยา จ.ชัยนาท", en: "Pilot plot — Sapphaya District, Chai Nat" },
+  hero_cap_status: { th: "สถานะ: กำลังเจริญเติบโต", en: "Status: Growing" },
+  hero_badge_credit: { th: "วงเงินคงเหลือ 4,200 บาท", en: "Remaining credit: 4,200 THB" },
+
+  // ---------- Hero — copy ----------
+  hero_eyebrow: { th: "โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร", en: "Digital infrastructure for agriculture" },
+  hero_connectors: {
+    th: "เชื่อม เกษตรกร • สหกรณ์ • บริการเกษตร • ปัจจัยการผลิต • การเงิน • ผู้ซื้อ",
+    en: "Connecting Farmers • Cooperatives • Agri Services • Inputs • Finance • Buyers",
+  },
+  hero_lead: {
+    th: "AgroLink เปลี่ยนข้อมูลจากการผลิตจริงในแปลงเกษตร ให้กลายเป็นโครงสร้างพื้นฐานดิจิทัลสำหรับการผลิต การเงิน และตลาด — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง",
+    en: "AgroLink turns real on-farm production data into digital infrastructure for production, finance, and markets — connecting farmers, cooperatives, services, finance, and markets through real production data.",
+  },
+  flow_production: { th: "การผลิต", en: "Production" },
+  flow_data: { th: "ข้อมูล", en: "Data" },
+  flow_finance: { th: "การเงิน", en: "Finance" },
+  flow_market: { th: "ตลาด", en: "Market" },
+  hero_demo_btn: { th: "ขอชม Demo", en: "Request a Demo" },
+  hero_explore_btn: { th: "สำรวจ AgroLink", en: "Explore AgroLink" },
+
+  // ---------- Ecosystem section ----------
+  eco_eyebrow: { th: "ระบบนิเวศของ AgroLink", en: "The AgroLink Ecosystem" },
+  eco_title: { th: "ระบบนิเวศเดียว ที่เชื่อมทุกฝ่ายด้วยข้อมูล", en: "One ecosystem, connecting everyone through data" },
+  eco_sub: {
+    th: "ตลาดกลาง การเงิน คาร์บอนเครดิต AI และดาวเทียม ไม่ใช่ธุรกิจแยกกันหลายธุรกิจ แต่เป็นบริการที่อยู่บนแพลตฟอร์มและโครงสร้างพื้นฐานข้อมูลเดียวกันของ AgroLink",
+    en: "Marketplace, finance, carbon credit, and AI & satellite data are not separate businesses — they are services built on AgroLink's single platform and shared data infrastructure.",
+  },
+  eco_buyers: { th: "ผู้ซื้อ", en: "Buyers" },
+  eco_buyers_small: { th: "โรงสี / โรงงาน / ส่งออก", en: "Mills / Factories / Exporters" },
+  eco_agri_services: { th: "บริการเกษตร", en: "Agri Services" },
+  eco_finance: { th: "การเงิน", en: "Finance" },
+  eco_coop: { th: "สหกรณ์", en: "Cooperatives" },
+  eco_farmer: { th: "เกษตรกร", en: "Farmers" },
+  eco_farm_data: { th: "ข้อมูลการผลิตจากแปลง", en: "On-farm production data" },
+  eco_satellite: { th: "ดาวเทียม", en: "Satellite" },
+  eco_intelligent: { th: "ระบบอัจฉริยะด้านการเกษตร", en: "Agricultural intelligence system" },
+
+  // ---------- Platforms section ----------
+  platforms_eyebrow: { th: "6 แพลตฟอร์มหลัก", en: "6 Core Platforms" },
+  platforms_title: { th: "แพลตฟอร์มหลัก 6 ระบบ บนโครงสร้างพื้นฐานเดียว", en: "6 core platforms on one shared infrastructure" },
+  platform_member_portal_title: { th: "พอร์ทัลสมาชิก", en: "Member Portal" },
+  platform_member_portal_desc: {
+    th: "แดชบอร์ดบริหารข้อมูลสมาชิกทุกกลุ่ม ทั้งเกษตรกร สหกรณ์ และผู้ให้บริการ ในที่เดียว",
+    en: "A single dashboard for managing every member group — farmers, cooperatives, and service providers.",
+  },
+  platform_farmos_title: { th: "Farm OS", en: "Farm OS" },
+  platform_farmos_desc: { th: "บริหารแปลง วางแผนการผลิต ติดตามรอบปลูก", en: "Manage plots, plan production, and track planting cycles." },
+  platform_services_title: { th: "บริการเกษตร", en: "Agri Services" },
+  platform_services_desc: { th: "จองบริการเครื่องจักรกล รถไถ โดรน รถเกี่ยว", en: "Book machinery services — tractors, drones, and harvesters." },
+  platform_inputs_title: { th: "ปัจจัยการผลิต", en: "Inputs" },
+  platform_inputs_desc: { th: "ปัจจัยการผลิต ปุ๋ย เมล็ดพันธุ์ สารชีวภัณฑ์", en: "Production inputs — fertilizer, seeds, and bio-agents." },
+  platform_finance_title: { th: "การเงิน", en: "Finance" },
+  platform_finance_desc: { th: "เชื่อมข้อมูลการผลิตกับผู้ให้บริการทางการเงิน", en: "Connect production data with financial service providers." },
+  platform_marketplace_title: { th: "ตลาดกลาง", en: "Marketplace" },
+  platform_marketplace_desc: { th: "ตลาดผู้ซื้อผลผลิต โรงสี โรงงาน และขนส่ง", en: "A marketplace for produce buyers, mills, factories, and logistics." },
+
+  // ---------- How it works (6 steps) ----------
+  how_eyebrow: { th: "AgroLink ทำงานอย่างไร", en: "How AgroLink Works" },
+  how_title: { th: "6 ขั้นตอน จากลงทะเบียนถึงขายผลผลิต", en: "6 steps, from registration to selling your harvest" },
+  step1_title: { th: "ลงทะเบียน", en: "Register" },
+  step1_desc: { th: "ลงทะเบียนแปลง / สหกรณ์", en: "Register your plot / cooperative" },
+  step2_title: { th: "วางแผน", en: "Plan" },
+  step2_desc: { th: "วางแผนการผลิต", en: "Plan production" },
+  step3_title: { th: "ผลิต", en: "Produce" },
+  step3_desc: { th: "ผลิต บันทึกกิจกรรมในแปลง", en: "Produce and log on-farm activity" },
+  step4_title: { th: "ตรวจสอบ", en: "Verify" },
+  step4_desc: { th: "ตรวจสอบด้วย AI / ดาวเทียม", en: "Verify with AI / satellite data" },
+  step5_title: { th: "การเงิน", en: "Finance" },
+  step5_desc: { th: "เชื่อมข้อมูลสู่ผู้ให้สินเชื่อ", en: "Connect data to lenders" },
+  step6_title: { th: "ขาย", en: "Sell" },
+  step6_desc: { th: "ขายผลผลิตผ่านตลาด", en: "Sell your harvest through the marketplace" },
+
+  // ---------- Roadmap ----------
+  roadmap_eyebrow: { th: "แผนขยายสินค้า", en: "Product Expansion Roadmap" },
+  roadmap_title: { th: "นำร่องด้วยข้าว แล้วขยายสู่สินค้าเกษตรทุกชนิด", en: "Starting with rice, expanding to every agricultural commodity" },
+  roadmap_sub: {
+    th: "แม่แบบเดียวกันปรับใช้ได้กับพืชไร่ พืชยืนต้น ปศุสัตว์ และประมง โดยปรับเฉพาะรายละเอียดขั้นตอนและสัญญาณยืนยัน",
+    en: "The same template adapts to field crops, perennial crops, livestock, and fisheries — only the process details and verification signals change.",
+  },
+  phase1_tag: { th: "ระยะที่ 1 — เรือธง", en: "Phase 1 — Flagship" },
+  phase1_title: { th: "ข้าว", en: "Rice" },
+  phase1_desc: { th: "พิสูจน์แม่แบบครั้งแรกทั้ง 6 องค์ประกอบ เริ่มภาคกลางตอนล่าง", en: "Prove the full 6-part template first, starting in the lower central region." },
+  phase2_tag: { th: "ระยะที่ 1 ต่อเนื่อง", en: "Phase 1 — Continued" },
+  phase2_title: { th: "มันสำปะหลัง / ข้าวโพด", en: "Cassava / Maize" },
+  phase2_desc: { th: "ใช้โครงสร้างเดียวกับข้าวเกือบทั้งหมด ปรับปฏิทินเพาะปลูก", en: "Reuses almost all of the rice structure, with an adjusted planting calendar." },
+  phase3_tag: { th: "ระยะที่ 2", en: "Phase 2" },
+  phase3_title: { th: "ปศุสัตว์", en: "Livestock" },
+  phase3_desc: {
+    th: "ไก่ สุกร โค — เปลี่ยนสัญญาณยืนยันเป็นน้ำหนักสัตว์และบันทึกวัคซีน",
+    en: "Poultry, swine, cattle — verification signals shift to animal weight and vaccination records.",
+  },
+  phase4_tag: { th: "ระยะที่ 3", en: "Phase 3" },
+  phase4_title: { th: "ยาง / ปาล์ม / ผลไม้ส่งออก", en: "Rubber / Palm / Export Fruit" },
+  phase4_desc: { th: "รองรับหักบัญชีแบบสะสมทีละน้อย พร้อม Traceability มาตรฐานส่งออก", en: "Supports gradual, cumulative settlement with export-grade traceability." },
+  phase5_tag: { th: "ระยะที่ 4", en: "Phase 4" },
+  phase5_title: { th: "ประมง", en: "Fisheries" },
+  phase5_desc: {
+    th: "กุ้ง ปลา — เชื่อมเซนเซอร์ IoT บ่อและข้อมูลเตือนภัยจากกรมประมง",
+    en: "Shrimp, fish — connecting pond IoT sensors and early-warning data from the Department of Fisheries.",
+  },
+
+  // ---------- Cooperative section ----------
+  coop_eyebrow: { th: "สำหรับสหกรณ์", en: "For Cooperatives" },
+  coop_title: { th: "เปลี่ยนสหกรณ์ให้เป็นศูนย์กลางเกษตรดิจิทัล", en: "Turning cooperatives into digital agriculture hubs" },
+  coop_sub: {
+    th: "AgroLink ช่วยสหกรณ์บริหารสมาชิก การผลิต ปัจจัยการผลิต บริการเกษตร การรวบรวมผลผลิต การเงิน และข้อมูลธุรกิจ ผ่านระบบเดียว — สหกรณ์ไม่ต้องซื้อซอฟต์แวร์หลายระบบอีกต่อไป",
+    en: "AgroLink helps cooperatives manage members, production, inputs, agri services, produce collection, finance, and business data — all in one system, so cooperatives no longer need to buy multiple separate pieces of software.",
+  },
+  coop_flow: { th: "สมาชิก → การผลิต → ปัจจัยการผลิต → สินเชื่อ → รวบรวม → ตลาด → ข้อมูล", en: "Members → Production → Inputs → Credit → Collection → Market → Data" },
+  coop_mod_1: { th: "สมาชิก", en: "Members" },
+  coop_mod_2: { th: "แอปเกษตรกร", en: "Farmer App" },
+  coop_mod_3: { th: "บริหารการผลิต", en: "Production Management" },
+  coop_mod_4: { th: "ปัจจัยการผลิต", en: "Inputs" },
+  coop_mod_5: { th: "ปุ๋ยสั่งตัด", en: "Custom Fertilizer" },
+  coop_mod_6: { th: "ตลาดบริการ", en: "Service Marketplace" },
+  coop_mod_7: { th: "การเงิน", en: "Finance" },
+  coop_mod_8: { th: "รวบรวมผลผลิต", en: "Produce Collection" },
+  coop_mod_9: { th: "ตลาดผู้ซื้อ", en: "Buyer Marketplace" },
+  coop_mod_10: { th: "ธุรกิจข้าวครบวงจร", en: "Integrated Rice Business" },
+  coop_mod_11: { th: "Carbon Credit", en: "Carbon Credit" },
+  coop_mod_12: { th: "ชีวมวล Bio Mass", en: "Biomass" },
+  coop_cta_btn: { th: "ดูพอร์ทัลสหกรณ์แบบเต็ม", en: "View the Full Cooperative Portal" },
+
+  // ---------- AI & satellite section ----------
+  ai_eyebrow: { th: "ข้อมูล AI และดาวเทียม", en: "AI & Satellite Data" },
+  ai_title: { th: "เปลี่ยนกิจกรรมในแปลงให้เป็นข้อมูลที่ใช้งานได้จริง", en: "Turning on-farm activity into actionable data" },
+  ai_sub: {
+    th: "AgroLink รวมข้อมูลจากแปลงเกษตร การผลิต สภาพอากาศ ดาวเทียม และกิจกรรมภาคสนาม เพื่อสร้างข้อมูลที่ช่วยสนับสนุนการบริหารการผลิต การตรวจสอบ และการให้บริการทางการเงิน",
+    en: "AgroLink combines farm, production, weather, satellite, and field-activity data to generate insights that support production management, verification, and financial services.",
+  },
+  ai_flow_1: { th: "ข้อมูลแปลง", en: "Farm Data" },
+  ai_flow_2: { th: "การวิเคราะห์", en: "Analysis" },
+  ai_flow_3: { th: "การตัดสินใจ", en: "Decision" },
+  ai_chip_1: { th: "ดัชนีพืชพรรณ", en: "Vegetation Index" },
+  ai_chip_2: { th: "ระยะการเจริญเติบโต", en: "Growth Stage" },
+  ai_chip_3: { th: "กิจกรรมในแปลง", en: "Field Activity" },
+  ai_chip_4: { th: "ความเสี่ยงสภาพอากาศ", en: "Weather Risk" },
+  ai_chip_5: { th: "ประมาณการผลผลิต", en: "Yield Estimate" },
+  ai_chip_6: { th: "ประวัติการผลิต", en: "Production History" },
+  ai_chip_7: { th: "ข้อมูลเครดิต", en: "Credit Data" },
+
+  // ---------- Carbon credit section ----------
+  carbon_eyebrow: { th: "โอกาสด้านคาร์บอนเครดิต", en: "Carbon Credit Opportunity" },
+  carbon_title: { th: "เปลี่ยนการทำเกษตรยั่งยืนให้เป็นมูลค่าที่วัดผลได้", en: "Turning sustainable farming into measurable value" },
+  carbon_sub: {
+    th: "AgroLink สนับสนุนโครงการเกษตรที่สามารถติดตาม ตรวจสอบ และรวบรวมข้อมูลการลดการปล่อยก๊าซเรือนกระจก เช่น การทำนาเปียกสลับแห้ง (AWD)",
+    en: "AgroLink supports farming programs that can track, verify, and collect emissions-reduction data, such as Alternate Wetting and Drying (AWD) rice cultivation.",
+  },
+  carbon_flow_1: { th: "แนวทางการทำเกษตร", en: "Farming Practice" },
+  carbon_flow_2: { th: "MRV", en: "MRV" },
+  carbon_flow_3: { th: "การทวนสอบ", en: "Verification" },
+  carbon_flow_4: { th: "คาร์บอนเครดิต", en: "Carbon Credit" },
+  carbon_flow_5: { th: "มูลค่าสู่เกษตรกรและสหกรณ์", en: "Value to farmers and cooperatives" },
+  carbon_btn_read: { th: "อ่านเรื่องคาร์บอนเครดิต", en: "Read About Carbon Credit" },
+  carbon_btn_tech: { th: "กลไกการทำงานเชิงเทคนิค", en: "Technical Mechanism" },
+
+  // ---------- Finance disclaimer note block ----------
+  note_strong1: { th: "ตำแหน่งทางธุรกิจของ AgroLink ด้านการเงิน:", en: "AgroLink's role in finance:" },
+  note_text_mid: {
+    th: " AgroLink เป็นแพลตฟอร์มและโครงสร้างพื้นฐานข้อมูล ที่เชื่อมข้อมูลการผลิตจริงจากเกษตรกรและสหกรณ์กับผู้ให้บริการทางการเงินที่เข้าร่วมระบบ เพื่อสนับสนุนการพิจารณาสินเชื่อและการบริหารเงินทุนตามกิจกรรมการผลิต — ",
+    en: " AgroLink is a platform and data infrastructure that connects real production data from farmers and cooperatives with participating financial service providers, to support credit assessment and capital management based on production activity — ",
+  },
+  note_strong2: { th: "AgroLink ไม่ใช่ผู้ให้สินเชื่อ", en: "AgroLink is not a lender." },
+  note_text_after: {
+    th: " การอนุมัติสินเชื่อ วงเงิน อัตราดอกเบี้ย และเงื่อนไขต่าง ๆ เป็นการพิจารณาโดยผู้ให้บริการทางการเงินแต่ละรายเอง",
+    en: " Credit approval, limits, interest rates, and terms are each determined independently by the respective financial service provider.",
+  },
+
+  // ---------- Partners section ----------
+  partners_eyebrow: { th: "พันธมิตร / โครงการนำร่อง / ระบบนิเวศ", en: "Partners / Pilot Programs / Ecosystem" },
+  partners_title: { th: "กำลังเปิดรับพันธมิตรเชิงยุทธศาสตร์", en: "Now Welcoming Strategic Partners" },
+  partner_chip_1: { th: "สหกรณ์การเกษตร", en: "Agricultural Cooperatives" },
+  partner_chip_2: { th: "สถาบันการเงินเพื่อภาคเกษตร", en: "Agricultural Financial Institutions" },
+  partner_chip_3: { th: "ผู้ซื้อ / โรงสี / โรงงาน", en: "Buyers / Mills / Factories" },
+  partner_chip_4: { th: "ผู้ให้บริการเครื่องจักรกล", en: "Machinery Service Providers" },
+  partner_chip_5: { th: "พันธมิตรด้านเทคโนโลยีดาวเทียมและ AI", en: "Satellite & AI Technology Partners" },
+  partners_caveat: {
+    th: "* รายชื่อข้างต้นเป็นหมวดหมู่พันธมิตรเป้าหมายเท่านั้น ยังไม่ใช่รายชื่อพันธมิตรที่ยืนยันแล้ว — ใส่โลโก้/ชื่อจริงเมื่อมีการยืนยันความร่วมมือ",
+    en: "* The categories above are target-partner categories only — not yet confirmed partners. Real logos/names will be added once partnerships are confirmed.",
+  },
+
+  // ---------- Demo / CTA section ----------
+  demo_title: { th: "พร้อมเห็น AgroLink ทำงานจริงหรือยัง?", en: "Ready to see AgroLink in action?" },
+  demo_sub: {
+    th: "นัดหมาย Demo กับทีมงาน AgroLink เพื่อดูว่าแพลตฟอร์มนี้จะช่วยสหกรณ์ เกษตรกร หรือองค์กรของท่านได้อย่างไร",
+    en: "Schedule a demo with the AgroLink team to see how this platform can help your cooperative, farmers, or organization.",
+  },
+  demo_btn_preview: { th: "ดูตัวอย่างการใช้งานทีละขั้นตอน", en: "See a Step-by-Step Walkthrough" },
+  demo_btn_schedule: { th: "นัดชม Demo กับทีมงาน", en: "Schedule a Demo with the Team" },
+
+  // ---------- Footer ----------
+  footer_tagline: { th: "โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร", en: "Digital infrastructure for agriculture" },
+  footer_desc: {
+    th: "เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง",
+    en: "Connecting farmers, cooperatives, services, finance, and markets through real production data.",
+  },
+  footer_h_products: { th: "ผลิตภัณฑ์", en: "Products" },
+  footer_product_1: { th: "สหกรณ์/กลุ่มเกษตรกร", en: "Cooperatives / Farmer Groups" },
+  footer_product_2: { th: "เกษตรกร", en: "Farmers" },
+  footer_product_3: { th: "การเงิน", en: "Finance" },
+  footer_product_4: { th: "ตลาดกลาง", en: "Marketplace" },
+  footer_product_5: { th: "ปุ๋ยสั่งตัด", en: "Custom Fertilizer" },
+  footer_product_6: { th: "ธุรกิจข้าวครบวงจร", en: "Integrated Rice Business" },
+  footer_product_7: { th: "AI และดาวเทียม", en: "AI & Satellite" },
+  footer_product_8: { th: "คาร์บอนเครดิต", en: "Carbon Credit" },
+  footer_product_9: { th: "เศรษฐกิจชีวมวล", en: "Biomass Economy" },
+  footer_product_10: { th: "แผนขยายสินค้า", en: "Expansion Roadmap" },
+  footer_h_partners: { th: "พันธมิตร", en: "Partners" },
+  footer_partner_1: { th: "สหกรณ์/กลุ่มเกษตรกร", en: "Cooperatives / Farmer Groups" },
+  footer_partner_2: { th: "สถาบันการเงิน", en: "Financial Institutions" },
+  footer_partner_3: { th: "ผู้ซื้อ", en: "Buyers" },
+  footer_partner_4: { th: "ผู้ให้บริการ", en: "Service Providers" },
+  footer_partner_5: { th: "พันธมิตรเทคโนโลยี", en: "Technology Partners" },
+  footer_partner_6: { th: "ผู้รับซื้อชีวมวล", en: "Biomass Buyers" },
+  footer_partner_7: { th: "ผู้ให้บริการขนส่ง", en: "Logistics Providers" },
+  footer_h_company: { th: "บริษัท", en: "Company" },
+  footer_company_1: { th: "เกี่ยวกับเรา", en: "About Us" },
+  footer_company_2: { th: "นักลงทุน", en: "Investors" },
+  footer_company_3: { th: "ติดต่อเรา", en: "Contact Us" },
+  footer_company_4: { th: "นโยบายความเป็นส่วนตัว", en: "Privacy Policy" },
+  footer_company_5: { th: "ข้อกำหนดการใช้งาน", en: "Terms of Use" },
+  footer_bottom_tagline: {
+    th: "AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง",
+    en: "AgroLink — connecting farmers, cooperatives, services, finance, and markets through real production data.",
+  },
+  footer_copyright: {
+    th: "© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)",
+    en: "© 2026 Pakdee Corporation Co.,Ltd. — Product concept preview website",
+  },
+};
