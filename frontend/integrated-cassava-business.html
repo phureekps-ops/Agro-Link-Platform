@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการมันสำปะหลังครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+          </div>
+        </div>
+        <a href="for-farmers.html" data-i18n="nav_farmers">สำหรับเกษตรกร</a>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-cassava-business_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-carrot"></i><span data-i18n="integrated-cassava-business_2"> คู่มือแนะนำโครงการ</span></div>
+    <h1 class="section-title" data-i18n="integrated-cassava-business_3">เอกสารแนวคิดโครงการ: การพัฒนาและยกระดับระบบนิเวศการผลิตและตลาดมันสำปะหลังอย่างยั่งยืน</h1>
+    <p class="section-sub" data-i18n="integrated-cassava-business_4">"ท่อนพันธุ์ปลอดโรค เกษตรกรมีตลาดแน่นอน ราคาเป็นธรรม คาร์บอนต่ำ" — เชื่อมเกษตรกรกับลานมัน โรงงานแป้ง โรงงานเอทานอล และอุตสาหกรรมกรดซิตริกด้วยข้อมูลและสัญญาซื้อขายล่วงหน้า</p>
+    <span class="draft-tag" data-i18n="integrated-cassava-business_5">ฉบับร่างเพื่อพิจารณา — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-cassava-business_6">สารบัญ</h4>
+      <ol>
+        <li><a href="#sec-1" data-i18n="integrated-cassava-business_7">1. หลักการและเหตุผล</a></li>
+<li><a href="#sec-2" data-i18n="integrated-cassava-business_8">2. วัตถุประสงค์</a></li>
+<li><a href="#sec-3" data-i18n="integrated-cassava-business_9">3. กรอบการดำเนินงานและกิจกรรมหลัก</a></li>
+<li><a href="#sec-4" data-i18n="integrated-cassava-business_10">4. กลุ่มผู้ซื้อหลักและมาตรฐานคุณภาพ</a></li>
+<li><a href="#sec-5" data-i18n="integrated-cassava-business_11">5. กลไกสร้างแรงจูงใจและโมเดลธุรกิจ</a></li>
+<li><a href="#sec-6" data-i18n="integrated-cassava-business_12">6. การรับมือการเปลี่ยนแปลงสภาพภูมิอากาศและคาร์บอนเครดิต</a></li>
+<li><a href="#sec-7" data-i18n="integrated-cassava-business_13">7. ผู้เกี่ยวข้องในระบบนิเวศ</a></li>
+<li><a href="#sec-8" data-i18n="integrated-cassava-business_14">8. ผลลัพธ์ที่คาดว่าจะได้รับ</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-cassava-business_15">1. หลักการและเหตุผล</h2>
+<p data-i18n="integrated-cassava-business_16">โครงการนี้มุ่งยกระดับระบบนิเวศมันสำปะหลังแบบครบวงจร ตั้งแต่ท่อนพันธุ์ปลอดโรคจนถึงการเชื่อมโยงผลผลิตเข้ากับกลุ่มผู้ซื้อหลักทุกกลุ่ม ได้แก่ ลานมัน โรงงานแป้งมันสำปะหลัง โรงงานเอทานอล และอุตสาหกรรมกรดซิตริก/เคมีภัณฑ์ ซึ่งรับซื้อในรูปหัวมันสด ผ่านการซื้อขายตามคุณภาพและสัญญาซื้อขายล่วงหน้า เพื่อสร้างความมั่นคงด้านวัตถุดิบ ความเป็นธรรมทางการค้า และเสถียรภาพราคาอย่างยั่งยืน</p>
+<p data-i18n="integrated-cassava-business_17">มันสำปะหลังเป็นพืชเศรษฐกิจสำคัญของประเทศไทยที่เชื่อมโยงกับอุตสาหกรรมต่อเนื่องหลากหลาย ตั้งแต่ต้นน้ำจนถึงปลายน้ำ อย่างไรก็ตาม เกษตรกรและผู้เกี่ยวข้องในห่วงโซ่อุปทานยังเผชิญปัญหาสำคัญ ได้แก่</p>
+<ul class="check-list">
+<li data-i18n="integrated-cassava-business_18">การแพร่ระบาดของโรคใบด่างมันสำปะหลัง</li>
+<li data-i18n="integrated-cassava-business_19">ผลผลิตต่อไร่ต่ำ เนื่องจากขาดแคลนระบบน้ำ</li>
+<li data-i18n="integrated-cassava-business_20">การขาดเครื่องมือตรวจสอบคุณภาพที่เป็นมาตรฐาน ณ จุดรับซื้อ</li>
+<li data-i18n="integrated-cassava-business_21">ความผันผวนของราคา จากความไม่สมดุลระหว่างผลผลิตในประเทศกับการนำเข้าจากต่างประเทศ</li>
+<li data-i18n="integrated-cassava-business_22">การขาดกลไกเชื่อมโยงเกษตรกรกับผู้ซื้อหลัก (ลานมัน โรงแป้ง โรงเอทานอล) ทำให้เกษตรกรไม่มีตลาดรับซื้อที่แน่นอนและขาดอำนาจต่อรอง</li>
+</ul>
+<p data-i18n="integrated-cassava-business_23">ผู้ซื้อแต่ละกลุ่มมีความต้องการวัตถุดิบและเกณฑ์คุณภาพแตกต่างกัน โดยผู้ซื้อหลักรับซื้อในรูปหัวมันสดและกำหนดราคาตามเปอร์เซ็นต์แป้ง โครงการจึงมุ่งพัฒนาคุณภาพหัวมันสดและการตรวจวัด ณ จุดรับซื้อเป็นหลัก ส่วนมันเส้นสะอาดสำหรับโรงงานอาหารสัตว์เป็นช่องทางเสริมที่เกษตรกรอาจแปรรูปเอง เพื่อกระจายช่องทางตลาดและลดความเสี่ยงจากการพึ่งพาผู้ซื้อรายใดรายหนึ่ง โดยบูรณาการเทคโนโลยีสมัยใหม่และการบริหารจัดการห่วงโซ่คุณค่าเข้าด้วยกัน</p>
+<p data-i18n="integrated-cassava-business_24">นอกจากนี้ การเปลี่ยนแปลงสภาพภูมิอากาศทำให้ภัยแล้งและการระบาดของโรคพืชรุนแรงขึ้น ขณะที่มันสำปะหลังเป็นพืชทนแล้งที่ดูดซับคาร์บอนได้สูง การจัดการแปลงแบบคาร์บอนต่ำ เช่น ปุ๋ยสั่งตัดและการงดเผา จึงช่วยทั้งลดก๊าซเรือนกระจกและเปิดโอกาสสร้างรายได้เสริมจากคาร์บอนเครดิต (รายละเอียดในหัวข้อ 6)</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-cassava-business_25">2. วัตถุประสงค์</h2>
+<ul class="check-list">
+<li data-i18n="integrated-cassava-business_26">ยกระดับประสิทธิภาพการผลิตมันสำปะหลังต่อไร่ ด้วยเทคโนโลยีการเกษตรแม่นยำและการจัดการปัจจัยการผลิตที่เหมาะสม</li>
+<li data-i18n="integrated-cassava-business_27">ควบคุมและยับยั้งการแพร่ระบาดของโรคพืช ด้วยการส่งเสริมท่อนพันธุ์ปลอดโรค</li>
+<li data-i18n="integrated-cassava-business_28">สร้างความเป็นธรรมและความแม่นยำในการประเมินคุณภาพผลผลิต ณ จุดรับซื้อ</li>
+<li data-i18n="integrated-cassava-business_29">พัฒนาคุณภาพหัวมันสดให้ตรงตามความต้องการของผู้ซื้อหลัก ได้แก่ ลานมัน โรงงานแป้งมันสำปะหลัง โรงงานเอทานอล และอุตสาหกรรมกรดซิตริก/เคมีภัณฑ์ พร้อมส่งเสริมการแปรรูปมันเส้นสะอาดโดยเกษตรกรเป็นช่องทางเสริมสำหรับโรงงานอาหารสัตว์</li>
+<li data-i18n="integrated-cassava-business_30">บริหารจัดการอุปสงค์–อุปทานของมันสำปะหลังทั้งระบบ เพื่อสร้างเสถียรภาพด้านราคา</li>
+<li data-i18n="integrated-cassava-business_31">สร้างเครือข่ายความร่วมมือและสัญญาซื้อขายล่วงหน้าที่เข้มแข็งระหว่างเกษตรกร ลานมัน และกลุ่มอุตสาหกรรมผู้รับซื้อทุกกลุ่ม</li>
+<li data-i18n="integrated-cassava-business_32">ลดการปล่อยก๊าซเรือนกระจกและเพิ่มความทนทานต่อการเปลี่ยนแปลงสภาพภูมิอากาศของการผลิตมันสำปะหลัง พร้อมสร้างรายได้เสริมจากคาร์บอนเครดิตให้แก่เกษตรกร</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-3">
+<div class="container">
+<div class="section-head reveal" style="margin-bottom:30px;">
+<div class="eyebrow"><i class="fa-solid fa-diagram-project"></i><span data-i18n="integrated-cassava-business_33"> ภาพรวมโครงการ</span></div>
+<h2 class="section-title" data-i18n="integrated-cassava-business_34">3. กรอบการดำเนินงานและกิจกรรมหลัก</h2>
+<p class="section-sub" data-i18n="integrated-cassava-business_35">โครงการแบ่งการดำเนินงานเป็น 5 ส่วน เชื่อมต่อกันตลอดห่วงโซ่ โดยมีแพลตฟอร์มข้อมูลกลาง (AgroLink) เป็นแกนเชื่อมข้อมูลการผลิต คุณภาพ และการซื้อขาย หัวมันสดคุณภาพจากต้นน้ำผ่านการตรวจวัด ณ จุดรับซื้อ แล้วขายให้ผู้ซื้อหลักตามเปอร์เซ็นต์แป้ง ส่วนมันเส้นสะอาดเป็นช่องทางเสริมที่เกษตรกรแปรรูปเองขายโรงงานอาหารสัตว์</p>
+</div>
+<div class="role-grid">
+<div class="role-card"><h4><span class="badge-num">3.1</span><span data-i18n="integrated-cassava-business_36"> ต้นน้ำ</span></h4><ul>
+<li data-i18n="integrated-cassava-business_37">ท่อนพันธุ์ปลอดโรค / ระบบน้ำ + ปุ๋ยสั่งตัด / เก็บเกี่ยวอายุ 10–12 เดือน</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">3.3</span><span data-i18n="integrated-cassava-business_38"> จุดรับซื้อหัวมันสด</span></h4><ul>
+<li data-i18n="integrated-cassava-business_39">วัดเปอร์เซ็นต์แป้ง / ชั่งน้ำหนักดิจิทัล / บันทึกข้อมูลย้อนกลับ</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">3.4</span><span data-i18n="integrated-cassava-business_40"> ผู้ซื้อหัวมันสด</span></h4><ul>
+<li data-i18n="integrated-cassava-business_41">ลานมัน · โรงงานแป้งมัน / โรงงานเอทานอล / กรดซิตริก · เคมีภัณฑ์</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">3.5</span><span data-i18n="integrated-cassava-business_42"> ทางเลือกเสริม</span></h4><ul>
+<li data-i18n="integrated-cassava-business_43">เกษตรกรแปรรูปมันเส้นสะอาด → โรงงานอาหารสัตว์</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">3.2</span><span data-i18n="integrated-cassava-business_44"> แพลตฟอร์มข้อมูลกลาง (AgroLink)</span></h4><ul>
+<li data-i18n="integrated-cassava-business_45">Satellite + AI + IoT · Traceability · Big Data อุปสงค์–อุปทาน</li>
+</ul></div>
+</div>
+</div></section>
+<section class="prose-section alt" id="sec-3-1">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-cassava-business_46">3.1 การพัฒนาต้นน้ำ: การเพิ่มประสิทธิภาพและคุณภาพการผลิต</h3>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_47">ท่อนพันธุ์ปลอดโรค:</strong><span data-i18n="integrated-cassava-business_48"> จัดตั้งศูนย์ขยายพันธุ์และระบบตรวจสอบสายพันธุ์ท่อนพันธุ์ปลอดโรค (เช่น โรคใบด่างมันสำปะหลัง) และส่งเสริมระบบรับรองมาตรฐานท่อนพันธุ์แก่กลุ่มเกษตรกรและผู้ผลิตท่อนพันธุ์</span></li>
+<li><strong data-i18n="integrated-cassava-business_49">ระบบน้ำเพื่อเพิ่มผลผลิต (Smart Irrigation):</strong><span data-i18n="integrated-cassava-business_50"> ถ่ายทอดเทคโนโลยีและติดตั้งระบบให้น้ำ เช่น ระบบน้ำหยด เพื่อเพิ่มผลผลิตต่อไร่และเปอร์เซ็นต์แป้ง</span></li>
+<li><strong data-i18n="integrated-cassava-business_51">ปุ๋ยสั่งตัดและการบำรุงดิน (Tailor-Made Fertilizer):</strong><span data-i18n="integrated-cassava-business_52"> บริการตรวจวิเคราะห์ดินและคำแนะนำการใช้ปุ๋ยตามค่าวิเคราะห์ดินและความต้องการของพืช เพื่อลดต้นทุนและเพิ่มประสิทธิภาพการใช้ปุ๋ย</span></li>
+<li><strong data-i18n="integrated-cassava-business_53">การเก็บเกี่ยวช่วงอายุที่เหมาะสม:</strong><span data-i18n="integrated-cassava-business_54"> ส่งเสริมการเก็บเกี่ยวที่อายุ 10–12 เดือนขึ้นไป เพื่อให้ได้เปอร์เซ็นต์แป้งสูงตามความต้องการของผู้ซื้อหัวมันสด</span></li>
+</ul>
+</div></section>
+<section class="prose-section" id="sec-3-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-cassava-business_55">3.2 เทคโนโลยีและนวัตกรรมเพื่อการบริหารจัดการ (Data-Driven Agriculture)</h3>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_56">Satellite &amp; AI:</strong><span data-i18n="integrated-cassava-business_57"> ใช้ภาพถ่ายดาวเทียมร่วมกับ AI ประเมินพื้นที่ปลูก ติดตามการเจริญเติบโต คาดการณ์ปริมาณผลผลิต (Yield Forecast) และตรวจจับการระบาดของโรคพืชระดับพื้นที่</span></li>
+<li><strong data-i18n="integrated-cassava-business_58">IoT ในแปลงสาธิตและแปลงเกษตรกรร่วมโครงการ:</strong><span data-i18n="integrated-cassava-business_59"> ติดตั้งอุปกรณ์วัดความชื้นในดินและสภาพอากาศ เพื่อควบคุมการให้น้ำและปุ๋ยอย่างแม่นยำ</span></li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-3-3">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-cassava-business_60">3.3 การยกระดับห่วงโซ่การค้าและจุดรับซื้อ (Middlestream &amp; Quality Assessment)</h3>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_61">จุดรับซื้อมาตรฐาน:</strong><span data-i18n="integrated-cassava-business_62"> ติดตั้งเครื่องมือตรวจสอบคุณภาพมาตรฐานสากลที่ลานมันและจุดรับซื้อ เช่น เครื่องวัดเปอร์เซ็นต์แป้งความละเอียดสูง เครื่องวัดความชื้นแบบดิจิทัล/พกพา และระบบชั่งน้ำหนักดิจิทัล</span></li>
+<li><strong data-i18n="integrated-cassava-business_63">ระบบข้อมูลและการตรวจสอบย้อนกลับ (Traceability):</strong><span data-i18n="integrated-cassava-business_64"> เชื่อมโยงข้อมูลการรับซื้อ คุณภาพ และแหล่งที่มาของผลผลิตเข้าสู่แพลตฟอร์มกลาง เพื่อความโปร่งใสด้านราคาแก่เกษตรกร และสร้างความมั่นใจแก่โรงงานผู้รับซื้อ</span></li>
+</ul>
+</div></section>
+<section class="prose-section" id="sec-3-4">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-cassava-business_65">3.4 การบริหารจัดการตลาดและเสถียรภาพราคา (Downstream &amp; Market Equilibrium)</h3>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_66">การบริหารปริมาณผลผลิตให้สมดุล (Supply–Demand Balance):</strong><span data-i18n="integrated-cassava-business_67"> เชื่อมโยงข้อมูลการผลิตในประเทศกับการนำเข้าจากประเทศเพื่อนบ้านผ่านระบบ Big Data เพื่อวางแผนการนำเข้าไม่ให้กระทบราคาผลผลิตในประเทศ และกระจายผลผลิตให้สอดคล้องกับความต้องการของผู้ซื้อแต่ละกลุ่ม</span></li>
+</ul>
+<p data-i18n="integrated-cassava-business_68">การจับคู่การค้าและสัญญาซื้อขายหัวมันสดล่วงหน้า (Contract Farming / Matching): สร้างข้อตกลงซื้อขายที่กำหนดราคาตามเปอร์เซ็นต์แป้ง กับผู้ซื้อหลักที่รับซื้อในรูปหัวมันสด ได้แก่</p>
+<ul class="check-list">
+<li data-i18n="integrated-cassava-business_69">ลานมัน (ผู้รวบรวมและแปรรูปขั้นต้น)</li>
+<li data-i18n="integrated-cassava-business_70">โรงงานแป้งมันสำปะหลัง (แป้งดิบและแป้งดัดแปร)</li>
+<li data-i18n="integrated-cassava-business_71">โรงงานผลิตเอทานอล (พลังงานชีวภาพ)</li>
+<li data-i18n="integrated-cassava-business_72">อุตสาหกรรมผลิตกรดซิตริก (Citric Acid) และเคมีภัณฑ์ต่อเนื่อง</li>
+<li data-i18n="integrated-cassava-business_73">ช่องทางเสริม: โรงงานอาหารสัตว์รับซื้อมันเส้นสะอาดจากเกษตรกรที่แปรรูปเอง (หัวข้อ 3.5)</li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-3-5">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-cassava-business_74">3.5 ทางเลือกเสริม: การแปรรูปมันเส้นสะอาดโดยเกษตรกร (Optional Value-Add)</h3>
+<p data-i18n="integrated-cassava-business_75">นอกจากการขายหัวมันสด เกษตรกรหรือกลุ่มเกษตรกรที่มีความพร้อมอาจแปรรูปหัวมันเป็นมันเส้นสะอาดเองเพื่อขายโรงงานอาหารสัตว์ ซึ่งต้องการมันเส้นคุณภาพสูงเป็นแหล่งพลังงานแทนข้าวโพดเลี้ยงสัตว์ เป็นช่องทางเสริมเพื่อสร้างมูลค่าเพิ่ม โดยมีแนวทางสำคัญดังนี้</p>
+<ul class="check-list">
+<li data-i18n="integrated-cassava-business_76">ทำความสะอาดหัวมันด้วยตะแกรงร่อนดิน/เครื่องสลัดดินก่อนสับ และใช้เครื่องสับที่ได้ชิ้นมันสม่ำเสมอ</li>
+<li data-i18n="integrated-cassava-business_77">ตากบนลานคอนกรีตสะอาด พลิกกลับสม่ำเสมอให้แห้งภายใน 2–3 วันแดด และป้องกันฝนด้วยผ้าใบหรือระบบอบแห้ง</li>
+<li data-i18n="integrated-cassava-business_78">ร่อนแยกฝุ่นก่อนบรรจุ และตรวจวัดความชื้นตามเกณฑ์ในหัวข้อ 4.2</li>
+<li data-i18n="integrated-cassava-business_79">ขายผ่านสัญญาล่วงหน้ากับโรงงานอาหารสัตว์ ในราคาตามเกรดคุณภาพ</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-4">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-cassava-business_80">4. กลุ่มผู้ซื้อหลักและมาตรฐานคุณภาพ</h2>
+<p data-i18n="integrated-cassava-business_81">ผู้ซื้อหลักของโครงการรับซื้อในรูปหัวมันสดและกำหนดราคาตามเปอร์เซ็นต์แป้ง ส่วนโรงงานอาหารสัตว์เป็นช่องทางเสริมที่รับซื้อมันเส้นสะอาดจากเกษตรกรที่แปรรูปเอง</p>
+<h3 data-i18n="integrated-cassava-business_82">4.1 กลุ่มผู้ซื้อหลักและความต้องการ</h3>
+<p data-i18n="integrated-cassava-business_83">เกณฑ์ตัวเลขของผู้ซื้อแต่ละรายควรยืนยันกับผู้ซื้อโดยตรงก่อนกำหนดในสัญญา</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:34px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-cassava-business_104">กลุ่มผู้ซื้อ</th>
+<th data-i18n="integrated-cassava-business_105">วัตถุดิบที่รับซื้อ</th>
+<th data-i18n="integrated-cassava-business_106">เกณฑ์คุณภาพสำคัญ</th>
+<th data-i18n="integrated-cassava-business_107">การเชื่อมโยงในโครงการ</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-cassava-business_84">ลานมัน</strong></td><td data-i18n="integrated-cassava-business_85">หัวมันสด</td><td data-i18n="integrated-cassava-business_86">เปอร์เซ็นต์แป้ง น้ำหนัก ดินติด</td><td data-i18n="integrated-cassava-business_87">จุดรับซื้อมาตรฐาน + บันทึกข้อมูลเข้าแพลตฟอร์ม</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_88">โรงงานแป้งมันสำปะหลัง (แป้งดิบ/แป้งดัดแปร)</strong></td><td data-i18n="integrated-cassava-business_89">หัวมันสด</td><td data-i18n="integrated-cassava-business_90">เปอร์เซ็นต์แป้ง ความสด</td><td data-i18n="integrated-cassava-business_91">สัญญาล่วงหน้า ราคาตามเปอร์เซ็นต์แป้ง</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_92">โรงงานเอทานอล</strong></td><td data-i18n="integrated-cassava-business_93">หัวมันสด</td><td data-i18n="integrated-cassava-business_94">เปอร์เซ็นต์แป้ง ความต่อเนื่องของการส่งมอบ</td><td data-i18n="integrated-cassava-business_95">สัญญาส่งมอบตามแผนการผลิตของโรงงาน</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_96">อุตสาหกรรมกรดซิตริก/เคมีภัณฑ์</strong></td><td data-i18n="integrated-cassava-business_97">หัวมันสด</td><td data-i18n="integrated-cassava-business_98">เปอร์เซ็นต์แป้ง ตามข้อกำหนดของผู้ซื้อ</td><td data-i18n="integrated-cassava-business_99">จับคู่การค้าผ่านแพลตฟอร์ม</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_100">โรงงานอาหารสัตว์ (ช่องทางเสริม)</strong></td><td data-i18n="integrated-cassava-business_101">มันเส้นสะอาดที่เกษตรกรแปรรูปเอง</td><td data-i18n="integrated-cassava-business_102">ความชื้น สิ่งเจือปน แป้ง เชื้อรา (ตาม 4.2)</td><td data-i18n="integrated-cassava-business_103">Forward Contract ราคาตามเกรดคุณภาพ</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-cassava-business_108">4.2 มาตรฐานมันเส้นสะอาด (ช่องทางเสริมสำหรับโรงงานอาหารสัตว์)</h3>
+<p data-i18n="integrated-cassava-business_109">มันเส้นที่ส่งโรงงานอาหารสัตว์ต้องผ่านเกณฑ์ที่เคร่งครัด ดังนี้</p>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-cassava-business_125">รายการ</th>
+<th data-i18n="integrated-cassava-business_126">เกณฑ์มาตรฐาน</th>
+<th data-i18n="integrated-cassava-business_127">เหตุผล</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-cassava-business_110">ความชื้น (Moisture)</strong></td><td data-i18n="integrated-cassava-business_111">ไม่เกิน 13–14%</td><td data-i18n="integrated-cassava-business_112">ป้องกันเชื้อราและสารพิษอะฟลาท็อกซินระหว่างการเก็บรักษา</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_113">สิ่งเจือปน/ดินทราย (Sand/Foreign Matter)</strong></td><td data-i18n="integrated-cassava-business_114">ไม่เกิน 1.5–2%</td><td data-i18n="integrated-cassava-business_115">ลดความเสียหายต่อเครื่องจักรผสมอาหารสัตว์</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_116">ปริมาณแป้ง (Starch Content)</strong></td><td data-i18n="integrated-cassava-business_117">ไม่ต่ำกว่า 65–72%</td><td data-i18n="integrated-cassava-business_118">ใช้เป็นแหล่งพลังงานแทนข้าวโพดเลี้ยงสัตว์</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_119">เชื้อราและสารพิษ (Mold &amp; Aflatoxin)</strong></td><td data-i18n="integrated-cassava-business_120">ไม่พบ</td><td data-i18n="integrated-cassava-business_121">ความปลอดภัยของอาหารสัตว์</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_122">ขนาดและลักษณะ</strong></td><td data-i18n="integrated-cassava-business_123">ชิ้นสม่ำเสมอ แห้ง กรอบ สีขาวสะอาด ไม่ดำหรือหมอง</td><td data-i18n="integrated-cassava-business_124">บ่งชี้การตากแห้งและการเก็บรักษาที่ดี</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-5">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-cassava-business_128">5. กลไกสร้างแรงจูงใจและโมเดลธุรกิจ</h2>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_129">โครงสร้างราคาตามคุณภาพ (Quality-Based Pricing):</strong><span data-i18n="integrated-cassava-business_130"> หัวมันสดซื้อขายตามเปอร์เซ็นต์แป้งที่ตรวจวัดได้จริง ณ จุดรับซื้อ ส่วนมันเส้นสะอาดที่เกษตรกรแปรรูปเองได้ราคาเกรดพรีเมียมเมื่อความชื้นต่ำกว่า 13% และฝุ่นน้อยกว่า 2%</span></li>
+<li><strong data-i18n="integrated-cassava-business_131">สัญญาซื้อขายล่วงหน้า (Forward Contract):</strong><span data-i18n="integrated-cassava-business_132"> ลานมัน โรงงานแป้ง โรงงานเอทานอล และอุตสาหกรรมกรดซิตริกทำสัญญารับซื้อหัวมันสดล่วงหน้าผ่านแพลตฟอร์ม โดยผูกราคากับคุณภาพที่ตรวจวัด ณ จุดรับซื้อ</span></li>
+<li><strong data-i18n="integrated-cassava-business_133">การรวมกลุ่มเกษตรกร:</strong><span data-i18n="integrated-cassava-business_134"> ส่งเสริมวิสาหกิจชุมชนหรือสหกรณ์การเกษตรรวบรวมหัวมันสดเพื่อเพิ่มอำนาจการต่อรองกับผู้ซื้อ กลุ่มที่มีความพร้อมอาจพัฒนาจุดแปรรูปมันเส้นสะอาดของชุมชนเป็นทางเลือกเสริม</span></li>
+<li><strong data-i18n="integrated-cassava-business_135">การเข้าถึงแหล่งทุน:</strong><span data-i18n="integrated-cassava-business_136"> สนับสนุนสินเชื่อดอกเบี้ยต่ำสำหรับเครื่องมือตรวจวัดคุณภาพ ณ จุดรับซื้อ และสำหรับเกษตรกรที่ต้องการแปรรูปมันเส้นสะอาด เช่น เครื่องสลัดดิน ตะแกรงร่อน เครื่องสับมัน และพื้นลานตาก</span></li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-6">
+<div class="container">
+<div class="section-head reveal" style="margin-bottom:30px;">
+<div class="eyebrow"><i class="fa-solid fa-cloud-sun"></i><span data-i18n="integrated-cassava-business_137"> การเปลี่ยนแปลงสภาพภูมิอากาศ</span></div>
+<h2 class="section-title" data-i18n="integrated-cassava-business_138">6. การรับมือการเปลี่ยนแปลงสภาพภูมิอากาศและการสร้างรายได้จากคาร์บอนเครดิต</h2>
+<p class="section-sub" data-i18n="integrated-cassava-business_139">กิจกรรมของโครงการหลายส่วน เช่น ปุ๋ยสั่งตัด ระบบน้ำหยด ท่อนพันธุ์ทนโรค และระบบ Satellite + AI + IoT ช่วยทั้งลดการปล่อยก๊าซเรือนกระจกและเพิ่มความทนทานต่อสภาพอากาศ และสามารถต่อยอดเป็นรายได้เสริมจากคาร์บอนเครดิตให้แก่เกษตรกรและผู้ประกอบการ</p>
+</div>
+<h3 data-i18n="integrated-cassava-business_140" style="margin-bottom:20px;">6.1 กิจกรรมด้าน Climate Change ใน 4 มิติ</h3>
+<div class="role-grid">
+<div class="role-card"><h4><span class="badge-num">1</span><span data-i18n="integrated-cassava-business_141"> ลดการปล่อยและดูดซับก๊าซเรือนกระจก</span></h4><ul>
+<li data-i18n="integrated-cassava-business_142">การดูดซับคาร์บอนของมันสำปะหลัง — ผลผลิตหัวสดดูดซับ CO2 เฉลี่ยประมาณ 3.19 ตัน CO2 ต่อไร่</li>
+<li data-i18n="integrated-cassava-business_143">ปุ๋ยสั่งตัดตามค่าวิเคราะห์ดิน — ลดไนโตรเจนส่วนเกิน ลดการปล่อยไนตรัสออกไซด์ (N2O) ซึ่งมีศักยภาพทำให้โลกร้อนสูงกว่า CO2 เกือบ 300 เท่า</li>
+<li data-i18n="integrated-cassava-business_144">ไถกลบเศษต้นและใบแทนการเผา — ลดการปล่อย CO2 และเพิ่มการกักเก็บคาร์บอนในดิน (Soil Carbon)</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">2</span><span data-i18n="integrated-cassava-business_145"> การปรับตัวต่อสภาพภูมิอากาศ</span></h4><ul>
+<li data-i18n="integrated-cassava-business_146">ใช้มันสำปะหลังเป็นพืชทนแล้ง — ทนแล้ง อุณหภูมิสูง และดินเลวได้ดีกว่าพืชไร่อื่น เป็นพืชยุทธศาสตร์ด้านความมั่นคงทางอาหารและการเกษตร</li>
+<li data-i18n="integrated-cassava-business_147">พัฒนาท่อนพันธุ์ทนโรค-ทนแล้ง — รับมือโรคใบด่างและเพลี้ยแป้งที่ระบาดรุนแรงขึ้นจากสภาพอากาศผันผวน</li>
+<li data-i18n="integrated-cassava-business_148">ระบบน้ำหยด (Smart Irrigation) — ใช้น้ำอย่างมีประสิทธิภาพ ผ่านช่วงแล้งยาวโดยไม่สูญเสียผลผลิต</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">3</span><span data-i18n="integrated-cassava-business_149"> เศรษฐกิจหมุนเวียนและทดแทนฟอสซิล</span></h4><ul>
+<li data-i18n="integrated-cassava-business_150">ผลิตเอทานอลจากมันสำปะหลัง — เชื้อเพลิงชีวภาพผสมน้ำมัน ลดการพึ่งพาฟอสซิล</li>
+<li data-i18n="integrated-cassava-business_151">ก๊าซชีวภาพจากน้ำเสียและกากมันในโรงงานแป้ง — นำกลับมาเป็นพลังงานความร้อน/ไฟฟ้า ลดการปล่อยมีเทน (CH4)</li>
+<li data-i18n="integrated-cassava-business_152">พลาสติกชีวภาพจากแป้งมัน — ลดขยะพลาสติกและคาร์บอนฟุตพริ้นท์</li>
+</ul></div>
+<div class="role-card"><h4><span class="badge-num">4</span><span data-i18n="integrated-cassava-business_153"> การประเมินคาร์บอนและคาร์บอนเครดิต</span></h4><ul>
+<li data-i18n="integrated-cassava-business_154">ประเมินคาร์บอนฟุตพริ้นท์ผลิตภัณฑ์ (CFP) — วัดการปล่อยตลอดห่วงโซ่ ตั้งแต่เตรียมดิน ใช้ปุ๋ย ขนส่ง ถึงลานมันและโรงงาน</li>
+<li data-i18n="integrated-cassava-business_155">พัฒนาโครงการคาร์บอนเครดิตภาคเกษตร (T-VER) — ตรวจวัดแปลงและประเมินการกักเก็บคาร์บอนด้วย Satellite + AI + IoT เพื่อสร้างรายได้เสริม</li>
+</ul></div>
+</div>
+</div></section>
+<section class="prose-section alt" id="sec-6-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-cassava-business_156">6.2 แนวทางการสร้างรายได้จากคาร์บอนเครดิต</h3>
+<p data-i18n="integrated-cassava-business_157">แปลงมันสำปะหลังขายคาร์บอนเครดิตได้ แต่เนื่องจากเป็นพืชไร่อายุสั้น (เก็บเกี่ยว 8–12 เดือน) เครดิตจึงไม่ได้มาจากคาร์บอนที่กักเก็บในหัวหรือลำต้นเป็นหลักเหมือนไม้ยืนต้น แต่มาจาก กิจกรรมลดการปล่อยก๊าซเรือนกระจกในการจัดการแปลง (Mitigation Activities) ดังนี้</p>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_158">ลดปุ๋ยเคมีส่วนเกิน:</strong><span data-i18n="integrated-cassava-business_159"> เปลี่ยนมาใช้ปุ๋ยสั่งตัดตามค่าวิเคราะห์ดิน หรือปุ๋ยหมัก/อินทรียวัตถุ เพื่อลดไนตรัสออกไซด์ (N2O) จากดิน</span></li>
+<li><strong data-i18n="integrated-cassava-business_160">งดเผาและเพิ่มคาร์บอนในดิน:</strong><span data-i18n="integrated-cassava-business_161"> ไถกลบเศษซาก ใบ และลำต้นลงดิน เพิ่มอินทรียวัตถุและคาร์บอนในดิน (Soil Organic Carbon)</span></li>
+<li><strong data-i18n="integrated-cassava-business_162">ประหยัดพลังงานและเชื้อเพลิง:</strong><span data-i18n="integrated-cassava-business_163"> ใช้ระบบน้ำหยดเพิ่มประสิทธิภาพการใช้น้ำ ลดน้ำมันเชื้อเพลิงในการสูบน้ำและใช้เครื่องจักร</span></li>
+</ul>
+<p data-i18n="integrated-cassava-business_164">รูปแบบรวมกลุ่ม (Aggregation Model): แปลงของเกษตรกรรายย่อยมีขนาดเล็ก และค่าประเมิน/ทวนสอบสูง การยื่นรายแปลงจึงไม่คุ้มค่า โครงการจึงรวมพื้นที่ปลูกของเกษตรกร วิสาหกิจชุมชน สหกรณ์ หรือผู้ประกอบการ (เช่น ลานมันหรือโรงงาน) เป็นโครงการขนาดใหญ่ผ่านแพลตฟอร์มกลาง (AgroLink) เพื่อประเมินและทวนสอบพร้อมกัน</p>
+<p data-i18n="integrated-cassava-business_165">การรับรองดำเนินงานผ่าน T-VER ขององค์การบริหารจัดการก๊าซเรือนกระจก (อบก. / TGO) โดยกรมวิชาการเกษตรร่วมเป็นหน่วยรับรองโครงการภาคเกษตร ตามขั้นตอนดังนี้</p>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_166">จัดทำข้อมูลฐาน (Baseline Data):</strong><span data-i18n="integrated-cassava-business_167"> เก็บประวัติการใช้ปุ๋ย เชื้อเพลิง และวิธีจัดการแปลงย้อนหลังอย่างน้อย 3 ปี โดยบันทึกลงแพลตฟอร์ม</span></li>
+<li><strong data-i18n="integrated-cassava-business_168">ปรับเปลี่ยนกิจกรรมการเกษตร (Project Activity):</strong><span data-i18n="integrated-cassava-business_169"> ใช้ปุ๋ยสั่งตัด ไถกลบซากพืช และระบบน้ำหยด พร้อมติดตามผลด้วย Satellite + AI + IoT</span></li>
+<li><strong data-i18n="integrated-cassava-business_170">ยื่นขึ้นทะเบียนโครงการ T-VER:</strong><span data-i18n="integrated-cassava-business_171"> จัดทำเอกสารข้อเสนอโครงการยื่นต่อ อบก.</span></li>
+<li><strong data-i18n="integrated-cassava-business_172">ตรวจสอบและรับรอง (Validation &amp; Verification):</strong><span data-i18n="integrated-cassava-business_173"> ผู้ประเมินภายนอก (VVB) และกรมวิชาการเกษตรตรวจวัดปริมาณก๊าซเรือนกระจกที่ลดได้จริง โดยใช้ข้อมูล MRV จากแพลตฟอร์มเป็นหลักฐานประกอบ</span></li>
+<li><strong data-i18n="integrated-cassava-business_174">รับรองเครดิตและขายในตลาด:</strong><span data-i18n="integrated-cassava-business_175"> เครดิตที่ได้รับรองจะบันทึกในระบบทะเบียน (Registry) และขายให้บริษัท/องค์กรที่ต้องการชดเชยคาร์บอน (Carbon Offset) รวมถึงผู้ซื้อในห่วงโซ่ เช่น โรงงานแป้งและโรงงานเอทานอล แล้วแบ่งรายได้กลับสู่เกษตรกรตามผลที่แปลงทำได้</span></li>
+</ul>
+<p data-i18n="integrated-cassava-business_176">ช่องทางรายได้เพิ่มเติมคือการใช้ข้อมูลคาร์บอนฟุตพริ้นท์ (CFP) ช่วยให้โรงงานผู้รับซื้อแสดงวัตถุดิบคาร์บอนต่ำแก่ลูกค้า ซึ่งเป็นเหตุผลให้จ่ายราคาพรีเมียมหรือทำสัญญาระยะยาวกับเกษตรกรในโครงการ</p>
+<div class="note-block" style="margin-top:22px;"><strong data-i18n="integrated-cassava-business_177">ประเด็นที่ต้องยืนยัน:</strong><span data-i18n="integrated-cassava-business_178"> ระเบียบวิธี (Methodology) ของ T-VER ที่ใช้กับแปลงมันสำปะหลังได้, ขนาดพื้นที่ขั้นต่ำที่คุ้มค่าต่อค่าประเมิน/ทวนสอบ, ราคาเครดิต และสัดส่วนการแบ่งรายได้ระหว่างเกษตรกร ผู้รวบรวมโครงการ และแพลตฟอร์ม</span></div>
+</div></section>
+
+<section class="prose-section" id="sec-7">
+<div class="container">
+<div class="section-head reveal" style="margin-bottom:30px;">
+<div class="eyebrow"><i class="fa-solid fa-people-group"></i><span data-i18n="integrated-cassava-business_179"> ผู้เกี่ยวข้อง</span></div>
+<h2 class="section-title" data-i18n="integrated-cassava-business_180">7. ผู้เกี่ยวข้องในระบบนิเวศ</h2>
+</div>
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-cassava-business_193">กลุ่ม</th>
+<th data-i18n="integrated-cassava-business_194">ผู้เกี่ยวข้อง</th>
+<th data-i18n="integrated-cassava-business_195">บทบาทในโครงการ</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-cassava-business_181">ต้นน้ำ</strong></td><td data-i18n="integrated-cassava-business_182">เกษตรกรผู้ปลูกมันสำปะหลัง, วิสาหกิจชุมชนผู้ผลิตท่อนพันธุ์ปลอดโรค</td><td data-i18n="integrated-cassava-business_183">ผลิตหัวมันคุณภาพ ใช้ท่อนพันธุ์ปลอดโรค ระบบน้ำ และปุ๋ยสั่งตัด และอาจแปรรูปมันเส้นสะอาดเองเป็นทางเลือก</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_184">กลางน้ำ</strong></td><td data-i18n="integrated-cassava-business_185">ลานมัน (ผู้รับซื้อและแปรรูปขั้นต้น), ผู้ให้บริการเครื่องจักรกลการเกษตร, ผู้ผลิตและจำหน่ายปุ๋ยสั่งตัดและระบบน้ำ</td><td data-i18n="integrated-cassava-business_186">รับซื้อหัวมันสด และตรวจวัดคุณภาพ ณ จุดรับซื้อ</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_187">ปลายน้ำ</strong></td><td data-i18n="integrated-cassava-business_188">โรงงานแป้งมันสำปะหลัง, โรงงานเอทานอล, อุตสาหกรรมกรดซิตริกและเคมีภัณฑ์ (รับซื้อหัวมันสด); โรงงานอาหารสัตว์ (ช่องทางเสริม รับซื้อมันเส้นสะอาด)</td><td data-i18n="integrated-cassava-business_189">รับซื้อผ่านสัญญาซื้อขายล่วงหน้าตามระดับคุณภาพ</td></tr>
+<tr><td><strong data-i18n="integrated-cassava-business_190">หน่วยงานสนับสนุน</strong></td><td data-i18n="integrated-cassava-business_191">หน่วยงานภาครัฐ (กษ., กค.), องค์การบริหารจัดการก๊าซเรือนกระจก (อบก.), กรมวิชาการเกษตร, สถาบันวิจัย/มหาวิทยาลัย, สถาบันการเงิน, ผู้ให้บริการเทคโนโลยี (Satellite/AI/IoT)</td><td data-i18n="integrated-cassava-business_192">นโยบาย มาตรฐาน งานวิจัย สินเชื่อ แพลตฟอร์มข้อมูล และการรับรองคาร์บอนเครดิต (T-VER)</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-cassava-business_196">8. ผลลัพธ์ที่คาดว่าจะได้รับ</h2>
+<ul class="check-list">
+<li><strong data-i18n="integrated-cassava-business_197">ผลผลิตต่อไร่เพิ่มขึ้น:</strong><span data-i18n="integrated-cassava-business_198"> เกษตรกรมีผลผลิตต่อไร่และเปอร์เซ็นต์แป้งสูงขึ้น จากการใช้ระบบน้ำ ปุ๋ยสั่งตัด และท่อนพันธุ์ปลอดโรค</span></li>
+<li><strong data-i18n="integrated-cassava-business_199">ตลาดรับซื้อที่หลากหลายและแน่นอน:</strong><span data-i18n="integrated-cassava-business_200"> เกษตรกรและลานมันมีสัญญาซื้อขายล่วงหน้ากับโรงงานแป้ง โรงงานเอทานอล และอุตสาหกรรมกรดซิตริก ลดการพึ่งพาผู้ซื้อรายเดียว ได้ราคาตามเปอร์เซ็นต์แป้ง และมีช่องทางเสริมจากมันเส้นสะอาด</span></li>
+<li><strong data-i18n="integrated-cassava-business_201">ราคามีเสถียรภาพ:</strong><span data-i18n="integrated-cassava-business_202"> มีระบบบริหารปริมาณผลผลิตทั้งในและนอกประเทศ ป้องกันปัญหาราคาตกต่ำ</span></li>
+<li><strong data-i18n="integrated-cassava-business_203">การค้าที่เป็นธรรม:</strong><span data-i18n="integrated-cassava-business_204"> จุดรับซื้อและลานมันมีระบบตรวจวัดคุณภาพมาตรฐาน โปร่งใส และตรวจสอบย้อนกลับได้</span></li>
+<li><strong data-i18n="integrated-cassava-business_205">ฐานข้อมูลการเกษตรแม่นยำ:</strong><span data-i18n="integrated-cassava-business_206"> มีระบบติดตามพื้นที่ปลูกและคาดการณ์ผลผลิตด้วย Satellite + AI + IoT ที่ใช้วางแผนเชิงนโยบายและการค้าได้จริง</span></li>
+<li><strong data-i18n="integrated-cassava-business_207">การผลิตคาร์บอนต่ำและรายได้เสริม:</strong><span data-i18n="integrated-cassava-business_208"> ลดการปล่อยก๊าซเรือนกระจกจากการใช้ปุ๋ยและการเผา ผลิตได้ต่อเนื่องแม้เผชิญภัยแล้ง และเกษตรกรมีรายได้เสริมจากคาร์บอนเครดิตภายใต้ T-VER</span></li>
+</ul>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 class="section-title" data-i18n="integrated-cassava-business_209">สนใจเข้าร่วมโครงการมันสำปะหลังครบวงจร</h2>
+<p class="section-sub" data-i18n="integrated-cassava-business_210">ไม่ว่าจะในฐานะเกษตรกร สหกรณ์ ลานมัน โรงงาน หรือพันธมิตรทางธุรกิจ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-cassava-business_211">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-cassava-business_212">กลับหน้าแรก</a>
+</div></div></section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-carrot"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-cassava-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
