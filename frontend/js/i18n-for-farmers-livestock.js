@@ -322,5 +322,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "for-farmers-livestock_81": {
     "th": "สอบถามทีมงาน",
     "en": "Talk to Our Team"
+  },
+  "for-farmers-livestock_82": {
+    "th": "อินโฟกราฟิกโครงการพัฒนาระบบนิเวศเศรษฐกิจโคเนื้อและกระบือครบวงจรด้วยเทคโนโลยีดิจิทัล โดยกรมปศุสัตว์และ AgroLink แสดง 9 ระบบงานหลัก",
+    "en": "Infographic of the Integrated Beef Cattle and Buffalo Economic Ecosystem Development Project through digital technology, by the Department of Livestock Development and AgroLink, showing 9 core systems"
+  },
+  "for-farmers-livestock_83": {
+    "th": "ภาพรวมโครงการพัฒนาระบบนิเวศเศรษฐกิจโคเนื้อและกระบือครบวงจรด้วยเทคโนโลยีดิจิทัล — กรมปศุสัตว์ x AgroLink",
+    "en": "Overview of the Integrated Beef Cattle and Buffalo Economic Ecosystem Development Project through digital technology — Department of Livestock Development x AgroLink"
   }
 });

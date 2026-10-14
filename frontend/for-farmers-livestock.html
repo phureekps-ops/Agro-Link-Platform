@@ -127,6 +127,17 @@
   .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
   .page-header .hero-cta { margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
   /* SHARED SECTION LAYOUT */
   .prose-section { padding: 64px 0; }
   .prose-section.alt { background: #fff; }
@@ -289,6 +300,15 @@
       <a href="register.html" class="btn btn-gold"><i class="fa-solid fa-user-plus"></i><span data-i18n="for-farmers-livestock_4"> สมัครสมาชิกเกษตรกร</span></a>
       <a href="farmer-login.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="for-farmers-livestock_5"> เข้าสู่ระบบ (มีบัญชีแล้ว)</span></a>
     </div>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/livestock-ecosystem-infographic.jpg" data-i18n="for-farmers-livestock_82" data-i18n-attr="alt" alt="อินโฟกราฟิกโครงการพัฒนาระบบนิเวศเศรษฐกิจโคเนื้อและกระบือครบวงจรด้วยเทคโนโลยีดิจิทัล โดยกรมปศุสัตว์และ AgroLink แสดง 9 ระบบงานหลัก" loading="lazy">
+      <figcaption data-i18n="for-farmers-livestock_83">ภาพรวมโครงการพัฒนาระบบนิเวศเศรษฐกิจโคเนื้อและกระบือครบวงจรด้วยเทคโนโลยีดิจิทัล — กรมปศุสัตว์ x AgroLink</figcaption>
+    </figure>
   </div>
 </section>
 
