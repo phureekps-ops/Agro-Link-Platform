@@ -140,6 +140,17 @@
   .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
   .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
 
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
   /* TOC */
   .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
   .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
@@ -242,6 +253,15 @@
     <h1 class="section-title" data-i18n="integrated-durian-business_3">โครงการพัฒนาระบบนิเวศเศรษฐกิจทุเรียนครบวงจรด้วยเทคโนโลยีดิจิทัล</h1>
     <p class="section-sub" data-i18n="integrated-durian-business_4">"ทุเรียนคุณภาพ เกษตรกรมั่นคง ตลาดเป็นธรรม ตรวจสอบได้ ลดโลกร้อน" — เอกสารแนวคิดโครงการ (Concept Paper) เสนอต่อกระทรวงเกษตรและสหกรณ์</p>
     <span class="draft-tag" data-i18n="integrated-durian-business_5">ฉบับร่างเพื่อพิจารณา — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/durian-ecosystem-infographic.jpg" data-i18n="integrated-durian-business_319" data-i18n-attr="alt" alt="อินโฟกราฟิกโครงการพัฒนาระบบนิเวศเศรษฐกิจทุเรียนครบวงจรด้วยเทคโนโลยีดิจิทัลและความร่วมมือของทุกภาคส่วน แสดง 7 ระบบงานหลักที่เชื่อมโยงกันผ่าน AgroLink Platform" loading="lazy">
+      <figcaption data-i18n="integrated-durian-business_320">ภาพรวมโครงการพัฒนาระบบนิเวศเศรษฐกิจทุเรียนครบวงจรด้วยเทคโนโลยีดิจิทัลและความร่วมมือของทุกภาคส่วน — กระทรวงเกษตรและสหกรณ์</figcaption>
+    </figure>
   </div>
 </section>
 

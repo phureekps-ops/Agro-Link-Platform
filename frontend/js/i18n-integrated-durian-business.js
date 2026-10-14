@@ -1270,5 +1270,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "integrated-durian-business_318": {
     "th": "ทุเรียนครบวงจร",
     "en": "Integrated Durian Business"
+  },
+  "integrated-durian-business_319": {
+    "th": "อินโฟกราฟิกโครงการพัฒนาระบบนิเวศเศรษฐกิจทุเรียนครบวงจรด้วยเทคโนโลยีดิจิทัลและความร่วมมือของทุกภาคส่วน แสดง 7 ระบบงานหลักที่เชื่อมโยงกันผ่าน AgroLink Platform",
+    "en": "Infographic of the Integrated Durian Economic Ecosystem Development Project through digital technology and collaboration of all sectors, showing the 7 core systems connected through the AgroLink Platform"
+  },
+  "integrated-durian-business_320": {
+    "th": "ภาพรวมโครงการพัฒนาระบบนิเวศเศรษฐกิจทุเรียนครบวงจรด้วยเทคโนโลยีดิจิทัลและความร่วมมือของทุกภาคส่วน — กระทรวงเกษตรและสหกรณ์",
+    "en": "Overview of the Integrated Durian Economic Ecosystem Development Project through digital technology and collaboration of all sectors — Ministry of Agriculture and Cooperatives"
   }
 });
