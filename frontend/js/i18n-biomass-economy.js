@@ -198,5 +198,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "biomass-economy_49": {
     "th": " ติดต่อทีมงาน",
     "en": " Contact Our Team"
+  },
+  "biomass-economy_50": {
+    "th": "ตัวอย่างอินโฟกราฟิกสหกรณ์ผู้รวบรวมและแปรรูปฟางข้าวและเศษวัสดุเหลือใช้ทางการเกษตรเป็นเชื้อเพลิงชีวมวลอัดเม็ด แสดงภาพรวมสมาชิก พันธกิจ และผลงานของสหกรณ์ต้นแบบ",
+    "en": "Example infographic of a cooperative that collects and processes rice straw and agricultural residues into biomass fuel pellets, showing an overview of a model cooperative's members, mission, and achievements"
+  },
+  "biomass-economy_51": {
+    "th": "ตัวอย่างสหกรณ์รวบรวมเศษวัสดุเหลือใช้ทางการเกษตรเพื่อแปรรูปเป็นเชื้อเพลิงชีวมวล — ภาพประกอบแนวคิดเศรษฐกิจชีวมวลของ AgroLink",
+    "en": "An example cooperative that collects agricultural residues for biomass fuel processing — illustrating the AgroLink biomass economy concept"
   }
 });
