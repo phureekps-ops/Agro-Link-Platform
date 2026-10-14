@@ -850,5 +850,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "integrated-cassava-business_213": {
     "th": "มันสำปะหลังครบวงจร",
     "en": "Integrated Cassava Business"
+  },
+  "integrated-cassava-business_214": {
+    "th": "อินโฟกราฟิกโครงการพัฒนาและยกระดับระบบนิเวศการผลิตและตลาดมันสำปะหลังอย่างยั่งยืน แสดง 9 ระบบงานหลักที่เชื่อมโยงกันผ่าน AgroLink Platform",
+    "en": "Infographic of the Sustainable Cassava Production and Market Ecosystem Development project, showing the 9 core systems connected through the AgroLink Platform"
+  },
+  "integrated-cassava-business_215": {
+    "th": "ภาพรวมโครงการพัฒนาและยกระดับระบบนิเวศการผลิตและตลาดมันสำปะหลังอย่างยั่งยืน — AgroLink เชื่อมโยงเกษตรกร สู่ตลาดโลก",
+    "en": "Overview of the Sustainable Cassava Production and Market Ecosystem Development project — AgroLink, connecting farmers to the global market"
   }
 });
