@@ -9,6 +9,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   // ---------- Header / nav ----------
   logo_alt: { th: "AgroLink", en: "AgroLink" },
   nav_home: { th: "หน้าแรก", en: "Home" },
+  nav_about: { th: "เกี่ยวกับเรา", en: "About Us" },
   nav_coop: { th: "สำหรับสหกรณ์", en: "For Cooperatives" },
   nav_coop_fert: { th: "ปุ๋ยสั่งตัด", en: "Custom Fertilizer" },
   nav_coop_rice: { th: "ธุรกิจข้าวครบวงจร", en: "Integrated Rice Business" },
