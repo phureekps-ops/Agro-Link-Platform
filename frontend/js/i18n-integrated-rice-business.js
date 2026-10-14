@@ -546,5 +546,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "integrated-rice-business_136": {
     "th": "กลับหน้าแรก",
     "en": "Back to Home"
+  },
+  "integrated-rice-business_137": {
+    "th": "อินโฟกราฟิกโครงการธุรกิจข้าวครบวงจร AgroLink x สหกรณ์การเกษตร แสดง 9 ระบบงานหลักที่เชื่อมโยงทุกภาคส่วนด้วยเทคโนโลยีดิจิทัล",
+    "en": "Infographic of the AgroLink x Agricultural Cooperative Integrated Rice Business project, showing the 9 core systems connecting all sectors through digital technology"
+  },
+  "integrated-rice-business_138": {
+    "th": "ภาพรวมโครงการธุรกิจข้าวครบวงจร เชื่อมโยงทุกภาคส่วนด้วยเทคโนโลยีดิจิทัล — สหกรณ์การเกษตร x AgroLink",
+    "en": "Overview of the Integrated Rice Business project, connecting all sectors through digital technology — Agricultural Cooperative x AgroLink"
   }
 });
