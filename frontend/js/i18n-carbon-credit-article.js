@@ -222,5 +222,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "carbon-credit-article_55": {
     "th": "กลับหน้าแรก",
     "en": "Back to Home"
+  },
+  "carbon-credit-article_56": {
+    "th": "แผนภาพการไหลเวียนค่าธรรมเนียม Digital MRV ระหว่าง ธ.ก.ส. ผู้เป็นเจ้าของระบบ, AgroLink ผู้พัฒนาโปรแกรม, เกษตรกร/สหกรณ์คู่สัญญาข้าว Low Carbon และตลาดคาร์บอนเครดิต",
+    "en": "Diagram of the Digital MRV fee flow among BAAC (system owner), AgroLink (platform developer), farmers/cooperatives under Low Carbon rice contracts, and the carbon credit market"
+  },
+  "carbon-credit-article_57": {
+    "th": "กลไกการไหลเวียนค่าธรรมเนียม Digital MRV เชื่อมโยง ธ.ก.ส. AgroLink เกษตรกร/สหกรณ์ และตลาดคาร์บอนเครดิตเข้าด้วยกัน",
+    "en": "The Digital MRV fee flow mechanism connecting BAAC, AgroLink, farmers/cooperatives, and the carbon credit market"
   }
 });
