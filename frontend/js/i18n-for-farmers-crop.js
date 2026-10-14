@@ -322,5 +322,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "for-farmers-crop_81": {
     "th": "สอบถามทีมงาน",
     "en": "Talk to Our Team"
+  },
+  "for-farmers-crop_82": {
+    "th": "อินโฟกราฟิกแพลตฟอร์ม AGROLINK เชื่อมโยงเกษตรกรผู้ปลูกพืช (ทุเรียน มันสำปะหลัง ข้าว ข้าวโพด) ด้วยเซ็นเซอร์ IoT ดาวเทียม และ AI ประมวลผลและวิเคราะห์ข้อมูล สู่ตลาดคาร์บอนเครดิตและผู้ซื้อสินค้าเกษตร",
+    "en": "Infographic of the AGROLINK platform connecting crop farmers (durian, cassava, rice, corn) via IoT sensors, satellites, and AI data processing to the carbon credit market and agricultural buyers"
+  },
+  "for-farmers-crop_83": {
+    "th": "ภาพรวมแพลตฟอร์ม AgroLink สำหรับเกษตรกรผู้ปลูกพืช — เชื่อมโยงแปลงปลูกสู่ตลาดคาร์บอนเครดิตและผู้ซื้อด้วยเทคโนโลยี IoT ดาวเทียม และ AI",
+    "en": "Overview of the AgroLink platform for crop farmers — connecting fields to the carbon credit market and buyers through IoT, satellite, and AI technology"
   }
 });
