@@ -322,5 +322,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "for-farmers-aquaculture_81": {
     "th": "สอบถามทีมงาน",
     "en": "Talk to Our Team"
+  },
+  "for-farmers-aquaculture_82": {
+    "th": "อินโฟกราฟิก AgroLink Smart Shrimp Ecosystem เชื่อมโยงทุกภาคส่วน ขับเคลื่อนอุตสาหกรรมกุ้งไทยสู่ความยั่งยืน ด้วยดาวเทียม AI และ IoT",
+    "en": "Infographic of the AgroLink Smart Shrimp Ecosystem connecting all sectors to drive Thailand's shrimp industry toward sustainability, powered by satellite, AI and IoT"
+  },
+  "for-farmers-aquaculture_83": {
+    "th": "ภาพรวม AgroLink Smart Shrimp Ecosystem — เชื่อมโยงทุกภาคส่วน ขับเคลื่อนอุตสาหกรรมกุ้งไทย สู่ความยั่งยืน",
+    "en": "Overview of the AgroLink Smart Shrimp Ecosystem — connecting all sectors to drive Thailand's shrimp industry toward sustainability"
   }
 });
