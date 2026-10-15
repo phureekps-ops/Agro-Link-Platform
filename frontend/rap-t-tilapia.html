@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ปลานิล/ทับทิมกระชัง | โครงการ RAP-T | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 30px 32px; font-size: 15px; line-height: 1.8; text-align: center;
+  }
+  .note-block i.fa-seedling { font-size: 30px; color: var(--gold); margin-bottom: 14px; display: block; }
+  .note-block strong { color: #7A5E10; }
+
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <a href="about-video.html" data-i18n="nav_about">เกี่ยวกับเรา</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="for-farmers.html"><span data-i18n="nav_farmers">สำหรับเกษตรกร</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="for-farmers-crop.html" data-i18n="nav_farmers_crop">เกษตรกรผู้ปลูกพืช</a>
+            <a href="for-farmers-livestock.html" data-i18n="nav_farmers_livestock">เกษตรกรผู้เลี้ยงสัตว์บก</a>
+            <a href="for-farmers-aquaculture.html" data-i18n="nav_farmers_aquaculture">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="rap-t-project.html"><span data-i18n="nav_rapt">RAP-T</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-durian-business.html" data-i18n="nav_rapt_durian">ทุเรียน</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_rapt_cassava">มันสำปะหลัง</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_rapt_corn">ข้าวโพดเลี้ยงสัตว์</a>
+            <a href="rap-t-coffee.html" data-i18n="nav_rapt_coffee">กาแฟ</a>
+            <a href="rap-t-coconut.html" data-i18n="nav_rapt_coconut">มะพร้าวน้ำหอม</a>
+            <a href="rap-t-shrimp.html" data-i18n="nav_rapt_shrimp">กุ้ง</a>
+            <a href="rap-t-tilapia.html" data-i18n="nav_rapt_tilapia">ปลานิล/ทับทิมกระชัง</a>
+            <a href="rap-t-seabass.html" data-i18n="nav_rapt_seabass">ปลากระพง/เก๋ากระชัง</a>
+          </div>
+        </div>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="rap-t-tilapia_nav_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-globe-asia"></i><span data-i18n="rap-t-tilapia_1"> โครงการ RAP-T</span></div>
+    <h1 class="section-title" data-i18n="rap-t-tilapia_2">ปลานิล/ทับทิมกระชัง</h1>
+    <p class="section-sub" data-i18n="rap-t-tilapia_3">ส่วนหนึ่งของสินค้าเกษตรเป้าหมายภายใต้โครงการ RAP-T (Resilient Agribusiness Program Thailand) ซึ่งกระทรวงเกษตรและสหกรณ์ร่วมกับ FAO และ ADB ขับเคลื่อนเพื่อสร้างความยืดหยุ่นต่อการเปลี่ยนแปลงสภาพภูมิอากาศ</p>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container prose-block reveal in">
+    <div class="note-block">
+      <i class="fa-solid fa-seedling"></i>
+      <strong data-i18n="rap-t-tilapia_4">เนื้อหาอยู่ระหว่างจัดทำ</strong><br><br>
+      <span data-i18n="rap-t-tilapia_5">ขณะนี้ทีมงาน AgroLink กำลังรวบรวมข้อมูลห่วงโซ่คุณค่า สถานะความเสี่ยงด้านภูมิอากาศ และแนวทางการสนับสนุนเกษตรกรผู้ประกอบการ "ปลานิล/ทับทิมกระชัง" ภายใต้โครงการ RAP-T — กลับมาเยี่ยมชมหน้านี้อีกครั้งเร็วๆ นี้</span>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container section-head reveal">
+    <h2 class="section-title" style="font-size:24px;" data-i18n="rap-t-tilapia_6">สนใจข้อมูลเพิ่มเติมเกี่ยวกับโครงการ RAP-T?</h2>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="rap-t-project.html" class="btn btn-gold" data-i18n="rap-t-tilapia_7">📄 กลับไปที่เอกสารโครงการ RAP-T</a>
+      <a href="index.html#contact" class="btn btn-outline" data-i18n="rap-t-tilapia_8">ติดต่อทีมงาน AgroLink</a>
+      <a href="index.html" class="btn btn-outline" data-i18n="rap-t-tilapia_9">กลับหน้าแรก</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+          <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
+          <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
+          <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
+          <li><a href="rap-t-project.html" data-i18n="footer_product_17">โครงการ RAP-T</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-rap-t-tilapia.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
