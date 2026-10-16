@@ -140,6 +140,17 @@
   .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
   .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
 
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
   /* TOC */
   .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
   .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
@@ -256,6 +267,15 @@
     <h1 class="section-title" data-i18n="integrated-corn-business_3">เอกสารแนวคิดโครงการ: การพัฒนาระบบนิเวศข้าวโพดเลี้ยงสัตว์ครบวงจรด้วยโครงสร้างพื้นฐานดิจิทัล</h1>
     <p class="section-sub" data-i18n="integrated-corn-business_4">"ไม่เผาแล้วได้มากกว่า" — เชื่อมเกษตรกรกับสินเชื่อเป็นงวด ปุ๋ยสั่งตัด ดาวเทียมติดตามแปลง และตลาดข้าวโพดปลอดการเผาทั้งในและข้ามพรมแดน</p>
     <span class="draft-tag" data-i18n="integrated-corn-business_5">ฉบับร่างเพื่อพิจารณา — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/corn-integrated-business-infographic.jpg" data-i18n="integrated-corn-business_211" data-i18n-attr="alt" alt="อินโฟกราฟิกโครงการข้าวโพดครบวงจร สหกรณ์การเกษตร x AgroLink แสดง 7 ขั้นตอน: ผู้ผลิตเมล็ดพันธุ์ เกษตรกรผู้ปลูก เครื่องจักรกลการเกษตร รับซื้อคัดเกรดด้วย AI เชื่อมโยงผู้ซื้อหลากหลาย เศรษฐกิจชีวมวล และปุ๋ยสั่งตัด พร้อมบทบาทสหกรณ์การเกษตรและเทคโนโลยีข้อมูลขับเคลื่อนที่เชื่อมโยงเกษตรกร สหกรณ์ ผู้ซื้อ/ตลาด และหน่วยงานรัฐเข้าด้วยกัน" loading="lazy">
+      <figcaption data-i18n="integrated-corn-business_212">ภาพรวมโครงการข้าวโพดครบวงจร สหกรณ์การเกษตร x AgroLink — ตั้งแต่เมล็ดพันธุ์ ปลูก เก็บเกี่ยว รับซื้อด้วย AI ไปจนถึงตลาด เศรษฐกิจชีวมวล และปุ๋ยสั่งตัด</figcaption>
+    </figure>
   </div>
 </section>
 

@@ -838,5 +838,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "integrated-corn-business_210": {
     "th": "ข้าวโพดครบวงจร",
     "en": "Integrated Feed Corn Business"
+  },
+  "integrated-corn-business_211": {
+    "th": "อินโฟกราฟิกโครงการข้าวโพดครบวงจร สหกรณ์การเกษตร x AgroLink แสดง 7 ขั้นตอน: ผู้ผลิตเมล็ดพันธุ์ เกษตรกรผู้ปลูก เครื่องจักรกลการเกษตร รับซื้อคัดเกรดด้วย AI เชื่อมโยงผู้ซื้อหลากหลาย เศรษฐกิจชีวมวล และปุ๋ยสั่งตัด พร้อมบทบาทสหกรณ์การเกษตรและเทคโนโลยีข้อมูลขับเคลื่อนที่เชื่อมโยงเกษตรกร สหกรณ์ ผู้ซื้อ/ตลาด และหน่วยงานรัฐเข้าด้วยกัน",
+    "en": "Integrated Feed Corn Business infographic, Agricultural Cooperatives x AgroLink, showing 7 steps: seed producers, farmers, farm machinery, AI-graded procurement, diverse buyer connections, biomass economy, and custom fertilizer, alongside the agricultural cooperative's role and the data and technology that connect farmers, cooperatives, buyers/markets, and government agencies"
+  },
+  "integrated-corn-business_212": {
+    "th": "ภาพรวมโครงการข้าวโพดครบวงจร สหกรณ์การเกษตร x AgroLink — ตั้งแต่เมล็ดพันธุ์ ปลูก เก็บเกี่ยว รับซื้อด้วย AI ไปจนถึงตลาด เศรษฐกิจชีวมวล และปุ๋ยสั่งตัด",
+    "en": "Overview of the Integrated Feed Corn Business, Agricultural Cooperatives x AgroLink -- from seed, planting, and harvest through AI-based procurement to market, the biomass economy, and custom fertilizer"
   }
 });
