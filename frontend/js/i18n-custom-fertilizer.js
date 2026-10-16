@@ -178,5 +178,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "custom-fertilizer_44": {
     "th": " ติดต่อทีมงาน",
     "en": " Contact Our Team"
+  },
+  "custom-fertilizer_45": {
+    "th": "อินโฟกราฟิกห่วงโซ่คุณค่าของปุ๋ยสั่งตัด AgroLink แสดง 7 ขั้นตอน: ข้อมูลและวิเคราะห์ พัฒนาสูตรปุ๋ยสั่งตัด ผลิตปุ๋ยสั่งตัด จัดจำหน่ายและส่งมอบ เกษตรกรใช้ปุ๋ยสั่งตัด ผลผลิตและตลาด และการจัดการของเสีย พร้อมประโยชน์ด้านการลดต้นทุน ปรับปรุงคุณภาพดิน แก้ปัญหาภาวะเรือนกระจก สร้างโอกาสทางธุรกิจให้สหกรณ์การเกษตร และสนับสนุน Bio Circular",
+    "en": "AgroLink Custom Fertilizer value chain infographic showing 7 steps: data and analysis, custom fertilizer formula development, fertilizer production, distribution and delivery, farmers applying custom fertilizer, yield and market, and waste management, alongside benefits in cost reduction, soil quality improvement, greenhouse gas mitigation, new business opportunities for agricultural cooperatives, and support for the Bio Circular economy"
+  },
+  "custom-fertilizer_46": {
+    "th": "ห่วงโซ่คุณค่าของปุ๋ยสั่งตัด — จากข้อมูลดินและพืช ไปจนถึงเกษตรกรใช้ปุ๋ย ผลผลิต และการจัดการของเสียแบบหมุนเวียน",
+    "en": "The Custom Fertilizer value chain -- from soil and crop data through to farmers applying fertilizer, yield, and circular waste management"
   }
 });
