@@ -15,6 +15,7 @@ const ADMIN_PAGE_BREADCRUMB_TH = {
   "credit-model": "โมเดลคะแนนเครดิต",
   cooperatives: "จัดการสหกรณ์",
   "gov-officers": "เจ้าหน้าที่ภาครัฐ",
+  "field-survey": "แบบสำรวจภาคสนาม (RAP-T)",
   satellite: "ข้อมูลดาวเทียม",
   "featured-listings": "รายการแนะนำ",
   "group-buys": "รวมออเดอร์ประมูลร่วม",
@@ -79,6 +80,17 @@ function thaiDateTime(iso) {
 // เดิมอยู่ใน capital-topup.js เท่านั้น ไม่ชนกับไฟล์อื่น
 function thb(n) {
   return Number(n || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 });
+}
+
+// ใช้โดยแบบสำรวจภาคสนาม (P0, RAP-T) สำหรับแนบรูปถ่ายผ่าน POST /storage/upload
+// — รูปแบบเดียวกับ coop/js/dashboard.js (อัปโหลดเอกสารจดทะเบียนสหกรณ์)
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result); // data: URL — ตรงกับ lib/storage.js's decodeBase64Payload
+    reader.onerror = () => reject(reader.error || new Error("read_failed"));
+    reader.readAsDataURL(file);
+  });
 }
 
 const FARMER_STATUS_LABEL = {
@@ -1345,6 +1357,182 @@ async function initGovernmentOfficers() {
 }
 
 // ============================================================
+// แบบสำรวจภาคสนาม (P0, แผนความพร้อมรองรับ RAP-T — ดู grant_field_survey.sql
+// สำหรับ schema และเหตุผลที่ตารางนี้แยกจาก registry.production_unit)
+// ============================================================
+const FS_TARGET_CHAIN_LABEL = {
+  durian: "ทุเรียน", feed_corn: "ข้าวโพดเลี้ยงสัตว์", coffee: "กาแฟ",
+  aromatic_coconut: "มะพร้าวน้ำหอม", caged_fish: "ปลากระชัง (นิล/ทับทิม/กะพง/เก๋า)", other: "อื่นๆ",
+};
+
+let fsProvinceCache = [];
+
+async function loadFieldSurveyProvinces() {
+  const select = document.getElementById("fsProvinceSelect");
+  try {
+    fsProvinceCache = await AgroLinkAdminAPI.get("/admin/provinces");
+    select.innerHTML = fsProvinceCache.length === 0
+      ? `<option value="">ไม่มีจังหวัดในระบบ</option>`
+      : `<option value="">-- เลือกจังหวัด --</option>` +
+        fsProvinceCache.map((p) => `<option value="${escapeHtml(p.province_name_th)}">${escapeHtml(p.province_name_th)}</option>`).join("");
+  } catch (err) {
+    select.innerHTML = `<option value="">โหลดจังหวัดไม่สำเร็จ</option>`;
+    toast("โหลดรายชื่อจังหวัดไม่สำเร็จ: " + err.message, true);
+  }
+}
+
+async function loadFieldSurveySummary() {
+  const el = document.getElementById("fieldSurveySummarySection");
+  try {
+    const summary = await AgroLinkAdminAPI.get("/admin/field-survey/summary");
+    el.innerHTML = Object.keys(FS_TARGET_CHAIN_LABEL).map((chain) => `
+      <div class="stat-card"><div class="label">${escapeHtml(FS_TARGET_CHAIN_LABEL[chain])}</div><div class="value">${summary.by_chain[chain] || 0}</div></div>
+    `).join("") + `<div class="stat-card"><div class="label">รวมทั้งหมด</div><div class="value">${summary.total}</div></div>`;
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดสรุปจำนวนไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function fieldSurveyRecordCard(r) {
+  const location = [r.sub_district, r.district, r.province].filter(Boolean).map(escapeHtml).join(" / ");
+  const gps = (r.gps_lat !== null && r.gps_lat !== undefined) ? `พิกัด: ${Number(r.gps_lat).toFixed(6)}, ${Number(r.gps_lng).toFixed(6)}` : "";
+  return `
+    <div class="item-card" data-record-id="${r.record_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(r.farmer_name)} — ${escapeHtml(r.commodity_label)}</span>
+        <span class="badge status-active">${escapeHtml(FS_TARGET_CHAIN_LABEL[r.target_chain] || r.target_chain)}</span>
+      </div>
+      <div class="detail-line">${location || "-"}${r.estimated_area_rai ? ` · ${Number(r.estimated_area_rai).toLocaleString("th-TH")} ไร่` : ""}</div>
+      <div class="detail-line muted">วันที่ลงพื้นที่ ${thaiDate(r.visit_date)} · บันทึกโดย ${escapeHtml(r.recorded_by)}</div>
+      ${gps ? `<div class="detail-line muted">${gps}</div>` : ""}
+      ${r.interested_in_agrolink ? `<div class="detail-line">✅ สนใจเข้าร่วม AgroLink</div>` : ""}
+      ${r.note ? `<div class="detail-line muted">หมายเหตุ: ${escapeHtml(r.note)}</div>` : ""}
+      ${r.photo_file_id ? `<div class="detail-line"><a href="${API_BASE}/storage/${r.photo_file_id}" target="_blank" rel="noopener">ดูรูปถ่าย</a></div>` : ""}
+    </div>
+  `;
+}
+
+async function loadFieldSurveyRecords(targetChain) {
+  const el = document.getElementById("fieldSurveyRecordsSection");
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const qs = targetChain ? `?target_chain=${encodeURIComponent(targetChain)}` : "";
+    const rows = await AgroLinkAdminAPI.get(`/admin/field-survey${qs}`);
+    el.innerHTML = rows.length === 0
+      ? `<div class="empty-state">ยังไม่มีข้อมูลการลงพื้นที่ — ใช้ฟอร์มด้านบนเพื่อบันทึกรายการแรก</div>`
+      : rows.map(fieldSurveyRecordCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("fsFilterChainSelect").addEventListener("change", (e) => {
+  loadFieldSurveyRecords(e.target.value);
+});
+
+document.getElementById("fsUseCurrentLocationBtn").addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    toast("อุปกรณ์นี้ไม่รองรับการระบุพิกัด GPS", true);
+    return;
+  }
+  const btn = document.getElementById("fsUseCurrentLocationBtn");
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      document.getElementById("fsGpsLatInput").value = pos.coords.latitude.toFixed(6);
+      document.getElementById("fsGpsLngInput").value = pos.coords.longitude.toFixed(6);
+      btn.disabled = false;
+    },
+    (err) => {
+      toast("ดึงพิกัดปัจจุบันไม่สำเร็จ: " + err.message, true);
+      btn.disabled = false;
+    },
+  );
+});
+
+document.getElementById("fsSubmitBtn").addEventListener("click", async () => {
+  const targetChain = document.getElementById("fsTargetChainSelect").value;
+  const commodityLabel = document.getElementById("fsCommodityLabelInput").value.trim();
+  const visitDate = document.getElementById("fsVisitDateInput").value;
+  const farmerName = document.getElementById("fsFarmerNameInput").value.trim();
+  const phone = document.getElementById("fsPhoneInput").value.trim();
+  const province = document.getElementById("fsProvinceSelect").value;
+  const district = document.getElementById("fsDistrictInput").value.trim();
+  const subDistrict = document.getElementById("fsSubDistrictInput").value.trim();
+  const gpsLat = document.getElementById("fsGpsLatInput").value;
+  const gpsLng = document.getElementById("fsGpsLngInput").value;
+  const area = document.getElementById("fsAreaInput").value;
+  const financeAccess = document.getElementById("fsFinanceAccessInput").value.trim();
+  const insuranceAccess = document.getElementById("fsInsuranceAccessInput").value.trim();
+  const marketChannel = document.getElementById("fsMarketChannelInput").value.trim();
+  const currentPractices = document.getElementById("fsCurrentPracticesInput").value.trim();
+  const climateRisks = document.getElementById("fsClimateRisksInput").value.trim();
+  const interested = document.getElementById("fsInterestedCheckbox").checked;
+  const recordedBy = document.getElementById("fsRecordedByInput").value.trim();
+  const note = document.getElementById("fsNoteInput").value.trim();
+  const photoInput = document.getElementById("fsPhotoInput");
+
+  if (!targetChain || !commodityLabel || !visitDate || !farmerName || !province || !recordedBy) {
+    toast("กรุณากรอกห่วงโซ่คุณค่า ชนิดสินค้า วันที่ลงพื้นที่ ชื่อเกษตรกร จังหวัด และชื่อผู้สำรวจ", true);
+    return;
+  }
+
+  const btn = document.getElementById("fsSubmitBtn");
+  btn.disabled = true;
+  try {
+    let photoFileId;
+    const photoFile = photoInput.files[0];
+    if (photoFile) {
+      const dataUrl = await fileToBase64(photoFile);
+      const uploadResult = await AgroLinkAdminAPI.post("/storage/upload", {
+        purpose: "field_survey_photo",
+        filename: photoFile.name,
+        content_type: photoFile.type,
+        file_base64: dataUrl,
+        uploaded_by: recordedBy,
+      });
+      photoFileId = uploadResult.file_id;
+    }
+
+    await AgroLinkAdminAPI.post("/admin/field-survey", {
+      target_chain: targetChain,
+      commodity_label: commodityLabel,
+      visit_date: visitDate,
+      farmer_name: farmerName,
+      phone: phone || undefined,
+      province,
+      district: district || undefined,
+      sub_district: subDistrict || undefined,
+      gps_lat: gpsLat ? Number(gpsLat) : undefined,
+      gps_lng: gpsLng ? Number(gpsLng) : undefined,
+      estimated_area_rai: area ? Number(area) : undefined,
+      finance_access: financeAccess || undefined,
+      insurance_access: insuranceAccess || undefined,
+      market_channel: marketChannel || undefined,
+      current_practices: currentPractices || undefined,
+      climate_risks: climateRisks || undefined,
+      interested_in_agrolink: interested,
+      photo_file_id: photoFileId,
+      recorded_by: recordedBy,
+      note: note || undefined,
+    });
+
+    toast("บันทึกข้อมูลการลงพื้นที่เรียบร้อยแล้ว");
+    document.getElementById("fieldSurveyForm").reset();
+    await Promise.all([loadFieldSurveySummary(), loadFieldSurveyRecords(document.getElementById("fsFilterChainSelect").value)]);
+  } catch (err) {
+    const reason = (err.body && err.body.error) || err.message;
+    toast("บันทึกไม่สำเร็จ: " + reason, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function initFieldSurvey() {
+  await Promise.all([loadFieldSurveyProvinces(), loadFieldSurveySummary(), loadFieldSurveyRecords("")]);
+}
+
+// ============================================================
 // ข้อมูลดาวเทียม/Remote Sensing (เดิมอยู่ที่ satellite-observations.html/
 // js/satellite-observations.js แยกหน้า — รวมเข้ามาที่นี่)
 // ============================================================
@@ -2218,6 +2406,7 @@ loadCreditModelStatus();
 // รวมมาจาก 6 หน้าเดิม
 initCooperatives();
 initGovernmentOfficers();
+initFieldSurvey();
 initSatelliteObservations();
 initFeaturedListings();
 initGroupBuys();

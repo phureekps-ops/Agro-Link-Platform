@@ -87,6 +87,7 @@
         </div>
         <div class="admin-nav-group">
           <div class="admin-nav-group-title">ข้อมูลภาคสนาม</div>
+          <button type="button" class="admin-nav-item" data-page="field-survey">📋 แบบสำรวจภาคสนาม (RAP-T)</button>
           <button type="button" class="admin-nav-item" data-page="satellite">🛰️ ข้อมูลดาวเทียม</button>
         </div>
         <div class="admin-nav-group">
@@ -438,6 +439,130 @@
 
     <div class="section-title" id="officerDetailSectionTitle" style="display:none;">🔍 รายละเอียดเจ้าหน้าที่</div>
     <div id="officerDetailSection" style="display:none;"></div>
+      </div>
+
+      <div class="admin-page" data-page-content="field-survey" style="display:none;">
+    <div class="section-title">📋 แบบสำรวจภาคสนาม — ห่วงโซ่คุณค่าที่ยังไม่มีทะเบียนสินค้า (RAP-T)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมายเหตุขอบเขต: เครื่องมือนี้เก็บ "ข้อมูลตั้งต้น" (baseline) สำหรับห่วงโซ่คุณค่าที่ยังไม่มีรหัสสินค้า (ทุเรียน ข้าวโพดเลี้ยงสัตว์ กาแฟ มะพร้าวน้ำหอม ปลากระชัง) แยกต่างหากจากระบบขึ้นทะเบียนแปลงจริง (ซึ่งต้องมีรหัสสินค้าก่อน) —
+      ใช้สนับสนุนทีม RAP-T ที่มีแผนลงพื้นที่เดือน พ.ย. 2569 ข้อมูลที่เก็บได้จะโยกเข้าระบบทะเบียนแปลงจริงในภายหลังเมื่อมีรหัสสินค้าสำหรับห่วงโซ่เหล่านี้แล้ว
+    </p>
+    <div id="fieldSurveySummarySection" class="summary-grid" style="margin-bottom:20px;">
+      <div class="loading-line">กำลังโหลดสรุปจำนวนที่เก็บได้…</div>
+    </div>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="fieldSurveyForm" class="form-grid">
+        <div class="field">
+          <label for="fsTargetChainSelect">ห่วงโซ่คุณค่าเป้าหมาย</label>
+          <select id="fsTargetChainSelect" required>
+            <option value="">-- เลือกห่วงโซ่ --</option>
+            <option value="durian">ทุเรียน</option>
+            <option value="feed_corn">ข้าวโพดเลี้ยงสัตว์</option>
+            <option value="coffee">กาแฟ</option>
+            <option value="aromatic_coconut">มะพร้าวน้ำหอม</option>
+            <option value="caged_fish">ปลากระชัง (นิล/ทับทิม/กะพง/เก๋า)</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fsCommodityLabelInput">ชนิด/สายพันธุ์ที่พบจริง</label>
+          <input type="text" id="fsCommodityLabelInput" placeholder="เช่น ทุเรียนหมอนทอง" required />
+        </div>
+        <div class="field">
+          <label for="fsVisitDateInput">วันที่ลงพื้นที่</label>
+          <input type="date" id="fsVisitDateInput" required />
+        </div>
+        <div class="field">
+          <label for="fsFarmerNameInput">ชื่อเกษตรกร</label>
+          <input type="text" id="fsFarmerNameInput" required />
+        </div>
+        <div class="field">
+          <label for="fsPhoneInput">เบอร์โทรศัพท์ (ถ้ามี)</label>
+          <input type="text" id="fsPhoneInput" />
+        </div>
+        <div class="field">
+          <label for="fsProvinceSelect">จังหวัด</label>
+          <select id="fsProvinceSelect" required>
+            <option value="">-- กำลังโหลดจังหวัด --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fsDistrictInput">อำเภอ (ถ้ามี)</label>
+          <input type="text" id="fsDistrictInput" />
+        </div>
+        <div class="field">
+          <label for="fsSubDistrictInput">ตำบล (ถ้ามี)</label>
+          <input type="text" id="fsSubDistrictInput" />
+        </div>
+        <div class="field full">
+          <label>พิกัด GPS (ถ้ามี)</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="number" id="fsGpsLatInput" step="any" placeholder="ละติจูด" style="flex:1;" />
+            <input type="number" id="fsGpsLngInput" step="any" placeholder="ลองจิจูด" style="flex:1;" />
+            <button type="button" class="btn btn-sm" id="fsUseCurrentLocationBtn">📍 ใช้พิกัดปัจจุบัน</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fsAreaInput">พื้นที่โดยประมาณ (ไร่)</label>
+          <input type="number" id="fsAreaInput" step="0.01" min="0" />
+        </div>
+        <div class="field">
+          <label for="fsFinanceAccessInput">การเข้าถึงแหล่งทุนปัจจุบัน</label>
+          <input type="text" id="fsFinanceAccessInput" placeholder="เช่น กู้ ธ.ก.ส., ไม่มี" />
+        </div>
+        <div class="field">
+          <label for="fsInsuranceAccessInput">การเข้าถึงประกันภัยปัจจุบัน</label>
+          <input type="text" id="fsInsuranceAccessInput" placeholder="เช่น ไม่มี, ประกันภัยพืชผลภาครัฐ" />
+        </div>
+        <div class="field">
+          <label for="fsMarketChannelInput">ช่องทางขายปัจจุบัน</label>
+          <input type="text" id="fsMarketChannelInput" placeholder="เช่น ล้ง, พ่อค้าคนกลาง" />
+        </div>
+        <div class="field full">
+          <label for="fsCurrentPracticesInput">แนวทางการผลิตปัจจุบัน (ปุ๋ย/แหล่งน้ำ ฯลฯ)</label>
+          <textarea id="fsCurrentPracticesInput" rows="2"></textarea>
+        </div>
+        <div class="field full">
+          <label for="fsClimateRisksInput">ความเสี่ยงด้านภูมิอากาศที่พบ</label>
+          <textarea id="fsClimateRisksInput" rows="2"></textarea>
+        </div>
+        <div class="field full">
+          <label for="fsPhotoInput">รูปถ่ายแปลง/สวน (ถ้ามี)</label>
+          <input type="file" id="fsPhotoInput" accept="image/*" />
+        </div>
+        <div class="field">
+          <label for="fsInterestedCheckbox" style="display:flex; align-items:center; gap:6px; font-weight:400;">
+            <input type="checkbox" id="fsInterestedCheckbox" style="width:auto;" /> สนใจเข้าร่วม AgroLink
+          </label>
+        </div>
+        <div class="field">
+          <label for="fsRecordedByInput">ชื่อผู้สำรวจ</label>
+          <input type="text" id="fsRecordedByInput" placeholder="เช่น เจ้าหน้าที่ภาคสนาม ก." required />
+        </div>
+        <div class="field full">
+          <label for="fsNoteInput">หมายเหตุ (ถ้ามี)</label>
+          <textarea id="fsNoteInput" rows="2"></textarea>
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="fsSubmitBtn" style="max-width:260px;">บันทึกข้อมูลการลงพื้นที่</button>
+    </div>
+
+    <div class="section-title">📜 ประวัติการลงพื้นที่</div>
+    <div class="field" style="max-width:320px; margin-bottom:14px;">
+      <label for="fsFilterChainSelect">กรองตามห่วงโซ่คุณค่า</label>
+      <select id="fsFilterChainSelect">
+        <option value="">-- ทุกห่วงโซ่ --</option>
+        <option value="durian">ทุเรียน</option>
+        <option value="feed_corn">ข้าวโพดเลี้ยงสัตว์</option>
+        <option value="coffee">กาแฟ</option>
+        <option value="aromatic_coconut">มะพร้าวน้ำหอม</option>
+        <option value="caged_fish">ปลากระชัง (นิล/ทับทิม/กะพง/เก๋า)</option>
+        <option value="other">อื่นๆ</option>
+      </select>
+    </div>
+    <div id="fieldSurveyRecordsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดประวัติการลงพื้นที่…</div>
+    </div>
       </div>
 
       <div class="admin-page" data-page-content="satellite" style="display:none;">

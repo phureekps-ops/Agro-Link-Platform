@@ -1691,6 +1691,152 @@ router.post('/satellite-observations', async (req, res, next) => {
   }
 });
 
+// ===========================================================================
+// P0 (RAP-T readiness roadmap) — Field Survey tool, see grant_field_survey.
+// sql for the schema and why fieldsurvey.visit_record is deliberately NOT
+// registry.production_unit: durian/feed_corn/coffee/aromatic_coconut/
+// caged_fish have no commodity_ref code yet, so farmer_plot_registration()
+// would RAISE on any attempt to register a real plot for them today. This
+// lets Platform Ops / field enumerators start collecting baseline data for
+// RAP-T's Nov 2569 field visit right away, without waiting on that schema
+// work (see the roadmap's P1/P4).
+// ===========================================================================
+
+const FIELD_SURVEY_TARGET_CHAINS = ['durian', 'feed_corn', 'coffee', 'aromatic_coconut', 'caged_fish', 'other'];
+
+/**
+ * GET /admin/field-survey/summary — count of visit records per target
+ * chain, for the small progress row at the top of the Field Survey page
+ * (เก็บได้แล้วกี่รายต่อห่วงโซ่). Always returns all 6 keys (zero-filled),
+ * so the UI never has to guess which chains have no rows yet.
+ */
+router.get('/field-survey/summary', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const counts = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT target_chain, COUNT(*)::int AS record_count
+           FROM fieldsurvey.visit_record
+          GROUP BY target_chain`,
+      );
+      await logAccess(client, 'read', 'fieldsurvey.visit_record', null);
+      return result.rows;
+    });
+    const byChain = Object.fromEntries(FIELD_SURVEY_TARGET_CHAINS.map((c) => [c, 0]));
+    counts.forEach((row) => { byChain[row.target_chain] = row.record_count; });
+    const total = Object.values(byChain).reduce((sum, n) => sum + n, 0);
+    return res.json({ by_chain: byChain, total });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/field-survey?target_chain=&province= — most recent first,
+ * optionally filtered. Both filters may be combined.
+ */
+router.get('/field-survey', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { target_chain: targetChain, province } = req.query;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      const conditions = [];
+      if (targetChain) {
+        params.push(targetChain);
+        conditions.push(`target_chain = $${params.length}`);
+      }
+      if (province) {
+        params.push(province);
+        conditions.push(`province = $${params.length}`);
+      }
+      const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      const result = await client.query(
+        `SELECT record_id, visit_date, target_chain, commodity_label, farmer_name, phone,
+                province, district, sub_district, gps_lat, gps_lng, estimated_area_rai,
+                current_practices, climate_risks, finance_access, insurance_access, market_channel,
+                interested_in_agrolink, note, photo_file_id, migrated_to_unit_id, recorded_by, created_at
+           FROM fieldsurvey.visit_record
+           ${where}
+          ORDER BY visit_date DESC, created_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'fieldsurvey.visit_record', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/field-survey
+ * Body: { visit_date, target_chain, commodity_label, farmer_name, province,
+ *         recorded_by, phone?, district?, sub_district?, gps_lat?, gps_lng?,
+ *         estimated_area_rai?, current_practices?, climate_risks?,
+ *         finance_access?, insurance_access?, market_channel?,
+ *         interested_in_agrolink?, note?, photo_file_id? }
+ * photo_file_id (optional) must already exist — upload it first via
+ * POST /storage/upload (purpose: 'field_survey_photo'), same two-step
+ * pattern as POST /coop/registration-document/link.
+ */
+router.post('/field-survey', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    visit_date: visitDate, target_chain: targetChain, commodity_label: commodityLabel,
+    farmer_name: farmerName, phone, province, district, sub_district: subDistrict,
+    gps_lat: gpsLat, gps_lng: gpsLng, estimated_area_rai: estimatedAreaRai,
+    current_practices: currentPractices, climate_risks: climateRisks,
+    finance_access: financeAccess, insurance_access: insuranceAccess, market_channel: marketChannel,
+    interested_in_agrolink: interestedInAgrolink, note, photo_file_id: photoFileId,
+    recorded_by: recordedBy,
+  } = req.body || {};
+
+  if (!visitDate || !targetChain || !commodityLabel || !farmerName || !province || !recordedBy) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['visit_date', 'target_chain', 'commodity_label', 'farmer_name', 'province', 'recorded_by'],
+    });
+  }
+  if (!FIELD_SURVEY_TARGET_CHAINS.includes(targetChain)) {
+    return res.status(400).json({ error: 'invalid_target_chain', valid: FIELD_SURVEY_TARGET_CHAINS });
+  }
+  if ((gpsLat === undefined || gpsLat === null || gpsLat === '') !== (gpsLng === undefined || gpsLng === null || gpsLng === '')) {
+    return res.status(400).json({ error: 'gps_lat_and_gps_lng_must_be_set_together' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      if (photoFileId) {
+        const file = await client.query('SELECT file_id FROM storage.file_object WHERE file_id = $1', [photoFileId]);
+        if (file.rows.length === 0) return { photoNotFound: true };
+      }
+      const inserted = await client.query(
+        `INSERT INTO fieldsurvey.visit_record
+           (visit_date, target_chain, commodity_label, farmer_name, phone, province, district, sub_district,
+            gps_lat, gps_lng, estimated_area_rai, current_practices, climate_risks, finance_access,
+            insurance_access, market_channel, interested_in_agrolink, note, photo_file_id, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+         RETURNING *`,
+        [
+          visitDate, targetChain, commodityLabel, farmerName, phone || null, province, district || null, subDistrict || null,
+          gpsLat || null, gpsLng || null, estimatedAreaRai || null, currentPractices || null, climateRisks || null,
+          financeAccess || null, insuranceAccess || null, marketChannel || null, Boolean(interestedInAgrolink), note || null,
+          photoFileId || null, recordedBy,
+        ],
+      );
+      await logAccess(client, 'write', 'fieldsurvey.visit_record', inserted.rows[0].record_id);
+      return { record: inserted.rows[0] };
+    });
+
+    if (result.photoNotFound) return res.status(404).json({ error: 'photo_file_not_found' });
+    return res.status(201).json(result.record);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 /**
  * Featured Listings — Platform-Ops-managed promotion for the InputSupplier
  * product catalog (marketplace.product_listing, also now used by the
