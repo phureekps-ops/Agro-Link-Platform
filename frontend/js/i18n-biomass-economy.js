@@ -200,11 +200,11 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": " Contact Our Team"
   },
   "biomass-economy_50": {
-    "th": "ตัวอย่างอินโฟกราฟิกสหกรณ์ผู้รวบรวมและแปรรูปฟางข้าวและเศษวัสดุเหลือใช้ทางการเกษตรเป็นเชื้อเพลิงชีวมวลอัดเม็ด แสดงภาพรวมสมาชิก พันธกิจ และผลงานของสหกรณ์ต้นแบบ",
-    "en": "Example infographic of a cooperative that collects and processes rice straw and agricultural residues into biomass fuel pellets, showing an overview of a model cooperative's members, mission, and achievements"
+    "th": "อินโฟกราฟิก Biomass Hub AgroLink Cooperative แสดงภาพรวมสหกรณ์ (สมาชิก 350 คน ก่อตั้งปี 2563 ตั้งอยู่ที่สุพรรณบุรี รวบรวมและแปรรูปฟางข้าวและยอดอ้อย) ขั้นตอน Feedstock Collection ถึง Agrolink Processing Hub และ Distribution & Linkage ไปยังโรงไฟฟ้าชีวมวล วิสัยทัศน์ด้านการเสริมพลังชุมชนท้องถิ่นและความยั่งยืน ผลงาน (รายได้ต่อปีกว่า 500,000 เหรียญสหรัฐ ส่งออก 25 ประเทศ ทดแทนเชื้อเพลิงฟอสซิลกว่า 5 ล้านตันคาร์บอนเทียบเท่า) และเป้าหมายในอนาคต (ขยายตลาดต่างประเทศ พัฒนาผลิตภัณฑ์ใหม่ ยกระดับความยั่งยืนของชุมชน)",
+    "en": "Biomass Hub AgroLink Cooperative infographic showing a cooperative overview (350 members, founded 2563/2020, located in Suphanburi, collecting and processing rice straw and sugarcane tops), the flow from feedstock collection through the Agrolink Processing Hub and distribution and linkage to a biomass power plant, a vision of empowering local communities and sustainability, achievements (annual revenue over USD 500,000, exports to 25 countries, offsetting over 5 million tonnes of carbon-equivalent fossil fuel), and future goals (expanding international markets, developing new products, enhancing community sustainability)"
   },
   "biomass-economy_51": {
-    "th": "ตัวอย่างสหกรณ์รวบรวมเศษวัสดุเหลือใช้ทางการเกษตรเพื่อแปรรูปเป็นเชื้อเพลิงชีวมวล — ภาพประกอบแนวคิดเศรษฐกิจชีวมวลของ AgroLink",
-    "en": "An example cooperative that collects agricultural residues for biomass fuel processing — illustrating the AgroLink biomass economy concept"
+    "th": "Biomass Hub AgroLink Cooperative — ตัวอย่างสหกรณ์รวบรวมฟางข้าว/ยอดอ้อยแปรรูปเป็นเชื้อเพลิงชีวมวลอัดเม็ด ตั้งแต่เก็บวัตถุดิบ แปรรูป จนถึงจำหน่ายส่งออก",
+    "en": "Biomass Hub AgroLink Cooperative -- an example cooperative that collects rice straw and sugarcane tops and processes them into biomass fuel pellets, from feedstock collection and processing through to distribution and export"
   }
 });
