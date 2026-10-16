@@ -23,6 +23,16 @@ router.use(requireAuth);
 const SHRIMP_COMMODITY_CODES = ['SHRIMP_VANNAMEI', 'SHRIMP_BLACKTIGER', 'SHRIMP_OTHER'];
 const TIER_LABELS_HIGH_TO_LOW_SIZE = ['S-2', 'S-1', 'Target', 'S+1', 'S+2']; // S-2 = smallest shrimp (highest count/kg)
 
+// P4 (RAP-T readiness roadmap) — the 4 caged-fish value chains registered in
+// grant_rapt_commodity_codes.sql. Deliberately a separate list from
+// SHRIMP_COMMODITY_CODES (not merged into it): these species use the new
+// 'Cage' unit_type (grant_cage_fish_farm_management.sql) and the /cages
+// routes below, NOT /ponds and NOT the sampling/auction/settlement routes
+// further down this file — those stay shrimp-only (see that migration's
+// header comment for why sampling/auction was not extended to these 4
+// species in this pass).
+const CAGE_FISH_COMMODITY_CODES = ['TILAPIA_CAGE', 'TILAPIA_RED_CAGE', 'SEABASS_CAGE', 'GROUPER_CAGE'];
+
 /**
  * Confirms the authenticated organization holds a Verified 'Buyer' role.
  * Copy of buyer.js's requireBuyerOrg — this codebase's established
@@ -193,6 +203,77 @@ router.get('/ponds', async (req, res, next) => {
         `SELECT unit_id, unit_type, area_rai, commodity_code, season_id, registration_date, status
            FROM registry.production_unit
           WHERE owner_farmer_id = $1 AND unit_type = 'Pond'
+          ORDER BY registration_date DESC`,
+        [subject.subjectId],
+      );
+      return units;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ============================================================
+// Cages (P4) — thin wrapper over registry.register_production_unit
+// (unit_type='Cage'), same shape as Ponds above but for the 4 caged-fish
+// commodities instead of shrimp. Reuses the SAME aquaculture.farm_profile
+// as ponds (that table was never species-restricted) — a farmer with both
+// a shrimp pond and a fish cage uses one shared farm profile. Stops at
+// registration; no sampling/auction/settlement for these species in this
+// pass (see grant_cage_fish_farm_management.sql).
+// ============================================================
+
+router.post('/cages', async (req, res, next) => {
+  const subject = req.subject;
+  if (subject.subjectType !== 'farmer') return res.status(403).json({ error: 'farmer_subject_required' });
+  const {
+    lat, lng, volume_cubic_meters: volumeCubicMeters, species, season_id: seasonId,
+  } = req.body || {};
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+    return res.status(400).json({ error: 'invalid_lat_lng' });
+  }
+  const volumeNum = Number(volumeCubicMeters);
+  if (!Number.isFinite(volumeNum) || volumeNum <= 0) return res.status(400).json({ error: 'invalid_volume_cubic_meters' });
+  if (!CAGE_FISH_COMMODITY_CODES.includes(species)) {
+    return res.status(400).json({ error: 'invalid_species', valid: CAGE_FISH_COMMODITY_CODES });
+  }
+  if (!seasonId || !String(seasonId).trim()) return res.status(400).json({ error: 'season_id_required' });
+
+  const geojson = buildPointBufferPolygonGeoJSON(latNum, lngNum);
+
+  try {
+    const unitId = await withSessionContext('farmer', subject.subjectId, async (client) => {
+      // volumeNum is stored in production_unit.area_rai — for a 'Cage' unit
+      // that column holds water volume in ลูกบาศก์เมตร (m3), not land area
+      // in ไร่ (see COMMENT ON CONSTRAINT production_unit_unit_type_check).
+      const { rows } = await client.query(
+        `SELECT registry.register_production_unit($1, 'Cage', $2, $3, $4, $5) AS unit_id`,
+        [subject.subjectId, geojson, volumeNum, species, seasonId],
+      );
+      await logAccess(client, 'write', 'registry.production_unit', rows[0].unit_id);
+      return rows[0].unit_id;
+    });
+    return res.status(201).json({ unit_id: unitId });
+  } catch (err) {
+    if (err.message && /ไม่พบ|ต้องมากกว่า|ไม่ถูกต้อง/.test(err.message)) {
+      return res.status(400).json({ error: 'registration_failed', detail: err.message });
+    }
+    return next(err);
+  }
+});
+
+router.get('/cages', async (req, res, next) => {
+  const subject = req.subject;
+  if (subject.subjectType !== 'farmer') return res.status(403).json({ error: 'farmer_subject_required' });
+  try {
+    const rows = await withSessionContext('farmer', subject.subjectId, async (client) => {
+      const { rows: units } = await client.query(
+        `SELECT unit_id, unit_type, area_rai, commodity_code, season_id, registration_date, status
+           FROM registry.production_unit
+          WHERE owner_farmer_id = $1 AND unit_type = 'Cage'
           ORDER BY registration_date DESC`,
         [subject.subjectId],
       );
