@@ -8,6 +8,7 @@
 // ============================================================
 const ADMIN_PAGE_BREADCRUMB_TH = {
   overview: "ภาพรวม &amp; สุขภาพระบบ",
+  traffic: "ผู้เข้าชมเว็บไซต์",
   approvals: "KYC / KYB / บทบาทธุรกิจ",
   awd: "คาร์บอนเครดิต (AWD)",
   farmers: "เกษตรกรทั้งหมด",
@@ -176,6 +177,56 @@ async function loadAlertsIfAny(count) {
     `).join("");
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดรายการแจ้งเตือนไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ---------- ผู้เข้าชมเว็บไซต์ (GET /admin/traffic-summary) ----------
+// ตัวเลขมาจาก traffic.page_view (ดู backend/db/grant_web_traffic.sql และ
+// frontend/js/track.js) -- นับเฉพาะหน้าเว็บไซต์สาธารณะที่ฝัง track.js ไว้
+// (รวมพอร์ทัลแอดมินหน้านี้เองด้วย) ไม่ใช่พอร์ทัลที่ต้องเข้าสู่ระบบอื่น ๆ
+function trafficStatCard(label, stats) {
+  return `
+    <div class="stat-card">
+      <div class="label">${escapeHtml(label)}</div>
+      <div class="value">${Number(stats.pageviews).toLocaleString("th-TH")}</div>
+      <div class="sub">ผู้เข้าชมไม่ซ้ำโดยประมาณ ${Number(stats.unique_visitors).toLocaleString("th-TH")} คน</div>
+    </div>`;
+}
+
+async function loadTraffic() {
+  const summaryEl = document.getElementById("trafficSummarySection");
+  const topPagesEl = document.getElementById("trafficTopPagesSection");
+  const dailyEl = document.getElementById("trafficDailySection");
+  try {
+    const d = await AgroLinkAdminAPI.get("/admin/traffic-summary");
+    summaryEl.innerHTML = [
+      trafficStatCard("วันนี้", d.totals.today),
+      trafficStatCard("7 วันล่าสุด", d.totals.last_7_days),
+      trafficStatCard("30 วันล่าสุด", d.totals.last_30_days),
+      trafficStatCard("ทั้งหมด (ตั้งแต่เริ่มเก็บข้อมูล)", d.totals.all_time),
+    ].join("");
+
+    topPagesEl.innerHTML = d.top_pages_30d.length
+      ? d.top_pages_30d.map((p, i) => `
+        <div class="item-card">
+          <div class="row"><span class="title">${i + 1}. ${escapeHtml(p.path)}</span></div>
+          <div class="detail-line">เข้าชม ${Number(p.pageviews).toLocaleString("th-TH")} ครั้ง (30 วันล่าสุด)</div>
+        </div>
+      `).join("")
+      : `<div class="empty-state">ยังไม่มีข้อมูลการเข้าชมในช่วง 30 วันล่าสุด</div>`;
+
+    dailyEl.innerHTML = d.daily_30d.length
+      ? d.daily_30d.map((r) => `
+        <div class="item-card">
+          <div class="row"><span class="title">${thaiDate(r.view_date)}</span></div>
+          <div class="detail-line">เข้าชม ${Number(r.pageviews).toLocaleString("th-TH")} ครั้ง · ผู้เข้าชมไม่ซ้ำโดยประมาณ ${Number(r.unique_visitors).toLocaleString("th-TH")} คน</div>
+        </div>
+      `).join("")
+      : `<div class="empty-state">ยังไม่มีข้อมูลรายวัน</div>`;
+  } catch (err) {
+    summaryEl.innerHTML = `<div class="empty-state">โหลดข้อมูลผู้เข้าชมเว็บไซต์ไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    topPagesEl.innerHTML = "";
+    dailyEl.innerHTML = "";
   }
 }
 
@@ -2392,6 +2443,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkAdm
 // เดิมของ dashboard.js (ภาพรวม/คิวอนุมัติ/AWD/เกษตรกร/องค์กร) — independent
 // panels, one broken panel doesn't take down the rest of the page.
 loadSummaryAndHealth();
+loadTraffic();
 loadKycQueue();
 loadKybQueue();
 loadRoleRequestQueue();

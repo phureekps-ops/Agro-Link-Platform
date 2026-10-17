@@ -2403,4 +2403,65 @@ router.post('/cooperatives/:id/governance-assessment', async (req, res, next) =>
   }
 });
 
+/**
+ * GET /admin/traffic-summary -- website visitor counter for the "ภาพรวม"
+ * overview area of the admin portal (see grant_web_traffic.sql / POST
+ * /traffic/track in traffic.js for where the underlying rows come from).
+ * Unrelated to the `analytics` schema used elsewhere in this file --
+ * that's cooperative business-data BI; this is raw public marketing-site
+ * HTTP traffic. All date-window boundaries use Asia/Bangkok, consistent
+ * with traffic.v_pageviews_daily and the visitor_hash's own daily rotation.
+ */
+router.get('/traffic-summary', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const totals = await client.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE (viewed_at AT TIME ZONE 'Asia/Bangkok')::date = (now() AT TIME ZONE 'Asia/Bangkok')::date)::int AS today_pageviews,
+          COUNT(DISTINCT visitor_hash) FILTER (WHERE (viewed_at AT TIME ZONE 'Asia/Bangkok')::date = (now() AT TIME ZONE 'Asia/Bangkok')::date)::int AS today_unique_visitors,
+          COUNT(*) FILTER (WHERE viewed_at >= now() - interval '7 days')::int AS last7_pageviews,
+          COUNT(DISTINCT visitor_hash) FILTER (WHERE viewed_at >= now() - interval '7 days')::int AS last7_unique_visitors,
+          COUNT(*) FILTER (WHERE viewed_at >= now() - interval '30 days')::int AS last30_pageviews,
+          COUNT(DISTINCT visitor_hash) FILTER (WHERE viewed_at >= now() - interval '30 days')::int AS last30_unique_visitors,
+          COUNT(*)::int AS alltime_pageviews,
+          COUNT(DISTINCT visitor_hash)::int AS alltime_unique_visitors
+        FROM traffic.page_view
+      `);
+
+      const topPages = await client.query(`
+        SELECT path, COUNT(*)::int AS pageviews
+          FROM traffic.page_view
+         WHERE viewed_at >= now() - interval '30 days'
+         GROUP BY path
+         ORDER BY pageviews DESC
+         LIMIT 10
+      `);
+
+      const daily = await client.query(`
+        SELECT view_date, pageviews, unique_visitors
+          FROM traffic.v_pageviews_daily
+         LIMIT 30
+      `);
+
+      await logAccess(client, 'read', 'traffic.page_view', null);
+
+      const t = totals.rows[0];
+      return {
+        totals: {
+          today: { pageviews: t.today_pageviews, unique_visitors: t.today_unique_visitors },
+          last_7_days: { pageviews: t.last7_pageviews, unique_visitors: t.last7_unique_visitors },
+          last_30_days: { pageviews: t.last30_pageviews, unique_visitors: t.last30_unique_visitors },
+          all_time: { pageviews: t.alltime_pageviews, unique_visitors: t.alltime_unique_visitors },
+        },
+        top_pages_30d: topPages.rows,
+        daily_30d: daily.rows,
+      };
+    });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

@@ -13,6 +13,14 @@ const organizationRouter = require('./routes/organization');
 const inputSupplierRouter = require('./routes/inputsupplier');
 const marketVenueRouter = require('./routes/marketvenue');
 const contentRouter = require('./routes/content');
+// traffic.js — public marketing-site page-view counter, surfaced on the
+// admin portal (see backend/db/grant_web_traffic.sql, frontend/js/track.js
+// and GET /admin/traffic-summary in admin.js). Its own prefix ('/traffic'),
+// not '/about' alongside contentRouter, even though both are fully public/
+// no-auth -- content.js is read-only GETs of page copy, this is a public
+// WRITE endpoint (POST /traffic/track), which deserves to be visually
+// distinct in this list of mounts.
+const trafficRouter = require('./routes/traffic');
 const stageCalendarRouter = require('./routes/stagecalendar');
 const fertilizerRouter = require('./routes/fertilizer');
 const fertilizerMixingRouter = require('./routes/fertilizermixing');
@@ -172,6 +180,7 @@ app.use('/organization', organizationRouter);
 app.use('/inputsupplier', inputSupplierRouter);
 // GET /about — public, no auth (see content.js's own doc comment).
 app.use('/about', contentRouter);
+app.use('/traffic', trafficRouter);
 
 // Fallback 404
 app.use((req, res) => {
