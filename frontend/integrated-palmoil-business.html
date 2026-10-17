@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการปาล์มน้ำมันครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <a href="about-video.html" data-i18n="nav_about">เกี่ยวกับเรา</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+            <a href="integrated-sugarcane-business.html" data-i18n="nav_coop_sugarcane">อ้อยน้ำตาล</a>
+            <a href="integrated-palmoil-business.html" data-i18n="nav_coop_palmoil">ปาล์มน้ำมัน</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="for-farmers.html"><span data-i18n="nav_farmers">สำหรับเกษตรกร</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="for-farmers-crop.html" data-i18n="nav_farmers_crop">เกษตรกรผู้ปลูกพืช</a>
+            <a href="for-farmers-livestock.html" data-i18n="nav_farmers_livestock">เกษตรกรผู้เลี้ยงสัตว์บก</a>
+            <a href="for-farmers-aquaculture.html" data-i18n="nav_farmers_aquaculture">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="rap-t-project.html"><span data-i18n="nav_rapt">RAP-T</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-durian-business.html" data-i18n="nav_rapt_durian">ทุเรียน</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_rapt_cassava">มันสำปะหลัง</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_rapt_corn">ข้าวโพดเลี้ยงสัตว์</a>
+            <a href="rap-t-coffee.html" data-i18n="nav_rapt_coffee">กาแฟ</a>
+            <a href="rap-t-coconut.html" data-i18n="nav_rapt_coconut">มะพร้าวน้ำหอม</a>
+            <a href="rap-t-shrimp.html" data-i18n="nav_rapt_shrimp">กุ้ง</a>
+            <a href="rap-t-tilapia.html" data-i18n="nav_rapt_tilapia">ปลานิล/ทับทิมกระชัง</a>
+            <a href="rap-t-seabass.html" data-i18n="nav_rapt_seabass">ปลากระพง/เก๋ากระชัง</a>
+          </div>
+        </div>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-palmoil-business_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-oil-can"></i><span data-i18n="integrated-palmoil-business_2"> คู่มือแนะนำโครงการ</span></div>
+    <h1 class="section-title" data-i18n="integrated-palmoil-business_3">เอกสารแนวคิดโครงการ: การพัฒนาห่วงโซ่คุณค่าปาล์มน้ำมันและน้ำมันปาล์มด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink</h1>
+    <p class="section-sub" data-i18n="integrated-palmoil-business_4">แนวทางการพัฒนาการเกษตรที่ยืดหยุ่นต่อสภาพภูมิอากาศ เพิ่มมูลค่าอย่างทั่วถึง และเชื่อมโยงตลาดด้วยระบบดิจิทัล</p>
+    <span class="draft-tag" data-i18n="integrated-palmoil-business_5">เอกสารข้อเสนอเชิงแนวคิด | ตุลาคม 2569 — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/palmoil-value-chain-infographic.jpg" data-i18n="integrated-palmoil-business_166" data-i18n-attr="alt" alt="แผนที่ห่วงโซ่คุณค่าปาล์มน้ำมันและน้ำมันปาล์ม ต้นน้ำ กลางน้ำ แปรรูป ปลายน้ำ และเศรษฐกิจหมุนเวียน เชื่อมผ่านโครงสร้างพื้นฐานดิจิทัล AgroLink" loading="lazy">
+      <figcaption data-i18n="integrated-palmoil-business_167">แผนที่ห่วงโซ่คุณค่าปาล์มน้ำมัน: ต้นน้ำ–กลางน้ำ–แปรรูป–ปลายน้ำ และเศรษฐกิจหมุนเวียนจากผลพลอยได้ เชื่อมโยงด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container prose-block reveal in" style="max-width:1040px;">
+    <div class="note-block" data-i18n="integrated-palmoil-business_6">หมายเหตุเกี่ยวกับขอบเขต: รายงานฉบับนี้ประยุกต์ใช้ประเด็นการพัฒนาที่สอดคล้องกับแนวคิดของ RAP-T เพื่อเป็นกรอบวิเคราะห์เท่านั้น มิได้ระบุหรือสื่อว่าปาล์มน้ำมันเป็นสินค้าเป้าหมายหรือได้รับการคัดเลือกเข้าร่วมโครงการ RAP-T</div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-palmoil-business_7">สารบัญ</h4>
+      <ol>
+        <li><a href="#sec-1" data-i18n="integrated-palmoil-business_8">1. บทสรุปผู้บริหาร</a></li>
+        <li><a href="#sec-2" data-i18n="integrated-palmoil-business_9">2. วัตถุประสงค์และหลักการพัฒนา</a></li>
+        <li><a href="#sec-3" data-i18n="integrated-palmoil-business_10">3. แผนผังห่วงโซ่คุณค่าปาล์มน้ำมัน</a></li>
+        <li><a href="#sec-4" data-i18n="integrated-palmoil-business_11">4. วิเคราะห์ปัญหาและคอขวด</a></li>
+        <li><a href="#sec-5" data-i18n="integrated-palmoil-business_12">5. ยุทธศาสตร์การยกระดับการผลิตอย่างยั่งยืน</a></li>
+        <li><a href="#sec-6" data-i18n="integrated-palmoil-business_13">6. ตลาดและการกระจายมูลค่าอย่างเป็นธรรม</a></li>
+        <li><a href="#sec-7" data-i18n="integrated-palmoil-business_14">7. การเงินเพื่อเกษตรกรและผู้ประกอบการ</a></li>
+        <li><a href="#sec-8" data-i18n="integrated-palmoil-business_15">8. เศรษฐกิจชีวภาพและการใช้ประโยชน์ผลพลอยได้</a></li>
+        <li><a href="#sec-9" data-i18n="integrated-palmoil-business_16">9. AgroLink Digital Infrastructure สำหรับห่วงโซ่ปาล์มน้ำมัน</a></li>
+        <li><a href="#sec-10" data-i18n="integrated-palmoil-business_17">10. รูปแบบโครงการนำร่องและภาคีร่วมดำเนินงาน</a></li>
+        <li><a href="#sec-11" data-i18n="integrated-palmoil-business_18">11. ตัวชี้วัดผลสำเร็จ (KPI)</a></li>
+        <li><a href="#sec-12" data-i18n="integrated-palmoil-business_19">12. ความเสี่ยงและมาตรการกำกับดูแล</a></li>
+        <li><a href="#sec-13" data-i18n="integrated-palmoil-business_20">13. ข้อเสนอเชิงนโยบายและบทสรุป</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_21">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="integrated-palmoil-business_22">ปาล์มน้ำมันเป็นพืชเศรษฐกิจสำคัญที่เชื่อมโยงเกษตรกรรายย่อย ลานเท โรงสกัดน้ำมันปาล์มดิบ โรงกลั่น อุตสาหกรรมอาหาร โอลีโอเคมี และพลังงานชีวภาพ ความท้าทายครอบคลุมผลผลิตต่อไร่ที่แตกต่างกัน คุณภาพทะลายสด ต้นทุนปุ๋ยและแรงงาน ความผันผวนของราคา การตรวจสอบย้อนกลับ และผลกระทบต่อสิ่งแวดล้อม</p>
+<p data-i18n="integrated-palmoil-business_23">ข้อเสนอหลักคือยกระดับทั้งห่วงโซ่จาก “สวนปาล์ม–จุดรวบรวม–โรงสกัด–โรงกลั่น–ตลาด” พร้อมพัฒนาเศรษฐกิจหมุนเวียนจากทะลายเปล่า เส้นใย กะลา และน้ำเสีย โดยใช้สหกรณ์และกลุ่มเกษตรกรเป็นกลไกหลัก เชื่อมข้อมูลกิจกรรมผ่าน AgroLink Platform เพื่อเพิ่มประสิทธิภาพและความโปร่งใส</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_24">2. วัตถุประสงค์และหลักการพัฒนา</h2>
+<ul class="check-list">
+<li data-i18n="integrated-palmoil-business_25">เพิ่มผลิตภาพและคุณภาพทะลายปาล์มสดโดยไม่ส่งเสริมการขยายพื้นที่เข้าไปในพื้นที่ป่าหรือระบบนิเวศสำคัญ</li>
+<li data-i18n="integrated-palmoil-business_26">เพิ่มรายได้สุทธิของเกษตรกรรายย่อย ผ่านการลดต้นทุน การรวมกลุ่ม และการเข้าถึงตลาดที่เป็นธรรม</li>
+<li data-i18n="integrated-palmoil-business_27">เพิ่มความยืดหยุ่นต่อภัยแล้ง ฝนแปรปรวน โรคและศัตรูพืช ด้วยการจัดการสวนที่เหมาะสม</li>
+<li data-i18n="integrated-palmoil-business_28">พัฒนาการตรวจสอบย้อนกลับและข้อมูลการผลิตเพื่อรองรับความต้องการของผู้ซื้อและมาตรฐานความยั่งยืน</li>
+<li data-i18n="integrated-palmoil-business_29">ใช้ประโยชน์ผลพลอยได้และของเสียตามแนวทาง Bio-Circular-Green Economy (BCG)</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_30">3. แผนผังห่วงโซ่คุณค่าปาล์มน้ำมัน</h2>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-palmoil-business_31">ช่วงห่วงโซ่</th>
+<th data-i18n="integrated-palmoil-business_32">กิจกรรมหลัก</th>
+<th data-i18n="integrated-palmoil-business_33">โอกาสยกระดับ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_34">ต้นน้ำ</strong></td>
+<td data-i18n="integrated-palmoil-business_35">พันธุ์กล้า การจัดการสวน ดิน น้ำ ปุ๋ย แรงงาน การเก็บเกี่ยว</td>
+<td data-i18n="integrated-palmoil-business_36">กล้าคุณภาพ แผนใส่ปุ๋ยตามผลวิเคราะห์ดิน บันทึกข้อมูลสวน</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_37">กลางน้ำ</strong></td>
+<td data-i18n="integrated-palmoil-business_38">รวบรวม ชั่งน้ำหนัก คัดคุณภาพ ขนส่งทะลายสด</td>
+<td data-i18n="integrated-palmoil-business_39">ราคาตามคุณภาพ ลดเวลาหลังตัด ติดตามแหล่งที่มา</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_40">แปรรูป</strong></td>
+<td data-i18n="integrated-palmoil-business_41">โรงสกัดน้ำมันปาล์มดิบ (CPO) และเมล็ดในปาล์ม</td>
+<td data-i18n="integrated-palmoil-business_42">เพิ่มอัตราการสกัด ลดสูญเสียพลังงานและน้ำ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_43">ปลายน้ำ</strong></td>
+<td data-i18n="integrated-palmoil-business_44">โรงกลั่น น้ำมันบริโภค อาหาร โอลีโอเคมี ไบโอดีเซล</td>
+<td data-i18n="integrated-palmoil-business_45">มาตรฐานคุณภาพ การกระจายตลาด สัญญาซื้อขาย</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_46">เศรษฐกิจหมุนเวียน</strong></td>
+<td data-i18n="integrated-palmoil-business_47">ทะลายเปล่า เส้นใย กะลา น้ำเสียจากโรงสกัด</td>
+<td data-i18n="integrated-palmoil-business_48">ปุ๋ยอินทรีย์ เชื้อเพลิงชีวมวล ก๊าซชีวภาพ</td>
+</tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-4">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_49">4. วิเคราะห์ปัญหาและคอขวด</h2>
+<h3 data-i18n="integrated-palmoil-business_50">ระดับสวน</h3>
+<p data-i18n="integrated-palmoil-business_51">ต้นปาล์มอายุไม่เหมาะสมหรือพันธุ์ไม่ตรงตามมาตรฐาน การจัดการธาตุอาหารไม่สมดุล ภัยแล้ง ขาดข้อมูลต้นทุนและผลผลิตรายแปลง</p>
+<h3 data-i18n="integrated-palmoil-business_52">ระดับรวบรวม</h3>
+<p data-i18n="integrated-palmoil-business_53">คุณภาพทะลายสดไม่สม่ำเสมอ การตัดก่อนสุกหรือส่งโรงงานล่าช้า ความไม่โปร่งใสในการประเมินคุณภาพและราคา</p>
+<h3 data-i18n="integrated-palmoil-business_54">ระดับอุตสาหกรรม</h3>
+<p data-i18n="integrated-palmoil-business_55">ประสิทธิภาพการสกัดแตกต่างกัน ค่าใช้จ่ายพลังงานสูง และการจัดการของเสียต้องได้มาตรฐาน</p>
+<h3 data-i18n="integrated-palmoil-business_56">ระดับระบบ</h3>
+<p data-i18n="integrated-palmoil-business_57">ข้อมูลกระจัดกระจาย เกษตรกรรายย่อยเข้าถึงเงินทุนและเครื่องมือได้จำกัด ความเสี่ยงด้านการเปลี่ยนแปลงการใช้ที่ดินและข้อกำหนดผู้ซื้อ</p>
+</div></section>
+
+<section class="prose-section" id="sec-5">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_58">5. ยุทธศาสตร์การยกระดับการผลิตอย่างยั่งยืน</h2>
+<h3 data-i18n="integrated-palmoil-business_59">5.1 Climate-Smart Oil Palm Farming</h3>
+<ul class="check-list">
+<li data-i18n="integrated-palmoil-business_60">จัดทำทะเบียนสวนและแผนที่แปลง รวมถึงอายุปาล์ม พันธุ์ ผลผลิต และประวัติการจัดการ</li>
+<li data-i18n="integrated-palmoil-business_61">ใช้ข้อมูลดิน ใบพืช ฝน และความชื้นเพื่อแนะนำการใส่ปุ๋ยเฉพาะพื้นที่และการรักษาความชื้น</li>
+<li data-i18n="integrated-palmoil-business_62">ส่งเสริมการคลุมดินด้วยวัสดุอินทรีย์ การจัดการน้ำ และการลดการพังทลายของดิน</li>
+<li data-i18n="integrated-palmoil-business_63">พัฒนาปฏิทินเก็บเกี่ยวและมาตรฐานทะลายสุก พร้อมฝึกอบรมแรงงานเก็บเกี่ยว</li>
+<li data-i18n="integrated-palmoil-business_64">ประเมินความเสี่ยงสภาพภูมิอากาศและวางแผนฟื้นฟูสวนเก่าโดยคำนึงถึงความสามารถในการชำระหนี้</li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-5-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-palmoil-business_65">5.2 มาตรฐานและการตรวจสอบย้อนกลับ</h3>
+<p data-i18n="integrated-palmoil-business_66">จัดเก็บรหัสเกษตรกร รหัสแปลง พิกัดและขอบเขตแปลงอย่างเหมาะสม บันทึกการรับซื้อ น้ำหนัก วันเก็บเกี่ยว คุณภาพ และปลายทางสินค้า โดยต้องมีสิทธิการเข้าถึงข้อมูลและการคุ้มครองข้อมูลส่วนบุคคล กำหนดแนวทางตรวจสอบความเสี่ยงการบุกรุกป่าและข้อกำหนดมาตรฐานที่เกี่ยวข้อง เช่น RSPO หรือมาตรฐานที่ผู้ซื้อกำหนด โดยไม่ถือว่าการบันทึกข้อมูลเท่ากับได้รับการรับรอง</p>
+</div></section>
+
+<section class="prose-section" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_67">6. ตลาดและการกระจายมูลค่าอย่างเป็นธรรม</h2>
+<ul class="check-list">
+<li data-i18n="integrated-palmoil-business_68">จัดตั้งกลไกสหกรณ์/กลุ่มเกษตรกรเพื่อรวบรวมทะลายสดและต่อรองเงื่อนไขการซื้อขาย</li>
+<li data-i18n="integrated-palmoil-business_69">ประกาศหลักเกณฑ์ชั่งน้ำหนัก หักสิ่งเจือปน และประเมินคุณภาพอย่างตรวจสอบได้</li>
+<li data-i18n="integrated-palmoil-business_70">เชื่อมคำสั่งซื้อและกำลังรับซื้อของลานเทหรือโรงสกัดเพื่อลดระยะเวลาขนส่ง</li>
+<li data-i18n="integrated-palmoil-business_71">พัฒนาสัญญาซื้อขายที่ระบุคุณภาพ ราคา/สูตรราคา ระยะเวลาชำระเงิน และช่องทางระงับข้อพิพาท</li>
+<li data-i18n="integrated-palmoil-business_72">ส่งเสริมการแบ่งปันมูลค่าเพิ่มจากผลผลิตคุณภาพและการลดต้นทุนโลจิสติกส์</li>
+</ul>
+</div></section>
+
+<section class="prose-section alt" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_73">7. การเงินเพื่อเกษตรกรและผู้ประกอบการ</h2>
+<p data-i18n="integrated-palmoil-business_74">สนับสนุนการเข้าถึงแหล่งเงินทุนจากธนาคาร สหกรณ์ และผู้ให้บริการทางการเงินที่ได้รับอนุญาต โดยใช้ข้อมูลการผลิตและประวัติส่งมอบสินค้าเพื่อประกอบการประเมินความสามารถชำระหนี้ ทั้งนี้ AgroLink ทำหน้าที่เชื่อมโยงข้อมูลและบริการ ไม่ใช่ผู้ปล่อยกู้</p>
+<ul class="check-list">
+<li data-i18n="integrated-palmoil-business_75">สินเชื่อเพื่อปรับปรุงสวนและฟื้นฟูต้นปาล์มตามกระแสเงินสดจริง</li>
+<li data-i18n="integrated-palmoil-business_76">สินเชื่อปัจจัยการผลิตและเครื่องมือแบบเบิกจ่ายเป็นงวดตามกิจกรรม</li>
+<li data-i18n="integrated-palmoil-business_77">ผลิตภัณฑ์ประกันภัยหรือกลไกบริหารความเสี่ยงที่เหมาะสมกับพื้นที่</li>
+<li data-i18n="integrated-palmoil-business_78">ระบบบัญชีฟาร์มแสดงต้นทุนต่อไร่ ต้นทุนต่อกิโลกรัม และรายได้สุทธิ</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_79">8. เศรษฐกิจชีวภาพและการใช้ประโยชน์ผลพลอยได้</h2>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-palmoil-business_80">วัสดุ/ผลพลอยได้</th>
+<th data-i18n="integrated-palmoil-business_81">แนวทางใช้ประโยชน์</th>
+<th data-i18n="integrated-palmoil-business_82">เงื่อนไขสำคัญ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_83">ทะลายเปล่า (EFB)</strong></td>
+<td data-i18n="integrated-palmoil-business_84">คลุมดิน ปุ๋ยหมัก วัตถุดิบชีวมวล</td>
+<td data-i18n="integrated-palmoil-business_85">ควบคุมความชื้นและต้นทุนขนส่ง</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_86">เส้นใยและกะลา</strong></td>
+<td data-i18n="integrated-palmoil-business_87">เชื้อเพลิงหม้อไอน้ำ เชื้อเพลิงแข็ง วัสดุมูลค่าเพิ่ม</td>
+<td data-i18n="integrated-palmoil-business_88">มาตรฐานมลพิษและคุณภาพเชื้อเพลิง</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_89">น้ำเสียโรงสกัด (POME)</strong></td>
+<td data-i18n="integrated-palmoil-business_90">ผลิตก๊าซชีวภาพและลดการปล่อยมีเทน</td>
+<td data-i18n="integrated-palmoil-business_91">ระบบบำบัดและการตรวจวัดจริง</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_92">กากเมล็ดในปาล์ม</strong></td>
+<td data-i18n="integrated-palmoil-business_93">วัตถุดิบอาหารสัตว์ตามข้อกำหนด</td>
+<td data-i18n="integrated-palmoil-business_94">คุณภาพและความปลอดภัยวัตถุดิบ</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<div class="note-block" data-i18n="integrated-palmoil-business_95">การอ้างผลลดก๊าซเรือนกระจกหรือรายได้คาร์บอนเครดิตต้องผ่านการกำหนดกรณีฐาน วิธีการคำนวณ การตรวจวัด รายงาน และทวนสอบ (MRV) ตามมาตรฐานที่ใช้จริง ไม่ควรนับเป็นรายได้ที่รับประกันล่วงหน้า</div>
+</div></section>
+
+<section class="prose-section alt" id="sec-9">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_96">9. AgroLink Digital Infrastructure สำหรับห่วงโซ่ปาล์มน้ำมัน</h2>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-palmoil-business_97">โมดูล</th>
+<th data-i18n="integrated-palmoil-business_98">หน้าที่</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_99">Farmer &amp; Plot Registry</strong></td>
+<td data-i18n="integrated-palmoil-business_100">ทะเบียนเกษตรกร สวนปาล์ม และข้อมูลสิทธิการใช้ที่ดินตามที่ได้รับอนุญาต</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_101">Farm Management &amp; Advisory</strong></td>
+<td data-i18n="integrated-palmoil-business_102">บันทึกต้นทุน ปุ๋ย ผลผลิต กิจกรรมสวน และคำแนะนำเชิงพื้นที่</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_103">Satellite + AI Monitoring</strong></td>
+<td data-i18n="integrated-palmoil-business_104">ติดตามสภาพพื้นที่ ความเปลี่ยนแปลงพืชพรรณ และความเสี่ยงที่ตรวจสอบภาคสนามได้</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_105">Cooperative &amp; Collection OS</strong></td>
+<td data-i18n="integrated-palmoil-business_106">รับซื้อ ชั่งน้ำหนัก คุณภาพ สต็อก การจ่ายเงิน และติดตามล็อต</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_107">Marketplace &amp; Logistics</strong></td>
+<td data-i18n="integrated-palmoil-business_108">จับคู่ผู้ซื้อ–ผู้ขาย จัดรอบขนส่ง และบันทึกธุรกรรม</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_109">Finance Connector</strong></td>
+<td data-i18n="integrated-palmoil-business_110">ส่งต่อข้อมูลที่ได้รับความยินยอมแก่ผู้ให้สินเชื่อเพื่อประเมินความเสี่ยง</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_111">Sustainability &amp; MRV</strong></td>
+<td data-i18n="integrated-palmoil-business_112">ตรวจสอบย้อนกลับ ตัวชี้วัดสิ่งแวดล้อม และหลักฐานการตรวจประเมิน</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-palmoil-business_113">สถาปัตยกรรมข้อมูลควรออกแบบให้เชื่อมต่อระบบของสหกรณ์ โรงสกัด และหน่วยงานที่เกี่ยวข้องผ่าน API โดยมีมาตรการความมั่นคงปลอดภัย การกำหนดสิทธิ์ และการตรวจสอบย้อนหลัง</p>
+</div></section>
+
+<section class="prose-section" id="sec-10">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_114">10. รูปแบบโครงการนำร่องและภาคีร่วมดำเนินงาน</h2>
+<p data-i18n="integrated-palmoil-business_115">เลือกพื้นที่นำร่องที่มีเกษตรกรรายย่อยรวมกลุ่ม สหกรณ์หรือลานเทที่พร้อมร่วมมือ และโรงสกัดปลายทางที่สามารถแลกเปลี่ยนข้อมูลได้ กำหนดขนาดพื้นที่และจำนวนผู้เข้าร่วมหลังสำรวจข้อมูลฐาน ไม่กำหนดวงเงินงบประมาณในรายงานฉบับนี้</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-palmoil-business_116">ระยะ</th>
+<th data-i18n="integrated-palmoil-business_117">กิจกรรม</th>
+<th data-i18n="integrated-palmoil-business_118">ผลส่งมอบ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_119">ระยะที่ 1: เตรียมความพร้อม</strong></td>
+<td data-i18n="integrated-palmoil-business_120">สำรวจฐานข้อมูล คัดเลือกภาคีและแปลงนำร่อง ประเมินความเสี่ยง</td>
+<td data-i18n="integrated-palmoil-business_121">ทะเบียนผู้เข้าร่วม ข้อมูลฐาน และข้อตกลงแลกเปลี่ยนข้อมูล</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_122">ระยะที่ 2: ทดลองปฏิบัติ</strong></td>
+<td data-i18n="integrated-palmoil-business_123">บันทึกกิจกรรมสวน รับซื้อดิจิทัล ติดตามคุณภาพ และให้คำแนะนำ</td>
+<td data-i18n="integrated-palmoil-business_124">ระบบต้นแบบที่ใช้งานจริงและรายงานผลรายรอบ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_125">ระยะที่ 3: ประเมินและขยายผล</strong></td>
+<td data-i18n="integrated-palmoil-business_126">วิเคราะห์ผลผลิต รายได้สุทธิ ต้นทุน คุณภาพ และสิ่งแวดล้อม</td>
+<td data-i18n="integrated-palmoil-business_127">รายงานประเมินผลและแผนขยายผล</td>
+</tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-11">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_128">11. ตัวชี้วัดผลสำเร็จ (KPI)</h2>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-palmoil-business_129">มิติ</th>
+<th data-i18n="integrated-palmoil-business_130">ตัวชี้วัดเสนอใช้</th>
+<th data-i18n="integrated-palmoil-business_131">วิธีประเมิน</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_132">เศรษฐกิจ</strong></td>
+<td data-i18n="integrated-palmoil-business_133">ผลผลิตทะลายสด/ไร่ ต้นทุน/กก. รายได้สุทธิ/ครัวเรือน</td>
+<td data-i18n="integrated-palmoil-business_134">เทียบข้อมูลฐานและข้อมูลหลังดำเนินการ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_135">คุณภาพ</strong></td>
+<td data-i18n="integrated-palmoil-business_136">สัดส่วนทะลายผ่านเกณฑ์ ระยะเวลาจากเก็บเกี่ยวถึงโรงสกัด</td>
+<td data-i18n="integrated-palmoil-business_137">บันทึกรับซื้อและสุ่มตรวจคุณภาพ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_138">สังคม</strong></td>
+<td data-i18n="integrated-palmoil-business_139">จำนวนเกษตรกรรายย่อยและสหกรณ์ที่เข้าร่วม สัดส่วนผู้ใช้งานต่อเนื่อง</td>
+<td data-i18n="integrated-palmoil-business_140">ทะเบียนและบันทึกการใช้งาน</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_141">สิ่งแวดล้อม</strong></td>
+<td data-i18n="integrated-palmoil-business_142">การใช้ปุ๋ยตามคำแนะนำ การจัดการของเสีย การเปลี่ยนแปลงการใช้ที่ดิน</td>
+<td data-i18n="integrated-palmoil-business_143">หลักฐานภาคสนามและข้อมูลเชิงพื้นที่</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-palmoil-business_144">ดิจิทัล</strong></td>
+<td data-i18n="integrated-palmoil-business_145">สัดส่วนล็อตที่ตรวจสอบย้อนกลับได้ ความครบถ้วนของข้อมูล</td>
+<td data-i18n="integrated-palmoil-business_146">ตรวจสอบระบบและตัวอย่างธุรกรรม</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<div class="note-block" data-i18n="integrated-palmoil-business_147">ควรกำหนดค่าเป้าหมายเชิงตัวเลขภายหลังสำรวจข้อมูลฐานและตกลงร่วมกับภาคี เพื่อหลีกเลี่ยงการใช้ตัวเลขคาดการณ์ที่ไม่มีหลักฐานรองรับ</div>
+</div></section>
+
+<section class="prose-section" id="sec-12">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_148">12. ความเสี่ยงและมาตรการกำกับดูแล</h2>
+<ul class="check-list">
+<li data-i18n="integrated-palmoil-business_149">ความผันผวนของราคา: ใช้ข้อมูลตลาดหลายแหล่งและสัญญาที่มีหลักเกณฑ์โปร่งใส</li>
+<li data-i18n="integrated-palmoil-business_150">ความเสี่ยงด้านที่ดินและสิ่งแวดล้อม: ตรวจสอบสิทธิและประวัติพื้นที่ก่อนเข้าร่วม ไม่ส่งเสริมการบุกรุกป่า</li>
+<li data-i18n="integrated-palmoil-business_151">คุณภาพข้อมูล: มีขั้นตอนตรวจสอบความถูกต้องและสุ่มตรวจภาคสนาม</li>
+<li data-i18n="integrated-palmoil-business_152">การคุ้มครองข้อมูล: กำหนดวัตถุประสงค์ ความยินยอม สิทธิ์เข้าถึง และระยะเวลาเก็บรักษา</li>
+<li data-i18n="integrated-palmoil-business_153">การยอมรับเทคโนโลยี: ฝึกอบรมเกษตรกร เจ้าหน้าที่สหกรณ์ และจุดรับซื้อควบคู่กับการใช้งานจริง</li>
+</ul>
+</div></section>
+
+<section class="prose-section alt" id="sec-13">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-palmoil-business_154">13. ข้อเสนอเชิงนโยบายและบทสรุป</h2>
+<p data-i18n="integrated-palmoil-business_155">การพัฒนาห่วงโซ่คุณค่าปาล์มน้ำมันควรมุ่งเพิ่มผลผลิตต่อพื้นที่เดิม ลดความสูญเสียระหว่างเก็บเกี่ยวและขนส่ง ส่งเสริมความโปร่งใสของการซื้อขาย และต่อยอดผลพลอยได้อย่างมีความรับผิดชอบ โดยสหกรณ์และผู้ประกอบการกลางน้ำเป็นจุดเชื่อมสำคัญ การใช้ AgroLink เป็นโครงสร้างพื้นฐานข้อมูลร่วมจะช่วยให้เกษตรกร ผู้ซื้อ สถาบันการเงิน และหน่วยงานกำกับดูแลทำงานบนข้อมูลที่ตรวจสอบได้ ทั้งนี้ต้องทดสอบความคุ้มค่าและผลลัพธ์จริงก่อนขยายผล</p>
+<h3 data-i18n="integrated-palmoil-business_156" style="margin-top:30px;">ภาคผนวก: ข้อมูลที่ควรรวบรวมก่อนออกแบบโครงการจริง</h3>
+<ul class="check-list">
+<li data-i18n="integrated-palmoil-business_157">ข้อมูลพื้นที่สวน อายุปาล์ม พันธุ์ ผลผลิตย้อนหลังและต้นทุนรายกิจกรรม</li>
+<li data-i18n="integrated-palmoil-business_158">ข้อมูลลานเท โรงสกัด ระยะทางขนส่ง และเกณฑ์รับซื้อ</li>
+<li data-i18n="integrated-palmoil-business_159">ผลตรวจดิน/ใบพืช ข้อมูลน้ำและความเสี่ยงภัยแล้ง</li>
+<li data-i18n="integrated-palmoil-business_160">ข้อมูลการจัดการผลพลอยได้และระบบบำบัดของโรงสกัด</li>
+<li data-i18n="integrated-palmoil-business_161">ข้อกำหนดมาตรฐานของผู้ซื้อและกฎหมายที่เกี่ยวข้อง ณ วันดำเนินการ</li>
+</ul>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 data-i18n="integrated-palmoil-business_162" class="section-title">สนใจเข้าร่วมโครงการปาล์มน้ำมันครบวงจร</h2>
+<p data-i18n="integrated-palmoil-business_163" class="section-sub">ไม่ว่าจะในฐานะเกษตรกร สหกรณ์/กลุ่มเกษตรกร โรงสกัด ผู้ให้บริการเครื่องจักร สถาบันการเงิน หรือหน่วยงานภาครัฐ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-palmoil-business_164">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-palmoil-business_165">กลับหน้าแรก</a>
+</div></div></section>
+
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-oil-can"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+          <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
+          <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
+          <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-palmoil-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
