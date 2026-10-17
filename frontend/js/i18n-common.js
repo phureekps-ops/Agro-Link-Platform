@@ -15,6 +15,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   nav_coop_rice: { th: "ธุรกิจข้าวครบวงจร", en: "Integrated Rice Business" },
   nav_coop_carbon: { th: "คาร์บอนเครดิต", en: "Carbon Credit" },
   nav_coop_biomass: { th: "เศรษฐกิจชีวมวล", en: "Biomass Economy" },
+  nav_coop_sugarcane: { th: "อ้อยน้ำตาล", en: "Integrated Sugarcane Business" },
   nav_coop_durian: { th: "ทุเรียนครบวงจร", en: "Integrated Durian Business" },
   nav_coop_cassava: { th: "มันสำปะหลังครบวงจร", en: "Integrated Cassava Business" },
   nav_coop_corn: { th: "ข้าวโพดครบวงจร", en: "Integrated Feed Corn Business" },

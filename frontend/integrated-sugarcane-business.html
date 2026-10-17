@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการอ้อยน้ำตาลครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <a href="about-video.html" data-i18n="nav_about">เกี่ยวกับเรา</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+            <a href="integrated-sugarcane-business.html" data-i18n="nav_coop_sugarcane">อ้อยน้ำตาล</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="for-farmers.html"><span data-i18n="nav_farmers">สำหรับเกษตรกร</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="for-farmers-crop.html" data-i18n="nav_farmers_crop">เกษตรกรผู้ปลูกพืช</a>
+            <a href="for-farmers-livestock.html" data-i18n="nav_farmers_livestock">เกษตรกรผู้เลี้ยงสัตว์บก</a>
+            <a href="for-farmers-aquaculture.html" data-i18n="nav_farmers_aquaculture">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="rap-t-project.html"><span data-i18n="nav_rapt">RAP-T</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-durian-business.html" data-i18n="nav_rapt_durian">ทุเรียน</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_rapt_cassava">มันสำปะหลัง</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_rapt_corn">ข้าวโพดเลี้ยงสัตว์</a>
+            <a href="rap-t-coffee.html" data-i18n="nav_rapt_coffee">กาแฟ</a>
+            <a href="rap-t-coconut.html" data-i18n="nav_rapt_coconut">มะพร้าวน้ำหอม</a>
+            <a href="rap-t-shrimp.html" data-i18n="nav_rapt_shrimp">กุ้ง</a>
+            <a href="rap-t-tilapia.html" data-i18n="nav_rapt_tilapia">ปลานิล/ทับทิมกระชัง</a>
+            <a href="rap-t-seabass.html" data-i18n="nav_rapt_seabass">ปลากระพง/เก๋ากระชัง</a>
+          </div>
+        </div>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-sugarcane-business_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-seedling"></i><span data-i18n="integrated-sugarcane-business_2"> คู่มือแนะนำโครงการ</span></div>
+    <h1 class="section-title" data-i18n="integrated-sugarcane-business_3">เอกสารแนวคิดโครงการ: การพัฒนาระบบนิเวศอ้อยและน้ำตาลครบวงจรด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink</h1>
+    <p class="section-sub" data-i18n="integrated-sugarcane-business_4">“อ้อยสดคุณภาพสูง – ต้นทุนต่ำ – ไม่เผา – ใช้ทรัพยากรครบวงจร” — เชื่อมเกษตรกรกับสินเชื่อเป็นงวด ปุ๋ยสั่งตัด ดาวเทียมติดตามแปลง และตลาดอ้อยน้ำตาลครบวงจร</p>
+    <span class="draft-tag" data-i18n="integrated-sugarcane-business_5">ฉบับร่างเพื่อหารือเชิงนโยบาย | ตุลาคม 2569 — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/sugarcane-integrated-business-infographic.jpg" data-i18n="integrated-sugarcane-business_177" data-i18n-attr="alt" alt="แผนที่ห่วงโซ่คุณค่าอ้อยและน้ำตาล ต้นน้ำ กลางน้ำ ปลายน้ำ และห่วงโซ่ชีวภาพคู่ขนาน เชื่อมผ่านโครงสร้างพื้นฐานดิจิทัล AgroLink" loading="lazy">
+      <figcaption data-i18n="integrated-sugarcane-business_178">แผนที่ห่วงโซ่คุณค่าอ้อยและน้ำตาล: ต้นน้ำ–กลางน้ำ–ปลายน้ำ และห่วงโซ่ชีวภาพคู่ขนาน เชื่อมโยงด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-sugarcane-business_6">สารบัญ</h4>
+      <ol>
+<li><a href="#sec-1" data-i18n="integrated-sugarcane-business_7">1. บทสรุปผู้บริหาร</a></li>
+<li><a href="#sec-2" data-i18n="integrated-sugarcane-business_8">2. ขอบเขตและแนวทางการพัฒนาห่วงโซ่คุณค่า</a></li>
+<li><a href="#sec-3" data-i18n="integrated-sugarcane-business_9">3. แผนที่ห่วงโซ่คุณค่า (Value Chain Map)</a></li>
+<li><a href="#sec-4" data-i18n="integrated-sugarcane-business_10">4. วิเคราะห์จุดคอขวดและโอกาส</a></li>
+<li><a href="#sec-5" data-i18n="integrated-sugarcane-business_11">5. แนวทางพัฒนาและยกระดับห่วงโซ่คุณค่า</a></li>
+<li><a href="#sec-6" data-i18n="integrated-sugarcane-business_12">6. สถาปัตยกรรมดิจิทัล AgroLink ที่เสนอ</a></li>
+<li><a href="#sec-7" data-i18n="integrated-sugarcane-business_13">7. รูปแบบดำเนินงาน ธรรมาภิบาล และแผนงานนำร่อง</a></li>
+<li><a href="#sec-8" data-i18n="integrated-sugarcane-business_14">8. ตัวชี้วัดผลลัพธ์และวิธีวัด</a></li>
+<li><a href="#sec-9" data-i18n="integrated-sugarcane-business_15">9. ความเสี่ยงและมาตรการรองรับ</a></li>
+<li><a href="#sec-10" data-i18n="integrated-sugarcane-business_16">10. ข้อเสนอเชิงนโยบายและขั้นตอนถัดไป</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_17">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="integrated-sugarcane-business_18">อ้อยและน้ำตาลเป็นห่วงโซ่เศรษฐกิจสำคัญที่เชื่อมเกษตรกร ผู้รับจ้างเครื่องจักร โรงงานน้ำตาล ผู้ผลิตไฟฟ้า ชีวเคมี โลจิสติกส์ และตลาดในประเทศ/ส่งออก ความท้าทายครอบคลุมต้นทุนปัจจัยการผลิต ภัยแล้ง ความผันผวนของผลผลิตและความหวาน การเผาอ้อยก่อนตัด ปัญหาฝุ่น PM2.5 ความเสื่อมโทรมของดิน ตลอดจนการเข้าถึงเงินทุนและข้อมูลตลาด</p>
+<p data-i18n="integrated-sugarcane-business_19">แนวทางเสนอคือ “อ้อยสดคุณภาพสูง – ต้นทุนต่ำ – ไม่เผา – ใช้ทรัพยากรครบวงจร” โดยจัดทำแผนพัฒนาระดับพื้นที่ร่วมกับสหกรณ์/กลุ่มชาวไร่ โรงงานน้ำตาล ผู้ให้บริการเครื่องจักร และหน่วยงานรัฐ ใช้ AgroLink เป็นระบบเชื่อมข้อมูลแปลงเพาะปลูก กิจกรรมการผลิต สินเชื่อหลายแหล่ง ตลาด และการตรวจติดตามผล</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_20">2. ขอบเขตและแนวทางการพัฒนาห่วงโซ่คุณค่าอ้อยและน้ำตาล</h2>
+<p data-i18n="integrated-sugarcane-business_21">โครงการวางกรอบการพัฒนา 5 มิติ ครอบคลุมตั้งแต่ความทนทานต่อภูมิอากาศไปจนถึงการมีส่วนร่วมของเกษตรกรรายย่อย ดังตาราง</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-sugarcane-business_22">มิติการพัฒนา</th>
+<th data-i18n="integrated-sugarcane-business_23">แนวทางสำหรับอ้อยและน้ำตาล</th>
+<th data-i18n="integrated-sugarcane-business_24">ผลลัพธ์ที่คาดหวัง</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_25">Resilience / Climate-smart</strong></td>
+<td data-i18n="integrated-sugarcane-business_26">พันธุ์เหมาะพื้นที่ การจัดการน้ำ ดิน และข้อมูลภูมิอากาศ</td>
+<td data-i18n="integrated-sugarcane-business_27">ลดความเสี่ยงผลผลิตจากภัยแล้งและอากาศสุดขั้ว</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_28">Productivity &amp; Income</strong></td>
+<td data-i18n="integrated-sugarcane-business_29">ปุ๋ยตามค่าวิเคราะห์ดิน เครื่องจักรและการจัดคิวตัดอ้อย</td>
+<td data-i18n="integrated-sugarcane-business_30">ต้นทุนต่อหน่วยลด คุณภาพ/รายได้สุทธิเพิ่ม</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_31">Low-emission transition</strong></td>
+<td data-i18n="integrated-sugarcane-business_32">ส่งเสริมอ้อยสด ลดการเผา ใช้ใบอ้อยและวัสดุเหลือทิ้ง</td>
+<td data-i18n="integrated-sugarcane-business_33">ลดมลพิษและการปล่อยก๊าซ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_34">Market &amp; Finance</strong></td>
+<td data-i18n="integrated-sugarcane-business_35">สัญญารับซื้อ โปร่งใสด้านคุณภาพ สินเชื่อเบิกตามกิจกรรม</td>
+<td data-i18n="integrated-sugarcane-business_36">เข้าถึงตลาดและทุนอย่างเป็นธรรม</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_37">Digital MRV &amp; Inclusion</strong></td>
+<td data-i18n="integrated-sugarcane-business_38">ดาวเทียม AI ข้อมูลภาคสนาม ตรวจสอบย้อนกลับ</td>
+<td data-i18n="integrated-sugarcane-business_39">ข้อมูลเชื่อถือได้และเกษตรกรรายย่อยมีส่วนร่วม</td>
+</tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_40">3. แผนที่ห่วงโซ่คุณค่า (Value Chain Map)</h2>
+<h3 data-i18n="integrated-sugarcane-business_41">ต้นน้ำ</h3>
+<p data-i18n="integrated-sugarcane-business_42">พันธุ์อ้อยและท่อนพันธุ์ปลอดโรค → วิเคราะห์ดิน/น้ำ → ปัจจัยการผลิต → สินเชื่อ/ประกันภัย → เตรียมดินและปลูก</p>
+<h3 data-i18n="integrated-sugarcane-business_43">กลางน้ำ</h3>
+<p data-i18n="integrated-sugarcane-business_44">บริหารแปลงด้วยข้อมูล → ดูแลอ้อยตอ/อ้อยปลูก → จัดคิวรถตัดและขนส่ง → ส่งมอบอ้อยสด → ตรวจน้ำหนักและคุณภาพ/ความหวาน</p>
+<h3 data-i18n="integrated-sugarcane-business_45">ปลายน้ำ</h3>
+<p data-i18n="integrated-sugarcane-business_46">โรงงานน้ำตาล → น้ำตาลดิบ/น้ำตาลขาว/ผลิตภัณฑ์มูลค่าสูง → ผู้ใช้ในอุตสาหกรรมอาหารและตลาดส่งออก</p>
+<h3 data-i18n="integrated-sugarcane-business_47">ห่วงโซ่ชีวภาพคู่ขนาน</h3>
+<p data-i18n="integrated-sugarcane-business_48">กากอ้อย → ไอน้ำ/ไฟฟ้า/วัสดุชีวภาพ; กากน้ำตาล → เอทานอล/ยีสต์/เคมีชีวภาพ; ใบอ้อยและยอดอ้อย → คลุมดิน/ปุ๋ยหมัก/ชีวมวลตามความเหมาะสม; กากตะกอนกรอง → ปรับปรุงดินภายใต้การตรวจคุณภาพ</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-4">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_49">4. วิเคราะห์จุดคอขวดและโอกาส</h2>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-sugarcane-business_50">ขั้นตอน</th>
+<th data-i18n="integrated-sugarcane-business_51">จุดคอขวด</th>
+<th data-i18n="integrated-sugarcane-business_52">มาตรการยกระดับ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_53">ก่อนปลูก</strong></td>
+<td data-i18n="integrated-sugarcane-business_54">พันธุ์ไม่เหมาะสม ต้นทุนสูง ดินเสื่อม</td>
+<td data-i18n="integrated-sugarcane-business_55">ทะเบียนแปลง แผนดิน-น้ำ ท่อนพันธุ์คุณภาพ จัดซื้อรวม</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_56">ระหว่างปลูก</strong></td>
+<td data-i18n="integrated-sugarcane-business_57">น้ำไม่พอ ปุ๋ยไม่แม่นยำ ขาดข้อมูล</td>
+<td data-i18n="integrated-sugarcane-business_58">AI/ดาวเทียม + สำรวจแปลง + ปุ๋ยสั่งตัด</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_59">เก็บเกี่ยว</strong></td>
+<td data-i18n="integrated-sugarcane-business_60">แรงงานขาด รถตัดไม่พอ การเผา</td>
+<td data-i18n="integrated-sugarcane-business_61">รวมแปลง จองรถตัดอ้อยสด จัดคิวขนส่ง</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_62">รับซื้อ</strong></td>
+<td data-i18n="integrated-sugarcane-business_63">เวลารอคิว คุณภาพไม่สม่ำเสมอ</td>
+<td data-i18n="integrated-sugarcane-business_64">ข้อมูลคิว/น้ำหนัก/คุณภาพและใบรับซื้อดิจิทัล</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_65">แปรรูป</strong></td>
+<td data-i18n="integrated-sugarcane-business_66">มูลค่าเพิ่มจากผลพลอยได้ยังไม่เต็มที่</td>
+<td data-i18n="integrated-sugarcane-business_67">เชื่อมผู้รับซื้อชีวมวลและโครงการ BCG</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_68">การเงิน</strong></td>
+<td data-i18n="integrated-sugarcane-business_69">เงินทุนไม่ตรงรอบการผลิต</td>
+<td data-i18n="integrated-sugarcane-business_70">สินเชื่อเป็นงวดตามกิจกรรมจากผู้ให้สินเชื่อที่ได้รับอนุญาต</td>
+</tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section" id="sec-5">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_71">5. แนวทางพัฒนาและยกระดับห่วงโซ่คุณค่า</h2>
+<h3 data-i18n="integrated-sugarcane-business_72">5.1 ระบบการผลิตอ้อยอัจฉริยะและทนทานต่อภูมิอากาศ</h3>
+<ul class="check-list">
+<li data-i18n="integrated-sugarcane-business_73">จัดทำทะเบียนเกษตรกร พิกัดแปลง และข้อมูลอ้อยปลูก/อ้อยตอ พร้อมความยินยอมด้านข้อมูล</li>
+<li data-i18n="integrated-sugarcane-business_74">ประเมินความเหมาะสมของพื้นที่และความเสี่ยงน้ำด้วยข้อมูลดิน ภูมิอากาศ และภาพดาวเทียม</li>
+<li data-i18n="integrated-sugarcane-business_75">ใช้ท่อนพันธุ์คุณภาพ การจัดการโรคและแมลงแบบผสมผสาน และปุ๋ยตามค่าวิเคราะห์ดิน</li>
+<li data-i18n="integrated-sugarcane-business_76">ส่งเสริมการให้น้ำอย่างมีประสิทธิภาพในพื้นที่ที่มีแหล่งน้ำและความคุ้มค่าทางเศรษฐกิจ</li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-5-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-sugarcane-business_77">5.2 ระบบเก็บเกี่ยวอ้อยสดและโลจิสติกส์</h3>
+<ul class="check-list">
+<li data-i18n="integrated-sugarcane-business_78">จัดกลุ่มแปลงเพื่อให้เครื่องจักรเข้าถึงได้ ลดต้นทุนต่อไร่และเวลารอ</li>
+<li data-i18n="integrated-sugarcane-business_79">แพลตฟอร์มจองรถตัด รถบรรทุก และกำหนดคิวส่งโรงงานร่วมกับคู่ค้า</li>
+<li data-i18n="integrated-sugarcane-business_80">สร้างแรงจูงใจอ้อยสด ไม่เผา โดยออกแบบตามกติกาการรับซื้อและมาตรการภาครัฐที่ใช้จริง</li>
+<li data-i18n="integrated-sugarcane-business_81">ติดตามจุดความร้อนด้วยข้อมูลดาวเทียมประกอบการตรวจภาคสนาม โดยไม่ใช้ภาพดาวเทียมตัดสินความผิดเพียงลำพัง</li>
+</ul>
+</div></section>
+<section class="prose-section" id="sec-5-3">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-sugarcane-business_82">5.3 เศรษฐกิจชีวภาพหมุนเวียน (BCG)</h3>
+<ul class="check-list">
+<li data-i18n="integrated-sugarcane-business_83">ประเมินสมดุลอินทรียวัตถุ: ต้องเหลือใบอ้อยบางส่วนคลุมดินตามสภาพพื้นที่ ไม่เก็บออกทั้งหมด</li>
+<li data-i18n="integrated-sugarcane-business_84">พัฒนาธุรกิจอัดก้อน/สับ/รวบรวมใบอ้อยที่เหลือใช้โดยมีสัญญาซื้อขายชัดเจน</li>
+<li data-i18n="integrated-sugarcane-business_85">ต่อยอดกากอ้อย กากน้ำตาล และกากตะกอนร่วมกับโรงงานตามมาตรฐานคุณภาพและสิ่งแวดล้อม</li>
+<li data-i18n="integrated-sugarcane-business_86">ประเมินคาร์บอนเครดิตเฉพาะกิจกรรมที่มีวิธีการรับรองใช้ได้จริง พิสูจน์ส่วนเพิ่ม และป้องกันการนับซ้ำ</li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-5-4">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-sugarcane-business_87">5.4 การเงินและตลาด</h3>
+<ul class="check-list">
+<li data-i18n="integrated-sugarcane-business_88">เชื่อมสหกรณ์ ธนาคาร และ non-bank ที่ได้รับอนุญาต ผ่านระบบ Multi-Lender; AgroLink ไม่เป็นผู้ปล่อยกู้</li>
+<li data-i18n="integrated-sugarcane-business_89">เบิกจ่ายสินเชื่อเป็นงวดตามกิจกรรมที่ตรวจสอบได้ เพื่อลดการใช้เงินผิดวัตถุประสงค์</li>
+<li data-i18n="integrated-sugarcane-business_90">ใช้หลักฐานการเพาะปลูกและส่งมอบเพื่อช่วยประเมินความเสี่ยง โดยไม่ใช้คะแนน AI เป็นเกณฑ์ปฏิเสธสินเชื่ออัตโนมัติ</li>
+<li data-i18n="integrated-sugarcane-business_91">เชื่อมสัญญารับซื้อ/ข้อมูลคุณภาพและการชำระเงินโดยคุ้มครองข้อมูลส่วนบุคคล</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_92">6. สถาปัตยกรรมดิจิทัล AgroLink ที่เสนอ</h2>
+<h3 data-i18n="integrated-sugarcane-business_93">ชั้นข้อมูล (Data Layer)</h3>
+<p data-i18n="integrated-sugarcane-business_94">เกษตรกร – แปลง – สิทธิใช้ประโยชน์ที่ดิน – ดิน/น้ำ – ปัจจัยการผลิต – ภาพ Sentinel-1/2 และแหล่งภาพอื่น – กิจกรรมเครื่องจักร – การส่งมอบโรงงาน (เฉพาะข้อมูลที่มีสิทธิใช้งาน)</p>
+<h3 data-i18n="integrated-sugarcane-business_95">ชั้นวิเคราะห์ (Analytics Layer)</h3>
+<p data-i18n="integrated-sugarcane-business_96">ตรวจติดตามระยะเจริญเติบโตและความเสี่ยง คาดการณ์ผลผลิตเป็นช่วงความเชื่อมั่น ตรวจความผิดปกติ วิเคราะห์ต้นทุน/รายได้ และประเมินข้อมูลประกอบ Agri Credit Score</p>
+<h3 data-i18n="integrated-sugarcane-business_97">ชั้นบริการ (Service Layer)</h3>
+<p data-i18n="integrated-sugarcane-business_98">Farmer App, Cooperative OS, ผู้ให้บริการเครื่องจักร, Dashboard โรงงาน, Marketplace, Multi-Lender Gateway และระบบ MRV ออกแบบพร้อม API สิทธิการเข้าถึง บันทึกการใช้งาน การเข้ารหัส และการจัดการความยินยอม</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_99">7. รูปแบบดำเนินงาน ธรรมาภิบาล และแผนงานนำร่อง</h2>
+<h3 data-i18n="integrated-sugarcane-business_100">7.1 ภาคีและบทบาทหลัก</h3>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:900px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-sugarcane-business_101">ภาคี</th>
+<th data-i18n="integrated-sugarcane-business_102">บทบาทหลัก</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_103">หน่วยงานรัฐ/ผู้กำกับโครงการ</strong></td>
+<td data-i18n="integrated-sugarcane-business_104">กำหนดมาตรฐาน ประสานนโยบาย ตรวจติดตามและกำกับการคุ้มครองข้อมูล</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_105">สหกรณ์/กลุ่มชาวไร่</strong></td>
+<td data-i18n="integrated-sugarcane-business_106">รวมสมาชิก สำรวจแปลง จัดซื้อรวมและบริหารบริการ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_107">โรงงานน้ำตาล</strong></td>
+<td data-i18n="integrated-sugarcane-business_108">แผนรับซื้อ มาตรฐานคุณภาพ คิวรับอ้อยและข้อมูลที่ตกลงแบ่งปัน</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_109">ผู้ให้บริการเครื่องจักร</strong></td>
+<td data-i18n="integrated-sugarcane-business_110">จัดตารางตัด/ขนส่งและบันทึกงาน</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_111">สถาบันการเงิน</strong></td>
+<td data-i18n="integrated-sugarcane-business_112">พิจารณาสินเชื่อ รับความเสี่ยงเครดิต และปฏิบัติตามกฎหมาย</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_113">AgroLink และพันธมิตรเทคโนโลยี</strong></td>
+<td data-i18n="integrated-sugarcane-business_114">พัฒนา/บริหารระบบข้อมูล เชื่อม API และจัดทำแดชบอร์ด</td>
+</tr>
+</tbody></table></div>
+</div></section>
+<section class="prose-section" id="sec-7-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-sugarcane-business_115">7.2 แผนงานนำร่อง 24 เดือน</h3>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-sugarcane-business_116">ช่วงเวลา</th>
+<th data-i18n="integrated-sugarcane-business_117">กิจกรรม</th>
+<th data-i18n="integrated-sugarcane-business_118">ผลผลิตส่งมอบ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_119">เดือน 1–3</strong></td>
+<td data-i18n="integrated-sugarcane-business_120">คัดเลือกพื้นที่/โรงงาน/สหกรณ์ ทำ baseline และข้อตกลงข้อมูล</td>
+<td data-i18n="integrated-sugarcane-business_121">แผนพื้นที่ รายชื่อภาคี baseline และ Data Governance</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_122">เดือน 4–6</strong></td>
+<td data-i18n="integrated-sugarcane-business_123">ขึ้นทะเบียนแปลงและทดสอบระบบบริการ</td>
+<td data-i18n="integrated-sugarcane-business_124">ทะเบียนแปลงและระบบต้นแบบ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_125">เดือน 7–12</strong></td>
+<td data-i18n="integrated-sugarcane-business_126">ทดลองปุ๋ยสั่งตัด บริการเครื่องจักรและอ้อยสด</td>
+<td data-i18n="integrated-sugarcane-business_127">ข้อมูลต้นทุน ผลผลิต อ้อยสดและบริการ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_128">เดือน 13–18</strong></td>
+<td data-i18n="integrated-sugarcane-business_129">ขยายแปลงทดสอบ เชื่อมการเงินและชีวมวล</td>
+<td data-i18n="integrated-sugarcane-business_130">ธุรกรรมที่ตรวจสอบได้และรายงานผลกลางทาง</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_131">เดือน 19–24</strong></td>
+<td data-i18n="integrated-sugarcane-business_132">ประเมินผลอิสระ ออกแบบขยายผล</td>
+<td data-i18n="integrated-sugarcane-business_133">รายงานผลลัพธ์และแผนลงทุนระยะต่อไป</td>
+</tr>
+</tbody></table></div>
+</div></section>
+<section class="prose-section alt" id="sec-7-3">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-sugarcane-business_134">7.3 ขนาดนำร่องเบื้องต้น</h3>
+<div class="note-block" data-i18n="integrated-sugarcane-business_135">ขนาดนำร่องเพื่อใช้วางแผนเบื้องต้น (ไม่ใช่เป้าหมายที่อนุมัติ): 2–3 จังหวัด, 3–5 สหกรณ์/กลุ่มชาวไร่, 1–2 โรงงานพันธมิตร และพื้นที่ 20,000–30,000 ไร่ โดยต้องยืนยันความพร้อมของภาคีและพื้นที่ก่อนดำเนินการ</div>
+</div></section>
+
+<section class="prose-section" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_136">8. ตัวชี้วัดผลลัพธ์และวิธีวัด</h2>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-sugarcane-business_137">ตัวชี้วัด</th>
+<th data-i18n="integrated-sugarcane-business_138">วิธีวัด/หลักฐาน</th>
+<th data-i18n="integrated-sugarcane-business_139">แนวทางตั้งเป้าหมาย</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_140">ต้นทุนการผลิตต่อไร่และต่อตัน</strong></td>
+<td data-i18n="integrated-sugarcane-business_141">สมุดบัญชีฟาร์ม + หลักฐานซื้อปัจจัย</td>
+<td data-i18n="integrated-sugarcane-business_142">เทียบ baseline และกลุ่มเปรียบเทียบ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_143">ผลผลิตอ้อยและคุณภาพ</strong></td>
+<td data-i18n="integrated-sugarcane-business_144">น้ำหนักรับซื้อ/ค่าคุณภาพตามระบบโรงงาน</td>
+<td data-i18n="integrated-sugarcane-business_145">แยกผลกระทบสภาพอากาศ</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_146">สัดส่วนอ้อยสดไม่เผา</strong></td>
+<td data-i18n="integrated-sugarcane-business_147">บันทึกตัดอ้อย + ใบรับซื้อ + ตรวจพื้นที่</td>
+<td data-i18n="integrated-sugarcane-business_148">ตั้งเป้าตามฐานเดิมของพื้นที่</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_149">รายได้สุทธิครัวเรือน</strong></td>
+<td data-i18n="integrated-sugarcane-business_150">รายได้ขายอ้อยและชีวมวลหักต้นทุน</td>
+<td data-i18n="integrated-sugarcane-business_151">วัดต่อครัวเรือนและต่อไร่</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_152">การปล่อยก๊าซและ PM2.5</strong></td>
+<td data-i18n="integrated-sugarcane-business_153">วิธีคำนวณที่ยอมรับได้ + ข้อมูลกิจกรรม</td>
+<td data-i18n="integrated-sugarcane-business_154">รายงานสมมติฐานและความไม่แน่นอน</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_155">การเข้าถึงบริการ/การเงิน</strong></td>
+<td data-i18n="integrated-sugarcane-business_156">จำนวนผู้ใช้จริงและสินเชื่ออนุมัติ</td>
+<td data-i18n="integrated-sugarcane-business_157">แยกเพศ/ขนาดฟาร์มตามความเหมาะสม</td>
+</tr>
+<tr>
+<td><strong data-i18n="integrated-sugarcane-business_158">ความสมบูรณ์ของข้อมูล</strong></td>
+<td data-i18n="integrated-sugarcane-business_159">อัตราข้อมูลครบถ้วนถูกต้องและตรวจสอบย้อนกลับ</td>
+<td data-i18n="integrated-sugarcane-business_160">กำหนดเกณฑ์คุณภาพข้อมูลล่วงหน้า</td>
+</tr>
+</tbody></table></div>
+</div></section>
+
+<section class="prose-section alt" id="sec-9">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_161">9. ความเสี่ยงและมาตรการรองรับ</h2>
+<ul class="check-list">
+<li data-i18n="integrated-sugarcane-business_162">ภัยแล้งและความผันผวนผลผลิต: คัดพื้นที่ตามน้ำและพันธุ์ที่เหมาะสม กระจายพื้นที่ทดลอง</li>
+<li data-i18n="integrated-sugarcane-business_163">เครื่องจักรไม่คุ้มค่า/แปลงเล็ก: ใช้บริการร่วมแทนการซื้อเครื่องจักรทุกชุมชน</li>
+<li data-i18n="integrated-sugarcane-business_164">ชีวมวลแย่งอินทรียวัตถุในดิน: กำหนดสัดส่วนเก็บเกี่ยวเศษเหลือบนหลักวิชาการ</li>
+<li data-i18n="integrated-sugarcane-business_165">ข้อมูลส่วนบุคคล/ข้อมูลการค้า: สัญญาแบ่งปันข้อมูล จำกัดสิทธิ และปฏิบัติตาม PDPA</li>
+<li data-i18n="integrated-sugarcane-business_166">ความเสี่ยงการเงิน: ให้ผู้ให้สินเชื่อที่ได้รับอนุญาตรับผิดชอบอนุมัติและบริหารเครดิต</li>
+<li data-i18n="integrated-sugarcane-business_167">ความเสี่ยงการอ้างลดคาร์บอนเกินจริง: ใช้ baseline ที่ตรวจสอบได้ วิธี MRV ที่ยอมรับ และผู้ประเมินอิสระ</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-10">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-sugarcane-business_168">10. ข้อเสนอเชิงนโยบายและขั้นตอนถัดไป</h2>
+<ul class="check-list">
+<li data-i18n="integrated-sugarcane-business_169">ทำ baseline ด้านผลผลิต ต้นทุน การเผาอ้อย คุณภาพดิน น้ำ และรายได้ ก่อนกำหนด KPI เชิงปริมาณ</li>
+<li data-i18n="integrated-sugarcane-business_170">พัฒนาข้อตกลงแบ่งปันข้อมูลและแผนความยั่งยืนทางธุรกิจหลังสิ้นสุดทุนสนับสนุน</li>
+</ul>
+<h3 data-i18n="integrated-sugarcane-business_171" style="margin-top:30px;">ภาคผนวก: แหล่งข้อมูลที่ควรใช้ตรวจสอบก่อนยื่น</h3>
+<div class="note-block" data-i18n="integrated-sugarcane-business_172">สำนักงานคณะกรรมการอ้อยและน้ำตาลทราย (สอน.) สำหรับสถิติอ้อย/น้ำตาลและกติกาอุตสาหกรรม; กรมวิชาการเกษตรสำหรับพันธุ์และแนวปฏิบัติ; กรมพัฒนาที่ดินสำหรับข้อมูลดิน; GISTDA/โครงการ Copernicus สำหรับข้อมูลดาวเทียม; องค์การบริหารจัดการก๊าซเรือนกระจก (อบก.) สำหรับวิธีการและหลักเกณฑ์คาร์บอนเครดิต; FAO สำหรับแนวทาง climate-smart agriculture และ value-chain analysis — ตัวเลขฐาน (baseline) ราคา และข้อกำหนดในเอกสารนี้เป็นข้อมูลเพื่อประกอบการหารือเท่านั้น ต้องตรวจสอบและอัปเดตจากเอกสารต้นทางก่อนนำไปใช้อ้างอิงอย่างเป็นทางการ</div>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 data-i18n="integrated-sugarcane-business_173" class="section-title">สนใจเข้าร่วมโครงการอ้อยน้ำตาลครบวงจร</h2>
+<p data-i18n="integrated-sugarcane-business_174" class="section-sub">ไม่ว่าจะในฐานะเกษตรกร สหกรณ์/กลุ่มชาวไร่ โรงงานน้ำตาล ผู้ให้บริการเครื่องจักร สถาบันการเงิน หรือหน่วยงานภาครัฐ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-sugarcane-business_175">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-sugarcane-business_176">กลับหน้าแรก</a>
+</div></div></section>
+
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-seedling"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+          <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
+          <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
+          <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-sugarcane-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
