@@ -148,6 +148,14 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "th": "กลับหน้าแรก",
     "en": "Back to Home"
   },
+  "rap-t-project_44": {
+    "th": "อินโฟกราฟิกภาพรวมโครงการ RAP-T ความหวังเกษตรไทยสู้วิกฤตสภาพภูมิอากาศ แสดงความร่วมมือระหว่างประเทศ (FAO, ADB, กระทรวงเกษตรและสหกรณ์) เกษตรอัจฉริยะ (CSA), เศรษฐกิจชีวมวล (Bio Circular), คาร์บอนเครดิต, AgroLink Platform ที่เชื่อมโยงข้อมูล เทคโนโลยี การเงิน และตลาด ห่วงโซ่คุณค่าเกษตรครบวงจรตั้งแต่ปัจจัยการผลิตถึงผู้บริโภค และผลลัพธ์ที่คาดหวังของโครงการ",
+    "en": "RAP-T project overview infographic -- Hope for Thai Agriculture Against the Climate Crisis -- showing international partnerships (FAO, ADB, Ministry of Agriculture and Cooperatives), Climate-Smart Agriculture (CSA), the biomass economy (Bio Circular), carbon credits, and the AgroLink Platform connecting data, technology, finance, and markets, the end-to-end agricultural value chain from inputs to consumers, and the project's expected outcomes"
+  },
+  "rap-t-project_45": {
+    "th": "ภาพรวมโครงการ RAP-T — ความร่วมมือระหว่างประเทศ เกษตรอัจฉริยะ เศรษฐกิจชีวมวล คาร์บอนเครดิต และ AgroLink Platform ที่เชื่อมโยงเกษตรกรไทยสู่ห่วงโซ่คุณค่าครบวงจร",
+    "en": "RAP-T project overview -- international partnerships, Climate-Smart Agriculture, the biomass economy, carbon credits, and the AgroLink Platform connecting Thai farmers to an end-to-end value chain"
+  },
   "footer_product_17": {
     "th": "โครงการ RAP-T",
     "en": "RAP-T Project"
