@@ -130,5 +130,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "marketplace-partners_32": {
     "th": "กลับหน้าแรก",
     "en": "Back to Home"
+  },
+  "marketplace-partners_33": {
+    "th": "อินโฟกราฟิกพันธมิตรผู้ซื้อผลผลิตและผู้ให้บริการ เชื่อมโยงเกษตรกรและสหกรณ์เข้ากับตลาดรับซื้อผ่าน AgroLink Platform แบ่งเป็น 3 กลุ่ม ได้แก่ กลุ่มแปรรูปสินค้าเกษตร (โรงสี โรงงานอาหารสัตว์ โรงงานแปรรูปอาหาร โรงงานแป้งมัน โรงงานน้ำตาล โรงสกัดน้ำมันพืช) กลุ่มสินค้าสดและประมง (ล้งผลไม้ แพปลา โรงงานห้องเย็น) และกลุ่มพลังงานและสิ่งแวดล้อม (TGO ตลาดรับซื้อ Carbon Credit ผู้ซื้อชีวมวล/โรงไฟฟ้าชีวมวล) รวม 11 กลุ่มพันธมิตร",
+    "en": "Infographic of buyer and service partners connecting farmers and cooperatives to buyer markets via AgroLink Platform, in 3 groups: Agricultural Processing (mills, animal feed mills, food processing plants, starch factories, sugar factories, vegetable oil extraction plants), Fresh Produce & Fishery (fruit packing houses, fish docks, cold storage plants), and Energy & Environment (TGO Carbon Credit marketplace, biomass buyers/biomass power plants) — 11 partner groups in total"
+  },
+  "marketplace-partners_34": {
+    "th": "พันธมิตรผู้ซื้อผลผลิตและผู้ให้บริการ — 11 กลุ่มที่เชื่อมโยงเกษตรกรและสหกรณ์เข้ากับตลาดรับซื้อผ่าน AgroLink Platform ตั้งแต่โรงสี โรงงานแปรรูป ไปจนถึงตลาดคาร์บอนเครดิตและผู้ซื้อชีวมวล",
+    "en": "Buyer and service partners — 11 groups connecting farmers and cooperatives to buyer markets via AgroLink Platform, from mills and processing plants to the carbon credit market and biomass buyers"
   }
 });
