@@ -134,6 +134,12 @@
   .prose-block p:last-child { margin-bottom: 0; }
   .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
 
+  /* INFOGRAPHIC */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img { display:block; width:100%; height:auto; border-radius:var(--radius); border:1px solid var(--border); box-shadow:0 10px 30px rgba(31,56,100,.12); }
+  .infographic-figure figcaption { margin-top:14px; text-align:center; font-size:13.5px; color:var(--muted); }
+
   /* LENDING PARTNER CARDS */
   .partner-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   @media (max-width: 950px) { .partner-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -231,6 +237,15 @@
     <div class="eyebrow"><i class="fa-solid fa-hand-holding-dollar"></i><span data-i18n="finance-partners_1"> คลังความรู้ · การเงิน</span></div>
     <h1 class="section-title" data-i18n="finance-partners_2">พันธมิตรผู้ให้สินเชื่อบน AgroLink</h1>
     <p class="section-sub" data-i18n="finance-partners_3">ทำความรู้จักประเภทสถาบันการเงินและกองทุนที่ระบบ AgroLink ออกแบบไว้ให้เชื่อมต่อเป็นพันธมิตรผู้ให้สินเชื่อ โดยใช้ข้อมูลการผลิตจริงจากแปลงเกษตรกรและสหกรณ์ประกอบการพิจารณา</p>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/finance-network-infographic.jpg" data-i18n="finance-partners_26" data-i18n-attr="alt" alt="อินโฟกราฟิกเครือข่ายการเงินเกษตรผ่าน AgroLink Platform แสดงความสามารถหลัก 3 ด้าน (ปล่อยเงินกู้เป็นงวดตามปฏิทินการผลิต ลดดอกเบี้ย บริหารเงินกู้อย่างมีประสิทธิภาพ) เชื่อมสถาบันและแหล่งเงินทุนพันธมิตร 8 แห่ง (ธ.ก.ส. ธนาคารพาณิชย์ สหกรณ์การเกษตร กองทุนสงเคราะห์เกษตรกร วิสาหกิจชุมชน กองทุนหมู่บ้าน กองทุนสนับสนุนเกษตรสีเขียว Fintech) ผ่าน AgroLink Platform ไปยังระบบสนับสนุนการเงิน 3 ระบบ (หักชำระเงินกู้ ณ จุดจำหน่ายสินค้า ระบบ Credit Scoring ระบบรับเงินจากการขาย Carbon Credit) สู่เกษตรกรและสหกรณ์" loading="lazy">
+      <figcaption data-i18n="finance-partners_27">เครือข่ายการเงินเกษตรผ่าน AgroLink Platform — เชื่อมสถาบันและแหล่งเงินทุน 8 แห่ง กับระบบสนับสนุนการเงิน 3 ระบบ บริหารสินเชื่อเกษตรครบวงจรตั้งแต่ปล่อยกู้จนถึงชำระคืน</figcaption>
+    </figure>
   </div>
 </section>
 

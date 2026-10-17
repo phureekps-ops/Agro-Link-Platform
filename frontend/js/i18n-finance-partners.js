@@ -102,5 +102,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "finance-partners_25": {
     "th": "กลับหน้าแรก",
     "en": "Back to Home"
+  },
+  "finance-partners_26": {
+    "th": "อินโฟกราฟิกเครือข่ายการเงินเกษตรผ่าน AgroLink Platform แสดงความสามารถหลัก 3 ด้าน (ปล่อยเงินกู้เป็นงวดตามปฏิทินการผลิต ลดดอกเบี้ย บริหารเงินกู้อย่างมีประสิทธิภาพ) เชื่อมสถาบันและแหล่งเงินทุนพันธมิตร 8 แห่ง (ธ.ก.ส. ธนาคารพาณิชย์ สหกรณ์การเกษตร กองทุนสงเคราะห์เกษตรกร วิสาหกิจชุมชน กองทุนหมู่บ้าน กองทุนสนับสนุนเกษตรสีเขียว Fintech) ผ่าน AgroLink Platform ไปยังระบบสนับสนุนการเงิน 3 ระบบ (หักชำระเงินกู้ ณ จุดจำหน่ายสินค้า ระบบ Credit Scoring ระบบรับเงินจากการขาย Carbon Credit) สู่เกษตรกรและสหกรณ์",
+    "en": "Infographic of the agricultural finance network via AgroLink Platform, showing 3 core capabilities (installment loan disbursement aligned with the production calendar, interest reduction, efficient loan management), connecting 8 partner financial institutions and funding sources (BAAC, commercial banks, agricultural cooperatives, Farmer Assistance Fund, community enterprises, village funds, the Green Agriculture Support Fund, Fintech) via AgroLink Platform to 3 supporting systems (point-of-sale loan repayment deduction, Credit Scoring system, Carbon Credit revenue collection system) reaching farmers and cooperatives"
+  },
+  "finance-partners_27": {
+    "th": "เครือข่ายการเงินเกษตรผ่าน AgroLink Platform — เชื่อมสถาบันและแหล่งเงินทุน 8 แห่ง กับระบบสนับสนุนการเงิน 3 ระบบ บริหารสินเชื่อเกษตรครบวงจรตั้งแต่ปล่อยกู้จนถึงชำระคืน",
+    "en": "Agricultural finance network via AgroLink Platform — connecting 8 financial institutions and funding sources with 3 supporting systems to manage agricultural credit end-to-end, from disbursement to repayment"
   }
 });
