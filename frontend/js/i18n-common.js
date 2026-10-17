@@ -34,6 +34,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   nav_rapt_tilapia: { th: "ปลานิล/ทับทิมกระชัง", en: "Cage Tilapia / Red Tilapia" },
   nav_rapt_seabass: { th: "ปลากระพง/เก๋ากระชัง", en: "Cage Seabass / Grouper" },
   nav_finance: { th: "การเงิน", en: "Finance" },
+  nav_insurance: { th: "ประกันภัย", en: "Insurance" },
   nav_marketplace: { th: "ตลาดกลาง", en: "Marketplace" },
   nav_ai: { th: "AI และดาวเทียม", en: "AI & Satellite" },
   nav_investor: { th: "นักลงทุน", en: "Investors" },

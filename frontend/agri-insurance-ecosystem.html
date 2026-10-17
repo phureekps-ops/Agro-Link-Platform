@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบนิเวศประกันภัยการเกษตร (AgroLink Agri-Insurance Ecosystem) | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <a href="about-video.html" data-i18n="nav_about">เกี่ยวกับเรา</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+            <a href="integrated-sugarcane-business.html" data-i18n="nav_coop_sugarcane">อ้อยน้ำตาล</a>
+            <a href="integrated-palmoil-business.html" data-i18n="nav_coop_palmoil">ปาล์มน้ำมัน</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="for-farmers.html"><span data-i18n="nav_farmers">สำหรับเกษตรกร</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="for-farmers-crop.html" data-i18n="nav_farmers_crop">เกษตรกรผู้ปลูกพืช</a>
+            <a href="for-farmers-livestock.html" data-i18n="nav_farmers_livestock">เกษตรกรผู้เลี้ยงสัตว์บก</a>
+            <a href="for-farmers-aquaculture.html" data-i18n="nav_farmers_aquaculture">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="rap-t-project.html"><span data-i18n="nav_rapt">RAP-T</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-durian-business.html" data-i18n="nav_rapt_durian">ทุเรียน</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_rapt_cassava">มันสำปะหลัง</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_rapt_corn">ข้าวโพดเลี้ยงสัตว์</a>
+            <a href="rap-t-coffee.html" data-i18n="nav_rapt_coffee">กาแฟ</a>
+            <a href="rap-t-coconut.html" data-i18n="nav_rapt_coconut">มะพร้าวน้ำหอม</a>
+            <a href="rap-t-shrimp.html" data-i18n="nav_rapt_shrimp">กุ้ง</a>
+            <a href="rap-t-tilapia.html" data-i18n="nav_rapt_tilapia">ปลานิล/ทับทิมกระชัง</a>
+            <a href="rap-t-seabass.html" data-i18n="nav_rapt_seabass">ปลากระพง/เก๋ากระชัง</a>
+          </div>
+        </div>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="agri-insurance-ecosystem.html" data-i18n="nav_insurance">ประกันภัย</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="agri-insurance-ecosystem_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-shield-halved"></i><span data-i18n="agri-insurance-ecosystem_2"> AgroLink Agri-Insurance Ecosystem</span></div>
+    <h1 class="section-title" data-i18n="agri-insurance-ecosystem_3">ระบบนิเวศประกันภัยการเกษตรดิจิทัลบน AgroLink Platform</h1>
+    <p class="section-sub" data-i18n="agri-insurance-ecosystem_4">เชื่อมโยงเกษตรกร สหกรณ์ บริษัทประกันภัย สถาบันการเงิน และผู้รับซื้อสินค้าเกษตร ด้วยข้อมูลแปลงเพาะปลูก ดาวเทียม AI และข้อมูลการผลิตจริง</p>
+    <p class="draft-tag" data-i18n="agri-insurance-ecosystem_5" style="margin-top:14px;font-size:13px;color:rgba(255,255,255,.75);">เอกสารแนวคิดเชิงยุทธศาสตร์ | ตุลาคม 2569 — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</p>
+  </div>
+</section>
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/agri-insurance-ecosystem-infographic.jpg" data-i18n="agri-insurance-ecosystem_363" data-i18n-attr="alt" alt="อินโฟกราฟิก AgroLink Agri-Insurance Ecosystem แสดงการเชื่อมโยงเกษตรกร สหกรณ์การเกษตร AgroLink Agri-Insurance Hub และบริษัทประกันภัย พร้อมความเชื่อมโยงกับธ.ก.ส./สถาบันการเงินด้านสินเชื่อ และการแบ่งรายได้ค่านายหน้าประกันภัยระหว่าง AgroLink 60% และสหกรณ์การเกษตร 40%" loading="lazy">
+      <figcaption data-i18n="agri-insurance-ecosystem_364">ระบบนิเวศประกันภัยการเกษตรดิจิทัล AgroLink: เกษตรกร → สหกรณ์ → AgroLink → บริษัทประกันภัย พร้อมแบ่งรายได้ค่านายหน้าประกันภัย AgroLink 60% / สหกรณ์ 40%</figcaption>
+    </figure>
+  </div>
+</section>
+<section class="prose-section">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_6">หมายเหตุเกี่ยวกับขอบเขต: เอกสารนี้เป็นข้อเสนอเชิงแนวคิดสำหรับการพัฒนาบริการประกันภัยบน AgroLink Platform เท่านั้น ไม่ใช่เอกสารยืนยันความร่วมมือกับบริษัทประกันภัย สมาคม หรือหน่วยงานใดที่กล่าวถึง และไม่ใช่การรับรองว่า AgroLink ได้รับใบอนุญาตประกอบธุรกิจนายหน้าประกันภัยแล้ว การดำเนินการจริงต้องผ่านการตรวจสอบและขออนุญาตจากสำนักงานคณะกรรมการกำกับและส่งเสริมการประกอบธุรกิจประกันภัย (คปภ.) ก่อนเริ่มดำเนินการ</p></div>
+  </div>
+</section>
+<section class="prose-section">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4>สารบัญ</h4>
+      <ol>
+        <li><a href="#sec1" data-i18n="agri-insurance-ecosystem_7">1. บทสรุปผู้บริหาร</a></li>
+        <li><a href="#sec2" data-i18n="agri-insurance-ecosystem_8">2. ออกแบบระบบนิเวศประกันภัยของ AgroLink</a></li>
+        <li><a href="#sec3" data-i18n="agri-insurance-ecosystem_9">3. ผลิตภัณฑ์ประกันภัยที่ควรพัฒนา</a></li>
+        <li><a href="#sec4" data-i18n="agri-insurance-ecosystem_10">4. พันธมิตรที่ควรเชิญร่วมพัฒนา</a></li>
+        <li><a href="#sec5" data-i18n="agri-insurance-ecosystem_11">5. สถาปัตยกรรมระบบ AgroLink Insurance</a></li>
+        <li><a href="#sec6" data-i18n="agri-insurance-ecosystem_12">6. โมเดลรายได้: ค่านายหน้าประกันภัยและการแบ่งรายได้ให้สหกรณ์</a></li>
+        <li><a href="#sec7" data-i18n="agri-insurance-ecosystem_13">7. แผนโครงการนำร่อง 12 เดือน</a></li>
+        <li><a href="#sec8" data-i18n="agri-insurance-ecosystem_14">8. กลยุทธ์สำคัญ: เชื่อมโยงกับห่วงโซ่คุณค่าการเกษตร</a></li>
+        <li><a href="#sec9" data-i18n="agri-insurance-ecosystem_15">9. ข้อเสนอที่ควรดำเนินการทันที</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+<section class="prose-section" id="sec1">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_7">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="agri-insurance-ecosystem_16">AgroLink ควรพัฒนาบริการประกันภัยให้เป็นหนึ่งในบริการหลักของแพลตฟอร์ม โดยทำหน้าที่เป็น Digital Insurance Infrastructure สำหรับภาคเกษตร เชื่อมโยงเกษตรกรกับบริษัทประกันภัยผ่านสหกรณ์การเกษตร ใช้ข้อมูลแปลงเพาะปลูก ดาวเทียม AI กิจกรรมการผลิต และข้อมูลทางการเงิน เพื่อช่วยให้เกษตรกรเข้าถึงประกันภัยได้สะดวกขึ้น ลดความเสี่ยงของผู้ให้สินเชื่อ และเพิ่มความมั่นคงให้กับห่วงโซ่คุณค่าการเกษตร</p>
+<p data-i18n="agri-insurance-ecosystem_17">ข้อเสนอคือให้เริ่มจากประกันภัยพืชผล โดยเฉพาะข้าว แล้วขยายไปสู่ข้าวโพด มันสำปะหลัง ปศุสัตว์ ประมง และเครื่องจักรกลการเกษตรในระยะถัดไป</p>
+<p data-i18n="agri-insurance-ecosystem_18">หัวใจสำคัญคือ AgroLink ไม่ต้องเป็นบริษัทรับประกันภัยและไม่ต้องรับความเสี่ยงจากการจ่ายค่าสินไหมเอง แต่ทำหน้าที่พัฒนาระบบดิจิทัล เชื่อมโยงข้อมูล จัดหาช่องทางเข้าถึงผลิตภัณฑ์ประกันภัย และดำเนินการในฐานะนายหน้าประกันภัยที่เก็บค่าบริการจากบริษัทผู้รับประกันภัย โดยแบ่งรายได้ส่วนหนึ่งให้สหกรณ์การเกษตรที่เป็นช่องทางให้บริการในพื้นที่</p>
+  </div>
+</section>
+<section class="prose-section" id="sec2">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_8">2. ออกแบบระบบนิเวศประกันภัยของ AgroLink</h2>
+<p data-i18n="agri-insurance-ecosystem_19">ข้อเสนอคือให้วางตำแหน่งบริการเป็น AgroLink Agri-Insurance &amp; Risk Management Platform ประกอบด้วยบริการ 6 ส่วน ดังตาราง</p>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_20">บริการ</th>
+<th data-i18n="agri-insurance-ecosystem_21">รายละเอียด</th>
+<th data-i18n="agri-insurance-ecosystem_22">คุณค่าที่ได้รับ</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_23">1. Digital Insurance Marketplace</td>
+<td data-i18n="agri-insurance-ecosystem_24">รวมผลิตภัณฑ์ประกันภัยจากหลายบริษัท</td>
+<td data-i18n="agri-insurance-ecosystem_25">เกษตรกรเลือกประกันได้ตามความต้องการ</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_26">2. Satellite Risk Assessment</td>
+<td data-i18n="agri-insurance-ecosystem_27">วิเคราะห์ความเสี่ยงจากดาวเทียมและข้อมูลสภาพอากาศ</td>
+<td data-i18n="agri-insurance-ecosystem_28">สนับสนุนการประเมินความเสี่ยงรายแปลง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_29">3. Smart Insurance Enrollment</td>
+<td data-i18n="agri-insurance-ecosystem_30">สมัครประกันผ่านสหกรณ์และระบบดิจิทัล</td>
+<td data-i18n="agri-insurance-ecosystem_31">ลดขั้นตอนการสมัครและการจัดเก็บเอกสาร</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_32">4. Digital Claim Management</td>
+<td data-i18n="agri-insurance-ecosystem_33">แจ้งเหตุ ติดตามสถานะ และจัดเก็บหลักฐานความเสียหาย</td>
+<td data-i18n="agri-insurance-ecosystem_34">เพิ่มความสะดวกในการเรียกร้องสินไหม</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_35">5. Agri-Credit Protection</td>
+<td data-i18n="agri-insurance-ecosystem_36">เชื่อมโยงประกันภัยกับสินเชื่อเกษตร</td>
+<td data-i18n="agri-insurance-ecosystem_37">ลดความเสี่ยงของเกษตรกรและผู้ให้สินเชื่อ</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_38">6. Climate &amp; Carbon Risk</td>
+<td data-i18n="agri-insurance-ecosystem_39">เชื่อมโยงข้อมูลภูมิอากาศ การผลิต และโครงการคาร์บอน</td>
+<td data-i18n="agri-insurance-ecosystem_40">สนับสนุนการบริหารความเสี่ยงระยะยาว</td>
+</tr>
+</tbody></table></div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_41">ข้อควรระวัง: ระบบดาวเทียมและ AI เป็นเครื่องมือสนับสนุนการประเมินความเสี่ยงและตรวจสอบความเสียหาย ไม่ได้หมายความว่าจะใช้แทนหลักเกณฑ์การรับประกันภัยหรือการพิจารณาสินไหมตามกรมธรรม์ได้ทั้งหมด</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_42">โครงสร้างการทำงาน: แบ่งบทบาทเป็น 5 ฝ่าย</h3>
+<div class="role-grid">
+<div class="role-card reveal in">
+<h4><span class="badge-num">1</span><span data-i18n="agri-insurance-ecosystem_67">ฝ่ายที่ 1: เกษตรกร</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_43">ลงทะเบียนข้อมูลเกษตรกรและแปลงเพาะปลูก</li>
+<li data-i18n="agri-insurance-ecosystem_44">เลือกผลิตภัณฑ์ประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_45">ตรวจสอบเบี้ยประกันและความคุ้มครอง</li>
+<li data-i18n="agri-insurance-ecosystem_46">แจ้งความเสียหายผ่าน AgroLink</li>
+<li data-i18n="agri-insurance-ecosystem_47">ติดตามสถานะการเรียกร้องสินไหม</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">2</span><span data-i18n="agri-insurance-ecosystem_68">ฝ่ายที่ 2: สหกรณ์การเกษตร</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_48">เป็นจุดให้บริการประกันภัยในพื้นที่</li>
+<li data-i18n="agri-insurance-ecosystem_49">ช่วยตรวจสอบข้อมูลสมาชิกและแปลงเพาะปลูก</li>
+<li data-i18n="agri-insurance-ecosystem_50">รวบรวมความต้องการประกันภัยของสมาชิก</li>
+<li data-i18n="agri-insurance-ecosystem_51">สนับสนุนการแจ้งเหตุและการจัดเก็บหลักฐาน</li>
+<li data-i18n="agri-insurance-ecosystem_52">เชื่อมโยงการประกันภัยกับการรวบรวมผลผลิตและการจำหน่ายสินค้า</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">3</span><span data-i18n="agri-insurance-ecosystem_69">ฝ่ายที่ 3: บริษัทประกันภัย</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_53">ออกแบบผลิตภัณฑ์และกำหนดเงื่อนไข</li>
+<li data-i18n="agri-insurance-ecosystem_54">ประเมินและรับความเสี่ยงตามสัญญาประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_55">ออกกรมธรรม์</li>
+<li data-i18n="agri-insurance-ecosystem_56">พิจารณาและจ่ายค่าสินไหม</li>
+<li data-i18n="agri-insurance-ecosystem_57">ทำงานร่วมกับบริษัทรับประกันภัยต่อเมื่อเหมาะสม</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">4</span><span data-i18n="agri-insurance-ecosystem_70">ฝ่ายที่ 4: ธนาคารและผู้ให้สินเชื่อ</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_58">พิจารณาสินเชื่อและเงื่อนไขการให้กู้</li>
+<li data-i18n="agri-insurance-ecosystem_59">เชื่อมโยงข้อมูลสินเชื่อกับกรมธรรม์ตามความยินยอมและสิทธิที่เกี่ยวข้อง</li>
+<li data-i18n="agri-insurance-ecosystem_60">พิจารณาการชำระเบี้ยประกันร่วมกับแผนการเบิกสินเชื่อ</li>
+<li data-i18n="agri-insurance-ecosystem_61">กำหนดแนวทางจัดการหนี้เมื่อเกิดภัยพิบัติร่วมกับผู้เกี่ยวข้อง</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">5</span><span data-i18n="agri-insurance-ecosystem_71">ฝ่ายที่ 5: AgroLink</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_62">พัฒนาแพลตฟอร์มและ API</li>
+<li data-i18n="agri-insurance-ecosystem_63">เชื่อมโยงข้อมูลแปลงเพาะปลูกกับระบบประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_64">สนับสนุนการประเมินความเสี่ยงด้วยดาวเทียมและ AI</li>
+<li data-i18n="agri-insurance-ecosystem_65">พัฒนาระบบแจ้งเหตุและติดตามสินไหม</li>
+<li data-i18n="agri-insurance-ecosystem_66">ให้บริการข้อมูลและรายงานแก่สหกรณ์ บริษัทประกันภัย และผู้ให้สินเชื่อตามสิทธิที่ได้รับอนุญาต</li>
+</ul></div>
+</div>
+  </div>
+</section>
+<section class="prose-section" id="sec3">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_9">3. ผลิตภัณฑ์ประกันภัยที่ควรพัฒนา</h2>
+<p data-i18n="agri-insurance-ecosystem_72">ข้อเสนอคือให้แบ่งผลิตภัณฑ์เป็น 3 ระยะ โดยเลือกผลิตภัณฑ์ที่มีตลาดและพันธมิตรพร้อมก่อน แล้วจึงพัฒนาผลิตภัณฑ์ใหม่ร่วมกับบริษัทประกันภัย</p>
+    <h3 data-i18n="agri-insurance-ecosystem_73">ระยะที่ 1: ประกันภัยพืชผล — เริ่มต้นด้วยข้าวและข้าวโพดเลี้ยงสัตว์</h3>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_74">ผลิตภัณฑ์</th>
+<th data-i18n="agri-insurance-ecosystem_75">ความคุ้มครองที่ต้องการ</th>
+<th data-i18n="agri-insurance-ecosystem_76">แนวทางดำเนินการ</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_77">ประกันภัยข้าวนาปี</td>
+<td data-i18n="agri-insurance-ecosystem_78">ภัยธรรมชาติตามเงื่อนไขกรมธรรม์</td>
+<td data-i18n="agri-insurance-ecosystem_79">เชื่อมต่อผลิตภัณฑ์ที่มีอยู่</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_80">ประกันภัยข้าวโพดเลี้ยงสัตว์</td>
+<td data-i18n="agri-insurance-ecosystem_81">ความเสียหายจากภัยที่กำหนดไว้</td>
+<td data-i18n="agri-insurance-ecosystem_82">เชื่อมต่อผลิตภัณฑ์ที่มีอยู่</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_83">ประกันภัยมันสำปะหลัง</td>
+<td data-i18n="agri-insurance-ecosystem_84">ความเสียหายจากภัยที่ระบุในกรมธรรม์</td>
+<td data-i18n="agri-insurance-ecosystem_85">ศึกษาและพัฒนาผลิตภัณฑ์ร่วมกับพันธมิตร</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_86">ประกันภัยข้าวแบบดัชนี</td>
+<td data-i18n="agri-insurance-ecosystem_87">จ่ายสินไหมเมื่อดัชนีที่กำหนดเข้าเงื่อนไข</td>
+<td data-i18n="agri-insurance-ecosystem_88">ทดลองร่วมกับบริษัทประกันภัย</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_89">ประกันภัยผลผลิตรายแปลง</td>
+<td data-i18n="agri-insurance-ecosystem_90">คุ้มครองความเสียหายตามเงื่อนไขที่กำหนด</td>
+<td data-i18n="agri-insurance-ecosystem_91">ศึกษาความเป็นไปได้ในระยะถัดไป</td>
+</tr>
+</tbody></table></div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_92">ข้อเสนอ: อย่าเริ่มด้วยการสร้างกรมธรรม์ใหม่ทั้งหมด ควรเริ่มจากการนำผลิตภัณฑ์ที่มีอยู่แล้วเข้าสู่ AgroLink ก่อน แล้วจึงใช้ข้อมูลจริงเพื่อพัฒนาประกันภัยรูปแบบใหม่ เหตุผลคือประเทศไทยมีระบบประกันภัยข้าวนาปีและข้าวโพดเลี้ยงสัตว์อยู่แล้ว โดยมีทั้งภาครัฐ สมาคมประกันวินาศภัยไทย และบริษัทประกันภัยที่เกี่ยวข้อง จึงมีโครงสร้างเดิมให้ AgroLink เข้าไปเชื่อมต่อได้</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_93">ระยะที่ 2: ประกันภัยที่เชื่อมโยงสินเชื่อเกษตร — จุดที่ AgroLink สร้างความแตกต่างได้มากที่สุด</h3>
+    <h4 data-i18n="agri-insurance-ecosystem_94">A. AgroLink Credit-Linked Insurance</h4>
+<p data-i18n="agri-insurance-ecosystem_95">เชื่อมโยงสินเชื่อกับการประกันภัยตลอดวงจรการผลิต ตัวอย่างการดำเนินงาน:</p>
+<ol class="check-list" style="list-style:decimal;padding-left:20px;">
+<li data-i18n="agri-insurance-ecosystem_96">เกษตรกรลงทะเบียนปลูกข้าวผ่านสหกรณ์</li>
+<li data-i18n="agri-insurance-ecosystem_97">AgroLink ตรวจสอบข้อมูลแปลงและประวัติการผลิต</li>
+<li data-i18n="agri-insurance-ecosystem_98">เกษตรกรยื่นขอสินเชื่อกับ ธ.ก.ส. สหกรณ์ หรือผู้ให้สินเชื่อที่เข้าร่วม</li>
+<li data-i18n="agri-insurance-ecosystem_99">ระบบแสดงผลิตภัณฑ์ประกันภัยที่เหมาะสมกับกิจกรรมการผลิต</li>
+<li data-i18n="agri-insurance-ecosystem_100">ผู้ให้สินเชื่อพิจารณาวงเงินและเงื่อนไขสินเชื่อตามหลักเกณฑ์ของตน</li>
+<li data-i18n="agri-insurance-ecosystem_101">บริษัทประกันภัยพิจารณารับประกันและออกกรมธรรม์</li>
+<li data-i18n="agri-insurance-ecosystem_102">AgroLink ติดตามข้อมูลการผลิตตลอดฤดูกาล</li>
+<li data-i18n="agri-insurance-ecosystem_103">เมื่อเกิดความเสียหาย ระบบสนับสนุนการแจ้งเหตุและส่งข้อมูลให้บริษัทประกันภัยพิจารณาสินไหม</li>
+</ol>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_104">ข้อดีคือเกษตรกรสามารถเข้าถึงสินเชื่อและประกันภัยได้ในกระบวนการเดียวกัน โดยไม่จำเป็นต้องเดินทางติดต่อหลายแห่ง อย่างไรก็ตาม ประกันภัยไม่ใช่การรับประกันว่าจะได้รับสินเชื่อ และการมีกรมธรรม์ไม่ได้ทำให้ผู้ให้สินเชื่อต้องอนุมัติสินเชื่อโดยอัตโนมัติ</p></div>
+    <h4 data-i18n="agri-insurance-ecosystem_105">B. AgroLink Multi-Lender Insurance</h4>
+<p data-i18n="agri-insurance-ecosystem_106">เชื่อมโยงประกันภัยกับผู้ให้สินเชื่อหลายประเภท ได้แก่ ธ.ก.ส. สหกรณ์การเกษตรที่ให้สินเชื่อ ธนาคารพาณิชย์ ผู้ให้บริการสินเชื่อเกษตรที่ได้รับอนุญาต และบริษัทลีสซิ่งเครื่องจักรกลการเกษตร</p>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_107">ประเภทสินเชื่อ</th>
+<th data-i18n="agri-insurance-ecosystem_108">ผลิตภัณฑ์ประกันภัยที่ควรพิจารณา</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_109">สินเชื่อปลูกข้าว</td>
+<td data-i18n="agri-insurance-ecosystem_110">ประกันภัยข้าว</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_111">สินเชื่อปลูกข้าวโพด</td>
+<td data-i18n="agri-insurance-ecosystem_112">ประกันภัยข้าวโพด</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_113">สินเชื่อซื้อรถแทรกเตอร์</td>
+<td data-i18n="agri-insurance-ecosystem_114">ประกันภัยเครื่องจักรและความรับผิดต่อบุคคลภายนอกตามความเหมาะสม</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_115">สินเชื่อซื้อโดรนเกษตร</td>
+<td data-i18n="agri-insurance-ecosystem_116">ประกันภัยโดรนและความรับผิด</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_117">สินเชื่อเลี้ยงโค</td>
+<td data-i18n="agri-insurance-ecosystem_118">ประกันภัยปศุสัตว์</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_119">สินเชื่อเพาะเลี้ยงสัตว์น้ำ</td>
+<td data-i18n="agri-insurance-ecosystem_120">ประกันภัยสัตว์น้ำ หากมีผลิตภัณฑ์ที่รองรับ</td>
+</tr>
+</tbody></table></div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_121">แนวคิดสำคัญคือการเชื่อมโยงสินเชื่อกับประกันภัยโดยไม่จำกัดให้เกษตรกรต้องซื้อประกันจากบริษัทเดียว และต้องเปิดเผยเงื่อนไขให้ชัดเจน</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_122">ระยะที่ 3: ประกันภัยอัจฉริยะด้วยดาวเทียมและ AI</h3>
+<p data-i18n="agri-insurance-ecosystem_123">พัฒนาเป็นบริการที่ใช้ข้อมูลการเกษตรจริงเพื่อสนับสนุนการประเมินความเสี่ยง องค์ประกอบหลัก ได้แก่</p>
+<ul class="check-list">
+<li data-i18n="agri-insurance-ecosystem_124">Satellite Monitoring</li>
+<li data-i18n="agri-insurance-ecosystem_125">Weather Risk Analytics</li>
+<li data-i18n="agri-insurance-ecosystem_126">AI Crop Classification</li>
+<li data-i18n="agri-insurance-ecosystem_127">Vegetation Index Monitoring</li>
+<li data-i18n="agri-insurance-ecosystem_128">Crop Growth Monitoring</li>
+<li data-i18n="agri-insurance-ecosystem_129">Flood and Drought Risk Assessment</li>
+<li data-i18n="agri-insurance-ecosystem_130">Digital Claims Evidence</li>
+<li data-i18n="agri-insurance-ecosystem_131">Agricultural Risk Dashboard</li>
+</ul>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_132">แนวทางนี้มีตัวอย่างการดำเนินงานในประเทศไทยแล้ว โดยกรมส่งเสริมการเกษตร สมาคมประกันวินาศภัยไทย และไทยคมเคยร่วมมือกันนำข้อมูลดาวเทียม Data Analytics และ AI/ML มาใช้สนับสนุนการประกันภัยพืชผล ดังนั้น AgroLink ควรวางตัวเป็นแพลตฟอร์มเชื่อมโยงข้อมูลและขยายบริการสู่เครือข่ายสหกรณ์ มากกว่าพัฒนาระบบประเมินความเสียหายซ้ำซ้อนกับระบบที่มีอยู่แล้ว</p></div>
+  </div>
+</section>
+<section class="prose-section" id="sec4">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_10">4. พันธมิตรที่ควรเชิญร่วมพัฒนา</h2>
+<p data-i18n="agri-insurance-ecosystem_133">ข้อเสนอคือให้แบ่งพันธมิตรเป็น 4 กลุ่ม ได้แก่ สมาคมและหน่วยงานกำกับ สถาบันการเงิน บริษัทประกันภัย และหน่วยงานรัฐ/พันธมิตรเทคโนโลยี</p>
+    <h3 data-i18n="agri-insurance-ecosystem_134">กลุ่มที่ 1: สมาคมประกันวินาศภัยไทย (TGIA)</h3>
+<ul class="check-list">
+<li data-i18n="agri-insurance-ecosystem_135">เป็นพันธมิตรเชิงอุตสาหกรรมในการหารือแนวทางเชื่อมโยงบริษัทประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_136">ให้คำแนะนำเกี่ยวกับโครงสร้างประกันภัยพืชผล</li>
+<li data-i18n="agri-insurance-ecosystem_137">ประสานบริษัทประกันภัยที่มีประสบการณ์ในภาคเกษตร</li>
+<li data-i18n="agri-insurance-ecosystem_138">หารือแนวทางเชื่อมโยงข้อมูลและกระบวนการจัดการสินไหม</li>
+<li data-i18n="agri-insurance-ecosystem_139">ร่วมออกแบบโครงการนำร่องประกันภัยดิจิทัลผ่านสหกรณ์</li>
+</ul>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_140">สมาคมฯ เป็นพันธมิตรที่ควรเข้าพบเป็นลำดับต้น ๆ เพราะมีบทบาทในโครงการประกันภัยพืชผลของประเทศไทยอยู่แล้ว ข้อเสนอความร่วมมือคือจัดทำแนวคิดโครงการ AgroLink Digital Agricultural Insurance Pilot เพื่อหารือความเป็นไปได้ในการเชื่อมโยงแพลตฟอร์มกับบริษัทประกันภัยหลายราย ทั้งนี้ การเข้าร่วมโครงการหรือการรับรองจากสมาคมฯ ต้องได้รับความเห็นชอบจากสมาคมฯ ก่อน ไม่ควรถือว่าเป็นพันธมิตรที่ตกลงเข้าร่วมแล้ว</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_141">กลุ่มที่ 2: ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร (ธ.ก.ส.)</h3>
+<ul class="check-list">
+<li data-i18n="agri-insurance-ecosystem_142">เชื่อมโยงเกษตรกรที่ใช้บริการสินเชื่อกับบริการประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_143">สนับสนุนการกระจายผลิตภัณฑ์ประกันภัยผ่านเครือข่ายเกษตรกรและสหกรณ์</li>
+<li data-i18n="agri-insurance-ecosystem_144">ทดลองรูปแบบ Credit-Linked Insurance</li>
+<li data-i18n="agri-insurance-ecosystem_145">เชื่อมโยงข้อมูลการผลิตกับการประเมินความเสี่ยงตามขอบเขตที่ตกลงกัน</li>
+<li data-i18n="agri-insurance-ecosystem_146">หารือแนวทางลดภาระค่าเบี้ยประกันสำหรับเกษตรกรตามโครงการที่มีสิทธิได้รับการสนับสนุน</li>
+</ul>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_147">ธ.ก.ส. มีผลิตภัณฑ์ประกันภัยที่เกี่ยวข้องกับภาคเกษตรรวมถึงประกันภัยปศุสัตว์บางประเภทอยู่แล้ว จึงเป็นช่องทางสำคัญที่ควรศึกษาเพื่อเชื่อมโยงกับ AgroLink ข้อเสนอเชิงธุรกิจคือ AgroLink ไม่ควรนำเสนอเพียงระบบขายประกันภัย แต่ควรนำเสนอการลดความเสี่ยงตลอดวงจรสินเชื่อ ตั้งแต่ก่อนเพาะปลูก ระหว่างเพาะปลูก จนถึงการจำหน่ายผลผลิต</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_148">กลุ่มที่ 3: บริษัทประกันวินาศภัย</h3>
+<p data-i18n="agri-insurance-ecosystem_149">ควรเริ่มจากบริษัทที่มีประสบการณ์ด้านประกันภัยพืชผล และเปิดรับความร่วมมือด้านเทคโนโลยี บริษัทที่ควรเชิญเข้าหารือ ได้แก่</p>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_150">บริษัท</th>
+<th data-i18n="agri-insurance-ecosystem_151">เหตุผลที่ควรเชิญหารือ</th>
+<th data-i18n="agri-insurance-ecosystem_152">บทบาทที่เสนอ</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_153">กรุงเทพประกันภัย</td>
+<td data-i18n="agri-insurance-ecosystem_154">มีรายชื่ออยู่ในกลุ่มบริษัทที่เคยเข้าร่วมโครงการประกันภัยข้าวนาปี</td>
+<td data-i18n="agri-insurance-ecosystem_155">หารือการเชื่อมต่อผลิตภัณฑ์ประกันภัย</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_156">เออร์โกประกันภัย</td>
+<td data-i18n="agri-insurance-ecosystem_157">มีประสบการณ์จากการเข้าร่วมโครงการประกันภัยพืชผล</td>
+<td data-i18n="agri-insurance-ecosystem_158">หารือผลิตภัณฑ์และกระบวนการรับประกัน</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_159">แอกซ่าประกันภัย</td>
+<td data-i18n="agri-insurance-ecosystem_160">มีรายชื่ออยู่ในกลุ่มบริษัทที่เคยเข้าร่วมโครงการดังกล่าว</td>
+<td data-i18n="agri-insurance-ecosystem_161">หารือความร่วมมือด้านประกันภัยและเทคโนโลยี</td>
+</tr>
+</tbody></table></div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_162">บริษัททั้งสามมีรายชื่อในข้อมูลโครงการประกันภัยข้าวนาปีของสมาคมประกันวินาศภัยไทย แต่การมีรายชื่อในโครงการเดิมไม่ได้ยืนยันว่าบริษัทจะเข้าร่วม AgroLink หรือยังมีผลิตภัณฑ์และเงื่อนไขเดิมในปี 2569 จึงต้องตรวจสอบความพร้อมและข้อเสนอปัจจุบันก่อน</p></div>
+    <h4 data-i18n="agri-insurance-ecosystem_163">วิธีเลือกพันธมิตรประกันภัย</h4>
+<p data-i18n="agri-insurance-ecosystem_164">ไม่จำเป็นต้องเลือกบริษัทเดียวตั้งแต่ต้น ควรเชิญ 3-5 บริษัทเข้าหารือ และใช้เกณฑ์ดังต่อไปนี้</p>
+<ul class="check-list">
+<li data-i18n="agri-insurance-ecosystem_165">มีผลิตภัณฑ์ที่รองรับพืชผลเป้าหมาย</li>
+<li data-i18n="agri-insurance-ecosystem_166">สามารถให้บริการผ่านช่องทางดิจิทัลหรือเชื่อมต่อ API ได้</li>
+<li data-i18n="agri-insurance-ecosystem_167">มีขั้นตอนรับแจ้งเหตุและจัดการสินไหมที่ชัดเจน</li>
+<li data-i18n="agri-insurance-ecosystem_168">มีความพร้อมในการใช้ข้อมูลดาวเทียมและข้อมูลเกษตร</li>
+<li data-i18n="agri-insurance-ecosystem_169">สามารถให้บริการผ่านสหกรณ์หลายจังหวัด</li>
+<li data-i18n="agri-insurance-ecosystem_170">มีเงื่อนไขค่าตอบแทนและการแบ่งบทบาทที่ชัดเจน</li>
+</ul>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_171">แนวทางที่แนะนำ: ให้บริษัทประกันภัยเป็นผู้รับความเสี่ยงและรับผิดชอบกรมธรรม์ ส่วน AgroLink เป็นผู้ให้บริการแพลตฟอร์มและโครงสร้างพื้นฐานข้อมูล</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_172">กลุ่มที่ 4: หน่วยงานรัฐและพันธมิตรเทคโนโลยี</h3>
+    <h4 data-i18n="agri-insurance-ecosystem_173">4.1 สำนักงานเศรษฐกิจการเกษตร (สศก.)</h4>
+<ul class="check-list">
+<li data-i18n="agri-insurance-ecosystem_174">ศึกษาการใช้ข้อมูลการผลิตเพื่อประเมินความเสี่ยง</li>
+<li data-i18n="agri-insurance-ecosystem_175">สนับสนุนการวิเคราะห์ข้อมูลระดับพื้นที่</li>
+<li data-i18n="agri-insurance-ecosystem_176">หารือแนวทางเชื่อมโยงข้อมูลที่หน่วยงานมีสิทธิเผยแพร่หรืออนุญาตให้ใช้</li>
+<li data-i18n="agri-insurance-ecosystem_177">พัฒนาตัวชี้วัดผลกระทบจากภัยพิบัติต่อผลผลิตและรายได้เกษตรกร</li>
+</ul>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_178">สศก. มีความสำคัญต่อการพัฒนาระบบประกันภัยการเกษตรระดับประเทศ โดยภาครัฐได้กำหนดบทบาทในการขับเคลื่อนนโยบายประกันภัยการเกษตรไว้แล้ว</p></div>
+    <h4 data-i18n="agri-insurance-ecosystem_179">4.2 กรมส่งเสริมการเกษตร</h4>
+<ul class="check-list">
+<li data-i18n="agri-insurance-ecosystem_180">สนับสนุนกระบวนการตรวจสอบข้อมูลเกษตรกรตามอำนาจหน้าที่</li>
+<li data-i18n="agri-insurance-ecosystem_181">หารือการเชื่อมโยงข้อมูลทะเบียนเกษตรกร</li>
+<li data-i18n="agri-insurance-ecosystem_182">สนับสนุนการดำเนินงานร่วมกับสำนักงานเกษตรในพื้นที่</li>
+<li data-i18n="agri-insurance-ecosystem_183">ช่วยออกแบบขั้นตอนแจ้งเหตุและรวบรวมข้อมูลความเสียหาย</li>
+</ul>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_184">การเข้าถึงข้อมูลต้องเป็นไปตามสิทธิการใช้งานและข้อตกลงกับหน่วยงานที่เกี่ยวข้อง</p></div>
+    <h4 data-i18n="agri-insurance-ecosystem_185">4.3 บริษัท ไทยคม จำกัด (มหาชน)</h4>
+<ul class="check-list">
+<li data-i18n="agri-insurance-ecosystem_186">ให้บริการหรือประสานการเข้าถึงข้อมูลดาวเทียมที่เหมาะสม</li>
+<li data-i18n="agri-insurance-ecosystem_187">ร่วมพัฒนาแบบจำลองติดตามความเสียหายของพืชผล</li>
+<li data-i18n="agri-insurance-ecosystem_188">สนับสนุนการตรวจสอบความเสียหายจากภัยธรรมชาติ</li>
+<li data-i18n="agri-insurance-ecosystem_189">พัฒนาระบบวิเคราะห์ข้อมูลร่วมกับบริษัทประกันภัย</li>
+</ul>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_190">ไทยคมมีประสบการณ์ความร่วมมือด้านข้อมูลดาวเทียมเพื่อสนับสนุนการประกันภัยพืชผลกับหน่วยงานภาครัฐและสมาคมประกันวินาศภัยไทยมาก่อน จึงเป็นผู้ที่ควรเชิญมาหารือ อย่างไรก็ตาม ไม่จำเป็นต้องใช้ข้อมูลจากผู้ให้บริการรายเดียว AgroLink ควรออกแบบระบบให้รองรับข้อมูลจากดาวเทียมหลายแหล่งตามต้นทุนและความเหมาะสม</p></div>
+  </div>
+</section>
+<section class="prose-section" id="sec5">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_11">5. สถาปัตยกรรมระบบ AgroLink Insurance</h2>
+<p data-i18n="agri-insurance-ecosystem_191">ข้อเสนอคือให้เพิ่มโมดูล Insurance เข้าไปในสถาปัตยกรรม AgroLink เดิม โดยไม่แยกระบบออกไปสร้างแพลตฟอร์มใหม่ ระบบวางเป็นชั้น (layer) ดังนี้: AgroLink Platform เชื่อมกับ AgroLink Agri-Insurance Hub ซึ่งประกอบด้วย 3 กลุ่มโมดูล — Insurance Marketplace, Risk Analytics (ดาวเทียม + AI) และ Claims Management — ทั้งหมดดึงข้อมูลจากชั้น AgroLink Agricultural Data (ข้อมูลเกษตรกรและแปลง กิจกรรมการผลิต ข้อมูลภูมิอากาศและดาวเทียม) แล้วเชื่อมต่อออกไปยังพันธมิตรภายนอกผ่าน Partner Integration API ซึ่งเชื่อมกับบริษัทประกันภัย สหกรณ์ และสถาบันการเงิน</p>
+    <h3 data-i18n="agri-insurance-ecosystem_192">โมดูลที่ต้องพัฒนา</h3>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_193">โมดูล</th>
+<th data-i18n="agri-insurance-ecosystem_194">หน้าที่</th>
+<th data-i18n="agri-insurance-ecosystem_195">ความสำคัญ</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_196">Insurance Product Catalog</td>
+<td data-i18n="agri-insurance-ecosystem_197">แสดงผลิตภัณฑ์และเงื่อนไข</td>
+<td data-i18n="agri-insurance-ecosystem_198">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_199">Insurance Quotation</td>
+<td data-i18n="agri-insurance-ecosystem_200">ขอใบเสนอราคาและเปรียบเทียบเบี้ย</td>
+<td data-i18n="agri-insurance-ecosystem_201">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_202">Digital Enrollment</td>
+<td data-i18n="agri-insurance-ecosystem_203">สมัครประกันและเก็บหลักฐานความยินยอม</td>
+<td data-i18n="agri-insurance-ecosystem_204">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_205">Policy Management</td>
+<td data-i18n="agri-insurance-ecosystem_206">เชื่อมโยงข้อมูลกรมธรรม์</td>
+<td data-i18n="agri-insurance-ecosystem_207">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_208">Satellite Risk Engine</td>
+<td data-i18n="agri-insurance-ecosystem_209">วิเคราะห์ความเสี่ยงรายแปลง</td>
+<td data-i18n="agri-insurance-ecosystem_210">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_211">Claim Notification</td>
+<td data-i18n="agri-insurance-ecosystem_212">แจ้งเหตุและส่งหลักฐาน</td>
+<td data-i18n="agri-insurance-ecosystem_213">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_214">Claim Tracking</td>
+<td data-i18n="agri-insurance-ecosystem_215">ติดตามสถานะการพิจารณาสินไหม</td>
+<td data-i18n="agri-insurance-ecosystem_216">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_217">Cooperative Dashboard</td>
+<td data-i18n="agri-insurance-ecosystem_218">บริหารสมาชิกและกรมธรรม์</td>
+<td data-i18n="agri-insurance-ecosystem_219">สูง</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_220">Lender Integration</td>
+<td data-i18n="agri-insurance-ecosystem_221">เชื่อมโยงข้อมูลกับผู้ให้สินเชื่อ</td>
+<td data-i18n="agri-insurance-ecosystem_222">ระยะที่ 2</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_223">Insurance Analytics</td>
+<td data-i18n="agri-insurance-ecosystem_224">วิเคราะห์ความเสี่ยงและผลการดำเนินงาน</td>
+<td data-i18n="agri-insurance-ecosystem_225">ระยะที่ 2</td>
+</tr>
+</tbody></table></div>
+    <h3 data-i18n="agri-insurance-ecosystem_226">หลักการออกแบบที่สำคัญ</h3>
+<p data-i18n="agri-insurance-ecosystem_227">AgroLink ควรมีระบบเชื่อมต่อกับบริษัทประกันภัยหลายแห่ง เพื่อไม่ให้แพลตฟอร์มผูกขาดกับผู้ให้บริการรายเดียว บริษัทประกันภัยแต่ละแห่งอาจใช้ระบบภายในต่างกัน จึงควรพัฒนา API Gateway และรูปแบบข้อมูลมาตรฐานสำหรับข้อมูลกรมธรรม์ เบี้ยประกัน ความคุ้มครอง และสถานะสินไหม</p>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_228">ข้อมูลการเกษตรและข้อมูลกรมธรรม์ต้องแยกสิทธิการเข้าถึงอย่างชัดเจน พร้อมมีบันทึกการใช้งาน การรักษาความปลอดภัย และกระบวนการจัดการข้อมูลส่วนบุคคลตามกฎหมาย PDPA</p></div>
+  </div>
+</section>
+<section class="prose-section" id="sec6">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_12">6. โมเดลรายได้: ค่านายหน้าประกันภัยและการแบ่งรายได้ให้สหกรณ์</h2>
+<p data-i18n="agri-insurance-ecosystem_229">ข้อเสนอที่ปรับปรุงคือให้ AgroLink ดำเนินการในฐานะนายหน้าประกันภัย (Insurance Broker) เก็บค่าบริการนายหน้าประกันภัย (Brokerage Fee) จากบริษัทผู้รับประกันภัยตามอัตราที่ตกลงในสัญญา เมื่อเกษตรกรสมัครกรมธรรม์ผ่านแพลตฟอร์ม โดย AgroLink จะแบ่งรายได้ส่วนนี้ให้สหกรณ์การเกษตรที่เป็นช่องทางให้บริการและดูแลสมาชิกในพื้นที่ในอัตรา 40% ของค่านายหน้าที่ได้รับ เพื่อสร้างแรงจูงใจให้สหกรณ์มีส่วนร่วมในการดูแลสมาชิกและกระบวนการสมัครประกันภัยอย่างต่อเนื่อง</p>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_230">ผู้รับส่วนแบ่งรายได้</th>
+<th data-i18n="agri-insurance-ecosystem_231">สัดส่วน</th>
+<th data-i18n="agri-insurance-ecosystem_232">เหตุผล</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_233">AgroLink</td>
+<td data-i18n="agri-insurance-ecosystem_234">60%</td>
+<td data-i18n="agri-insurance-ecosystem_235">ค่าบริการแพลตฟอร์ม โครงสร้างพื้นฐานข้อมูล และการดำเนินงานในฐานะนายหน้าประกันภัย</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_236">สหกรณ์การเกษตร</td>
+<td data-i18n="agri-insurance-ecosystem_237">40%</td>
+<td data-i18n="agri-insurance-ecosystem_238">ค่าตอบแทนช่องทางให้บริการในพื้นที่ การดูแลสมาชิก และการสนับสนุนกระบวนการสมัคร/แจ้งเหตุ</td>
+</tr>
+</tbody></table></div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_239">ข้อควรระวังด้านกฎหมาย: การดำเนินการในฐานะนายหน้าประกันภัยและการรับค่าตอบแทนจากการเสนอขาย ชักชวน หรือจัดจำหน่ายประกันภัย ต้องมีใบอนุญาตนายหน้าประกันภัยตามกฎหมายว่าด้วยการประกันวินาศภัย การแบ่งรายได้ให้สหกรณ์ในสัดส่วน 40% ก็ต้องเป็นไปตามหลักเกณฑ์ที่กฎหมายอนุญาต เช่น สหกรณ์อาจต้องขึ้นทะเบียนเป็นนายหน้าประกันภัยร่วมหรือตัวแทน หรือได้รับค่าตอบแทนในรูปแบบอื่นที่สอดคล้องกับกฎหมาย AgroLink จึงควรให้ที่ปรึกษากฎหมายและสำนักงาน คปภ. ตรวจสอบโครงสร้างธุรกิจและรูปแบบการแบ่งรายได้นี้ให้ชัดเจนก่อนเริ่มดำเนินการจริง</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_240">ตัวอย่างประมาณการรายได้ (สมมติฐานเพื่อการวางแผนเท่านั้น)</h3>
+<p data-i18n="agri-insurance-ecosystem_241">สมมติเบี้ยประกันเฉลี่ย 1,000 บาทต่อกรมธรรม์ และอัตราค่านายหน้าประกันภัยเฉลี่ย 15% ของเบี้ยประกัน (ตัวเลขสมมติเพื่อประกอบการวางแผน อัตราจริงต้องกำหนดตามข้อตกลงกับบริษัทประกันภัยแต่ละรายและเป็นไปตามเกณฑ์ที่กฎหมายอนุญาต) จะได้ค่านายหน้าประมาณ 150 บาทต่อกรมธรรม์ แบ่งเป็น AgroLink 90 บาท และสหกรณ์ 60 บาท</p>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_242">จำนวนกรมธรรม์</th>
+<th data-i18n="agri-insurance-ecosystem_243">ค่านายหน้ารวม</th>
+<th data-i18n="agri-insurance-ecosystem_244">AgroLink (60%)</th>
+<th data-i18n="agri-insurance-ecosystem_245">สหกรณ์ (40%)</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_246">1,000 กรมธรรม์</td>
+<td data-i18n="agri-insurance-ecosystem_247">150,000 บาท</td>
+<td data-i18n="agri-insurance-ecosystem_248">90,000 บาท</td>
+<td data-i18n="agri-insurance-ecosystem_249">60,000 บาท</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_250">10,000 กรมธรรม์</td>
+<td data-i18n="agri-insurance-ecosystem_251">1,500,000 บาท</td>
+<td data-i18n="agri-insurance-ecosystem_252">900,000 บาท</td>
+<td data-i18n="agri-insurance-ecosystem_253">600,000 บาท</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_254">50,000 กรมธรรม์</td>
+<td data-i18n="agri-insurance-ecosystem_255">7,500,000 บาท</td>
+<td data-i18n="agri-insurance-ecosystem_256">4,500,000 บาท</td>
+<td data-i18n="agri-insurance-ecosystem_257">3,000,000 บาท</td>
+</tr>
+</tbody></table></div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_258">ตัวเลขนี้เป็นตัวอย่างสมมติสำหรับวางแผนธุรกิจ ไม่ใช่ราคาตลาดหรือรายได้ที่รับประกันว่าจะเกิดขึ้น และยังไม่รวมค่าพัฒนาระบบ ค่าบริการวิเคราะห์ข้อมูล และค่าใช้จ่ายในการดำเนินงาน อัตราค่านายหน้าจริงอาจแตกต่างกันตามประเภทผลิตภัณฑ์และข้อตกลงกับแต่ละบริษัทประกันภัย</p></div>
+<p data-i18n="agri-insurance-ecosystem_259">นอกเหนือจากค่านายหน้าประกันภัย AgroLink อาจพิจารณารายได้เสริมจากค่าบริการระบบ SaaS สำหรับสหกรณ์ ค่าพัฒนาและเชื่อมต่อ API กับบริษัทประกันภัย และค่าบริการวิเคราะห์ข้อมูลความเสี่ยงให้กับบริษัทประกันภัยหรือองค์กรที่ต้องการ ซึ่งสามารถออกแบบเป็นสัญญาบริการเทคโนโลยีที่ชัดเจน แยกจากรายได้ค่านายหน้าประกันภัย</p>
+  </div>
+</section>
+<section class="prose-section" id="sec7">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_13">7. แผนโครงการนำร่อง 12 เดือน</h2>
+<p data-i18n="agri-insurance-ecosystem_260">ข้อเสนอคือให้เริ่มจาก 10 สหกรณ์การเกษตร และเกษตรกรปลูกข้าวประมาณ 1,000 ราย โดยเลือกพื้นที่ที่มีข้อมูลแปลงเพาะปลูกค่อนข้างพร้อม และมีบริษัทประกันภัยที่ยินดีร่วมพัฒนากระบวนการ</p>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_261">ระยะเวลา</th>
+<th data-i18n="agri-insurance-ecosystem_262">กิจกรรม</th>
+<th data-i18n="agri-insurance-ecosystem_263">ผลลัพธ์</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_264">เดือน 1-2</td>
+<td data-i18n="agri-insurance-ecosystem_265">ตรวจสอบโครงสร้างธุรกิจกับที่ปรึกษากฎหมายและสำนักงาน คปภ. พร้อมหารือสมาคมประกันวินาศภัยไทย ธ.ก.ส. และบริษัทประกันภัย</td>
+<td data-i18n="agri-insurance-ecosystem_266">ยืนยันโครงสร้างนายหน้าประกันภัยที่ถูกต้องตามกฎหมาย ได้พันธมิตรที่สนใจและขอบเขตโครงการ</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_267">เดือน 3-4</td>
+<td data-i18n="agri-insurance-ecosystem_268">สำรวจผลิตภัณฑ์ประกันภัยและกระบวนการทำงาน</td>
+<td data-i18n="agri-insurance-ecosystem_269">ได้ข้อกำหนดระบบและแบบจำลองธุรกิจ</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_270">เดือน 5-6</td>
+<td data-i18n="agri-insurance-ecosystem_271">พัฒนา Insurance Marketplace และ API ขั้นต้น</td>
+<td data-i18n="agri-insurance-ecosystem_272">ระบบต้นแบบพร้อมทดสอบ</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_273">เดือน 7-8</td>
+<td data-i18n="agri-insurance-ecosystem_274">เชื่อมโยงข้อมูลสหกรณ์และข้อมูลแปลง</td>
+<td data-i18n="agri-insurance-ecosystem_275">ทดลองลงทะเบียนและแสดงผลิตภัณฑ์</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_276">เดือน 9-10</td>
+<td data-i18n="agri-insurance-ecosystem_277">ทดลองแจ้งเหตุและติดตามสถานะสินไหม</td>
+<td data-i18n="agri-insurance-ecosystem_278">ได้กระบวนการทำงานจริงสำหรับประเมินผล</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_279">เดือน 11-12</td>
+<td data-i18n="agri-insurance-ecosystem_280">ประเมินผลและปรับปรุง</td>
+<td data-i18n="agri-insurance-ecosystem_281">ได้รายงานผลและแผนขยายบริการ</td>
+</tr>
+</tbody></table></div>
+    <h3 data-i18n="agri-insurance-ecosystem_282">KPI ที่ควรกำหนด</h3>
+<ol class="check-list" style="list-style:decimal;padding-left:20px;">
+<li data-i18n="agri-insurance-ecosystem_283">สหกรณ์เข้าร่วมโครงการ 10 แห่ง</li>
+<li data-i18n="agri-insurance-ecosystem_284">เกษตรกรลงทะเบียน 1,000 ราย</li>
+<li data-i18n="agri-insurance-ecosystem_285">เกษตรกรที่มีข้อมูลแปลงพร้อมใช้งานไม่น้อยกว่า 80%</li>
+<li data-i18n="agri-insurance-ecosystem_286">มีผลิตภัณฑ์ประกันภัยที่ผ่านการตรวจสอบและพร้อมเสนอขายอย่างน้อย 1-2 ผลิตภัณฑ์</li>
+<li data-i18n="agri-insurance-ecosystem_287">วัดอัตราการสมัครประกันภัยจากผู้ที่มีสิทธิและได้รับข้อเสนอ</li>
+<li data-i18n="agri-insurance-ecosystem_288">วัดระยะเวลาการส่งข้อมูลแจ้งเหตุไปยังบริษัทประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_289">วัดความครบถ้วนของเอกสารและข้อมูลประกอบการเรียกร้องสินไหม</li>
+<li data-i18n="agri-insurance-ecosystem_290">วัดความพึงพอใจของเกษตรกรและสหกรณ์</li>
+<li data-i18n="agri-insurance-ecosystem_291">ประเมินต้นทุนการให้บริการต่อเกษตรกรหนึ่งราย</li>
+<li data-i18n="agri-insurance-ecosystem_292">ประเมินความเป็นไปได้ในการขยายสู่ 50 สหกรณ์</li>
+</ol>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_293">ควรกำหนดตัวชี้วัดเรื่องการจ่ายสินไหมและระยะเวลาการพิจารณาสินไหมร่วมกับบริษัทประกันภัย โดยแยกเวลาที่ AgroLink ควบคุมได้ออกจากเวลาพิจารณาของบริษัทประกันภัย</p></div>
+  </div>
+</section>
+<section class="prose-section" id="sec8">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_14">8. กลยุทธ์สำคัญ: เชื่อมโยงกับห่วงโซ่คุณค่าการเกษตร</h2>
+<p data-i18n="agri-insurance-ecosystem_294">จุดแข็งของ AgroLink คือการเชื่อมโยงบริการตลอดวงจรการผลิต ไม่ใช่เพียงการขายประกันภัย ตัวอย่างระบบข้าวครบวงจรแบ่งเป็น 4 ขั้นตอน</p>
+<div class="role-grid">
+<div class="role-card reveal in">
+<h4><span class="badge-num">1</span><span data-i18n="agri-insurance-ecosystem_295">ขั้นที่ 1: ก่อนปลูก</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_296">ขึ้นทะเบียนเกษตรกรและแปลงเพาะปลูก</li>
+<li data-i18n="agri-insurance-ecosystem_297">วิเคราะห์ความเสี่ยงของพื้นที่</li>
+<li data-i18n="agri-insurance-ecosystem_298">เลือกประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_299">พิจารณาสินเชื่อและแผนต้นทุนการผลิต</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">2</span><span data-i18n="agri-insurance-ecosystem_300">ขั้นที่ 2: ระหว่างปลูก</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_301">ติดตามสภาพแปลงด้วยดาวเทียม</li>
+<li data-i18n="agri-insurance-ecosystem_302">บันทึกกิจกรรมการผลิต</li>
+<li data-i18n="agri-insurance-ecosystem_303">ตรวจสอบสัญญาณความเสี่ยงจากภัยแล้งและน้ำท่วม</li>
+<li data-i18n="agri-insurance-ecosystem_304">สนับสนุนการแจ้งเตือนและการปฏิบัติตามแนวทางลดความเสียหาย</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">3</span><span data-i18n="agri-insurance-ecosystem_305">ขั้นที่ 3: เมื่อเกิดภัยพิบัติ</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_306">แจ้งเหตุผ่าน AgroLink</li>
+<li data-i18n="agri-insurance-ecosystem_307">ส่งข้อมูลแปลงและหลักฐานประกอบ</li>
+<li data-i18n="agri-insurance-ecosystem_308">ประสานการตรวจสอบกับบริษัทประกันภัย</li>
+<li data-i18n="agri-insurance-ecosystem_309">ติดตามสถานะการพิจารณาสินไหม</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">4</span><span data-i18n="agri-insurance-ecosystem_310">ขั้นที่ 4: เก็บเกี่ยวและขายผลผลิต</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_311">เชื่อมโยงเกษตรกรกับสหกรณ์และผู้รับซื้อ</li>
+<li data-i18n="agri-insurance-ecosystem_312">บันทึกปริมาณผลผลิตจริง</li>
+<li data-i18n="agri-insurance-ecosystem_313">ใช้ข้อมูลประกอบการประเมินความเสี่ยงในฤดูกาลถัดไป</li>
+<li data-i18n="agri-insurance-ecosystem_314">สนับสนุนการวางแผนชำระสินเชื่อตามข้อตกลงกับผู้ให้สินเชื่อ</li>
+</ul></div>
+</div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_315">การเชื่อมโยงข้อมูลเหล่านี้อาจช่วยให้บริษัทประกันภัยประเมินความเสี่ยงได้ละเอียดขึ้น และช่วยให้ผู้ให้สินเชื่อมีข้อมูลประกอบการตัดสินใจมากขึ้น แต่ผลลัพธ์ดังกล่าวต้องผ่านการทดสอบจากข้อมูลจริงก่อนนำไปใช้กำหนดเบี้ยประกันหรือวงเงินสินเชื่อ</p></div>
+  </div>
+</section>
+<section class="prose-section" id="sec9">
+  <div class="container prose-block reveal in" style="max-width:860px;">
+    <h2 data-i18n="agri-insurance-ecosystem_15">9. ข้อเสนอที่ควรดำเนินการทันที</h2>
+<p data-i18n="agri-insurance-ecosystem_316">ลำดับการดำเนินงานที่แนะนำ โดยเพิ่มการตรวจสอบโครงสร้างธุรกิจกับที่ปรึกษากฎหมายเป็นลำดับแรกสุด เนื่องจากโมเดลรายได้ที่ปรับปรุงใหม่อิงกับสถานะนายหน้าประกันภัยโดยตรง</p>
+<div class="role-grid">
+<div class="role-card reveal in">
+<h4><span class="badge-num">1</span><span data-i18n="agri-insurance-ecosystem_317">อันดับ 1 — ตรวจสอบโครงสร้างธุรกิจกับที่ปรึกษากฎหมายและ คปภ.</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_318">ยืนยันว่าการดำเนินการในฐานะนายหน้าประกันภัยและการแบ่งรายได้ให้สหกรณ์ 40% เป็นไปตามกฎหมาย</li>
+<li data-i18n="agri-insurance-ecosystem_319">กำหนดรูปแบบใบอนุญาตที่ AgroLink และ/หรือสหกรณ์ต้องมี</li>
+<li data-i18n="agri-insurance-ecosystem_320">จัดทำร่างสัญญานายหน้าประกันภัยและสัญญาแบ่งรายได้ให้ถูกต้องตามกฎหมาย</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">2</span><span data-i18n="agri-insurance-ecosystem_321">อันดับ 2 — เข้าหารือสมาคมประกันวินาศภัยไทย</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_322">หาบริษัทประกันภัยที่พร้อมเข้าร่วมโครงการนำร่อง</li>
+<li data-i18n="agri-insurance-ecosystem_323">ตรวจสอบว่าผลิตภัณฑ์ใดสามารถนำมาให้บริการผ่านแพลตฟอร์มได้ทันที</li>
+</ul></div>
+</div>
+<div class="role-grid">
+<div class="role-card reveal in">
+<h4><span class="badge-num">3</span><span data-i18n="agri-insurance-ecosystem_324">อันดับ 3 — เข้าหารือ ธ.ก.ส.</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_325">นำเสนอ AgroLink ในฐานะระบบสนับสนุนการเข้าถึงประกันภัยและการบริหารความเสี่ยงของเกษตรกร</li>
+<li data-i18n="agri-insurance-ecosystem_326">เริ่มจากเครือข่ายสหกรณ์การเกษตร</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">4</span><span data-i18n="agri-insurance-ecosystem_327">อันดับ 4 — เชิญบริษัทประกันภัย 3-5 แห่ง และพัฒนา Insurance Marketplace รุ่นแรก</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_328">เปิดให้หลายบริษัทนำเสนอผลิตภัณฑ์และเงื่อนไข เพื่อให้เกษตรกรเปรียบเทียบทางเลือกได้</li>
+<li data-i18n="agri-insurance-ecosystem_329">เริ่มจากระบบแสดงผลิตภัณฑ์ เปรียบเทียบความคุ้มครอง ส่งข้อมูลสมัคร และติดตามสถานะกรมธรรม์ก่อน ไม่ต้องรอระบบ AI ที่ซับซ้อนทั้งหมด</li>
+</ul></div>
+</div>
+<div class="role-grid">
+<div class="role-card reveal in">
+<h4><span class="badge-num">5</span><span data-i18n="agri-insurance-ecosystem_330">อันดับ 5 — เชื่อมโยงข้อมูลดาวเทียมและ AI</span></h4>
+<ul>
+<li data-i18n="agri-insurance-ecosystem_331">เมื่อมีข้อมูลการผลิตและข้อมูลกรมธรรม์จากโครงการนำร่องแล้ว</li>
+<li data-i18n="agri-insurance-ecosystem_332">จึงพัฒนาระบบประเมินความเสี่ยงและตรวจสอบความเสียหายให้แม่นยำขึ้น</li>
+</ul></div>
+</div>
+    <h3 data-i18n="agri-insurance-ecosystem_333">ภาพรวมโมเดลธุรกิจที่ควรนำเสนอพันธมิตร</h3>
+<div class="data-table-wrap"><table class="data-table">
+<thead><tr>
+<th data-i18n="agri-insurance-ecosystem_334">องค์ประกอบ</th>
+<th data-i18n="agri-insurance-ecosystem_335">ผู้รับผิดชอบหลัก</th>
+<th data-i18n="agri-insurance-ecosystem_336">รายได้หรือประโยชน์</th>
+</tr></thead>
+<tbody>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_337">Digital Platform</td>
+<td data-i18n="agri-insurance-ecosystem_338">AgroLink</td>
+<td data-i18n="agri-insurance-ecosystem_339">ค่าบริการนายหน้าประกันภัย (60% ของค่านายหน้า)</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_340">Insurance Products</td>
+<td data-i18n="agri-insurance-ecosystem_341">บริษัทประกันภัย</td>
+<td data-i18n="agri-insurance-ecosystem_342">เบี้ยประกันภัยตามกรมธรรม์</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_343">Farmer Distribution</td>
+<td data-i18n="agri-insurance-ecosystem_344">สหกรณ์การเกษตร</td>
+<td data-i18n="agri-insurance-ecosystem_345">ส่วนแบ่งค่านายหน้าประกันภัย (40%) และการขยายการเข้าถึงเกษตรกร</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_346">Credit Integration</td>
+<td data-i18n="agri-insurance-ecosystem_347">ธ.ก.ส. และผู้ให้สินเชื่อ</td>
+<td data-i18n="agri-insurance-ecosystem_348">สนับสนุนการบริหารความเสี่ยงสินเชื่อ</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_349">Satellite Analytics</td>
+<td data-i18n="agri-insurance-ecosystem_350">AgroLink และพันธมิตรข้อมูล</td>
+<td data-i18n="agri-insurance-ecosystem_351">ค่าบริการวิเคราะห์ข้อมูล (รายได้เสริม)</td>
+</tr>
+<tr>
+<td data-i18n="agri-insurance-ecosystem_352">Claims Assessment</td>
+<td data-i18n="agri-insurance-ecosystem_353">บริษัทประกันภัยและผู้เกี่ยวข้อง</td>
+<td data-i18n="agri-insurance-ecosystem_354">การตรวจสอบและพิจารณาสินไหม</td>
+</tr>
+</tbody></table></div>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_355">ข้อเสนอที่สำคัญคือไม่ควรให้ AgroLink เป็นผู้รับความเสี่ยงจากกรมธรรม์ แต่ควรเป็นโครงสร้างพื้นฐานดิจิทัลที่ทำให้บริษัทประกันภัยสามารถเข้าถึงเกษตรกรและข้อมูลการผลิตได้อย่างมีประสิทธิภาพ โดยมีรายได้หลักจากค่านายหน้าประกันภัยที่แบ่งปันอย่างเป็นธรรมกับสหกรณ์ผู้เป็นช่องทางให้บริการ</p></div>
+    <h3 data-i18n="agri-insurance-ecosystem_356">บทสรุปเชิงกลยุทธ์: Insurance-as-a-Service for Agriculture</h3>
+<p data-i18n="agri-insurance-ecosystem_357">ข้อเสนอคือให้ AgroLink ใช้แนวทาง Insurance-as-a-Service for Agriculture โดยเชื่อมโยงประกันภัยเข้ากับ 4 ระบบหลัก ได้แก่ Cooperative OS ที่ใช้สหกรณ์เป็นช่องทางเข้าถึงเกษตรกร Agri Credit &amp; Multi-Lender ที่เชื่อมโยงประกันภัยกับสินเชื่อเกษตร AI &amp; Satellite ที่สนับสนุนการประเมินความเสี่ยงและตรวจสอบความเสียหาย และ Marketplace &amp; Value Chain ที่เชื่อมโยงการผลิต การประกันภัย และการจำหน่ายผลผลิต โมเดลนี้ทำให้ AgroLink มีโอกาสสร้างรายได้จากค่านายหน้าประกันภัยและบริการเทคโนโลยี โดยไม่ต้องลงทุนรับความเสี่ยงด้านการประกันภัยเอง และยังสร้างแรงจูงใจให้สหกรณ์ร่วมขับเคลื่อนบริการผ่านส่วนแบ่งรายได้ 40%</p>
+<div class="note-block reveal in"><p data-i18n="agri-insurance-ecosystem_358">ข้อเสนอที่ควรดำเนินการเป็นลำดับแรก คือจัดทำโครงการ &quot;AgroLink Digital Agricultural Insurance Pilot&quot; ระยะเวลา 12 เดือน ร่วมกับสมาคมประกันวินาศภัยไทย ธ.ก.ส. บริษัทประกันภัย และสหกรณ์การเกษตร 10 แห่ง เพื่อทดสอบระบบประกันภัยข้าวที่เชื่อมโยงข้อมูลแปลงเพาะปลูก ดาวเทียม สินเชื่อ และกระบวนการเรียกร้องสินไหม โดยต้องผ่านการตรวจสอบโครงสร้างธุรกิจนายหน้าประกันภัยกับที่ปรึกษากฎหมายและสำนักงาน คปภ. ก่อนเริ่มดำเนินการจริง หากโครงการนำร่องประสบความสำเร็จ AgroLink จะสามารถขยายไปยังข้าวโพด มันสำปะหลัง ปศุสัตว์ และประมง พร้อมสร้างบริการประกันภัยที่เชื่อมโยงกับระบบนิเวศการเกษตรครบวงจรได้ในระยะต่อไป</p></div>
+  </div>
+</section>
+<section class="prose-section" style="text-align:center;">
+  <div class="container reveal in" style="max-width:720px;">
+    <h2 data-i18n="agri-insurance-ecosystem_359">สนใจพัฒนาบริการประกันภัยร่วมกับ AgroLink</h2>
+    <p style="margin:14px 0 26px;color:var(--muted);" data-i18n="agri-insurance-ecosystem_360">ไม่ว่าจะในฐานะบริษัทประกันภัย สถาบันการเงิน สหกรณ์การเกษตร หรือหน่วยงานภาครัฐ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+    <a href="index.html#contact" class="btn btn-primary" style="padding:14px 28px;font-size:15px;margin-right:10px;" data-i18n="agri-insurance-ecosystem_361">ติดต่อทีมงาน AgroLink</a>
+    <a href="index.html" class="btn btn-outline" style="padding:14px 28px;font-size:15px;" data-i18n="agri-insurance-ecosystem_362">กลับหน้าแรก</a>
+  </div>
+</section>
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-shield-halved"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+          <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
+          <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
+          <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-agri-insurance-ecosystem.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
