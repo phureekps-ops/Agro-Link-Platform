@@ -358,5 +358,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "ai-satellite-guide_89": {
     "th": " ติดต่อทีมงาน",
     "en": " Contact the Team"
+  },
+  "ai-satellite-guide_90": {
+    "th": "อินโฟกราฟิกเครือข่ายข้อมูลดาวเทียมและ AI สู่ Big Data การเกษตร แสดงข้อมูลจากดาวเทียมสำรวจโลก (Sentinel-1, Sentinel-2, Theos-2) และระบบ AI ภาคสนาม 7 ระบบ (ตรวจคุณภาพเมล็ดพันธุ์ข้าว/ข้าวโพด/มันสำปะหลัง วัดคุณภาพน้ำ สแกนคุณภาพทุเรียน สแกนมวลเนื้อโคเนื้อ ควบคุมความชื้น/อุณหภูมิโรงเรือน คาดการณ์เตือนภัยพิบัติ และติดตามกิจกรรมแปลงปลูกแบบ Realtime) จากแปลงปลูกและฟาร์มเลี้ยงสัตว์ รวมเป็น Big Data การเกษตร ผ่าน AgroLink Platform เชื่อมโยงไปยังหน่วยงานภาครัฐ (สหกรณ์การเกษตร กรมปศุสัตว์ กรมส่งเสริมการเกษตร กรมส่งเสริมสหกรณ์ กรมประมง กรมการข้าว) และสถาบันการเงิน/พันธมิตร (ธ.ก.ส. สถาบันการเงิน พันธมิตรผู้ซื้อ) รวม 9 หน่วยงาน",
+    "en": "Infographic of the satellite and AI data network feeding agricultural Big Data, showing Earth observation satellites (Sentinel-1, Sentinel-2, Theos-2) and 7 field AI systems (rice/corn/cassava seed quality inspection, water quality measurement, durian quality scanning, cattle meat mass scanning, greenhouse humidity/temperature control, disaster forecasting and warning, and real-time field activity monitoring) from fields and livestock farms, combined into agricultural Big Data via AgroLink Platform and connected to government agencies (Agricultural Cooperatives, Department of Livestock Development, Department of Agricultural Extension, Cooperative Promotion Department, Department of Fisheries, Rice Department) and financial institutions/partners (BAAC, financial institutions, buyer partners) — 9 agencies in total"
+  },
+  "ai-satellite-guide_91": {
+    "th": "เครือข่ายข้อมูลดาวเทียมและ AI สู่ Big Data การเกษตร — เชื่อมโยงแปลงปลูกและฟาร์มเลี้ยงสัตว์ ผ่าน AgroLink Platform สู่หน่วยงานภาครัฐและสถาบันการเงินพันธมิตร 9 หน่วยงาน",
+    "en": "Satellite and AI data network for agricultural Big Data — connecting fields and livestock farms via AgroLink Platform to 9 government and financial-institution partner agencies"
   }
 });

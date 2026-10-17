@@ -134,6 +134,12 @@
   .prose-block p { margin-bottom: 16px; font-size: 15.5px; }
   .prose-block p:last-child { margin-bottom: 0; }
 
+  /* INFOGRAPHIC */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img { display:block; width:100%; height:auto; border-radius:var(--radius); border:1px solid var(--border); box-shadow:0 10px 30px rgba(31,56,100,.12); }
+  .infographic-figure figcaption { margin-top:14px; text-align:center; font-size:13.5px; color:var(--muted); }
+
   /* CARD GRID (AI systems / agencies) */
   .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; max-width: 1080px; margin: 0 auto; }
   @media (max-width: 900px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -280,6 +286,15 @@
       <a href="knowledge/satellite-yield.html" class="btn btn-gold"><i class="fa-solid fa-satellite"></i><span data-i18n="ai-satellite-guide_4"> อ่านบทความเชิงลึกเรื่องดาวเทียม</span></a>
       <a href="coop-portal.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-people-roof"></i><span data-i18n="ai-satellite-guide_5"> ดูพอร์ทัลสหกรณ์แบบเต็ม</span></a>
     </div>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/ai-satellite-bigdata-network-infographic.jpg" data-i18n="ai-satellite-guide_90" data-i18n-attr="alt" alt="อินโฟกราฟิกเครือข่ายข้อมูลดาวเทียมและ AI สู่ Big Data การเกษตร แสดงข้อมูลจากดาวเทียมสำรวจโลก (Sentinel-1, Sentinel-2, Theos-2) และระบบ AI ภาคสนาม 7 ระบบ (ตรวจคุณภาพเมล็ดพันธุ์ข้าว/ข้าวโพด/มันสำปะหลัง วัดคุณภาพน้ำ สแกนคุณภาพทุเรียน สแกนมวลเนื้อโคเนื้อ ควบคุมความชื้น/อุณหภูมิโรงเรือน คาดการณ์เตือนภัยพิบัติ และติดตามกิจกรรมแปลงปลูกแบบ Realtime) จากแปลงปลูกและฟาร์มเลี้ยงสัตว์ รวมเป็น Big Data การเกษตร ผ่าน AgroLink Platform เชื่อมโยงไปยังหน่วยงานภาครัฐ (สหกรณ์การเกษตร กรมปศุสัตว์ กรมส่งเสริมการเกษตร กรมส่งเสริมสหกรณ์ กรมประมง กรมการข้าว) และสถาบันการเงิน/พันธมิตร (ธ.ก.ส. สถาบันการเงิน พันธมิตรผู้ซื้อ) รวม 9 หน่วยงาน" loading="lazy">
+      <figcaption data-i18n="ai-satellite-guide_91">เครือข่ายข้อมูลดาวเทียมและ AI สู่ Big Data การเกษตร — เชื่อมโยงแปลงปลูกและฟาร์มเลี้ยงสัตว์ ผ่าน AgroLink Platform สู่หน่วยงานภาครัฐและสถาบันการเงินพันธมิตร 9 หน่วยงาน</figcaption>
+    </figure>
   </div>
 </section>
 
