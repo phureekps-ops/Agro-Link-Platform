@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — เข้าสู่ระบบผู้ให้บริการประกันภัย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="leaf">🛡️</span>
+      <h1>AgroLink Platform</h1>
+    </div>
+    <p class="login-sub">พอร์ทัลผู้ให้บริการประกันภัย — ภาพรวมกรมธรรม์ ข้อมูลความเสี่ยงจากดาวเทียม/AI คำร้องขอสินไหมทดแทน และเครือข่ายสหกรณ์คู่สัญญา</p>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="claimInput">รหัสยืนยันตัวตนองค์กร (ตัวอย่าง)</label>
+        <input type="text" id="claimInput" placeholder="เช่น ชื่อบริษัทประกันภัยของท่าน" autocomplete="off" required />
+        <div class="hint">
+          หมายเหตุ: หน้านี้เป็น<strong>ตัวอย่างพอร์ทัล</strong>สำหรับนำเสนอแนวคิด (Product Concept Preview)
+          ยังไม่ได้เชื่อมต่อกับระบบยืนยันตัวตนหรือฐานข้อมูลจริง — กรอกชื่อหรือรหัสใดก็ได้เพื่อทดลองเข้าชมแดชบอร์ด
+          ซึ่งแสดงข้อมูลตัวอย่าง (mock data) ทั้งหมด
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ (ทดลองใช้งาน)</button>
+    </form>
+
+    <div class="divider">พันธมิตรบริษัทประกันภัยยังไม่มีบัญชี?</div>
+    <a href="../insurance-portal.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ดูข้อมูลพอร์ทัลผู้ให้บริการประกันภัย</a>
+    <a href="../contact.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">ติดต่อทีมงานเพื่อเป็นพันธมิตร</a>
+
+    <div class="divider">เกษตรกร / ผู้ให้บริการประเภทอื่น?</div>
+    <a href="../login.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">← กลับไปเลือกพอร์ทัลอื่น</a>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>
