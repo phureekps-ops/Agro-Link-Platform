@@ -75,6 +75,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   footer_partner_5: { th: "พันธมิตรเทคโนโลยี", en: "Technology Partners" },
   footer_partner_6: { th: "ผู้รับซื้อชีวมวล", en: "Biomass Buyers" },
   footer_partner_7: { th: "ผู้ให้บริการขนส่ง", en: "Logistics Providers" },
+  footer_partner_8: { th: "ผู้ให้บริการประกันภัย", en: "Insurance Providers" },
   footer_h_company: { th: "บริษัท", en: "Company" },
   footer_company_1: { th: "เกี่ยวกับเรา", en: "About Us" },
   footer_company_2: { th: "นักลงทุน", en: "Investors" },
