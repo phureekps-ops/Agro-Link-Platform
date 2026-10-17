@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการลำไยครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <a href="about-video.html" data-i18n="nav_about">เกี่ยวกับเรา</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+            <a href="integrated-sugarcane-business.html" data-i18n="nav_coop_sugarcane">อ้อยน้ำตาล</a>
+            <a href="integrated-palmoil-business.html" data-i18n="nav_coop_palmoil">ปาล์มน้ำมัน</a>
+            <a href="integrated-longan-business.html" data-i18n="nav_coop_longan">ลำไย</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="for-farmers.html"><span data-i18n="nav_farmers">สำหรับเกษตรกร</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="for-farmers-crop.html" data-i18n="nav_farmers_crop">เกษตรกรผู้ปลูกพืช</a>
+            <a href="for-farmers-livestock.html" data-i18n="nav_farmers_livestock">เกษตรกรผู้เลี้ยงสัตว์บก</a>
+            <a href="for-farmers-aquaculture.html" data-i18n="nav_farmers_aquaculture">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="rap-t-project.html"><span data-i18n="nav_rapt">RAP-T</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-durian-business.html" data-i18n="nav_rapt_durian">ทุเรียน</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_rapt_cassava">มันสำปะหลัง</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_rapt_corn">ข้าวโพดเลี้ยงสัตว์</a>
+            <a href="rap-t-coffee.html" data-i18n="nav_rapt_coffee">กาแฟ</a>
+            <a href="rap-t-coconut.html" data-i18n="nav_rapt_coconut">มะพร้าวน้ำหอม</a>
+            <a href="rap-t-shrimp.html" data-i18n="nav_rapt_shrimp">กุ้ง</a>
+            <a href="rap-t-tilapia.html" data-i18n="nav_rapt_tilapia">ปลานิล/ทับทิมกระชัง</a>
+            <a href="rap-t-seabass.html" data-i18n="nav_rapt_seabass">ปลากระพง/เก๋ากระชัง</a>
+          </div>
+        </div>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="agri-insurance-ecosystem.html" data-i18n="nav_insurance">ประกันภัย</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-longan-business_161">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-tree"></i><span data-i18n="integrated-longan-business_1"> คู่มือแนะนำโครงการ</span></div>
+    <h1 class="section-title" data-i18n="integrated-longan-business_2">เอกสารแนวคิดโครงการ: การพัฒนาระบบนิเวศลำไยครบวงจรด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink</h1>
+    <p class="section-sub" data-i18n="integrated-longan-business_3">ยกระดับห่วงโซ่คุณค่าลำไยไทยด้วยข้อมูล — เชื่อมเกษตรกร สหกรณ์ ล้ง ผู้แปรรูป และผู้ซื้อต่างประเทศ
+      พร้อมใช้ภาพถ่ายดาวเทียมและ AI สำรวจและคาดการณ์ผลผลิตเพื่อบริหารจัดการเก็บเกี่ยวให้เหมาะสม</p>
+    <span class="draft-tag" data-i18n="integrated-longan-business_4">ฉบับร่างเพื่อหารือเชิงนโยบาย | ตุลาคม 2569 — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/longan-ecosystem-infographic.jpg" data-i18n="integrated-longan-business_5" data-i18n-attr="alt" alt="แผนภาพวงจรการผลิตและการขายลำไย ตั้งแต่ตัดแต่งกิ่ง บังคับดอก ออกดอก-ติดผล พัฒนาผล เก็บเกี่ยว จนถึงการขาย พร้อมจุดที่ข้อมูลดาวเทียมและ AI เข้ามาสนับสนุนการสำรวจและคาดการณ์ผลผลิตในแต่ละช่วง" loading="lazy">
+      <figcaption data-i18n="integrated-longan-business_6">วงจรการผลิตและการขายลำไย AgroLink: จากสวนสู่ตลาด พร้อมจุดที่ใช้ข้อมูลดาวเทียม/AI สนับสนุนการตัดสินใจ</figcaption>
+    </figure>
+  </div>
+</section>
+
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-longan-business_7">สารบัญ</h4>
+      <ol>
+<li><a href="#sec-1" data-i18n="integrated-longan-business_8">1. บทสรุปผู้บริหาร</a></li>
+<li><a href="#sec-2" data-i18n="integrated-longan-business_9">2. บทนำและความสำคัญของปัญหา</a></li>
+<li><a href="#sec-3" data-i18n="integrated-longan-business_10">3. วงจรการผลิตและการขายลำไย: จากสวนสู่ตลาด</a></li>
+<li><a href="#sec-4" data-i18n="integrated-longan-business_11">4. เทคโนโลยีดาวเทียมและ AI เพื่อสำรวจและคาดการณ์ผลผลิตลำไย</a></li>
+<li><a href="#sec-5" data-i18n="integrated-longan-business_12">5. บทบาทของ AgroLink Platform ในการพัฒนาระบบนิเวศลำไย</a></li>
+<li><a href="#sec-6" data-i18n="integrated-longan-business_13">6. เปรียบเทียบระบบนิเวศลำไยก่อนและหลังใช้ AgroLink Platform</a></li>
+<li><a href="#sec-7" data-i18n="integrated-longan-business_14">7. ประโยชน์และผลกระทบทางเศรษฐกิจ</a></li>
+<li><a href="#sec-8" data-i18n="integrated-longan-business_15">8. แนวทางดำเนินงานและแผนนำร่อง</a></li>
+<li><a href="#sec-9" data-i18n="integrated-longan-business_16">9. ความเสี่ยงและมาตรการรองรับ</a></li>
+<li><a href="#sec-10" data-i18n="integrated-longan-business_17">10. ข้อเสนอแนะเชิงนโยบายและขั้นตอนถัดไป</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_18">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="integrated-longan-business_19">ลำไยเป็นพืชเศรษฐกิจสำคัญของประเทศไทยที่มีมูลค่าการตลาดรวมประมาณ 30,000–40,000 ล้านบาทต่อปี อย่างไรก็ตาม โครงสร้างการผลิตและการค้าเดิมยังเผชิญความท้าทายด้านราคาตกต่ำ ปัญหาผลผลิตล้นตลาดในช่วงฤดูเก็บเกี่ยวหลัก และข้อจำกัดด้านมาตรฐานการส่งออก</p>
+<p><span data-i18n="integrated-longan-business_20">แพลตฟอร์ม AgroLink ถูกพัฒนาขึ้นเพื่อเป็นโครงสร้างพื้นฐานดิจิทัลในการเชื่อมโยงเกษตรกร โรงแพ็ค/ล้ง ผู้แปรรูป และผู้ซื้อต่างประเทศ ช่วยแก้ปัญหาความไม่สมบูรณ์ของข้อมูล (Information Asymmetry) ยกระดับสู่เกษตรแม่นยำ และสร้างความยั่งยืนตลอดห่วงโซ่คุณค่า โดยจุดเน้นสำคัญของหน้านี้คือการใช้ </span><strong data-i18n="integrated-longan-business_21">ภาพถ่ายดาวเทียมและ AI สำรวจและคาดการณ์ปริมาณผลผลิตล่วงหน้า</strong><span data-i18n="integrated-longan-business_22"> เพื่อช่วยบริหารจัดการการเก็บเกี่ยวให้เหมาะสมกับจังหวะตลาด</span></p>
+</div></section>
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_23">2. บทนำและความสำคัญของปัญหา</h2>
+<p data-i18n="integrated-longan-business_24">ลำไยเป็นหนึ่งในผลไม้ส่งออกหลักของประเทศไทย โดยมีพื้นที่ปลูกสำคัญในภาคเหนือ (เชียงใหม่ ลำพูน พะเยา เชียงราย) และภาคตะวันออก (จันทบุรี สระแก้ว) ผลผลิตรวมต่อปีอยู่ระหว่าง 1.0–1.3 ล้านตัน ซึ่งสร้างรายได้มหาศาลแก่ประเทศ อย่างไรก็ดี โครงสร้างระบบนิเวศการค้าลำไยในปัจจุบันยังประสบปัญหาสำคัญ 3 ประการ</p>
+<h3 data-i18n="integrated-longan-business_25">1. ความผันผวนด้านราคาและตลาด</h3>
+<p data-i18n="integrated-longan-business_26">การพึ่งพาตลาดส่งออกเดี่ยว (จีน) สูงถึง 70–75% ทำให้เกิดความเสี่ยงเมื่อเกิดการเปลี่ยนแปลงนโยบายด่านหรือผลผลิตในประเทศจีนออกสู่ตลาด</p>
+<h3 data-i18n="integrated-longan-business_27">2. ช่องว่างด้านข้อมูล (Information Gap)</h3>
+<p data-i18n="integrated-longan-business_28">เกษตรกรส่วนใหญ่ยังขาดการเข้าถึงข้อมูลการคาดการณ์ผลผลิตและอุปสงค์ในตลาด ทำให้เกิดปัญหาผลผลิตกระจุกตัวในฤดู (กรกฎาคม–สิงหาคม) ส่งผลให้ราคาตกต่ำพร้อมกันทั้งระบบ</p>
+<h3 data-i18n="integrated-longan-business_29">3. คุณภาพและการตรวจสอบย้อนกลับ</h3>
+<p data-i18n="integrated-longan-business_30">มาตรการตรวจสอบสารตกค้าง (เช่น ซัลเฟอร์ไดออกไซด์) และมาตรฐาน GAP/GMP มีความเข้มงวดมากขึ้น หากขาดระบบการตรวจสอบย้อนกลับ (Traceability) จะกระทบต่อความเชื่อมั่นของผู้ซื้อ</p>
+</div></section>
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_31">3. วงจรการผลิตและการขายลำไย: จากสวนสู่ตลาด</h2>
+<p data-i18n="integrated-longan-business_32">ตารางด้านล่างสรุปวงจรการผลิตลำไยโดยภาพรวม ตั้งแต่หลังเก็บเกี่ยวจนถึงการจำหน่าย พร้อมช่วงเวลาโดยประมาณของฤดูหลัก (ในฤดู) และจุดที่ข้อมูลดาวเทียม/ดิจิทัลของ AgroLink เข้ามาสนับสนุนการตัดสินใจในแต่ละขั้นตอน — ช่วงเวลาที่ระบุเป็นค่าประมาณ ของลำไยพันธุ์อีดอในภาคเหนือ และอาจเปลี่ยนแปลงได้ตามพื้นที่ สภาพอากาศ และการใช้สารบังคับดอกนอกฤดู</p>
+</div></section>
+<div class="container" style="margin-top:6px;margin-bottom:10px;"><div class="data-table-wrap" style="max-width:1040px;margin:0 auto;"><table class="data-table"><thead><tr><th data-i18n="integrated-longan-business_33">ขั้นตอน</th><th data-i18n="integrated-longan-business_34">ช่วงเวลาโดยประมาณ (ในฤดู)</th><th data-i18n="integrated-longan-business_35">กิจกรรมหลักของเกษตรกร</th><th data-i18n="integrated-longan-business_36">บทบาทข้อมูลดาวเทียม/ดิจิทัล</th></tr></thead><tbody><tr><td><strong data-i18n="integrated-longan-business_37">ฟื้นต้น/ตัดแต่งกิ่ง</strong></td><td data-i18n="integrated-longan-business_38">สิงหาคม–ตุลาคม</td><td data-i18n="integrated-longan-business_39">ตัดแต่งทรงพุ่มหลังเก็บเกี่ยว ใส่ปุ๋ยฟื้นฟูต้น</td><td data-i18n="integrated-longan-business_40">ประเมินความสมบูรณ์ของทรงพุ่มด้วยดัชนีพืชพรรณ (NDVI) หลังเก็บเกี่ยว เพื่อวางแผนฟื้นฟูต้นรายแปลง</td></tr><tr><td><strong data-i18n="integrated-longan-business_41">บังคับ/ชักนำการออกดอก</strong></td><td data-i18n="integrated-longan-business_42">ตุลาคม–ธันวาคม</td><td data-i18n="integrated-longan-business_43">ให้สารโพแทสเซียมคลอเรต ควบคุมน้ำและใบอ่อน</td><td data-i18n="integrated-longan-business_44">ติดตามดัชนีพืชพรรณเพื่อประเมินความพร้อมของต้นก่อนให้สารบังคับดอก</td></tr><tr><td><strong data-i18n="integrated-longan-business_45">ออกดอก–ผสมเกสร–ติดผล</strong></td><td data-i18n="integrated-longan-business_46">ธันวาคม–กุมภาพันธ์</td><td data-i18n="integrated-longan-business_47">ดูแลการผสมเกสร ป้องกันแมลงและโรคช่อดอก</td><td data-i18n="integrated-longan-business_48">ตรวจจับช่วงดอกบานจากภาพดาวเทียมหลายช่วงเวลา เริ่มนับอายุผลเพื่อคาดวันเก็บเกี่ยวล่วงหน้า</td></tr><tr><td><strong data-i18n="integrated-longan-business_49">พัฒนาผล/ขยายขนาด</strong></td><td data-i18n="integrated-longan-business_50">มีนาคม–มิถุนายน</td><td data-i18n="integrated-longan-business_51">ให้น้ำ-ปุ๋ยตามระยะ ป้องกันโรคแมลงและผลร่วง</td><td data-i18n="integrated-longan-business_52">แบบจำลอง AI ประมวลผลข้อมูลดาวเทียมและสภาพอากาศ คาดการณ์ปริมาณผลผลิตล่วงหน้า 60–90 วัน</td></tr><tr><td><strong data-i18n="integrated-longan-business_53">เก็บเกี่ยว</strong></td><td data-i18n="integrated-longan-business_54">กรกฎาคม–สิงหาคม</td><td data-i18n="integrated-longan-business_55">เก็บผลตามความแก่ คัดคุณภาพเบื้องต้น ส่งล้ง/จุดรับซื้อ</td><td data-i18n="integrated-longan-business_56">แจ้งเตือนช่วงเก็บเกี่ยวที่เหมาะสม (Harvest Window Alert) ช่วยวางแผนคิวแรงงานและคิวส่งล้ง</td></tr><tr><td><strong data-i18n="integrated-longan-business_57">หลังเก็บเกี่ยว/การขาย</strong></td><td data-i18n="integrated-longan-business_58">ต่อเนื่องตลอดฤดู</td><td data-i18n="integrated-longan-business_59">คัดเกรด อบซัลเฟอร์/แปรรูป ส่งออกหรือจำหน่ายในประเทศ</td><td data-i18n="integrated-longan-business_60">ตรวจสอบย้อนกลับด้วย QR Code เชื่อมข้อมูลแปลงปลูกถึงบรรจุภัณฑ์ และราคาตลาดเรียลไทม์จาก AgroLink Dashboard</td></tr></tbody></table></div></div>
+<div class="container"><div class="note-block" data-i18n="integrated-longan-business_61">ลำไยนอกฤดู (ใช้สารบังคับดอก) สามารถวางแผนให้ออกดอกและเก็บเกี่ยวได้เกือบตลอดทั้งปี ซึ่งช่วยกระจายผลผลิตและลดปัญหาราคาตกต่ำพร้อมกัน — AgroLink สนับสนุนให้สหกรณ์วางแผนสัดส่วนพื้นที่ในฤดู/นอกฤดูร่วมกับข้อมูลคาดการณ์อุปสงค์ ไม่ใช่กำหนดปริมาณการผลิตแทนเกษตรกร</div></div>
+<section class="prose-section alt" id="sec-4">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_62">4. เทคโนโลยีดาวเทียมและ AI เพื่อสำรวจและคาดการณ์ผลผลิตลำไย</h2>
+<p data-i18n="integrated-longan-business_63">หัวใจของการบริหารจัดการเก็บเกี่ยวลำไยให้เหมาะสมคือการรู้ล่วงหน้าว่า "ผลผลิตจะออกมาเท่าไร" และ "จะสุกพร้อมเก็บเกี่ยวเมื่อใด" AgroLink ออกแบบให้ใช้ข้อมูลภาพถ่ายดาวเทียมร่วมกับแบบจำลอง AI ในหลายขั้นตอน ดังนี้</p>
+<h3 data-i18n="integrated-longan-business_64">4.1 สำรวจพื้นที่ปลูกและขึ้นทะเบียนแปลงด้วยภาพดาวเทียม</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_65">ใช้ภาพถ่ายดาวเทียมความละเอียดสูง (เช่น Sentinel-2, PlanetScope) ร่วมกับการสำรวจภาคสนาม เพื่อขึ้นทะเบียนแปลงลำไยและขอบเขตพื้นที่ปลูกจริง</li>
+<li data-i18n="integrated-longan-business_66">จำแนกชนิดพืชและประเมินอายุต้น/ความหนาแน่นของทรงพุ่มเบื้องต้นจากลักษณะภาพถ่าย เพื่อประกอบฐานข้อมูลแปลง</li>
+</ul>
+<h3 data-i18n="integrated-longan-business_67">4.2 ติดตามดัชนีพืชพรรณและตรวจจับช่วงออกดอก</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_68">ติดตามดัชนีพืชพรรณ (NDVI/NDRE) รายสัปดาห์ เพื่อประเมินความสมบูรณ์ของทรงพุ่มและแนวโน้มความพร้อมออกดอกของแต่ละแปลง</li>
+<li data-i18n="integrated-longan-business_69">ตรวจจับช่วงออกดอก (Flowering Detection) จากการเปลี่ยนแปลงของดัชนีพืชพรรณในภาพถ่ายหลายช่วงเวลา (multi-temporal) ประกอบกับข้อมูลอุณหภูมิและชั่วโมงอากาศเย็นซึ่งมีผลต่อการออกดอกของลำไย</li>
+<li data-i18n="integrated-longan-business_70">ช่วงดอกบานที่ตรวจพบนี้เป็นจุดเริ่มต้นสำคัญ เพราะลำไยใช้เวลาประมาณ 150–160 วันจากดอกบานจนถึงผลแก่พร้อมเก็บเกี่ยว (ขึ้นกับพันธุ์และสภาพอากาศ) ทำให้สามารถประมาณการวันเก็บเกี่ยวล่วงหน้าได้ตั้งแต่ระยะนี้</li>
+</ul>
+<h3 data-i18n="integrated-longan-business_71">4.3 แบบจำลองคาดการณ์ปริมาณผลผลิต (AI Yield Prediction)</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_72">ผสานข้อมูลดาวเทียม สภาพอากาศย้อนหลัง ขนาดพื้นที่ปลูกจริง และข้อมูลผลผลิตย้อนหลังที่เกษตรกร/สหกรณ์บันทึกไว้ในระบบ</li>
+<li data-i18n="integrated-longan-business_73">ประมวลผลเป็นช่วงคาดการณ์ปริมาณผลผลิตรวมล่วงหน้า 60–90 วันก่อนเก็บเกี่ยว แสดงผลเป็นช่วงความเชื่อมั่น (เช่น ตัวเลขต่ำสุด–สูงสุด) ไม่ใช่ตัวเลขตายตัว เพื่อสะท้อนความไม่แน่นอนตามธรรมชาติของสภาพอากาศ</li>
+<li data-i18n="integrated-longan-business_74">แบบจำลองต้องสอบเทียบ (calibrate) กับข้อมูลผลผลิตจริงจากภาคสนามอย่างต่อเนื่อง โดยเฉพาะในช่วง 2–3 ปีแรกของการใช้งาน</li>
+</ul>
+<h3 data-i18n="integrated-longan-business_75">4.4 แจ้งเตือนช่วงเวลาเก็บเกี่ยวที่เหมาะสม (Harvest Window Alert)</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_76">ประมวลผลความสุกของผลเทียบกับอายุผลนับจากวันดอกบานที่ตรวจพบ ร่วมกับข้อมูลภาพถ่ายดาวเทียมล่าสุดของแปลง</li>
+<li data-i18n="integrated-longan-business_77">แจ้งเตือนเกษตรกรและล้ง/จุดรับซื้อล่วงหน้าถึงช่วงเวลาที่เหมาะสมสำหรับการเก็บเกี่ยวแต่ละแปลง เพื่อให้ได้คุณภาพผลผลิตที่ดีที่สุด</li>
+<li data-i18n="integrated-longan-business_78">ช่วยหน่วยงาน/สหกรณ์วางแผนกระจายคิวเก็บเกี่ยวหมุนเวียนในแต่ละพื้นที่ แทนที่จะให้ทุกแปลงเก็บเกี่ยวพร้อมกัน ซึ่งเป็นสาเหตุหลักของปัญหาผลผลิตล้นตลาด</li>
+</ul>
+<h3 data-i18n="integrated-longan-business_79">4.5 ประโยชน์ต่อการบริหารจัดการห่วงโซ่อุปทาน</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_80">ล้ง/ผู้ส่งออก: วางแผนกำลังคน บรรจุภัณฑ์ คิวอบซัลเฟอร์ และตู้คอนเทนเนอร์ล่วงหน้าตามปริมาณที่คาดการณ์ได้</li>
+<li data-i18n="integrated-longan-business_81">หน่วยงานภาครัฐ/สหกรณ์: วางแผนจัดโซนนิ่งเก็บเกี่ยวหมุนเวียนรายอำเภอ เพื่อลดการกระจุกตัวของผลผลิตในช่วงเดียวกัน</li>
+<li data-i18n="integrated-longan-business_82">เกษตรกร: วางแผนแรงงานเก็บเกี่ยวล่วงหน้าและมีข้อมูลประกอบการเจรจาราคากับผู้รับซื้อก่อนถึงฤดูเก็บเกี่ยวจริง</li>
+</ul>
+<div class="note-block"><span data-i18n="integrated-longan-business_83">ข้อจำกัดที่ควรทราบ: เมฆปกคลุมหนาแน่นในช่วงฤดูฝนอาจลดความถี่ของภาพดาวเทียมเชิงแสงที่ใช้งานได้ จึงควรใช้ข้อมูลเรดาร์ (SAR เช่น Sentinel-1) เสริมในช่วงเมฆมาก และตัวเลขคาดการณ์ผลผลิตจากดาวเทียม/AI เป็น "แนวโน้ม" เพื่อสนับสนุนการตัดสินใจ ไม่ใช่ตัวเลขที่แม่นยำสมบูรณ์ จึงควรใช้ร่วมกับการสำรวจภาคสนามและประสบการณ์ของเกษตรกรเสมอ รายละเอียดเทคนิคเพิ่มเติมดูได้ที่หน้า </span><a href="ai-satellite-guide.html" style="color:#7A5E10;text-decoration:underline;" data-i18n="integrated-longan-business_84">AI และดาวเทียม</a></div>
+</div></section>
+<section class="prose-section" id="sec-5">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_85">5. บทบาทของ AgroLink Platform ในการพัฒนาระบบนิเวศลำไย</h2>
+<p data-i18n="integrated-longan-business_86">AgroLink Platform ถูกออกแบบมาเพื่อทำหน้าที่เป็น Central Digital Platform ในการเชื่อมโยงผู้มีส่วนได้ส่วนเสีย (Stakeholders) ทุกภาคส่วนในห่วงโซ่คุณค่าลำไยเข้าด้วยกัน ผ่านโมดูลการทำงานหลักดังนี้</p>
+<h3 data-i18n="integrated-longan-business_87">5.1 โมดูลเชื่อมโยงข้อมูลการผลิตและการคาดการณ์ (Smart Farming & Supply Forecasting)</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_88">ระบบจัดการข้อมูลแปลงปลูก (Farm Mapping): ลงทะเบียนเกษตรกร แปลงปลูก และพิกัด GIS พร้อมบันทึกรอบการออกดอกและประมาณการผลผลิตล่วงหน้า ช่วยให้หน่วยงานภาครัฐและผู้ซื้อวางแผนรับซื้อได้แม่นยำ (ดูรายละเอียดการคาดการณ์ด้วยดาวเทียมในหัวข้อ 4)</li>
+<li data-i18n="integrated-longan-business_89">คำแนะนำการจัดการสวนดิจิทัล: เชื่อมโยงข้อมูลสภาพอากาศ สภาพดิน และการใช้น้ำ เพื่อให้คำแนะนำการดูแลสวนลำไยและการใช้สารเคมีอย่างปลอดภัยตามมาตรฐาน GAP</li>
+</ul>
+<h3 data-i18n="integrated-longan-business_90">5.2 โมดูลจับคู่ธุรกิจและการค้าดิจิทัล (B2B Marketplace & Matching)</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_91">ระบบจับคู่อุปสงค์-อุปทาน: เชื่อมโยงเกษตรกร/วิสาหกิจชุมชน กับล้ง ผู้แปรรูป และผู้ส่งออกโดยตรง ลดขั้นตอนพ่อค้าคนกลาง เพิ่มอำนาจการต่อรองราคา</li>
+<li data-i18n="integrated-longan-business_92">ซื้อขายล่วงหน้า (Contract Farming Digital): รองรับสัญญารับซื้อล่วงหน้า (Forward Contracts) เพื่อให้เกษตรกรมั่นใจเรื่องตลาดและผู้ซื้อได้ผลผลิตคุณภาพตามกำหนด โดยใช้ข้อมูลคาดการณ์ผลผลิตจากหัวข้อ 4 ประกอบการวางแผนปริมาณสัญญา</li>
+</ul>
+<h3 data-i18n="integrated-longan-business_93">5.3 โมดูลตรวจสอบย้อนกลับและรับรองมาตรฐาน (Traceability & Standard Certificate)</h3>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_94">ระบบ QR Traceability: สร้าง QR Code ติดบนบรรจุภัณฑ์สินค้า ให้ผู้บริโภคหรือผู้นำเข้าสามารถสแกนดูประวัติการปลูก วันที่เก็บเกี่ยว โรงแพ็คอบซัลเฟอร์ และผลการตรวจแล็บได้ทันที</li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_95">6. เปรียบเทียบระบบนิเวศลำไยก่อนและหลังใช้ AgroLink Platform</h2>
+<p data-i18n="integrated-longan-business_96">ตารางด้านล่างแสดงการเปลี่ยนแปลงเชิงโครงสร้างของระบบนิเวศลำไยเมื่อนำ AgroLink Platform เข้ามาประยุกต์ใช้</p>
+</div></section>
+<div class="container" style="margin-top:6px;margin-bottom:10px;"><div class="data-table-wrap" style="max-width:1040px;margin:0 auto;"><table class="data-table"><thead><tr><th data-i18n="integrated-longan-business_97">มิติการพัฒนา</th><th data-i18n="integrated-longan-business_98">รูปแบบเดิม (Traditional Ecosystem)</th><th data-i18n="integrated-longan-business_99">รูปแบบใหม่ (AgroLink Ecosystem)</th></tr></thead><tbody><tr><td><strong data-i18n="integrated-longan-business_100">การเข้าถึงข้อมูลตลาด</strong></td><td data-i18n="integrated-longan-business_101">เกษตรกรไม่ทราบราคาอ้างอิง พึ่งพาการแจ้งราคาจากพ่อค้าท้องถิ่น</td><td data-i18n="integrated-longan-business_102">เข้าถึงราคาเรียลไทม์และแนวโน้มอุปสงค์จาก AgroLink Dashboard</td></tr><tr><td><strong data-i18n="integrated-longan-business_103">การจัดการผลผลิต</strong></td><td data-i18n="integrated-longan-business_104">ผลผลิตออกสู่ตลาดพร้อมกัน เกิดภาวะล้นตลาดและราคาตกต่ำ</td><td data-i18n="integrated-longan-business_105">วางแผนการผลิตใน/นอกฤดู และวางแผนการเก็บเกี่ยวล่วงหน้าร่วมกับผู้ซื้อ</td></tr><tr><td><strong data-i18n="integrated-longan-business_106">การบริหารจัดการเก็บเกี่ยว</strong></td><td data-i18n="integrated-longan-business_107">คาดคะเนปริมาณผลผลิตด้วยประสบการณ์ ไม่มีข้อมูลล่วงหน้า เก็บเกี่ยวไม่ตรงจังหวะตลาด</td><td data-i18n="integrated-longan-business_108">คาดการณ์ปริมาณและช่วงเวลาเก็บเกี่ยวล่วงหน้าด้วยข้อมูลดาวเทียม/AI แจ้งเตือนล้งและผู้ซื้อล่วงหน้า</td></tr><tr><td><strong data-i18n="integrated-longan-business_109">การตรวจสอบคุณภาพ</strong></td><td data-i18n="integrated-longan-business_110">สุ่มตรวจหน้าล้ง ขาดระบบบันทึกย้อนกลับ เสี่ยงโดนตีกลับสินค้า</td><td data-i18n="integrated-longan-business_111">บันทึกข้อมูลแปลงปลูกแบบดิจิทัล มี QR Code ตรวจสอบย้อนกลับถึงสวน</td></tr><tr><td><strong data-i18n="integrated-longan-business_112">ช่องทางการจำหน่าย</strong></td><td data-i18n="integrated-longan-business_113">ขายผ่านพ่อค้าคนกลางหลายชั้น ส่วนแบ่งกำไรตกถึงเกษตรกรน้อย</td><td data-i18n="integrated-longan-business_114">ขายตรงแก่ผู้ส่งออก ห้างสรรพสินค้า และตลาด B2B ต่างประเทศ</td></tr></tbody></table></div></div>
+<section class="prose-section" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_115">7. ประโยชน์และผลกระทบทางเศรษฐกิจ</h2>
+<p data-i18n="integrated-longan-business_116">การประยุกต์ใช้ AgroLink Platform ในระบบนิเวศลำไยส่งผลกระทบเชิงบวกใน 3 มิติหลัก</p>
+<h3 data-i18n="integrated-longan-business_117">1. มิติเศรษฐกิจเกษตรกร (Farmer Income)</h3>
+<p data-i18n="integrated-longan-business_118">เกษตรกรมีรายได้เพิ่มขึ้น 15–20% จากการลดต้นทุนการผลิต การขายตรงโดยไม่ผ่านคนกลาง และการยกระดับสินค้าสู่เกรดพรีเมียม</p>
+<h3 data-i18n="integrated-longan-business_119">2. มิติห่วงโซ่อุปทาน (Supply Chain Efficiency)</h3>
+<p data-i18n="integrated-longan-business_120">ผู้ประกอบการส่งออกและโรงแพ็คสามารถวางแผนการรวบรวมสินค้าล่วงหน้าจากข้อมูลคาดการณ์ผลผลิต ลดความสูญเสียหลังการเก็บเกี่ยว (Post-harvest Loss) ได้มากกว่า 10–15%</p>
+<h3 data-i18n="integrated-longan-business_121">3. มิติความยั่งยืนและสิ่งแวดล้อม (Sustainability)</h3>
+<p data-i18n="integrated-longan-business_122">ส่งเสริมการใช้สารเคมีและปุ๋ยอย่างเหมาะสมตามระบบ GAP ช่วยลดการปนเปื้อนในดินและแหล่งน้ำ ส่งผลดีต่อสิ่งแวดล้อมอย่างยั่งยืน</p>
+</div></section>
+<section class="prose-section alt" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_123">8. แนวทางดำเนินงานและแผนนำร่อง</h2>
+<p data-i18n="integrated-longan-business_124">เสนอให้เริ่มโครงการนำร่องในพื้นที่ปลูกลำไยหลักของภาคเหนือ (เช่น เชียงใหม่หรือลำพูน) ร่วมกับสหกรณ์การเกษตรและล้งในพื้นที่ ก่อนขยายผลไปยังพื้นที่ปลูกอื่น โดยมีขั้นตอนหลักดังนี้</p>
+</div></section>
+<div class="container" style="margin-top:6px;margin-bottom:10px;"><div class="data-table-wrap" style="max-width:1040px;margin:0 auto;"><table class="data-table"><thead><tr><th data-i18n="integrated-longan-business_125">ช่วงเวลา</th><th data-i18n="integrated-longan-business_126">กิจกรรม</th><th data-i18n="integrated-longan-business_127">ผลผลิตส่งมอบ</th></tr></thead><tbody><tr><td><strong data-i18n="integrated-longan-business_128">เดือน 1–3</strong></td><td data-i18n="integrated-longan-business_129">คัดเลือกพื้นที่/สหกรณ์/ล้งนำร่อง จัดทำ baseline และข้อตกลงด้านข้อมูล</td><td data-i18n="integrated-longan-business_130">แผนพื้นที่ รายชื่อภาคี และ baseline ผลผลิตย้อนหลัง</td></tr><tr><td><strong data-i18n="integrated-longan-business_131">เดือน 4–6</strong></td><td data-i18n="integrated-longan-business_132">ขึ้นทะเบียนแปลงด้วยภาพดาวเทียมและภาคสนาม เริ่มติดตามดัชนีพืชพรรณ</td><td data-i18n="integrated-longan-business_133">ทะเบียนแปลงดิจิทัลและระบบติดตามต้นแบบ</td></tr><tr><td><strong data-i18n="integrated-longan-business_134">เดือน 7–12</strong></td><td data-i18n="integrated-longan-business_135">ทดสอบแบบจำลองคาดการณ์ผลผลิตและ Harvest Window Alert รอบการออกดอก–เก็บเกี่ยวจริง</td><td data-i18n="integrated-longan-business_136">ข้อมูลความแม่นยำของการคาดการณ์ผลผลิตรอบแรก</td></tr><tr><td><strong data-i18n="integrated-longan-business_137">เดือน 13–18</strong></td><td data-i18n="integrated-longan-business_138">ขยายแปลงนำร่อง เชื่อมต่อ B2B Marketplace และระบบ QR Traceability</td><td data-i18n="integrated-longan-business_139">ธุรกรรมซื้อขายที่ตรวจสอบย้อนกลับได้และรายงานผลกลางทาง</td></tr><tr><td><strong data-i18n="integrated-longan-business_140">เดือน 19–24</strong></td><td data-i18n="integrated-longan-business_141">ประเมินผลอิสระ ปรับปรุงแบบจำลอง และออกแบบแผนขยายผล</td><td data-i18n="integrated-longan-business_142">รายงานผลลัพธ์และแผนลงทุนระยะต่อไป</td></tr></tbody></table></div></div>
+<section class="prose-section" id="sec-9">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_143">9. ความเสี่ยงและมาตรการรองรับ</h2>
+<ul class="check-list">
+<li data-i18n="integrated-longan-business_144">ความคลาดเคลื่อนของการคาดการณ์ผลผลิต: แบบจำลองช่วงแรกอาจมีความแม่นยำจำกัด ต้องสอบเทียบกับข้อมูลภาคสนามต่อเนื่องและสื่อสารเป็นช่วงความเชื่อมั่น ไม่ใช่ตัวเลขตายตัว</li>
+<li data-i18n="integrated-longan-business_145">เมฆปกคลุมในฤดูฝน: ใช้ข้อมูลเรดาร์ (SAR) เสริมและเพิ่มความถี่การสำรวจภาคสนามในช่วงที่ภาพดาวเทียมเชิงแสงใช้งานไม่ได้</li>
+<li data-i18n="integrated-longan-business_146">ความผันผวนของสภาพอากาศ/การออกดอก: คัดพื้นที่นำร่องที่มีประวัติข้อมูลผลผลิตสม่ำเสมอ และกระจายพื้นที่ทดลองหลายระดับความสูง/ภูมิประเทศ</li>
+<li data-i18n="integrated-longan-business_147">ข้อมูลส่วนบุคคลและข้อมูลแปลง: จัดทำข้อตกลงแบ่งปันข้อมูล จำกัดสิทธิการเข้าถึง และปฏิบัติตาม PDPA อย่างเคร่งครัด</li>
+<li data-i18n="integrated-longan-business_148">การยอมรับเทคโนโลยีของเกษตรกร: จัดอบรมเชิงปฏิบัติการและให้สหกรณ์เป็นจุดสื่อสารหลัก แทนการให้เกษตรกรใช้งานระบบเดี่ยวโดยลำพัง</li>
+</ul>
+</div></section>
+<section class="prose-section alt" id="sec-10">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-longan-business_149">10. ข้อเสนอแนะเชิงนโยบายและแนวทางการดำเนินงานต่อไป</h2>
+<h3 data-i18n="integrated-longan-business_150">1. การส่งเสริมการใช้งาน (Platform Adoption)</h3>
+<p data-i18n="integrated-longan-business_151">ภาครัฐและวิสาหกิจชุมชนควรจัดอบรมเชิงปฏิบัติการให้แก่เกษตรกรในการใช้งาน AgroLink Smart Mobile Application โดยเฉพาะการอ่านผลการแจ้งเตือนช่วงเก็บเกี่ยวและข้อมูลคาดการณ์ผลผลิต</p>
+<h3 data-i18n="integrated-longan-business_152">2. การเชื่อมโยงข้อมูลกับภาครัฐ (API Integration)</h3>
+<p data-i18n="integrated-longan-business_153">ควรเชื่อมโยงฐานข้อมูล AgroLink กับกรมส่งเสริมการเกษตรและกรมวิชาการเกษตร เพื่อรวมศูนย์ข้อมูล GAP การลงทะเบียนเกษตรกร และข้อมูลคาดการณ์ผลผลิตระดับจังหวัด</p>
+<h3 data-i18n="integrated-longan-business_154">3. การขยายตลาดต่างประเทศใหม่ๆ</h3>
+<p data-i18n="integrated-longan-business_155">ขยายการจับคู่ธุรกิจบนแพลตฟอร์มไปยังตลาดอินเดีย ตะวันออกกลาง และยุโรป เพื่อลดการพึ่งพาตลาดจีนเพียงอย่างเดียว</p>
+<div class="note-block" data-i18n="integrated-longan-business_156">ตัวเลขฐาน (baseline) มูลค่าตลาด พื้นที่ปลูก และสัดส่วนตลาดส่งออกในเอกสารนี้เป็นข้อมูลอ้างอิงเพื่อประกอบการหารือเท่านั้น ควรตรวจสอบและอัปเดตจากแหล่งข้อมูลทางการ เช่น สำนักงานเศรษฐกิจการเกษตร กรมส่งเสริมการเกษตร และกรมวิชาการเกษตร ก่อนนำไปใช้อ้างอิงอย่างเป็นทางการ</div>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 data-i18n="integrated-longan-business_157" class="section-title">สนใจเข้าร่วมโครงการลำไยครบวงจร</h2>
+<p data-i18n="integrated-longan-business_158" class="section-sub">ไม่ว่าจะในฐานะเกษตรกร สหกรณ์/กลุ่มเกษตรกร โรงแพ็ค/ล้ง ผู้แปรรูป ผู้ส่งออก หรือหน่วยงานภาครัฐ
+ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-longan-business_159">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-longan-business_160">กลับหน้าแรก</a>
+</div></div></section>
+
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-tree"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+          <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
+          <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
+          <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="insurance-portal.html" data-i18n="footer_partner_8">ผู้ให้บริการประกันภัย</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-longan-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+</body>
+</html>
