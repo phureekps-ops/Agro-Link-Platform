@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ปลานิล/ทับทิมกระชัง | โครงการ RAP-T | AgroLink Platform</title>
+<title>แนวทางพัฒนาตลาดปลานิลสดในประเทศ | โครงการ RAP-T | AgroLink Platform</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <style>
+
   :root {
     --navy: #1F3864;
     --green: #1B6B4A;
@@ -120,25 +121,73 @@
     .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
   }
 
-  /* PAGE HEADER */
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
   .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
   .page-header .section-title, .page-header h1 { color: #fff; }
   .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
   .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
 
+  /* INTRO / CLOSING BLOCKS */
   .prose-section { padding: 60px 0; }
   .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
   .prose-block { max-width: 860px; margin: 0 auto; }
   .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
   .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
 
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
   .note-block {
     background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
-    padding: 30px 32px; font-size: 15px; line-height: 1.8; text-align: center;
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
   }
-  .note-block i.fa-seedling { font-size: 30px; color: var(--gold); margin-bottom: 14px; display: block; }
   .note-block strong { color: #7A5E10; }
 
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
   footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
   .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
   @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
@@ -152,6 +201,7 @@
 
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: translateY(0); }
+
 </style>
 </head>
 <body>
@@ -206,47 +256,468 @@
       <div class="nav-right">
         <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
         <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
-          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="rap-t-tilapia_nav_1">ติดต่อสอบถาม</a></div>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="rap-t-tilapia_1">ติดต่อสอบถาม</a></div>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
   </div>
 </header>
-
 <section class="page-header">
   <div class="container section-head reveal">
-    <div class="eyebrow"><i class="fa-solid fa-globe-asia"></i><span data-i18n="rap-t-tilapia_1"> โครงการ RAP-T</span></div>
-    <h1 class="section-title" data-i18n="rap-t-tilapia_2">ปลานิล/ทับทิมกระชัง</h1>
-    <p class="section-sub" data-i18n="rap-t-tilapia_3">ส่วนหนึ่งของสินค้าเกษตรเป้าหมายภายใต้โครงการ RAP-T (Resilient Agribusiness Program Thailand) ซึ่งกระทรวงเกษตรและสหกรณ์ร่วมกับ FAO และ ADB ขับเคลื่อนเพื่อสร้างความยืดหยุ่นต่อการเปลี่ยนแปลงสภาพภูมิอากาศ</p>
+    <div class="eyebrow"><i class="fa-solid fa-fish"></i><span data-i18n="rap-t-tilapia_2"> AgroLink Fresh Tilapia Market Linkage</span></div>
+    <h1 class="section-title" data-i18n="rap-t-tilapia_3">แนวทางพัฒนาช่องทางตลาดปลานิลสดในประเทศ</h1>
+    <p class="section-sub" data-i18n="rap-t-tilapia_4">เชื่อมโยงเกษตรกรผู้เลี้ยงปลานิลกระชัง → สหกรณ์ → ผู้รวบรวม → ตลาดสด ร้านอาหาร และผู้ซื้อรายใหญ่</p>
+    <span class="draft-tag" data-i18n="rap-t-tilapia_5">เอกสารแนวคิดเชิงยุทธศาสตร์ | ตุลาคม 2569 — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
   </div>
 </section>
 
-<section class="prose-section alt">
-  <div class="container prose-block reveal in">
-    <div class="note-block">
-      <i class="fa-solid fa-seedling"></i>
-      <strong data-i18n="rap-t-tilapia_4">เนื้อหาอยู่ระหว่างจัดทำ</strong><br><br>
-      <span data-i18n="rap-t-tilapia_5">ขณะนี้ทีมงาน AgroLink กำลังรวบรวมข้อมูลห่วงโซ่คุณค่า สถานะความเสี่ยงด้านภูมิอากาศ และแนวทางการสนับสนุนเกษตรกรผู้ประกอบการ "ปลานิล/ทับทิมกระชัง" ภายใต้โครงการ RAP-T — กลับมาเยี่ยมชมหน้านี้อีกครั้งเร็วๆ นี้</span>
-    </div>
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/tilapia-fresh-market-linkage-infographic.jpg" data-i18n="rap-t-tilapia_229" data-i18n-attr="alt" alt="AgroLink Fresh Tilapia Market Linkage Platform เชื่อมโยงเกษตรกรผู้เลี้ยงปลานิลกระชัง สหกรณ์ ผู้รวบรวม และ 6 ช่องทางตลาดปลานิลสด เชื่อมด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink" loading="lazy">
+      <figcaption data-i18n="rap-t-tilapia_230">AgroLink Fresh Tilapia Market Linkage: เกษตรกรผู้เลี้ยงปลานิลกระชัง → สหกรณ์ → ศูนย์รวบรวม → 6 ช่องทางตลาด เริ่มจาก 3 ช่องทางแรก เชื่อมด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink</figcaption>
+    </figure>
   </div>
 </section>
 
 <section class="prose-section">
-  <div class="container section-head reveal">
-    <h2 class="section-title" style="font-size:24px;" data-i18n="rap-t-tilapia_6">สนใจข้อมูลเพิ่มเติมเกี่ยวกับโครงการ RAP-T?</h2>
-    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-      <a href="rap-t-project.html" class="btn btn-gold" data-i18n="rap-t-tilapia_7">📄 กลับไปที่เอกสารโครงการ RAP-T</a>
-      <a href="index.html#contact" class="btn btn-outline" data-i18n="rap-t-tilapia_8">ติดต่อทีมงาน AgroLink</a>
-      <a href="index.html" class="btn btn-outline" data-i18n="rap-t-tilapia_9">กลับหน้าแรก</a>
+  <div class="container prose-block reveal in" style="max-width:1040px;">
+    <div class="note-block" data-i18n="rap-t-tilapia_6">หมายเหตุเกี่ยวกับขอบเขต: เอกสารนี้ใช้หลักคิดด้านความยั่งยืน ความยืดหยุ่นต่อสภาพภูมิอากาศ และการพัฒนาห่วงโซ่คุณค่าที่สอดคล้องกับแนวทาง RAP-T ในเชิงแนวคิดเท่านั้น ไม่ได้ระบุหรือสื่อว่าปลานิลกระชังเป็นสินค้าเป้าหมายหรือได้รับการคัดเลือกในโครงการ RAP-T</div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="rap-t-tilapia_7">สารบัญ</h4>
+      <ol>
+        <li><a href="#sec-1" data-i18n="rap-t-tilapia_8">1. บทสรุปผู้บริหาร</a></li>
+        <li><a href="#sec-2" data-i18n="rap-t-tilapia_9">2. ช่องทางตลาดปลานิลสดที่ควรพัฒนา</a></li>
+        <li><a href="#sec-3" data-i18n="rap-t-tilapia_10">3. โมเดลธุรกิจที่เสนอ: AgroLink Fresh Tilapia</a></li>
+        <li><a href="#sec-4" data-i18n="rap-t-tilapia_11">4. สร้างตลาดร้านอาหารให้เป็นลูกค้าประจำ</a></li>
+        <li><a href="#sec-5" data-i18n="rap-t-tilapia_12">5. พัฒนาผลิตภัณฑ์ปลานิลสดให้มีมูลค่าเพิ่ม</a></li>
+        <li><a href="#sec-6" data-i18n="rap-t-tilapia_13">6. ใช้สหกรณ์เป็นศูนย์กลางรวบรวมและกระจายสินค้า</a></li>
+        <li><a href="#sec-7" data-i18n="rap-t-tilapia_14">7. บทบาทของ AgroLink Platform</a></li>
+        <li><a href="#sec-8" data-i18n="rap-t-tilapia_15">8. แผนทดลองตลาด 6 เดือน</a></li>
+        <li><a href="#sec-9" data-i18n="rap-t-tilapia_16">9. ข้อเสนอเชิงกลยุทธ์สำหรับ AgroLink</a></li>
+      </ol>
     </div>
   </div>
 </section>
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_17">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="rap-t-tilapia_18">การพัฒนาตลาดปลานิลสดในประเทศไทยควรเป็นตลาดหลักของ AgroLink ในระยะแรก ก่อนขยายไปสู่ปลานิลแล่แช่แข็งเพื่อส่งออก เนื่องจากสามารถเริ่มจากตลาดที่ผู้บริโภคคุ้นเคย ไม่ต้องลงทุนสร้างโรงงานแปรรูปขนาดใหญ่ตั้งแต่ต้น และพัฒนาระบบรับซื้อให้มีความแน่นอนมากขึ้นได้</p>
+<p data-i18n="rap-t-tilapia_19">อย่างไรก็ตาม ต้องแยกให้ชัดระหว่างการหาตลาดใหม่กับการเพิ่มยอดขายในตลาดเดิม เพราะหากเพิ่มปริมาณเลี้ยงโดยไม่มีคำสั่งซื้อรองรับ อาจทำให้ปลานิลล้นตลาดและราคาตกต่ำได้</p>
+<p data-i18n="rap-t-tilapia_20">กรมประมงเคยระบุถึงความสำคัญของการพัฒนาตลาดที่สามารถรองรับผลผลิตจำนวนมาก ตลอดจนการพัฒนาห่วงโซ่คุณค่าปลานิลตั้งแต่ต้นน้ำถึงปลายน้ำ</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_21">2. ช่องทางตลาดปลานิลสดที่ควรพัฒนา</h2>
+<p data-i18n="rap-t-tilapia_22">แนวทางที่เสนอคือแบ่งตลาดออกเป็น 6 ช่องทาง โดยแต่ละช่องทางมีลักษณะการซื้อและความต้องการแตกต่างกัน ดังตาราง</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:1100px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="rap-t-tilapia_23">ช่องทางตลาด</th>
+<th data-i18n="rap-t-tilapia_24">ลูกค้าเป้าหมาย</th>
+<th data-i18n="rap-t-tilapia_25">รูปแบบการจำหน่าย</th>
+<th data-i18n="rap-t-tilapia_26">ความสำคัญ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_27">1. ตลาดค้าส่งปลา</strong></td>
+<td data-i18n="rap-t-tilapia_28">ผู้ค้าส่งและผู้รวบรวมปลา</td>
+<td data-i18n="rap-t-tilapia_29">ปลาสดทั้งตัวจำนวนมาก</td>
+<td data-i18n="rap-t-tilapia_30">ระบายผลผลิตได้เร็ว</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_31">2. ตลาดสดและตลาดชุมชน</strong></td>
+<td data-i18n="rap-t-tilapia_32">แผงขายปลาและผู้ค้าปลีก</td>
+<td data-i18n="rap-t-tilapia_33">ปลาสดทั้งตัว แบ่งขนาด</td>
+<td data-i18n="rap-t-tilapia_34">กระจายถึงผู้บริโภค</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_35">3. ร้านอาหาร</strong></td>
+<td data-i18n="rap-t-tilapia_36">ร้านอาหารตามสั่ง ร้านอาหารไทย ร้านอาหารอีสาน</td>
+<td data-i18n="rap-t-tilapia_37">ปลาขนาดมาตรฐาน ส่งประจำ</td>
+<td data-i18n="rap-t-tilapia_38">สร้างยอดสั่งซื้อซ้ำ</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_39">4. โรงแรมและร้านอาหารขนาดใหญ่</strong></td>
+<td data-i18n="rap-t-tilapia_40">โรงแรม ภัตตาคาร และ Catering</td>
+<td data-i18n="rap-t-tilapia_41">ปลาคัดขนาด คุณภาพสม่ำเสมอ</td>
+<td data-i18n="rap-t-tilapia_42">มีโอกาสสร้างตลาดคุณภาพสูง</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_43">5. Modern Trade</strong></td>
+<td data-i18n="rap-t-tilapia_44">ซูเปอร์มาร์เก็ตและค้าปลีกสมัยใหม่</td>
+<td data-i18n="rap-t-tilapia_45">ปลาทั้งตัว ปลาทำความสะอาดแล้ว หรือบรรจุถาด</td>
+<td data-i18n="rap-t-tilapia_46">เพิ่มมูลค่าและสร้างแบรนด์</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_47">6. ตลาดออนไลน์</strong></td>
+<td data-i18n="rap-t-tilapia_48">ผู้บริโภค ครัวเรือน และกลุ่มซื้อร่วมกัน</td>
+<td data-i18n="rap-t-tilapia_49">สั่งล่วงหน้า ส่งตามรอบ</td>
+<td data-i18n="rap-t-tilapia_50">เข้าถึงลูกค้าโดยตรง</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<div class="note-block" data-i18n="rap-t-tilapia_51">กรมประมงมีตัวอย่างการสนับสนุนช่องทางจำหน่ายผ่านร้าน Fisherman Shop และการส่งเสริมให้เกษตรกรใช้สื่อสังคมออนไลน์เพื่อขายสินค้าโดยตรง ซึ่งเป็นแนวทางที่สามารถนำมาประยุกต์ใช้กับระบบตลาดปลานิลได้</div>
+<h3 data-i18n="rap-t-tilapia_52" style="margin-top:30px;">ช่องทางที่ควรเริ่มก่อน</h3>
+</div>
+<div class="container" style="max-width:1040px;margin:0 auto 10px;">
+<div class="role-grid">
+<div class="role-card reveal in">
+<h4><span class="badge-num">1</span><span data-i18n="rap-t-tilapia_53">อันดับ 1: ผู้ค้าส่งและผู้รวบรวมปลา</span></h4>
+<ul>
+<li data-i18n="rap-t-tilapia_54">รองรับปริมาณปลาได้มากกว่าการขายปลีก</li>
+<li data-i18n="rap-t-tilapia_55">สามารถรวบรวมผลผลิตจากเกษตรกรหลายราย</li>
+<li data-i18n="rap-t-tilapia_56">เหมาะกับการเริ่มสร้างระบบรับซื้อประจำ</li>
+<li data-i18n="rap-t-tilapia_57">ต้องเจรจาราคา ปริมาณ และเงื่อนไขรับซื้อให้ชัดเจน</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">2</span><span data-i18n="rap-t-tilapia_58">อันดับ 2: ร้านอาหาร</span></h4>
+<ul>
+<li data-i18n="rap-t-tilapia_59">มีโอกาสสั่งซื้อซ้ำเป็นประจำ</li>
+<li data-i18n="rap-t-tilapia_60">สามารถกำหนดขนาดปลาให้ตรงกับเมนู</li>
+<li data-i18n="rap-t-tilapia_61">ช่วยสร้างความต้องการที่คาดการณ์ได้</li>
+<li data-i18n="rap-t-tilapia_62">เหมาะกับการพัฒนาระบบจัดส่งตามเส้นทาง</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">3</span><span data-i18n="rap-t-tilapia_63">อันดับ 3: ตลาดสด</span></h4>
+<ul>
+<li data-i18n="rap-t-tilapia_64">เข้าถึงผู้บริโภคโดยตรงผ่านพ่อค้าแม่ค้า</li>
+<li data-i18n="rap-t-tilapia_65">กระจายผลผลิตในพื้นที่ได้ดี</li>
+<li data-i18n="rap-t-tilapia_66">สามารถทดลองจำหน่ายปลาหลายขนาด</li>
+<li data-i18n="rap-t-tilapia_67">เหมาะกับการสร้างแบรนด์ปลานิลจากแหล่งผลิตที่ตรวจสอบย้อนกลับได้</li>
+</ul></div>
+</div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="rap-t-tilapia_68" style="margin-top:20px;">ทั้งสามช่องทางนี้ควรได้รับการทดสอบก่อนขยายกำลังการผลิตหรือเพิ่มจำนวนเกษตรกรในโครงการ</p>
+</div></section>
+
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_69">3. โมเดลธุรกิจที่เสนอ: AgroLink Fresh Tilapia</h2>
+<p data-i18n="rap-t-tilapia_70">แนวคิดคือเปลี่ยนจากการเลี้ยงปลาแล้วค่อยหาคนซื้อ มาเป็นการวางแผนการเลี้ยงโดยมีข้อมูลความต้องการของตลาดเป็นตัวตั้ง</p>
+<h3 data-i18n="rap-t-tilapia_71">โครงสร้างการดำเนินงาน</h3>
+<h3 data-i18n="rap-t-tilapia_72" style="font-size:16.5px;margin-top:20px;">ขั้นที่ 1: รวบรวมคำสั่งซื้อ</h3>
+<p data-i18n="rap-t-tilapia_73">AgroLink สำรวจความต้องการของผู้ซื้อแต่ละกลุ่ม เช่น</p>
+<ul class="check-list">
+<li data-i18n="rap-t-tilapia_74">ผู้ค้าส่งต้องการ 3,000 กิโลกรัมต่อสัปดาห์</li>
+<li data-i18n="rap-t-tilapia_75">ร้านอาหาร 50 ร้าน ต้องการร้านละ 20 กิโลกรัมต่อสัปดาห์</li>
+<li data-i18n="rap-t-tilapia_76">ตลาดสด 10 แห่ง ต้องการแห่งละ 100 กิโลกรัมต่อวัน</li>
+</ul>
+<div class="note-block" data-i18n="rap-t-tilapia_77" style="margin-top:4px;">ตัวเลขข้างต้นเป็นเพียงตัวอย่างเพื่ออธิบายโมเดล ไม่ใช่ข้อมูลคำสั่งซื้อจริง</div>
+<h3 data-i18n="rap-t-tilapia_78" style="font-size:16.5px;">ขั้นที่ 2: จับคู่กับแหล่งผลิต</h3>
+<p data-i18n="rap-t-tilapia_79">ระบบรวบรวมข้อมูลเกษตรกรผู้เลี้ยงปลานิลกระชัง ได้แก่</p>
+<ul class="check-list">
+<li data-i18n="rap-t-tilapia_80">ที่ตั้งกระชังและแหล่งน้ำ</li>
+<li data-i18n="rap-t-tilapia_81">จำนวนปลาที่เลี้ยง</li>
+<li data-i18n="rap-t-tilapia_82">ขนาดปลาเฉลี่ย</li>
+<li data-i18n="rap-t-tilapia_83">วันคาดว่าจะจับปลา</li>
+<li data-i18n="rap-t-tilapia_84">ปริมาณที่พร้อมจำหน่าย</li>
+<li data-i18n="rap-t-tilapia_85">ประวัติคุณภาพและการตรวจสอบย้อนกลับ</li>
+</ul>
+<h3 data-i18n="rap-t-tilapia_86" style="font-size:16.5px;">ขั้นที่ 3: วางแผนการจับปลา</h3>
+<p data-i18n="rap-t-tilapia_87">กำหนดวันจับให้สอดคล้องกับความต้องการของผู้ซื้อ เพื่อลดความเสี่ยงจากการจับปลาออกมาพร้อมกันจำนวนมาก</p>
+<h3 data-i18n="rap-t-tilapia_88" style="font-size:16.5px;">ขั้นที่ 4: รวบรวมและจัดส่ง</h3>
+<p data-i18n="rap-t-tilapia_89">จัดระบบรวบรวมปลา คัดขนาด ชั่งน้ำหนัก และควบคุมอุณหภูมิระหว่างขนส่งตามความเหมาะสม เพื่อรักษาคุณภาพและความปลอดภัยของอาหาร</p>
+<h3 data-i18n="rap-t-tilapia_90" style="font-size:16.5px;">ขั้นที่ 5: ชำระเงินและตรวจสอบผลการขาย</h3>
+<p data-i18n="rap-t-tilapia_91">บันทึกราคาขาย ปริมาณที่ส่งจริง สินค้าถูกปฏิเสธหรือสูญเสีย และระยะเวลารับชำระเงิน เพื่อนำข้อมูลกลับไปปรับปรุงการวางแผนรอบถัดไป</p>
+</div></section>
+
+<section class="prose-section alt" id="sec-4">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_92">4. สร้างตลาดร้านอาหารให้เป็นลูกค้าประจำ</h2>
+<p data-i18n="rap-t-tilapia_93">ช่องทางนี้มีความน่าสนใจ เนื่องจากร้านอาหารต้องจัดซื้อวัตถุดิบต่อเนื่อง และสามารถกำหนดขนาดปลาที่ต้องการได้</p>
+<h3 data-i18n="rap-t-tilapia_94">ตัวอย่างการสร้างเครือข่ายลูกค้า</h3>
+<p data-i18n="rap-t-tilapia_95">สมมติ AgroLink เริ่มจากร้านอาหาร 100 ร้าน</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:18px;">
+<div class="data-table-wrap" style="max-width:700px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="rap-t-tilapia_96">รายการ</th>
+<th data-i18n="rap-t-tilapia_97">สมมติฐาน</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_98">จำนวนร้านอาหาร</strong></td>
+<td data-i18n="rap-t-tilapia_99">100 ร้าน</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_100">ปริมาณสั่งซื้อเฉลี่ยต่อร้าน</strong></td>
+<td data-i18n="rap-t-tilapia_101">20 กก./วัน</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_102">ปริมาณขายรวมต่อวัน</strong></td>
+<td data-i18n="rap-t-tilapia_103">2,000 กก.</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_104">วันส่งสินค้า</strong></td>
+<td data-i18n="rap-t-tilapia_105">26 วัน/เดือน</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_106">ปริมาณขายต่อเดือน</strong></td>
+<td data-i18n="rap-t-tilapia_107">52 ตัน</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_108">ปริมาณขายต่อปี</strong></td>
+<td data-i18n="rap-t-tilapia_109">624 ตัน</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="rap-t-tilapia_110">หากราคาขายส่งเฉลี่ยสมมติอยู่ที่ 50 บาทต่อกิโลกรัม จะมีมูลค่าการซื้อขายประมาณ 2.6 ล้านบาทต่อเดือน หรือ 31.2 ล้านบาทต่อปี</p>
+<div class="note-block" data-i18n="rap-t-tilapia_111">ตัวเลขนี้เป็นสถานการณ์จำลอง โดยสมมติว่าร้านค้าทั้งหมดสั่งซื้อตามปริมาณที่กำหนดครบทุกวันทำการ</div>
+<h3 data-i18n="rap-t-tilapia_112" style="margin-top:28px;">วิธีสร้างเครือข่ายร้านอาหาร</h3>
+<ul class="check-list">
+<li data-i18n="rap-t-tilapia_113">เริ่มสำรวจร้านอาหารในจังหวัดหรือพื้นที่ใกล้แหล่งเลี้ยง</li>
+<li data-i18n="rap-t-tilapia_114">แบ่งกลุ่มร้านตามปริมาณการใช้ปลา</li>
+<li data-i18n="rap-t-tilapia_115">ทดลองส่งปลาให้ร้านที่มีความต้องการแน่นอน</li>
+<li data-i18n="rap-t-tilapia_116">จัดทำตารางส่งประจำรายวันหรือรายสัปดาห์</li>
+<li data-i18n="rap-t-tilapia_117">เสนอราคาตามขนาดปลาและเงื่อนไขการจัดส่ง</li>
+<li data-i18n="rap-t-tilapia_118">วัดอัตราการซื้อซ้ำและความพึงพอใจของลูกค้า</li>
+</ul>
+<div class="note-block" data-i18n="rap-t-tilapia_119">หลักสำคัญ: ควรทำสัญญาหรือข้อตกลงการซื้อขายกับลูกค้าหลักก่อนขยายกำลังการผลิต โดยระบุปริมาณ คุณภาพ ราคา วิธีชั่งน้ำหนัก และเงื่อนไขการชำระเงินอย่างชัดเจน</div>
+</div></section>
+
+<section class="prose-section" id="sec-5">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_120">5. พัฒนาผลิตภัณฑ์ปลานิลสดให้มีมูลค่าเพิ่ม</h2>
+<p data-i18n="rap-t-tilapia_121">ไม่จำเป็นต้องจำหน่ายเฉพาะปลาทั้งตัว เนื่องจากผู้ซื้อแต่ละกลุ่มต้องการความสะดวกแตกต่างกัน</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="rap-t-tilapia_122">ผลิตภัณฑ์</th>
+<th data-i18n="rap-t-tilapia_123">ลูกค้าเป้าหมาย</th>
+<th data-i18n="rap-t-tilapia_124">แนวทางเพิ่มมูลค่า</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_125">ปลานิลสดทั้งตัว</strong></td>
+<td data-i18n="rap-t-tilapia_126">ตลาดค้าส่งและตลาดสด</td>
+<td data-i18n="rap-t-tilapia_127">คัดขนาดและส่งตรงเวลา</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_128">ปลานิลทำความสะอาดแล้ว</strong></td>
+<td data-i18n="rap-t-tilapia_129">ครัวเรือนและร้านอาหาร</td>
+<td data-i18n="rap-t-tilapia_130">ลดภาระการเตรียมวัตถุดิบ</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_131">ปลานิลควักไส้</strong></td>
+<td data-i18n="rap-t-tilapia_132">ร้านอาหารและผู้บริโภค</td>
+<td data-i18n="rap-t-tilapia_133">เพิ่มความสะดวกในการปรุง</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_134">ปลานิลหั่นชิ้น</strong></td>
+<td data-i18n="rap-t-tilapia_135">ร้านอาหารและครัวกลาง</td>
+<td data-i18n="rap-t-tilapia_136">ควบคุมขนาดชิ้นตามการใช้งาน</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_137">ปลานิลบรรจุถาดแช่เย็น</strong></td>
+<td data-i18n="rap-t-tilapia_138">ซูเปอร์มาร์เก็ต</td>
+<td data-i18n="rap-t-tilapia_139">สร้างแบรนด์และตรวจสอบย้อนกลับ</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_140">ชุดปลานิลพร้อมปรุง</strong></td>
+<td data-i18n="rap-t-tilapia_141">ครัวเรือนและช่องทางออนไลน์</td>
+<td data-i18n="rap-t-tilapia_142">เพิ่มความสะดวกในการบริโภค</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<div class="note-block" data-i18n="rap-t-tilapia_143">ผลิตภัณฑ์ที่ผ่านการตัดแต่งต้องคำนวณต้นทุนจากน้ำหนักวัตถุดิบก่อนแปรรูป อัตราได้เนื้อ ค่าแรง บรรจุภัณฑ์ และการสูญเสียให้ครบถ้วน การเพิ่มมูลค่าจะสร้างกำไรได้ก็ต่อเมื่อราคาขายส่วนเพิ่มสูงกว่าต้นทุนส่วนเพิ่มด้วย</div>
+</div></section>
+
+<section class="prose-section alt" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_144">6. ใช้สหกรณ์เป็นศูนย์กลางรวบรวมและกระจายสินค้า</h2>
+<p data-i18n="rap-t-tilapia_145">แนวทางที่เสนอคือใช้สหกรณ์หรือกลุ่มเกษตรกรเป็นจุดเชื่อมโยงระหว่างผู้เลี้ยงกับผู้ซื้อ</p>
+<h3 data-i18n="rap-t-tilapia_146">บทบาทของศูนย์รวบรวมปลา</h3>
+<ul class="check-list">
+<li data-i18n="rap-t-tilapia_147">แจ้งปริมาณปลาที่พร้อมจับ</li>
+<li data-i18n="rap-t-tilapia_148">นัดหมายวันจับและวันรับซื้อ</li>
+<li data-i18n="rap-t-tilapia_149">คัดขนาดและชั่งน้ำหนัก</li>
+<li data-i18n="rap-t-tilapia_150">บันทึกข้อมูลแหล่งผลิต</li>
+<li data-i18n="rap-t-tilapia_151">จัดรอบรถขนส่ง</li>
+<li data-i18n="rap-t-tilapia_152">รวบรวมคำสั่งซื้อจากผู้ซื้อหลายราย</li>
+<li data-i18n="rap-t-tilapia_153">สรุปยอดขายและการชำระเงินให้เกษตรกร</li>
+</ul>
+<p data-i18n="rap-t-tilapia_154">หากมีปริมาณผลผลิตมากพอ ศูนย์รวบรวมอาจพัฒนาเป็นศูนย์คัดบรรจุและรักษาความเย็น โดยต้องพิจารณาความคุ้มค่าของการลงทุนและมาตรฐานสุขลักษณะที่เกี่ยวข้อง</p>
+<p data-i18n="rap-t-tilapia_155">แนวทางนี้ช่วยให้เกษตรกรรายย่อยสามารถรวมปริมาณสินค้าเพื่อเจรจากับผู้ซื้อรายใหญ่ได้ดีขึ้น</p>
+</div></section>
+
+<section class="prose-section" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_156">7. บทบาทของ AgroLink Platform</h2>
+<p data-i18n="rap-t-tilapia_157">AgroLink ไม่จำเป็นต้องเป็นผู้ซื้อปลาทั้งหมดมาเก็บไว้เอง แต่สามารถทำหน้าที่เป็นแพลตฟอร์มเชื่อมโยงข้อมูลและธุรกรรม</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="rap-t-tilapia_158">ระบบ</th>
+<th data-i18n="rap-t-tilapia_159">หน้าที่</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_160">Farmer &amp; Farm Management</strong></td>
+<td data-i18n="rap-t-tilapia_161">จัดเก็บข้อมูลเกษตรกรและฟาร์ม</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_162">Production Planning</strong></td>
+<td data-i18n="rap-t-tilapia_163">คาดการณ์ปริมาณและวันจับปลา</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_164">Buyer Marketplace</strong></td>
+<td data-i18n="rap-t-tilapia_165">รวบรวมความต้องการและคำสั่งซื้อ</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_166">Price Information</strong></td>
+<td data-i18n="rap-t-tilapia_167">บันทึกราคาเสนอซื้อและราคาซื้อขายจริง</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_168">Collection &amp; Logistics</strong></td>
+<td data-i18n="rap-t-tilapia_169">วางแผนรวบรวมและจัดส่ง</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_170">Traceability</strong></td>
+<td data-i18n="rap-t-tilapia_171">ตรวจสอบย้อนกลับแหล่งผลิต</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_172">Quality Management</strong></td>
+<td data-i18n="rap-t-tilapia_173">บันทึกขนาดปลา คุณภาพ และการตรวจสอบ</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_174">Digital Finance</strong></td>
+<td data-i18n="rap-t-tilapia_175">เชื่อมโยงแหล่งทุนจากธนาคารหรือผู้ให้บริการทางการเงิน</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_176">Analytics Dashboard</strong></td>
+<td data-i18n="rap-t-tilapia_177">วิเคราะห์ยอดขาย ต้นทุน และผลตอบแทนของเกษตรกร</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<div class="note-block" data-i18n="rap-t-tilapia_178">ระบบสามารถต่อยอดข้อมูลจากการเลี้ยงปลาและสภาพแวดล้อม เพื่อช่วยวางแผนวันจับและประเมินความเสี่ยงด้านผลผลิตได้ แต่ไม่ควรใช้ข้อมูลดังกล่าวแทนการตรวจคุณภาพปลาก่อนรับซื้อ</div>
+</div></section>
+
+<section class="prose-section alt" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_179">8. แผนทดลองตลาด 6 เดือน</h2>
+<p data-i18n="rap-t-tilapia_180">แนวทางที่เสนอคือเริ่มโครงการนำร่องขนาดเล็กก่อนขยายระดับจังหวัด</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:1040px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="rap-t-tilapia_181">ระยะเวลา</th>
+<th data-i18n="rap-t-tilapia_182">กิจกรรม</th>
+<th data-i18n="rap-t-tilapia_183">ผลลัพธ์ที่ต้องการ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_184">เดือน 1</strong></td>
+<td data-i18n="rap-t-tilapia_185">สำรวจผู้ซื้อและแหล่งผลิต</td>
+<td data-i18n="rap-t-tilapia_186">ได้รายชื่อผู้ซื้อและปริมาณความต้องการ</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_187">เดือน 2</strong></td>
+<td data-i18n="rap-t-tilapia_188">ทดลองจับคู่เกษตรกรกับผู้ซื้อ</td>
+<td data-i18n="rap-t-tilapia_189">ได้ข้อตกลงซื้อขายเบื้องต้น</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_190">เดือน 3</strong></td>
+<td data-i18n="rap-t-tilapia_191">ทดลองรวบรวมและจัดส่ง</td>
+<td data-i18n="rap-t-tilapia_192">ทราบต้นทุนและปัญหาหน้างาน</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_193">เดือน 4</strong></td>
+<td data-i18n="rap-t-tilapia_194">ขยายร้านอาหารและตลาดสด</td>
+<td data-i18n="rap-t-tilapia_195">เพิ่มลูกค้าซื้อซ้ำ</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_196">เดือน 5</strong></td>
+<td data-i18n="rap-t-tilapia_197">ทดสอบสินค้าคัดขนาดและแปรรูปเบื้องต้น</td>
+<td data-i18n="rap-t-tilapia_198">ประเมินโอกาสเพิ่มมูลค่า</td>
+</tr>
+<tr>
+<td><strong data-i18n="rap-t-tilapia_199">เดือน 6</strong></td>
+<td data-i18n="rap-t-tilapia_200">วิเคราะห์ผลและปรับโมเดล</td>
+<td data-i18n="rap-t-tilapia_201">ได้แผนขยายธุรกิจที่อิงข้อมูลจริง</td>
+</tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<h3 data-i18n="rap-t-tilapia_202" style="margin-top:26px;">ตัวชี้วัดที่ควรติดตาม</h3>
+<ul class="check-list">
+<li data-i18n="rap-t-tilapia_203">ปริมาณปลาที่ขายได้จริงต่อวัน</li>
+<li data-i18n="rap-t-tilapia_204">จำนวนผู้ซื้อที่สั่งซื้อซ้ำ</li>
+<li data-i18n="rap-t-tilapia_205">ราคาขายเฉลี่ยที่เกษตรกรได้รับ</li>
+<li data-i18n="rap-t-tilapia_206">ส่วนต่างระหว่างราคาที่ผู้ซื้อจ่ายกับต้นทุนรวบรวมและจัดส่ง</li>
+<li data-i18n="rap-t-tilapia_207">อัตราการสูญเสียและการถูกปฏิเสธสินค้า</li>
+<li data-i18n="rap-t-tilapia_208">ระยะเวลาจากจับปลาถึงส่งมอบ</li>
+<li data-i18n="rap-t-tilapia_209">ระยะเวลาชำระเงินให้เกษตรกร</li>
+<li data-i18n="rap-t-tilapia_210">กำไรสุทธิต่อกิโลกรัมของแต่ละช่องทาง</li>
+</ul>
+</div></section>
+
+<section class="prose-section" id="sec-9">
+<div class="container prose-block reveal in">
+<h2 data-i18n="rap-t-tilapia_211">9. ข้อเสนอเชิงกลยุทธ์สำหรับ AgroLink</h2>
+<p data-i18n="rap-t-tilapia_212">แนวทางที่เสนอคือเริ่มจากโมเดลตลาดนำการผลิต (Market-led Production) โดยดำเนินการตามลำดับดังนี้</p>
+</div>
+<div class="container" style="max-width:1040px;margin:0 auto 10px;">
+<div class="role-grid">
+<div class="role-card reveal in">
+<h4><span class="badge-num">1</span><span data-i18n="rap-t-tilapia_213">ระยะที่ 1 — หาตลาดก่อน</span></h4>
+<ul>
+<li data-i18n="rap-t-tilapia_214">สำรวจผู้ค้าส่ง ร้านอาหาร ตลาดสด และผู้ซื้อรายใหญ่ พร้อมขอข้อมูลความต้องการจริงเรื่องปริมาณ ขนาดปลา ราคา และรอบการรับซื้อ</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">2</span><span data-i18n="rap-t-tilapia_215">ระยะที่ 2 — จับคู่แหล่งผลิต</span></h4>
+<ul>
+<li data-i18n="rap-t-tilapia_216">คัดเลือกเกษตรกรหรือกลุ่มผู้เลี้ยงปลานิลกระชังที่สามารถส่งมอบผลผลิตได้สม่ำเสมอ</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">3</span><span data-i18n="rap-t-tilapia_217">ระยะที่ 3 — สร้างระบบรวบรวม</span></h4>
+<ul>
+<li data-i18n="rap-t-tilapia_218">ใช้สหกรณ์หรือจุดรวบรวมที่เหมาะสมเป็นศูนย์กลางคัดขนาดและจัดส่ง โดยเริ่มจากโครงสร้างที่มีอยู่เพื่อลดต้นทุนลงทุน</li>
+</ul></div>
+<div class="role-card reveal in">
+<h4><span class="badge-num">4</span><span data-i18n="rap-t-tilapia_219">ระยะที่ 4 — ขยายช่องทางขาย</span></h4>
+<ul>
+<li data-i18n="rap-t-tilapia_220">เมื่อระบบตลาดสดและร้านอาหารมีความต่อเนื่องแล้ว จึงขยายสู่ค้าปลีกสมัยใหม่ ผลิตภัณฑ์พร้อมปรุง และโรงงานแปรรูป</li>
+</ul></div>
+</div>
+</div>
+<div class="container prose-block reveal in">
+<h3 data-i18n="rap-t-tilapia_221" style="margin-top:30px;">สิ่งที่ควรทำเป็นลำดับแรก</h3>
+<p data-i18n="rap-t-tilapia_222">ข้อเสนอคือจัดทำฐานข้อมูลผู้ซื้อปลานิลสดในประเทศไทย โดยแบ่งตามจังหวัด ประเภทผู้ซื้อ ปริมาณรับซื้อโดยประมาณ ขนาดปลาที่ต้องการ และช่องทางติดต่อ จากนั้นจึงนำข้อมูลมาจับคู่กับพื้นที่เลี้ยงปลานิลกระชังที่มีศักยภาพ</p>
+<p data-i18n="rap-t-tilapia_223">การดำเนินงานเช่นนี้จะช่วยให้ AgroLink พัฒนาจากแพลตฟอร์มข้อมูลไปสู่แพลตฟอร์มที่สร้างธุรกรรมจริง และช่วยให้เกษตรกรวางแผนการผลิตตามความต้องการของตลาดได้แม่นยำขึ้น</p>
+<div class="note-block" data-i18n="rap-t-tilapia_224" style="margin-top:22px;">หมายเหตุการใช้งาน: เอกสารนี้เป็นข้อเสนอเชิงแนวคิด ไม่ใช่เอกสารรับรองสถานะสินค้าในโครงการใด และไม่ใช่ผลการศึกษาความเป็นไปได้เชิงวิศวกรรม/สิ่งแวดล้อมของพื้นที่เฉพาะ</div>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 data-i18n="rap-t-tilapia_225" class="section-title">สนใจพัฒนาตลาดปลานิลสดร่วมกับ AgroLink</h2>
+<p data-i18n="rap-t-tilapia_226" class="section-sub">ไม่ว่าจะในฐานะเกษตรกรผู้เลี้ยงปลานิลกระชัง สหกรณ์/กลุ่มเกษตรกร ผู้รวบรวม ผู้ซื้อรายใหญ่ หรือหน่วยงานภาครัฐ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="rap-t-tilapia_227">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="rap-t-tilapia_228">กลับหน้าแรก</a>
+</div></div></section>
+
 
 <footer>
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-wheat-awn"></i></span>AgroLink</div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-fish"></i></span>AgroLink</div>
         <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
         <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
       </div>
@@ -269,7 +740,6 @@
           <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
           <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
           <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
-          <li><a href="rap-t-project.html" data-i18n="footer_product_17">โครงการ RAP-T</a></li>
         </ul>
       </div>
       <div>
@@ -307,15 +777,18 @@
 <script src="js/i18n-rap-t-tilapia.js"></script>
 <script src="js/i18n.js"></script>
 <script>
+  // scroll reveal
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
   }, { threshold: 0.12 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
+  // mobile nav toggle
   const navToggle = document.querySelector('.nav-toggle');
   const navLinksEl = document.querySelector('.nav-links');
   navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
 
+  // nav shadow on scroll
   const navEl = document.querySelector('header.nav');
   window.addEventListener('scroll', () => {
     navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
