@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requirePlatform } = require('../middleware/auth');
 const carbonAggregation = require('../lib/carbonAggregation');
+const sentinelHub = require('../lib/sentinelHub');
 
 const router = express.Router();
 
@@ -1687,6 +1688,78 @@ router.post('/satellite-observations', async (req, res, next) => {
     if (result.unitNotFound) return res.status(404).json({ error: 'production_unit_not_found' });
     return res.status(201).json(result.observation);
   } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/satellite-observations/sync-sentinel
+ * Body: { unit_id, recorded_by? } — P7 of the RAP-T readiness roadmap:
+ * calls the real Sentinel Hub Statistical API (via Copernicus Data Space
+ * Ecosystem — see backend/src/lib/sentinelHub.js for the full design note
+ * and its own honesty caveat on being unverified against a live account,
+ * since no CDSE account existed when this was written) for the plot's own
+ * gps_boundary, and inserts the most recent cloud-free mean NDVI it finds
+ * as a real satellite.observation row (source_provider =
+ * 'sentinel2_optical', observation_type = 'ndvi') — the "real API"
+ * counterpart to the fully-manual POST /admin/satellite-observations
+ * above, which stays available for every other observation_type/source
+ * this doesn't cover (crop_health/land_cover/flood_extent, or any source
+ * other than Sentinel-2 optical). Same upsert-on-(unit_id,
+ * observation_date, source_provider, observation_type) convention as the
+ * manual route, so re-syncing the same plot/date is a correction, not a
+ * duplicate.
+ */
+router.post('/satellite-observations/sync-sentinel', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { unit_id: unitId, recorded_by: recordedBy } = req.body || {};
+
+  if (!unitId) {
+    return res.status(400).json({ error: 'missing_required_fields', required: ['unit_id'] });
+  }
+  if (!sentinelHub.isConfigured()) {
+    return res.status(503).json({ error: 'sentinelhub_not_configured' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const unit = await client.query(
+        `SELECT ST_AsGeoJSON(gps_boundary)::json AS geometry
+           FROM registry.production_unit WHERE unit_id = $1`,
+        [unitId],
+      );
+      if (unit.rows.length === 0) return { unitNotFound: true };
+
+      const ndvi = await sentinelHub.fetchLatestNdvi(unit.rows[0].geometry);
+      if (!ndvi) return { noImagery: true };
+
+      const obsRes = await client.query(
+        `INSERT INTO satellite.observation
+           (unit_id, observation_date, source_provider, observation_type, value_numeric, note, recorded_by)
+         VALUES ($1, $2, 'sentinel2_optical', 'ndvi', $3, $4, $5)
+         ON CONFLICT (unit_id, observation_date, source_provider, observation_type) DO UPDATE SET
+           value_numeric = EXCLUDED.value_numeric,
+           note = EXCLUDED.note,
+           recorded_by = EXCLUDED.recorded_by,
+           ingested_at = now()
+         RETURNING *`,
+        [
+          unitId, ndvi.observationDate, ndvi.valueNumeric,
+          `ดึงอัตโนมัติจาก Copernicus Sentinel-2 L2A (Statistical API) — จำนวนพิกเซลที่ใช้คำนวณ: ${ndvi.sampleCount}`,
+          recordedBy || 'ระบบอัตโนมัติ (Sentinel Hub API)',
+        ],
+      );
+      await logAccess(client, 'write', 'satellite.observation', obsRes.rows[0].observation_id);
+      return { observation: obsRes.rows[0] };
+    });
+
+    if (result.unitNotFound) return res.status(404).json({ error: 'production_unit_not_found' });
+    if (result.noImagery) return res.status(422).json({ error: 'no_cloud_free_imagery_found' });
+    return res.status(201).json(result.observation);
+  } catch (err) {
+    if (err instanceof sentinelHub.SentinelHubError) {
+      return res.status(502).json({ error: 'sentinelhub_request_failed', detail: err.message, status: err.status });
+    }
     return next(err);
   }
 });

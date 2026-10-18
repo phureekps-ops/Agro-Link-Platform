@@ -194,6 +194,65 @@ grant_agrimap_water_climate_adapter.sql
 ```
 
 
+**เพิ่มเมื่อ 2026-10-18 (รอบที่ 2 — frontend+backend เท่านั้น ไม่มี migration
+ใหม่ แต่ต้องตั้งค่า environment variable ใหม่ 2 ตัวก่อนใช้งานได้):** ตามรายการ
+"P7 — เชื่อมต่อ API ภาพถ่ายดาวเทียมจริง: แทนที่การป้อนข้อมูลด้วยมือด้วยการ
+เชื่อมต่อ Sentinel Hub, Google Earth Engine หรือ GISTDA" ของรายงาน AgroLink ×
+RAP-T Gap Analysis — เปรียบเทียบทั้ง 3 ผู้ให้บริการกับผู้ใช้แล้วเลือก
+**Sentinel Hub** (ผ่าน Copernicus Data Space Ecosystem ของ ESA) เพราะฟรีใน
+โควตาปกติไม่ต้องกังวลเรื่องเชิงพาณิชย์แบบ Google Earth Engine และมี API
+วิเคราะห์ (Statistical API) ที่คำนวณ NDVI ได้จริง ต่างจาก GISTDA ที่ตอนนี้
+เจอแค่ API แผนที่พื้นฐาน ไม่มี API วิเคราะห์ภาพ:
+
+1. **ไม่ต้องรัน migration SQL ใหม่** — `satellite.observation.source_provider`
+   รองรับค่า `sentinel2_optical` อยู่แล้วตั้งแต่ `grant_satellite_observation.
+   sql` (ตารางออกแบบไว้ล่วงหน้าให้รองรับ API จริงได้โดยไม่ต้องแก้ schema) และ
+   ทุกแปลง (`registry.production_unit`) มี `gps_boundary` (ขอบเขตแปลงที่
+   เกษตรกรวาดไว้ตอนลงทะเบียน) อยู่แล้ว ใช้เป็นพื้นที่สำหรับขอข้อมูล NDVI ได้
+   ทันทีโดยไม่ต้องขอข้อมูลเพิ่มจากเกษตรกร
+2. **`backend/src/lib/sentinelHub.js`** — เรียก Statistical API ของ Copernicus
+   Data Space Ecosystem จริง (ไม่ใช่โค้ดจำลอง) แต่**ยังไม่เคยทดสอบกับบัญชีจริง
+   เพราะตอนเขียนโค้ดผู้ใช้ยังไม่มีบัญชี** — endpoint/รูปแบบคำขอ/evalscript
+   คัดลอกมาจากเอกสารทางการของ Copernicus Data Space Ecosystem ทั้งหมด แต่ควร
+   ทดสอบกับแปลงจริงอีกครั้งหลังมี Client ID/Secret แล้ว ดูรายละเอียด/ข้อจำกัด
+   ทั้งหมดที่คอมเมนต์หัวไฟล์นี้เอง
+3. **`POST /admin/satellite-observations/sync-sentinel`** (ใน `admin.js`) —
+   รับ `unit_id`, ดึงขอบเขตแปลงจากฐานข้อมูล, เรียก Sentinel Hub หาค่า NDVI
+   เฉลี่ยจากภาพ Sentinel-2 ที่ปลอดเมฆล่าสุดในช่วง 60 วัน, บันทึกเป็นแถวใหม่ใน
+   `satellite.observation` (`source_provider = sentinel2_optical`) — เป็นคู่
+   "เชื่อมต่อ API จริง" ของ `POST /admin/satellite-observations` เดิมซึ่งยัง
+   ใช้ป้อนข้อมูลด้วยมือได้ตามปกติสำหรับประเภทข้อมูลอื่น
+4. **ปุ่ม "ดึงค่า NDVI ล่าสุดจาก Sentinel Hub"** ที่หน้า "🛰️ บันทึกข้อมูล
+   ดาวเทียม/Remote Sensing" ของพอร์ทัลแอดมิน (เลือกแปลงแล้วกดปุ่มได้เลย)
+
+**ขั้นตอนสมัครและตั้งค่า (ต้องทำก่อนปุ่มนี้จะใช้งานได้จริง):**
+
+1. ไปที่ https://dataspace.copernicus.eu → สมัครบัญชีฟรี (Register) ด้วยอีเมล
+2. ล็อกอินแล้วไปที่ Dashboard: https://shapps.dataspace.copernicus.eu/dashboard/#/account/settings
+3. ไปที่แท็บ **User Settings** → หาหัวข้อ **OAuth clients** → กด **Create**
+4. ตั้งชื่อ client (เช่น `agrolink-backend`) → เลือกวันหมดอายุ หรือ "Never
+   expire" (ถ้าเลือกไม่หมดอายุจะต้องติ๊กยืนยันว่าเข้าใจความเสี่ยง) → **ไม่ต้อง**
+   ติ๊กตัวเลือก "Single-page application" (เพราะใช้งานจากฝั่ง backend ไม่ใช่
+   เบราว์เซอร์) → กด **Create**
+5. จะมีหน้าต่างเด้งขึ้นมาแสดง **Client ID** และ **Client Secret** — คัดลอกเก็บ
+   ไว้ทั้งสองค่า **ทันที** (ค่า Client Secret จะไม่สามารถดูย้อนหลังได้อีกหลัง
+   ปิดหน้าต่างนี้ — ถ้าพลาดต้องสร้าง client ใหม่)
+6. ไปที่ Render Dashboard → เลือก service **agrolink-backend** → แท็บ
+   **Environment** → กด **Add Environment Variable** เพิ่ม 2 ตัว:
+   - `SENTINELHUB_CLIENT_ID` = ค่า Client ID ที่คัดลอกมา
+   - `SENTINELHUB_CLIENT_SECRET` = ค่า Client Secret ที่คัดลอกมา
+7. กด **Save Changes** — Render จะ deploy backend ใหม่ให้อัตโนมัติ (ใช้เวลา
+   ไม่กี่นาที) เสร็จแล้วลองกดปุ่ม "ดึงค่า NDVI ล่าสุดจาก Sentinel Hub" ที่หน้า
+   แอดมินได้เลย
+
+**หมายเหตุสำคัญ:** ขั้นตอนที่ 6-7 ข้างต้น **ต้องทำเองโดยตรงบน Render Dashboard**
+— การแก้ `render.yaml` ในรอบนี้ (เพิ่มรายการ `SENTINELHUB_CLIENT_ID`/
+`SENTINELHUB_CLIENT_SECRET` แบบ `sync: false`) มีไว้เพื่อบันทึกไว้เผื่อสร้าง
+ระบบใหม่ทั้งหมดในอนาคตเท่านั้น **ไม่ได้เพิ่มตัวแปรเหล่านี้ให้ service ที่
+deploy อยู่แล้วโดยอัตโนมัติ** ถ้าไม่ได้ตั้งค่าผ่าน Environment tab ปุ่มจะขึ้น
+ข้อความแจ้งว่า "ยังไม่ได้ตั้งค่า SENTINELHUB_CLIENT_ID/SECRET บน Render" แทน
+error ที่สับสน
+
 **เพิ่มเมื่อ 2026-10-18:** `grant_agrimap_water_climate_adapter.sql` — ตามคำขอ
 "สามารถออกแบบให้เชื่อมโยงข้อมูลจาก Agri-Map ได้หรือไม่" (ตาม P3 ของรายงาน
 AgroLink × RAP-T Gap Analysis — ข้อเสนอนโยบายของ RAP-T เรื่องเชื่อมโยงข้อมูล

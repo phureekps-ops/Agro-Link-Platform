@@ -1701,6 +1701,42 @@ document.getElementById("observationSubmitBtn").addEventListener("click", async 
   }
 });
 
+// P7 ของ RAP-T readiness roadmap — ดู backend/src/lib/sentinelHub.js และ
+// POST /admin/satellite-observations/sync-sentinel ใน admin.js สำหรับที่มา/
+// ข้อจำกัด (ยังไม่เคยทดสอบกับบัญชี Sentinel Hub จริง เพราะตอนเขียนยังไม่มี
+// บัญชี — ข้อความ error ด้านล่างจึงครอบคลุมเผื่อกรณีที่ยังไม่เคยเจอจริงด้วย)
+const SENTINEL_SYNC_ERROR_TH = {
+  sentinelhub_not_configured: "ยังไม่ได้ตั้งค่า SENTINELHUB_CLIENT_ID/SECRET บน Render — ดูขั้นตอนใน DEPLOY.md",
+  production_unit_not_found: "ไม่พบแปลงนี้ในระบบ",
+  no_cloud_free_imagery_found: "ไม่พบภาพถ่ายดาวเทียมที่ปลอดเมฆในช่วง 60 วันที่ผ่านมาของแปลงนี้ (ไม่ใช่ข้อผิดพลาดของระบบ ลองใหม่ภายหลังได้)",
+  sentinelhub_request_failed: "เชื่อมต่อ Sentinel Hub ไม่สำเร็จ (อาจเป็นปัญหาชั่วคราวของผู้ให้บริการ หรือ Client ID/Secret ไม่ถูกต้อง)",
+};
+
+document.getElementById("sentinelSyncBtn").addEventListener("click", async () => {
+  const unitId = document.getElementById("unitSelect").value;
+  const resultEl = document.getElementById("sentinelSyncResult");
+  if (!unitId) {
+    toast("กรุณาเลือกแปลงด้านบนก่อน", true);
+    return;
+  }
+  const btn = document.getElementById("sentinelSyncBtn");
+  btn.disabled = true;
+  resultEl.textContent = "กำลังดึงข้อมูลจาก Sentinel Hub…";
+  try {
+    const observation = await AgroLinkAdminAPI.post("/admin/satellite-observations/sync-sentinel", { unit_id: unitId });
+    resultEl.textContent = `ดึงสำเร็จ — NDVI เฉลี่ย ${Number(observation.value_numeric).toFixed(4)} (วันที่ ${thaiDate(observation.observation_date)})`;
+    toast("ดึงค่า NDVI จาก Sentinel Hub สำเร็จ");
+    await loadObservations(unitId);
+  } catch (err) {
+    const code = err.body && err.body.error;
+    const reason = SENTINEL_SYNC_ERROR_TH[code] || (err.body && err.body.error) || err.message;
+    resultEl.textContent = "";
+    toast("ดึงข้อมูลไม่สำเร็จ: " + reason, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 async function initSatelliteObservations() {
   await loadUnits();
 }
@@ -1783,7 +1819,7 @@ function agrimapObservationCard(o) {
         มีผลตั้งแต่ ${thaiDate(o.valid_from)}${o.valid_until ? ` ถึง ${thaiDate(o.valid_until)}` : " (ต่อเนื่อง)"} ·
         แหล่งข้อมูล ${escapeHtml(AGRIMAP_SOURCE_LABEL[o.source_provider] || o.source_provider)} · บันทึกโดย ${escapeHtml(o.recorded_by)}
       </div>
-      ${isActive ? `<button type="button" class="btn btn-secondary agrimap-close-btn" data-observation-id="${o.observation_id}" style="margin-top:6px;">ปิดคำเตือนนี้</button>` : ""}
+      ${isActive ? `<button type="button" class="btn btn-ghost agrimap-close-btn" data-observation-id="${o.observation_id}" style="margin-top:6px;">ปิดคำเตือนนี้</button>` : ""}
     </div>
   `;
 }

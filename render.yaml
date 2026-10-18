@@ -49,6 +49,19 @@ services:
         generateValue: true
       - key: NODE_ENV
         value: production
+      # P7 (RAP-T readiness roadmap) — Sentinel Hub (Copernicus Data Space
+      # Ecosystem) real NDVI integration, see backend/src/lib/sentinelHub.js.
+      # sync: false (not generateValue) because these come from the user's
+      # OWN CDSE OAuth client, not something Render can generate — see
+      # DEPLOY.md's "เชื่อมต่อ Sentinel Hub จริง" section for the sign-up
+      # steps. Leaving these unset is fine (the feature just responds
+      # "sentinelhub_not_configured" until they're added on the Render
+      # Dashboard's Environment tab — see DEPLOY.md, editing this file alone
+      # does not push new keys to an already-deployed service).
+      - key: SENTINELHUB_CLIENT_ID
+        sync: false
+      - key: SENTINELHUB_CLIENT_SECRET
+        sync: false
 
   - type: web
     runtime: static

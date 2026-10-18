@@ -592,10 +592,22 @@
       <div class="admin-page" data-page-content="satellite" style="display:none;">
     <div class="section-title">🛰️ บันทึกข้อมูลดาวเทียม/Remote Sensing</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
-      หมายเหตุขอบเขต: สภาพแวดล้อมนี้ยังไม่ได้เชื่อมต่อผู้ให้บริการภาพถ่ายดาวเทียมจริง (Sentinel Hub / Google Earth Engine / GISTDA)
-      — ผู้ดูแลระบบป้อนข้อมูลด้วยมือแทนในขั้นนี้ (source_provider = manual) โดยตารางออกแบบให้รองรับการเชื่อมต่อ API จริงในอนาคตได้โดยไม่ต้องแก้ schema
-      ตารางนี้แยกจากข้อมูลดาวเทียมของโมดูลคาร์บอนเครดิต (AWD) ซึ่งใช้เฉพาะสถานะน้ำท่วม/แห้งเท่านั้น
+      หมายเหตุขอบเขต: เชื่อมต่อ Sentinel Hub (Copernicus Data Space Ecosystem) จริงแล้วสำหรับค่า NDVI (ปุ่มด้านล่าง — ต้องตั้งค่า
+      SENTINELHUB_CLIENT_ID/SECRET บน Render ก่อนใช้งานได้ ดู DEPLOY.md) ส่วน Google Earth Engine/GISTDA และประเภทข้อมูลอื่นนอกจาก NDVI
+      ยังไม่ได้เชื่อมต่อจริง — ป้อนด้วยมือได้ตามปกติผ่านฟอร์มด้านล่าง (source_provider = manual) โดยตารางออกแบบให้รองรับการเชื่อมต่อ API
+      จริงเพิ่มเติมได้โดยไม่ต้องแก้ schema ตารางนี้แยกจากข้อมูลดาวเทียมของโมดูลคาร์บอนเครดิต (AWD) ซึ่งใช้เฉพาะสถานะน้ำท่วม/แห้งเท่านั้น
     </p>
+
+    <div class="panel" style="margin-bottom:24px; background:var(--green-50, #eef7f0);">
+      <div style="font-weight:700; margin-bottom:6px;">🛰️ ดึงค่า NDVI จริงจาก Sentinel Hub (P7 — ของแปลงที่เลือกไว้ด้านล่าง)</div>
+      <p style="font-size:13px; color:var(--gray-500); margin:0 0 12px;">
+        เรียก Statistical API ของ Copernicus Data Space Ecosystem โดยใช้ขอบเขตแปลง (gps_boundary) ที่เกษตรกรวาดไว้ตอนลงทะเบียน
+        ค้นหาภาพ Sentinel-2 ที่ปลอดเมฆล่าสุดในช่วง 60 วันที่ผ่านมา แล้วบันทึกเป็นข้อมูล NDVI จริง (source_provider = sentinel2_optical)
+        — ถ้าช่วงนี้มีแต่เมฆปกคลุมทั้งหมดจะแจ้งว่าไม่พบภาพที่ใช้ได้ ไม่ใช่ error
+      </p>
+      <button type="button" class="btn btn-ghost" id="sentinelSyncBtn" style="max-width:280px;">ดึงค่า NDVI ล่าสุดจาก Sentinel Hub</button>
+      <div id="sentinelSyncResult" class="detail-line" style="margin-top:10px;"></div>
+    </div>
     <div class="panel" style="margin-bottom:24px;">
       <form id="observationForm" class="form-grid">
         <div class="field full">
