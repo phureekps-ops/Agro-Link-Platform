@@ -124,6 +124,11 @@ const AgroLinkAdminAPI = (() => {
   const get = (path) => request(path, { method: "GET" });
   const post = (path, data) => request(path, { method: "POST", body: JSON.stringify(data) });
   const put = (path, data) => request(path, { method: "PUT", body: JSON.stringify(data) });
+  // Added for PATCH /admin/agrimap-observations/:id/close (grant_agrimap_
+  // water_climate_adapter.sql) — the first PATCH endpoint in this codebase;
+  // same shape as put(), just a different HTTP verb for a partial update
+  // (closing a warning early) rather than a full replace.
+  const patch = (path, data) => request(path, { method: "PATCH", body: JSON.stringify(data) });
   const del = (path) => request(path, { method: "DELETE" });
 
   return {
@@ -134,6 +139,7 @@ const AgroLinkAdminAPI = (() => {
     get,
     post,
     put,
+    patch,
     del,
   };
 })();

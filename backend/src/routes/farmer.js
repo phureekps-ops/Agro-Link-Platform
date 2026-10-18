@@ -1385,4 +1385,55 @@ router.get('/oae/datasets', async (req, res, next) => {
   }
 });
 
+/**
+ * ============================================================================
+ * P3 (RAP-T readiness roadmap) — Agri-Map / water-climate-risk area alerts,
+ * farmer-facing read side. See grant_agrimap_water_climate_adapter.sql for
+ * the full agrimap.* schema and design note (area-scoped, not plot-scoped;
+ * no sharing-toggle gate, unlike oae.* above — every row is a public-safety
+ * warning visible to every farmer in its province/district immediately).
+ * Read-only: a farmer never writes to agrimap.*, only ever sees whatever
+ * Platform Ops (or, in future, a real LDD/กรมชลประทาน officer account) has
+ * entered for the farmer's own province/district.
+ * ============================================================================
+ */
+
+/**
+ * GET /farmer/agrimap/alerts — currently-valid water/climate-risk warnings
+ * for the calling farmer's OWN province (identity.farmer.region_code) and,
+ * where set, their own district (district_code) — a province-wide warning
+ * (district_code IS NULL) always shows regardless of the farmer's district.
+ * A farmer with no region_code on file (should not normally happen — see
+ * register.js) gets an empty list rather than an error.
+ */
+router.get('/agrimap/alerts', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => {
+      const farmer = await client.query(
+        'SELECT region_code, district_code FROM identity.farmer WHERE farmer_id = $1',
+        [subjectId],
+      );
+      if (farmer.rows.length === 0 || !farmer.rows[0].region_code) return [];
+      const { region_code: regionCode, district_code: districtCode } = farmer.rows[0];
+
+      const result = await client.query(
+        `SELECT observation_id, province_code, district_code, risk_type, severity_level,
+                value_numeric, value_label, headline_th, detail_th, valid_from, valid_until
+           FROM agrimap.area_risk_observation
+          WHERE province_code = $1
+            AND (district_code IS NULL OR district_code = $2)
+            AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+          ORDER BY severity_level = 'critical' DESC, severity_level = 'high' DESC, valid_from DESC`,
+        [regionCode, districtCode],
+      );
+      await logAccess(client, 'read', 'agrimap.area_risk_observation', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

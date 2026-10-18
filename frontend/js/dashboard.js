@@ -509,6 +509,65 @@ async function loadOaeDatasets() {
   }
 }
 
+// ---------- เตือนภัยน้ำ/ภูมิอากาศ (Agri-Map) — GET /farmer/agrimap/alerts, read-only ----------
+// P3 ของ RAP-T readiness roadmap — ดู backend/db/grant_agrimap_water_
+// climate_adapter.sql สำหรับที่มา/ข้อจำกัด (ป้อนด้วยมือโดย Platform Ops
+// จนกว่าจะมี API จริงจาก LDD/กรมชลประทาน). ไม่มีคำเตือน (แปลว่า farmer ยัง
+// ไม่ได้ลงทะเบียน region_code หรือพื้นที่ของตนไม่มีคำเตือน) ไม่ใช่ error —
+// backend คืนลิสต์ว่างในทั้งสองกรณี.
+const AGRIMAP_SEVERITY_LABEL_TH = { critical: "วิกฤต", high: "สูง", medium: "กลาง", low: "ต่ำ", info: "ทราบไว้" };
+const AGRIMAP_SEVERITY_SEV_CLASS = {
+  critical: "sev-critical", high: "sev-warning", medium: "sev-warning", low: "sev-info", info: "sev-info",
+};
+const AGRIMAP_RISK_TYPE_LABEL_TH = {
+  water_level: "ระดับน้ำ", flood_risk: "เสี่ยงน้ำท่วม", drought_risk: "เสี่ยงภัยแล้ง",
+  rainfall_forecast: "พยากรณ์ฝน", irrigation_schedule: "แผนส่งน้ำชลประทาน",
+  soil_water_suitability: "ความเหมาะสมดิน-น้ำ (Agri-Map)", other: "อื่นๆ",
+};
+
+function agrimapAlertAreaLabel(a) {
+  const province = TH_PROVINCES.find(([code]) => code === a.province_code);
+  const provinceName = province ? province[1] : a.province_code;
+  if (!a.district_code) return `${provinceName} (ทั้งจังหวัด)`;
+  const district = TH_DISTRICTS.find(([code]) => code === a.district_code);
+  const districtName = district ? district[1] : a.district_code;
+  return `${districtName}, ${provinceName}`;
+}
+
+function agrimapAlertCard(a) {
+  const sevClass = AGRIMAP_SEVERITY_SEV_CLASS[a.severity_level] || "sev-info";
+  const sevLabel = a.severity_level ? (AGRIMAP_SEVERITY_LABEL_TH[a.severity_level] || a.severity_level) : null;
+  const valueLine = a.value_numeric !== null && a.value_numeric !== undefined
+    ? `ค่า: ${Number(a.value_numeric).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`
+    : (a.value_label ? `ค่า: ${escapeHtml(a.value_label)}` : "");
+  return `
+    <div class="item-card">
+      <div class="row">
+        <span class="title">${escapeHtml(a.headline_th)}</span>
+        ${sevLabel ? `<span class="badge ${sevClass}">${escapeHtml(sevLabel)}</span>` : ""}
+      </div>
+      <div class="detail-line">${escapeHtml(AGRIMAP_RISK_TYPE_LABEL_TH[a.risk_type] || a.risk_type)} · ${escapeHtml(agrimapAlertAreaLabel(a))}</div>
+      ${valueLine ? `<div class="detail-line">${valueLine}</div>` : ""}
+      ${a.detail_th ? `<div class="detail-line muted">${escapeHtml(a.detail_th)}</div>` : ""}
+      <div class="detail-line muted">
+        มีผลตั้งแต่ ${thaiDate(a.valid_from)}${a.valid_until ? ` ถึง ${thaiDate(a.valid_until)}` : " (ต่อเนื่อง)"}
+      </div>
+    </div>
+  `;
+}
+
+async function loadAgrimapAlerts() {
+  const el = document.getElementById("agrimapAlertsSection");
+  try {
+    const alerts = await AgroLinkAPI.get("/farmer/agrimap/alerts");
+    el.innerHTML = alerts.length === 0
+      ? `<div class="empty-state">ไม่มีคำเตือนสำหรับพื้นที่ของท่านในขณะนี้</div>`
+      : alerts.map(agrimapAlertCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดคำเตือนไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkAPI.logout());
 
 /**
@@ -535,6 +594,7 @@ async function init() {
   loadContracts();
   loadNotifications();
   loadOaeDatasets();
+  loadAgrimapAlerts();
 
   // Units and lenders both feed the loan-application form's dropdowns AND
   // the name lookups applicationCard() needs, so load them before the

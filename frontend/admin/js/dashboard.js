@@ -1706,6 +1706,178 @@ async function initSatelliteObservations() {
 }
 
 // ============================================================
+// น้ำ/ความเสี่ยงภูมิอากาศ (Agri-Map) — P3 ของ RAP-T readiness roadmap, ดู
+// backend/db/grant_agrimap_water_climate_adapter.sql สำหรับที่มา/ข้อจำกัด
+// (ป้อนด้วยมือโดย Platform Ops จนกว่าจะมี API จริงจาก LDD/กรมชลประทาน).
+// province_code/district_code ใช้ชุดรหัส TH_PROVINCES/TH_DISTRICTS เดียวกับ
+// identity.farmer (ไม่ใช่ registry.province) — จึงเติม dropdown จาก
+// TH_PROVINCES/TH_DISTRICTS ที่โหลดอยู่แล้วบนหน้านี้ เหมือนกับตัวกรอง
+// จังหวัด/อำเภอของรายชื่อเกษตรกรด้านบน แทนการเรียก /admin/provinces
+// ============================================================
+const AGRIMAP_RISK_TYPE_LABEL = {
+  water_level: "ระดับน้ำ", flood_risk: "เสี่ยงน้ำท่วม", drought_risk: "เสี่ยงภัยแล้ง",
+  rainfall_forecast: "พยากรณ์ฝน", irrigation_schedule: "แผนส่งน้ำชลประทาน",
+  soil_water_suitability: "ความเหมาะสมดิน-น้ำ (Agri-Map)", other: "อื่นๆ",
+};
+const AGRIMAP_SEVERITY_LABEL = {
+  info: "ทราบไว้", low: "ต่ำ", medium: "กลาง", high: "สูง", critical: "วิกฤต",
+};
+const AGRIMAP_SOURCE_LABEL = {
+  manual: "ป้อนด้วยมือ", agri_map_ldd: "Agri-Map (กรมพัฒนาที่ดิน)",
+  rid_water_data: "กรมชลประทาน", other: "อื่นๆ",
+};
+const AGRIMAP_SEVERITY_BADGE_CLASS = {
+  critical: "status-rejected", high: "status-rejected",
+  medium: "status-pending", low: "status-active", info: "status-active",
+};
+
+const agrimapProvinceSelectEl = document.getElementById("agrimapProvinceSelect");
+TH_PROVINCES.forEach(([code, name]) => {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = name;
+  agrimapProvinceSelectEl.appendChild(opt);
+});
+
+const agrimapDistrictSelectEl = document.getElementById("agrimapDistrictSelect");
+function populateAgrimapDistrictOptions(provinceCode) {
+  agrimapDistrictSelectEl.innerHTML = `<option value="">ทั้งจังหวัด</option>`;
+  if (!provinceCode) return;
+  TH_DISTRICTS.filter(([, , pCode]) => pCode === provinceCode).forEach(([code, name]) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = name;
+    agrimapDistrictSelectEl.appendChild(opt);
+  });
+}
+agrimapProvinceSelectEl.addEventListener("change", () => {
+  populateAgrimapDistrictOptions(agrimapProvinceSelectEl.value);
+});
+
+function agrimapAreaLabel(o) {
+  const province = TH_PROVINCES.find(([code]) => code === o.province_code);
+  const provinceName = province ? province[1] : o.province_code;
+  if (!o.district_code) return provinceName;
+  const district = TH_DISTRICTS.find(([code]) => code === o.district_code);
+  const districtName = district ? district[1] : o.district_code;
+  return `${districtName}, ${provinceName}`;
+}
+
+function agrimapObservationCard(o) {
+  const badgeClass = AGRIMAP_SEVERITY_BADGE_CLASS[o.severity_level] || "status-active";
+  const severityLabel = o.severity_level ? (AGRIMAP_SEVERITY_LABEL[o.severity_level] || o.severity_level) : null;
+  const valueLine = o.value_numeric !== null && o.value_numeric !== undefined
+    ? `ค่า: <strong>${Number(o.value_numeric).toLocaleString("th-TH", { maximumFractionDigits: 2 })}</strong>`
+    : (o.value_label ? `ค่า: <strong>${escapeHtml(o.value_label)}</strong>` : "");
+  const isActive = !o.valid_until || new Date(o.valid_until) >= new Date(new Date().toDateString());
+  return `
+    <div class="item-card" data-observation-id="${o.observation_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(o.headline_th)}</span>
+        ${severityLabel ? `<span class="badge ${badgeClass}">${escapeHtml(severityLabel)}</span>` : ""}
+      </div>
+      <div class="detail-line">${escapeHtml(AGRIMAP_RISK_TYPE_LABEL[o.risk_type] || o.risk_type)} · ${escapeHtml(agrimapAreaLabel(o))}</div>
+      ${valueLine ? `<div class="detail-line">${valueLine}</div>` : ""}
+      ${o.detail_th ? `<div class="detail-line muted">${escapeHtml(o.detail_th)}</div>` : ""}
+      <div class="detail-line muted">
+        มีผลตั้งแต่ ${thaiDate(o.valid_from)}${o.valid_until ? ` ถึง ${thaiDate(o.valid_until)}` : " (ต่อเนื่อง)"} ·
+        แหล่งข้อมูล ${escapeHtml(AGRIMAP_SOURCE_LABEL[o.source_provider] || o.source_provider)} · บันทึกโดย ${escapeHtml(o.recorded_by)}
+      </div>
+      ${isActive ? `<button type="button" class="btn btn-secondary agrimap-close-btn" data-observation-id="${o.observation_id}" style="margin-top:6px;">ปิดคำเตือนนี้</button>` : ""}
+    </div>
+  `;
+}
+
+async function loadAgrimapObservations() {
+  const el = document.getElementById("agrimapObservationsSection");
+  const activeOnly = document.getElementById("agrimapShowActiveOnlyCheckbox").checked;
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const params = new URLSearchParams();
+    if (activeOnly) params.set("active_only", "true");
+    const rows = await AgroLinkAdminAPI.get(`/admin/agrimap-observations?${params.toString()}`);
+    el.innerHTML = rows.length === 0
+      ? `<div class="empty-state">ไม่มีคำเตือนตามเงื่อนไขที่เลือก</div>`
+      : rows.map(agrimapObservationCard).join("");
+    el.querySelectorAll(".agrimap-close-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        try {
+          await AgroLinkAdminAPI.patch(`/admin/agrimap-observations/${btn.dataset.observationId}/close`, {});
+          toast("ปิดคำเตือนเรียบร้อยแล้ว");
+          await loadAgrimapObservations();
+        } catch (err) {
+          const reason = (err.body && err.body.error) || err.message;
+          toast("ปิดคำเตือนไม่สำเร็จ: " + reason, true);
+          btn.disabled = false;
+        }
+      });
+    });
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+document.getElementById("agrimapShowActiveOnlyCheckbox").addEventListener("change", () => loadAgrimapObservations());
+
+document.getElementById("agrimapSubmitBtn").addEventListener("click", async () => {
+  const provinceCode = agrimapProvinceSelectEl.value;
+  const districtCode = agrimapDistrictSelectEl.value;
+  const riskType = document.getElementById("agrimapRiskTypeSelect").value;
+  const severityLevel = document.getElementById("agrimapSeveritySelect").value;
+  const headline = document.getElementById("agrimapHeadlineInput").value.trim();
+  const detail = document.getElementById("agrimapDetailInput").value.trim();
+  const valueNumeric = document.getElementById("agrimapValueNumericInput").value;
+  const valueLabel = document.getElementById("agrimapValueLabelInput").value.trim();
+  const validFrom = document.getElementById("agrimapValidFromInput").value;
+  const validUntil = document.getElementById("agrimapValidUntilInput").value;
+  const sourceProvider = document.getElementById("agrimapSourceSelect").value;
+  const recordedBy = document.getElementById("agrimapRecordedByInput").value.trim();
+
+  if (!provinceCode || !riskType || !headline || !recordedBy) {
+    toast("กรุณาเลือกจังหวัด ประเภทข้อมูล และกรอกข้อความแจ้งเตือนกับชื่อผู้บันทึก", true);
+    return;
+  }
+
+  const payload = {
+    province_code: provinceCode,
+    district_code: districtCode || undefined,
+    risk_type: riskType,
+    severity_level: severityLevel || undefined,
+    headline_th: headline,
+    detail_th: detail || undefined,
+    value_numeric: valueNumeric ? Number(valueNumeric) : undefined,
+    value_label: valueLabel || undefined,
+    valid_from: validFrom || undefined,
+    valid_until: validUntil || undefined,
+    source_provider: sourceProvider || undefined,
+    recorded_by: recordedBy,
+  };
+
+  const btn = document.getElementById("agrimapSubmitBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkAdminAPI.post("/admin/agrimap-observations", payload);
+    toast("บันทึกคำเตือนเรียบร้อยแล้ว");
+    document.getElementById("agrimapHeadlineInput").value = "";
+    document.getElementById("agrimapDetailInput").value = "";
+    document.getElementById("agrimapValueNumericInput").value = "";
+    document.getElementById("agrimapValueLabelInput").value = "";
+    document.getElementById("agrimapValidFromInput").value = "";
+    document.getElementById("agrimapValidUntilInput").value = "";
+    await loadAgrimapObservations();
+  } catch (err) {
+    const reason = (err.body && err.body.error) || err.message;
+    toast("บันทึกไม่สำเร็จ: " + reason, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function initAgrimap() {
+  await loadAgrimapObservations();
+}
+
+// ============================================================
 // รายการสินค้า/บริการแนะนำ (เดิมอยู่ที่ featured-listings.html/
 // js/featured-listings.js แยกหน้า — รวมเข้ามาที่นี่)
 // ============================================================
@@ -2460,6 +2632,7 @@ initCooperatives();
 initGovernmentOfficers();
 initFieldSurvey();
 initSatelliteObservations();
+initAgrimap();
 initFeaturedListings();
 initGroupBuys();
 initCapitalTopup();

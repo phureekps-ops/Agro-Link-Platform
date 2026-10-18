@@ -90,6 +90,7 @@
           <div class="admin-nav-group-title">ข้อมูลภาคสนาม</div>
           <button type="button" class="admin-nav-item" data-page="field-survey">📋 แบบสำรวจภาคสนาม (RAP-T)</button>
           <button type="button" class="admin-nav-item" data-page="satellite">🛰️ ข้อมูลดาวเทียม</button>
+          <button type="button" class="admin-nav-item" data-page="agrimap">🌊 น้ำ/ความเสี่ยงภูมิอากาศ (Agri-Map)</button>
         </div>
         <div class="admin-nav-group">
           <div class="admin-nav-group-title">ตลาดและโปรโมท</div>
@@ -656,6 +657,103 @@
     <div class="section-title">📋 ประวัติข้อมูลของแปลงที่เลือก</div>
     <div id="observationsSection" class="card-list">
       <div class="loading-line">เลือกแปลงด้านบนเพื่อดูประวัติข้อมูล</div>
+    </div>
+      </div>
+
+      <div class="admin-page" data-page-content="agrimap" style="display:none;">
+    <div class="section-title">🌊 น้ำ/ความเสี่ยงภูมิอากาศ (Agri-Map)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      หมายเหตุขอบเขต: Agri-Map ของกรมพัฒนาที่ดิน (บูรณาการข้อมูลน้ำจากกรมชลประทาน) เพิ่งเปิดตัวเป็นทางการช่วง ส.ค.-ก.ย. 2569 และยังไม่มี API สาธารณะให้เชื่อมต่อ —
+      ผู้ดูแลระบบป้อนข้อมูลด้วยมือแทนในขั้นนี้ (source_provider = manual) จากประกาศของกรมพัฒนาที่ดิน/กรมชลประทาน โดยตารางออกแบบให้รองรับการเชื่อมต่อ API จริงในอนาคตได้โดยไม่ต้องแก้ schema
+      คำเตือนที่บันทึกที่นี่จะแสดงให้เกษตรกรในจังหวัด/อำเภอนั้นเห็นทันทีที่หน้าแดชบอร์ดของตนเอง
+    </p>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="agrimapForm" class="form-grid">
+        <div class="field">
+          <label for="agrimapProvinceSelect">จังหวัด</label>
+          <select id="agrimapProvinceSelect" required>
+            <option value="">-- เลือกจังหวัด --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="agrimapDistrictSelect">อำเภอ (ไม่เลือก = ครอบคลุมทั้งจังหวัด)</label>
+          <select id="agrimapDistrictSelect">
+            <option value="">-- ทั้งจังหวัด --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="agrimapRiskTypeSelect">ประเภทข้อมูล</label>
+          <select id="agrimapRiskTypeSelect" required>
+            <option value="">-- เลือกประเภท --</option>
+            <option value="water_level">ระดับน้ำ</option>
+            <option value="flood_risk">เสี่ยงน้ำท่วม</option>
+            <option value="drought_risk">เสี่ยงภัยแล้ง</option>
+            <option value="rainfall_forecast">พยากรณ์ฝน</option>
+            <option value="irrigation_schedule">แผนส่งน้ำชลประทาน</option>
+            <option value="soil_water_suitability">ความเหมาะสมดิน-น้ำ (Agri-Map)</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="agrimapSeveritySelect">ระดับความรุนแรง (ถ้ามี)</label>
+          <select id="agrimapSeveritySelect">
+            <option value="">-- ไม่ระบุ --</option>
+            <option value="info">แจ้งให้ทราบ</option>
+            <option value="low">ต่ำ</option>
+            <option value="medium">ปานกลาง</option>
+            <option value="high">สูง</option>
+            <option value="critical">วิกฤต</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="agrimapHeadlineInput">ข้อความแจ้งเตือน (สั้น)</label>
+          <input type="text" id="agrimapHeadlineInput" placeholder="เช่น เฝ้าระวังน้ำท่วมฉับพลัน ลุ่มน้ำมูลตอนล่าง" required />
+        </div>
+        <div class="field full">
+          <label for="agrimapDetailInput">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
+          <textarea id="agrimapDetailInput" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="agrimapValueNumericInput">ค่าตัวเลข (ถ้ามี เช่น ระดับน้ำเป็นเมตร)</label>
+          <input type="number" id="agrimapValueNumericInput" step="0.01" />
+        </div>
+        <div class="field">
+          <label for="agrimapValueLabelInput">ค่าป้ายกำกับ (ถ้ามี)</label>
+          <input type="text" id="agrimapValueLabelInput" placeholder="เช่น สูงกว่าตลิ่ง 20 ซม." />
+        </div>
+        <div class="field">
+          <label for="agrimapValidFromInput">มีผลตั้งแต่วันที่</label>
+          <input type="date" id="agrimapValidFromInput" />
+        </div>
+        <div class="field">
+          <label for="agrimapValidUntilInput">มีผลถึงวันที่ (ไม่ระบุ = ต่อเนื่อง)</label>
+          <input type="date" id="agrimapValidUntilInput" />
+        </div>
+        <div class="field">
+          <label for="agrimapSourceSelect">แหล่งข้อมูล</label>
+          <select id="agrimapSourceSelect">
+            <option value="manual">ป้อนด้วยมือ (Manual)</option>
+            <option value="agri_map_ldd">Agri-Map (กรมพัฒนาที่ดิน)</option>
+            <option value="rid_water_data">กรมชลประทาน</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="agrimapRecordedByInput">ชื่อผู้บันทึก</label>
+          <input type="text" id="agrimapRecordedByInput" placeholder="เช่น ผู้ดูแลระบบ ก." required />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="agrimapSubmitBtn" style="max-width:260px;">บันทึกคำเตือน</button>
+    </div>
+
+    <div class="section-title">📜 รายการคำเตือนทั้งหมด</div>
+    <div class="field" style="max-width:220px; margin-bottom:14px;">
+      <label for="agrimapShowActiveOnlyCheckbox" style="display:flex; align-items:center; gap:6px; font-weight:400;">
+        <input type="checkbox" id="agrimapShowActiveOnlyCheckbox" checked style="width:auto;" /> แสดงเฉพาะที่ยังมีผล
+      </label>
+    </div>
+    <div id="agrimapObservationsSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
     </div>
       </div>
 

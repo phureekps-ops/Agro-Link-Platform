@@ -97,6 +97,7 @@
         <div class="farmer-nav-group">
           <div class="farmer-nav-group-title">ภาครัฐ</div>
           <button type="button" class="farmer-nav-item" data-page="oae">🌾 ข้อมูลเศรษฐกิจการเกษตร (สศก.)</button>
+          <button type="button" class="farmer-nav-item" data-page="agrimap">🌊 เตือนภัยน้ำ/ภูมิอากาศ (Agri-Map)</button>
         </div>
         <div class="farmer-nav-group">
           <div class="farmer-nav-group-title">การแจ้งเตือน</div>
@@ -231,6 +232,17 @@
     </div>
       </div>
 
+      <div class="farmer-page" data-page-content="agrimap" style="display:none;">
+    <div class="section-title">🌊 เตือนภัยน้ำ/ภูมิอากาศ (ตามแนวทาง Agri-Map)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ข้อมูลด้านล่างเป็นคำเตือนระดับจังหวัด/อำเภอของพื้นที่ท่าน บันทึกโดยทีมงานแพลตฟอร์มจากประกาศของกรมพัฒนาที่ดิน (Agri-Map) และกรมชลประทาน —
+      ยังไม่ใช่การเชื่อมต่อข้อมูลสดจากหน่วยงานโดยตรง (ระบบ Agri-Map เพิ่งเปิดตัวและยังไม่มี API สาธารณะ) จึงควรใช้เป็นข้อมูลเสริม ไม่ใช่แหล่งเดียวในการตัดสินใจ
+    </p>
+    <div id="agrimapAlertsSection" class="card-list">
+      <div class="loading-line">กำลังโหลดคำเตือน…</div>
+    </div>
+      </div>
+
       <div class="farmer-page" data-page-content="notifications" style="display:none;">
     <div class="section-title">🔔 การแจ้งเตือนที่ยังไม่อ่าน</div>
     <div id="notificationsSection" class="card-list">
@@ -244,6 +256,8 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="js/provinces.js"></script>
+  <script src="js/districts.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/support-widget.js"></script>

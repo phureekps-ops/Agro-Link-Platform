@@ -1837,6 +1837,141 @@ router.post('/field-survey', async (req, res, next) => {
   }
 });
 
+// ===========================================================================
+// P3 (RAP-T readiness roadmap) — Agri-Map / water-climate-risk area adapter.
+// See grant_agrimap_water_climate_adapter.sql for the full design note:
+// province/district-scoped (NOT plot-scoped, unlike satellite.observation),
+// entered by hand by Platform Ops today (reading published LDD/กรมชลประทาน
+// bulletins) since Agri-Map itself has no confirmed public API yet, with
+// the schema shaped to switch to a real feed later without changing shape.
+// ===========================================================================
+
+const AGRIMAP_RISK_TYPES = ['water_level', 'flood_risk', 'drought_risk', 'rainfall_forecast', 'irrigation_schedule', 'soil_water_suitability', 'other'];
+const AGRIMAP_SEVERITY_LEVELS = ['info', 'low', 'medium', 'high', 'critical'];
+const AGRIMAP_SOURCE_PROVIDERS = ['manual', 'agri_map_ldd', 'rid_water_data', 'other'];
+
+/**
+ * GET /admin/agrimap-observations?province_code=&active_only=true —
+ * most recent first, optionally filtered to one province and/or to only
+ * currently-valid rows (valid_until IS NULL OR valid_until >= today).
+ */
+router.get('/agrimap-observations', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { province_code: provinceCode, active_only: activeOnly } = req.query;
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const params = [];
+      const conditions = [];
+      if (provinceCode) {
+        params.push(provinceCode);
+        conditions.push(`province_code = $${params.length}`);
+      }
+      if (activeOnly === 'true') {
+        conditions.push(`(valid_until IS NULL OR valid_until >= CURRENT_DATE)`);
+      }
+      const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      const result = await client.query(
+        `SELECT observation_id, province_code, district_code, risk_type, severity_level,
+                value_numeric, value_label, headline_th, detail_th, source_provider,
+                valid_from, valid_until, recorded_by, created_at
+           FROM agrimap.area_risk_observation
+           ${where}
+          ORDER BY valid_from DESC, created_at DESC`,
+        params,
+      );
+      await logAccess(client, 'read', 'agrimap.area_risk_observation', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/agrimap-observations
+ * Body: { province_code, risk_type, headline_th, recorded_by, district_code?,
+ *         severity_level?, value_numeric?, value_label?, detail_th?,
+ *         source_provider?, valid_from?, valid_until? }
+ */
+router.post('/agrimap-observations', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    province_code: provinceCode, district_code: districtCode, risk_type: riskType,
+    severity_level: severityLevel, value_numeric: valueNumeric, value_label: valueLabel,
+    headline_th: headlineTh, detail_th: detailTh, source_provider: sourceProvider,
+    valid_from: validFrom, valid_until: validUntil, recorded_by: recordedBy,
+  } = req.body || {};
+
+  if (!provinceCode || !riskType || !headlineTh || !recordedBy) {
+    return res.status(400).json({
+      error: 'missing_required_fields',
+      required: ['province_code', 'risk_type', 'headline_th', 'recorded_by'],
+    });
+  }
+  if (!AGRIMAP_RISK_TYPES.includes(riskType)) {
+    return res.status(400).json({ error: 'invalid_risk_type', valid: AGRIMAP_RISK_TYPES });
+  }
+  if (severityLevel && !AGRIMAP_SEVERITY_LEVELS.includes(severityLevel)) {
+    return res.status(400).json({ error: 'invalid_severity_level', valid: AGRIMAP_SEVERITY_LEVELS });
+  }
+  if (sourceProvider && !AGRIMAP_SOURCE_PROVIDERS.includes(sourceProvider)) {
+    return res.status(400).json({ error: 'invalid_source_provider', valid: AGRIMAP_SOURCE_PROVIDERS });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const inserted = await client.query(
+        `INSERT INTO agrimap.area_risk_observation
+           (province_code, district_code, risk_type, severity_level, value_numeric, value_label,
+            headline_th, detail_th, source_provider, valid_from, valid_until, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, CURRENT_DATE), $11, $12)
+         RETURNING *`,
+        [
+          provinceCode, districtCode || null, riskType, severityLevel || null,
+          valueNumeric === undefined || valueNumeric === '' ? null : valueNumeric,
+          valueLabel || null, headlineTh, detailTh || null, sourceProvider || 'manual',
+          validFrom || null, validUntil || null, recordedBy,
+        ],
+      );
+      await logAccess(client, 'write', 'agrimap.area_risk_observation', inserted.rows[0].observation_id);
+      return inserted.rows[0];
+    });
+    return res.status(201).json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PATCH /admin/agrimap-observations/:id/close — sets valid_until to today
+ * (or an earlier given date), retiring an outdated warning WITHOUT deleting
+ * it, so the area's alert history stays intact.
+ */
+router.patch('/agrimap-observations/:id/close', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { valid_until: validUntil } = req.body || {};
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const updated = await client.query(
+        `UPDATE agrimap.area_risk_observation
+            SET valid_until = LEAST(COALESCE($2::date, CURRENT_DATE), CURRENT_DATE)
+          WHERE observation_id = $1
+          RETURNING *`,
+        [id, validUntil || null],
+      );
+      if (updated.rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'agrimap.area_risk_observation', id);
+      return { observation: updated.rows[0] };
+    });
+    if (result.notFound) return res.status(404).json({ error: 'observation_not_found' });
+    return res.json(result.observation);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 /**
  * Featured Listings — Platform-Ops-managed promotion for the InputSupplier
  * product catalog (marketplace.product_listing, also now used by the

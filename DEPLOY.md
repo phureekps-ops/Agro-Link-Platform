@@ -190,8 +190,46 @@ grant_farmer_group_self_declaration.sql
 grant_logistics_marketplace.sql
 grant_oae_data_portal.sql
 grant_web_traffic.sql
+grant_agrimap_water_climate_adapter.sql
 ```
 
+
+**เพิ่มเมื่อ 2026-10-18:** `grant_agrimap_water_climate_adapter.sql` — ตามคำขอ
+"สามารถออกแบบให้เชื่อมโยงข้อมูลจาก Agri-Map ได้หรือไม่" (ตาม P3 ของรายงาน
+AgroLink × RAP-T Gap Analysis — ข้อเสนอนโยบายของ RAP-T เรื่องเชื่อมโยงข้อมูล
+น้ำผ่าน Agri-Map/กรมชลประทาน) — เพิ่ม "ตัวรับข้อมูลคำเตือนความเสี่ยงด้านน้ำ/
+ภูมิอากาศระดับพื้นที่" schema ใหม่ `agrimap.*`:
+
+1. **ตรวจสอบความจริงก่อนสร้าง:** Agri-Map เป็นระบบของกรมพัฒนาที่ดิน (LDD) ที่
+   เพิ่งเปิดตัวเป็นทางการช่วง ส.ค.-ก.ย. 2569 และยังไม่มี API สาธารณะหรือ
+   data-sharing agreement ให้เชื่อมต่อจริงในขณะนี้ — จึงยังไม่สามารถดึงข้อมูล
+   สดจาก Agri-Map ได้ สิ่งที่สร้างในรอบนี้คือรูปแบบ "ป้อนด้วยมือวันนี้ ต่อ API
+   จริงได้ในอนาคต" แบบเดียวกับ `satellite.observation`
+   (`grant_satellite_observation.sql`) — ดูรายละเอียดทั้งหมดที่คอมเมนต์หัวไฟล์
+   migration นี้เอง
+2. **`agrimap.area_risk_observation`** — คำเตือนระดับจังหวัด/อำเภอ (ไม่ใช่
+   ระดับแปลง) เช่น ระดับน้ำ เสี่ยงน้ำท่วม เสี่ยงภัยแล้ง พยากรณ์ฝน แผนส่งน้ำ
+   ชลประทาน — ใช้ชุดรหัสจังหวัด/อำเภอ TH_PROVINCES/TH_DISTRICTS เดียวกับ
+   `identity.farmer.region_code`/`district_code` (ไม่ใช่ชุดชื่อไทยของ
+   `registry.province`) เพื่อให้จับคู่กับพื้นที่ของเกษตรกรแต่ละคนได้ตรงๆ
+3. **`registry.department`** เพิ่มแถวสำหรับกรมพัฒนาที่ดิน (LDD) — ยังไม่เปิด
+   ให้เจ้าหน้าที่ LDD ล็อกอินกรอกข้อมูลเองในรอบนี้ (ยังไม่มีบัญชีจริง) Platform
+   Ops เป็นผู้กรอกข้อมูลตามประกาศของ LDD/กรมชลประทานไปก่อน
+4. **`POST /admin/agrimap-observations`** (บันทึกคำเตือนใหม่),
+   **`GET /admin/agrimap-observations`** (รายการ, กรองตามจังหวัด/active_only),
+   **`PATCH /admin/agrimap-observations/:id/close`** (ปิดคำเตือนที่หมดผลแล้ว
+   โดยไม่ลบ) — เมนู "🌊 น้ำ/ความเสี่ยงภูมิอากาศ (Agri-Map)" ใต้กลุ่ม "ข้อมูล
+   ภาคสนาม" ของ `frontend/admin/dashboard.html`
+5. **`GET /farmer/agrimap/alerts`** — เกษตรกรเห็นคำเตือนของจังหวัด/อำเภอตนเอง
+   เท่านั้น (join กับ `identity.farmer.region_code`/`district_code`) ที่เมนู
+   "🌊 เตือนภัยน้ำ/ภูมิอากาศ (Agri-Map)" ใต้กลุ่ม "ภาครัฐ" ของ
+   `frontend/dashboard.html`
+
+**หมายเหตุสำคัญ:** migration นี้ยังไม่ได้รันกับฐานข้อมูลจริงบน Render — ต้อง
+รันเองผ่าน psql ตามขั้นตอนใน DEPLOY.md ข้อ 5-7 ก่อนหน้าเมนู Agri-Map ทั้งฝั่ง
+แอดมินและฝั่งเกษตรกรจะใช้งานได้ (ไม่งั้นจะขึ้น error เดียวกับที่เคยเกิดกับ
+`grant_web_traffic.sql` ก่อนรัน migration) ไฟล์นี้เขียนแบบ idempotent เหมือน
+ไฟล์อื่นทั้งหมด รันซ้ำได้อย่างปลอดภัยถ้าไม่แน่ใจว่ารันไปแล้วหรือยัง
 
 **เพิ่มเมื่อ 2026-10-17:** `grant_web_traffic.sql` — ตามคำขอ "ติดตั้งเครื่องมือ
 อ่านค่าว่ามีคนเปิดเข้ามาดูเว็บไซต์ Agrolinkthai ... ไว้ที่หน้าพอร์ทัลแอดมินด้วย"
