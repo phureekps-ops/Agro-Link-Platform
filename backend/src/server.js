@@ -91,7 +91,25 @@ const buyerCarbonRouter = require('./routes/buyercarbon');
 
 const app = express();
 
-app.use(cors());
+// `cors()` with no options reflects every origin but sends a literal
+// `Access-Control-Allow-Origin: *`. That breaks any cross-origin request
+// the browser sends in credentialed mode -- browsers refuse a wildcard
+// Allow-Origin together with credentials:'include', and fail the request
+// at the CORS-preflight stage before it ever reaches a route handler.
+// This bit the public page-view beacon (frontend/js/track.js, POST
+// /traffic/track): navigator.sendBeacon() always sends cross-origin
+// requests with credentials:'include' (not something the caller can turn
+// off), so every beacon's OPTIONS preflight against agrolinkthai.com was
+// rejected client-side -- traffic.page_view stayed empty even though the
+// route/schema/grants were all correct. `origin: true` reflects the
+// request's actual Origin header instead of '*', and `credentials: true`
+// adds the matching Access-Control-Allow-Credentials header, which
+// together satisfy that browser check for any credentialed request.
+// Functionally this still allows every origin (same openness as before)
+// -- the app has no cookie-based auth (see middleware/requireAuth.js,
+// Authorization: Bearer <jwt>), so there is nothing new exposed by also
+// allowing credentials.
+app.use(cors({ origin: true, credentials: true }));
 // Default express.json() body limit is 100kb — too small for
 // POST /machinery/photos, which posts a base64 data: URL (no object
 // storage/CDN exists in this sandbox, see grant_machinery_marketplace.sql).
