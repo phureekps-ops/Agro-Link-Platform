@@ -16,6 +16,7 @@ const ADMIN_PAGE_BREADCRUMB_TH = {
   "credit-model": "โมเดลคะแนนเครดิต",
   cooperatives: "จัดการสหกรณ์",
   "gov-officers": "เจ้าหน้าที่ภาครัฐ",
+  "productive-alliance": "พันธมิตรเพื่อการผลิต",
   "field-survey": "แบบสำรวจภาคสนาม (RAP-T)",
   satellite: "ข้อมูลดาวเทียม",
   "featured-listings": "รายการแนะนำ",
@@ -2646,6 +2647,428 @@ setInterval(() => {
 // ทำ (ดูคอมเมนต์บนสุดของไฟล์นี้): sidebar แค่ show/hide สิ่งที่อยู่บนจอ
 // ไม่ได้ทำให้การโหลดข้อมูลกลายเป็นแบบ lazy-per-tab
 // ============================================================
+// ============================================================
+// P2 (RAP-T readiness roadmap) — "พันธมิตรเพื่อการผลิต" (Productive
+// Alliance). See grant_productive_alliance.sql's header comment for the
+// full schema/design rationale. Same card-list + expandable-detail pattern
+// as รวมออเดอร์ประมูลร่วม (initGroupBuys) above, just with 2 nested lists
+// (contributions + commitments) inside each agreement's detail panel
+// instead of 1.
+// ============================================================
+const ALLIANCE_STATUS_LABEL_TH = {
+  draft: "กำลังร่างข้อตกลง",
+  active: "ดำเนินการอยู่",
+  completed: "ปิดโครงการสำเร็จ",
+  terminated: "ยกเลิกแล้ว",
+};
+const ALLIANCE_STATUS_BADGE_CLASS = {
+  draft: "status-pending",
+  active: "status-active",
+  completed: "status-approved",
+  terminated: "status-declined",
+};
+const ALLIANCE_PARTY_ROLE_LABEL_TH = {
+  government: "ภาครัฐ",
+  buyer: "ผู้รับซื้อภาคเอกชน",
+  farmer_institution: "สถาบันเกษตรกร",
+};
+const ALLIANCE_CONTRIBUTION_TYPE_LABEL_TH = {
+  cash: "เงินสด",
+  in_kind: "สิ่งของ/ปัจจัยการผลิต",
+  guarantee: "การค้ำประกัน",
+  technical_support: "ความรู้/คำปรึกษาด้านเทคนิค",
+  subsidy: "เงินอุดหนุน",
+  other: "อื่นๆ",
+};
+const ALLIANCE_CONTRIBUTION_STATUS_LABEL_TH = { pledged: "รับปากแล้ว", disbursed: "เบิกจ่ายแล้ว", cancelled: "ยกเลิกแล้ว" };
+const ALLIANCE_COMMITMENT_STATUS_LABEL_TH = { pending: "รอดำเนินการ", done: "ทำสำเร็จแล้ว", cancelled: "ยกเลิกแล้ว" };
+
+let allianceBuyerOrgCache = [];
+let allianceFarmerInstitutionOrgCache = [];
+let allianceGovOfficerCache = [];
+
+async function loadAllianceFormOptions() {
+  const buyerSelect = document.getElementById("allianceBuyerSelect");
+  const farmerInstitutionSelect = document.getElementById("allianceFarmerInstitutionSelect");
+  const govOfficerSelect = document.getElementById("allianceGovOfficerSelect");
+
+  try {
+    allianceBuyerOrgCache = await AgroLinkAdminAPI.get("/admin/organizations?org_type=Buyer&kyb_status=Verified");
+    buyerSelect.innerHTML = allianceBuyerOrgCache.length === 0
+      ? `<option value="">ไม่มีผู้รับซื้อที่ผ่าน KYB ในระบบ</option>`
+      : `<option value="">-- เลือกผู้รับซื้อ --</option>` +
+        allianceBuyerOrgCache.map((o) => `<option value="${o.org_id}">${escapeHtml(o.org_name)}</option>`).join("");
+  } catch (err) {
+    buyerSelect.innerHTML = `<option value="">โหลดรายชื่อผู้รับซื้อไม่สำเร็จ</option>`;
+  }
+
+  try {
+    allianceFarmerInstitutionOrgCache = await AgroLinkAdminAPI.get("/admin/cooperatives");
+    farmerInstitutionSelect.innerHTML = allianceFarmerInstitutionOrgCache.length === 0
+      ? `<option value="">ไม่มีสหกรณ์ในระบบ</option>`
+      : `<option value="">-- เลือกสหกรณ์ --</option>` +
+        allianceFarmerInstitutionOrgCache.map((o) => `<option value="${o.org_id}">${escapeHtml(o.org_name)}</option>`).join("");
+  } catch (err) {
+    farmerInstitutionSelect.innerHTML = `<option value="">โหลดรายชื่อสหกรณ์ไม่สำเร็จ</option>`;
+  }
+
+  try {
+    allianceGovOfficerCache = (await AgroLinkAdminAPI.get("/admin/government-officers")).filter((o) => o.status === "Active");
+    govOfficerSelect.innerHTML = allianceGovOfficerCache.length === 0
+      ? `<option value="">ไม่มีเจ้าหน้าที่ภาครัฐที่ใช้งานอยู่ในระบบ</option>`
+      : `<option value="">-- เลือกเจ้าหน้าที่ --</option>` +
+        allianceGovOfficerCache.map((o) => `<option value="${o.officer_id}">${escapeHtml(o.full_name)} (${escapeHtml(o.department_name_th || o.department_code)}${o.province_name_th ? " · " + escapeHtml(o.province_name_th) : ""})</option>`).join("");
+  } catch (err) {
+    govOfficerSelect.innerHTML = `<option value="">โหลดรายชื่อเจ้าหน้าที่ไม่สำเร็จ</option>`;
+  }
+}
+
+function allianceProgressLine(a) {
+  const pledged = Number(a.pledged_amount || 0).toLocaleString("th-TH");
+  const disbursed = Number(a.disbursed_amount || 0).toLocaleString("th-TH");
+  const commitLine = a.commitments_total > 0
+    ? `พันธสัญญา ${a.commitments_done}/${a.commitments_total} สำเร็จแล้ว`
+    : `ยังไม่มีพันธสัญญาบันทึกไว้`;
+  return `เงินสนับสนุนที่รับปาก ${pledged} บาท · เบิกจ่ายแล้ว ${disbursed} บาท · ${commitLine}`;
+}
+
+function allianceCard(a) {
+  const badgeClass = ALLIANCE_STATUS_BADGE_CLASS[a.status] || "status-pending";
+  return `
+    <div class="item-card" data-alliance-id="${a.agreement_id}">
+      <div class="row">
+        <span class="title">${escapeHtml(a.title)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(ALLIANCE_STATUS_LABEL_TH[a.status] || a.status)}</span>
+      </div>
+      <div class="detail-line muted">
+        ผู้รับซื้อ: ${escapeHtml(a.buyer_org_name)} · สถาบันเกษตรกร: ${escapeHtml(a.farmer_institution_org_name)} ·
+        ภาครัฐ: ${escapeHtml(a.government_officer_name)} (${escapeHtml(a.department_name_th || a.department_code || "-")})
+      </div>
+      ${a.commodity_code ? `<div class="detail-line muted">สินค้า: ${escapeHtml(a.commodity_code)}</div>` : ""}
+      ${a.total_project_value ? `<div class="detail-line">มูลค่าโครงการรวม ${Number(a.total_project_value).toLocaleString("th-TH")} บาท</div>` : ""}
+      <div class="detail-line">${allianceProgressLine(a)}</div>
+      <div class="action-row">
+        <button type="button" class="btn btn-ghost btn-sm" data-toggle-alliance-detail="${a.agreement_id}">ดูรายละเอียด / บันทึกการสนับสนุน-พันธสัญญา</button>
+      </div>
+      <div data-alliance-detail-container="${a.agreement_id}" style="display:none; margin-top:10px;"></div>
+    </div>
+  `;
+}
+
+async function loadAlliances() {
+  const el = document.getElementById("allianceListSection");
+  const status = document.getElementById("allianceStatusFilter").value;
+  el.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const qs = status ? `?status=${status}` : "";
+    const rows = await AgroLinkAdminAPI.get(`/admin/productive-alliances${qs}`);
+    el.innerHTML = rows.length === 0
+      ? `<div class="empty-state">ไม่พบข้อตกลงตามเงื่อนไขที่เลือก</div>`
+      : rows.map(allianceCard).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state">โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function allianceContributionRow(agreementId, c) {
+  return `
+    <div class="detail-line" style="border-bottom:1px solid #eee; padding:6px 0;">
+      <strong>${ALLIANCE_PARTY_ROLE_LABEL_TH[c.party_role] || c.party_role}</strong> ·
+      ${escapeHtml(ALLIANCE_CONTRIBUTION_TYPE_LABEL_TH[c.contribution_type] || c.contribution_type)} ·
+      ${escapeHtml(c.description)}${c.amount !== null ? " · " + Number(c.amount).toLocaleString("th-TH") + " บาท" : ""}
+      <span class="badge ${c.status === "disbursed" ? "status-approved" : c.status === "cancelled" ? "status-declined" : "status-pending"}">${ALLIANCE_CONTRIBUTION_STATUS_LABEL_TH[c.status] || c.status}</span>
+      ${c.status === "pledged" ? `<button type="button" class="btn btn-ghost btn-sm" data-disburse-contribution="${c.contribution_id}" data-agreement="${agreementId}" style="margin-left:6px;">บันทึกว่าเบิกจ่ายแล้ว</button>` : ""}
+    </div>
+  `;
+}
+
+function allianceCommitmentRow(agreementId, m) {
+  const isOverdue = m.status === "pending" && m.due_date && new Date(m.due_date).getTime() < Date.now();
+  return `
+    <div class="detail-line" style="border-bottom:1px solid #eee; padding:6px 0;">
+      <strong>${ALLIANCE_PARTY_ROLE_LABEL_TH[m.party_role] || m.party_role}</strong> ·
+      ${escapeHtml(m.description)}${m.due_date ? " · กำหนด " + thaiDate(m.due_date) : ""}
+      <span class="badge ${m.status === "done" ? "status-approved" : m.status === "cancelled" ? "status-declined" : isOverdue ? "status-declined" : "status-pending"}">${isOverdue ? "เลยกำหนดแล้ว" : (ALLIANCE_COMMITMENT_STATUS_LABEL_TH[m.status] || m.status)}</span>
+      ${m.status === "pending" ? `<button type="button" class="btn btn-ghost btn-sm" data-complete-commitment="${m.commitment_id}" data-agreement="${agreementId}" style="margin-left:6px;">บันทึกว่าทำสำเร็จแล้ว</button>` : ""}
+    </div>
+  `;
+}
+
+function allianceDetailHtml(agreementId, detail) {
+  const a = detail.agreement;
+  const roleOptions = Object.entries(ALLIANCE_PARTY_ROLE_LABEL_TH)
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
+  const typeOptions = Object.entries(ALLIANCE_CONTRIBUTION_TYPE_LABEL_TH)
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
+  const statusOptions = Object.entries(ALLIANCE_STATUS_LABEL_TH)
+    .map(([value, label]) => `<option value="${value}" ${value === a.status ? "selected" : ""}>${escapeHtml(label)}</option>`).join("");
+
+  return `
+    <div class="panel">
+      ${a.business_plan_summary ? `<div class="detail-line" style="margin-bottom:10px;"><strong>แผนธุรกิจร่วม:</strong> ${escapeHtml(a.business_plan_summary)}</div>` : ""}
+      ${a.government_support_note ? `<div class="detail-line" style="margin-bottom:10px;"><strong>การสนับสนุนจากภาครัฐ:</strong> ${escapeHtml(a.government_support_note)}</div>` : ""}
+      ${a.underlying_contract_id ? `<div class="detail-line muted" style="margin-bottom:10px;">ผูกกับสัญญาซื้อขาย: ${escapeHtml(a.underlying_contract_id)}</div>` : ""}
+
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field">
+          <label>เปลี่ยนสถานะข้อตกลง</label>
+          <select data-alliance-status-select="${agreementId}">${statusOptions}</select>
+        </div>
+        <div class="field" style="align-self:flex-end;">
+          <button type="button" class="btn btn-primary btn-sm" data-save-alliance-status="${agreementId}">บันทึกสถานะ</button>
+        </div>
+      </div>
+
+      <div class="section-title" style="font-size:14px;">💰 การลงทุน/สนับสนุนร่วม</div>
+      <div data-alliance-contributions="${agreementId}">
+        ${detail.contributions.length === 0 ? `<div class="empty-state">ยังไม่มีรายการที่บันทึกไว้</div>` : detail.contributions.map((c) => allianceContributionRow(agreementId, c)).join("")}
+      </div>
+      <div class="form-grid" style="margin:12px 0;">
+        <div class="field">
+          <label>ฝ่าย</label>
+          <select data-contribution-party="${agreementId}">${roleOptions}</select>
+        </div>
+        <div class="field">
+          <label>ประเภท</label>
+          <select data-contribution-type="${agreementId}">${typeOptions}</select>
+        </div>
+        <div class="field full">
+          <label>รายละเอียด</label>
+          <input type="text" data-contribution-description="${agreementId}" placeholder="เช่น ผู้ซื้อวางมัดจำล่วงหน้า 30%" />
+        </div>
+        <div class="field">
+          <label>จำนวนเงิน (บาท, ถ้ามี)</label>
+          <input type="number" min="0" step="0.01" data-contribution-amount="${agreementId}" />
+        </div>
+        <div class="field" style="align-self:flex-end;">
+          <button type="button" class="btn btn-ghost btn-sm" data-add-contribution="${agreementId}">เพิ่มรายการ</button>
+        </div>
+      </div>
+
+      <div class="section-title" style="font-size:14px;">📋 พันธสัญญาตามแผนธุรกิจร่วม</div>
+      <div data-alliance-commitments="${agreementId}">
+        ${detail.commitments.length === 0 ? `<div class="empty-state">ยังไม่มีพันธสัญญาที่บันทึกไว้</div>` : detail.commitments.map((m) => allianceCommitmentRow(agreementId, m)).join("")}
+      </div>
+      <div class="form-grid" style="margin:12px 0 0;">
+        <div class="field">
+          <label>ฝ่าย</label>
+          <select data-commitment-party="${agreementId}">${roleOptions}</select>
+        </div>
+        <div class="field full">
+          <label>รายละเอียด</label>
+          <input type="text" data-commitment-description="${agreementId}" placeholder="เช่น สหกรณ์ส่งมอบพื้นที่เพาะปลูกตามแผน" />
+        </div>
+        <div class="field">
+          <label>กำหนดวันที่ (ถ้ามี)</label>
+          <input type="date" data-commitment-due-date="${agreementId}" />
+        </div>
+        <div class="field" style="align-self:flex-end;">
+          <button type="button" class="btn btn-ghost btn-sm" data-add-commitment="${agreementId}">เพิ่มพันธสัญญา</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function refreshAllianceDetail(agreementId) {
+  const container = document.querySelector(`[data-alliance-detail-container="${agreementId}"]`);
+  if (!container) return;
+  container.innerHTML = `<div class="loading-line">กำลังโหลด…</div>`;
+  try {
+    const detail = await AgroLinkAdminAPI.get(`/admin/productive-alliances/${agreementId}`);
+    container.innerHTML = allianceDetailHtml(agreementId, detail);
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state">โหลดรายละเอียดไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById("allianceStatusFilter").addEventListener("change", loadAlliances);
+
+document.getElementById("allianceListSection").addEventListener("click", async (e) => {
+  const toggleBtn = e.target.closest("[data-toggle-alliance-detail]");
+  if (toggleBtn) {
+    const agreementId = toggleBtn.dataset.toggleAllianceDetail;
+    const container = document.querySelector(`[data-alliance-detail-container="${agreementId}"]`);
+    if (!container) return;
+    const isHidden = container.style.display === "none";
+    if (!isHidden) {
+      container.style.display = "none";
+      return;
+    }
+    container.style.display = "block";
+    await refreshAllianceDetail(agreementId);
+    return;
+  }
+
+  const saveStatusBtn = e.target.closest("[data-save-alliance-status]");
+  if (saveStatusBtn) {
+    const agreementId = saveStatusBtn.dataset.saveAllianceStatus;
+    const status = document.querySelector(`[data-alliance-status-select="${agreementId}"]`).value;
+    saveStatusBtn.disabled = true;
+    try {
+      await AgroLinkAdminAPI.patch(`/admin/productive-alliances/${agreementId}/status`, { status });
+      toast("บันทึกสถานะเรียบร้อยแล้ว");
+      await loadAlliances();
+    } catch (err) {
+      toast("บันทึกสถานะไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      saveStatusBtn.disabled = false;
+    }
+    return;
+  }
+
+  const addContributionBtn = e.target.closest("[data-add-contribution]");
+  if (addContributionBtn) {
+    const agreementId = addContributionBtn.dataset.addContribution;
+    const partyRole = document.querySelector(`[data-contribution-party="${agreementId}"]`).value;
+    const contributionType = document.querySelector(`[data-contribution-type="${agreementId}"]`).value;
+    const descriptionInput = document.querySelector(`[data-contribution-description="${agreementId}"]`);
+    const amountInput = document.querySelector(`[data-contribution-amount="${agreementId}"]`);
+    const description = descriptionInput.value.trim();
+    if (!description) {
+      toast("กรุณากรอกรายละเอียดการสนับสนุน", true);
+      return;
+    }
+    addContributionBtn.disabled = true;
+    try {
+      await AgroLinkAdminAPI.post(`/admin/productive-alliances/${agreementId}/contributions`, {
+        party_role: partyRole,
+        contribution_type: contributionType,
+        description,
+        amount: amountInput.value ? Number(amountInput.value) : null,
+      });
+      toast("เพิ่มรายการสนับสนุนเรียบร้อยแล้ว");
+      await refreshAllianceDetail(agreementId);
+      await loadAlliances();
+    } catch (err) {
+      toast("เพิ่มรายการไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    }
+    addContributionBtn.disabled = false;
+    return;
+  }
+
+  const disburseBtn = e.target.closest("[data-disburse-contribution]");
+  if (disburseBtn) {
+    const contributionId = disburseBtn.dataset.disburseContribution;
+    const agreementId = disburseBtn.dataset.agreement;
+    disburseBtn.disabled = true;
+    try {
+      await AgroLinkAdminAPI.patch(`/admin/productive-alliances/${agreementId}/contributions/${contributionId}`, { status: "disbursed" });
+      toast("บันทึกการเบิกจ่ายเรียบร้อยแล้ว");
+      await refreshAllianceDetail(agreementId);
+      await loadAlliances();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      disburseBtn.disabled = false;
+    }
+    return;
+  }
+
+  const addCommitmentBtn = e.target.closest("[data-add-commitment]");
+  if (addCommitmentBtn) {
+    const agreementId = addCommitmentBtn.dataset.addCommitment;
+    const partyRole = document.querySelector(`[data-commitment-party="${agreementId}"]`).value;
+    const descriptionInput = document.querySelector(`[data-commitment-description="${agreementId}"]`);
+    const dueDateInput = document.querySelector(`[data-commitment-due-date="${agreementId}"]`);
+    const description = descriptionInput.value.trim();
+    if (!description) {
+      toast("กรุณากรอกรายละเอียดพันธสัญญา", true);
+      return;
+    }
+    addCommitmentBtn.disabled = true;
+    try {
+      await AgroLinkAdminAPI.post(`/admin/productive-alliances/${agreementId}/commitments`, {
+        party_role: partyRole,
+        description,
+        due_date: dueDateInput.value || null,
+      });
+      toast("เพิ่มพันธสัญญาเรียบร้อยแล้ว");
+      await refreshAllianceDetail(agreementId);
+      await loadAlliances();
+    } catch (err) {
+      toast("เพิ่มพันธสัญญาไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+    }
+    addCommitmentBtn.disabled = false;
+    return;
+  }
+
+  const completeBtn = e.target.closest("[data-complete-commitment]");
+  if (completeBtn) {
+    const commitmentId = completeBtn.dataset.completeCommitment;
+    const agreementId = completeBtn.dataset.agreement;
+    completeBtn.disabled = true;
+    try {
+      await AgroLinkAdminAPI.patch(`/admin/productive-alliances/${agreementId}/commitments/${commitmentId}`, { status: "done" });
+      toast("บันทึกความสำเร็จของพันธสัญญาเรียบร้อยแล้ว");
+      await refreshAllianceDetail(agreementId);
+      await loadAlliances();
+    } catch (err) {
+      toast("บันทึกไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+      completeBtn.disabled = false;
+    }
+    return;
+  }
+});
+
+document.getElementById("createAllianceBtn").addEventListener("click", async () => {
+  const title = document.getElementById("allianceTitleInput").value.trim();
+  const buyerOrgId = document.getElementById("allianceBuyerSelect").value;
+  const farmerInstitutionOrgId = document.getElementById("allianceFarmerInstitutionSelect").value;
+  const governmentOfficerId = document.getElementById("allianceGovOfficerSelect").value;
+  const commodityCode = document.getElementById("allianceCommodityInput").value.trim();
+  const governmentSupportNote = document.getElementById("allianceGovSupportNoteInput").value.trim();
+  const businessPlanSummary = document.getElementById("allianceBusinessPlanInput").value.trim();
+  const totalProjectValue = document.getElementById("allianceTotalValueInput").value;
+  const targetQuantity = document.getElementById("allianceTargetQtyInput").value;
+  const quantityUnit = document.getElementById("allianceQtyUnitInput").value.trim();
+  const startDate = document.getElementById("allianceStartDateInput").value;
+  const endDate = document.getElementById("allianceEndDateInput").value;
+  const underlyingContractId = document.getElementById("allianceContractIdInput").value.trim();
+
+  if (!title) {
+    toast("กรุณากรอกชื่อโครงการ/ข้อตกลง", true);
+    return;
+  }
+  if (!buyerOrgId || !farmerInstitutionOrgId || !governmentOfficerId) {
+    toast("กรุณาเลือกทั้ง 3 ฝ่ายให้ครบ (ผู้รับซื้อ, สหกรณ์, เจ้าหน้าที่ภาครัฐ)", true);
+    return;
+  }
+  if (buyerOrgId === farmerInstitutionOrgId) {
+    toast("ฝ่ายผู้รับซื้อและฝ่ายสถาบันเกษตรกรต้องเป็นองค์กรที่ต่างกัน", true);
+    return;
+  }
+
+  const btn = document.getElementById("createAllianceBtn");
+  btn.disabled = true;
+  try {
+    await AgroLinkAdminAPI.post("/admin/productive-alliances", {
+      title,
+      buyer_org_id: buyerOrgId,
+      farmer_institution_org_id: farmerInstitutionOrgId,
+      government_officer_id: governmentOfficerId,
+      commodity_code: commodityCode || null,
+      government_support_note: governmentSupportNote || null,
+      underlying_contract_id: underlyingContractId || null,
+      business_plan_summary: businessPlanSummary || null,
+      total_project_value: totalProjectValue ? Number(totalProjectValue) : null,
+      target_quantity: targetQuantity ? Number(targetQuantity) : null,
+      quantity_unit: quantityUnit || null,
+      start_date: startDate || null,
+      end_date: endDate || null,
+    });
+    toast("สร้างข้อตกลงพันธมิตรเพื่อการผลิตเรียบร้อยแล้ว");
+    document.getElementById("createAllianceForm").reset();
+    await loadAlliances();
+  } catch (err) {
+    toast("สร้างข้อตกลงไม่สำเร็จ: " + ((err.body && err.body.error) || err.message), true);
+  }
+  btn.disabled = false;
+});
+
+async function initProductiveAlliance() {
+  await loadAllianceFormOptions();
+  await loadAlliances();
+}
+
 document.getElementById("logoutBtn").addEventListener("click", () => AgroLinkAdminAPI.logout());
 
 // เดิมของ dashboard.js (ภาพรวม/คิวอนุมัติ/AWD/เกษตรกร/องค์กร) — independent
@@ -2673,3 +3096,4 @@ initFeaturedListings();
 initGroupBuys();
 initCapitalTopup();
 initSupport();
+initProductiveAlliance();

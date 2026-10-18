@@ -85,6 +85,7 @@
           <div class="admin-nav-group-title">สหกรณ์และภาครัฐ</div>
           <button type="button" class="admin-nav-item" data-page="cooperatives">🏢 จัดการสหกรณ์</button>
           <button type="button" class="admin-nav-item" data-page="gov-officers">🏛️ เจ้าหน้าที่ภาครัฐ</button>
+          <button type="button" class="admin-nav-item" data-page="productive-alliance">🤝🏛️ พันธมิตรเพื่อการผลิต</button>
         </div>
         <div class="admin-nav-group">
           <div class="admin-nav-group-title">ข้อมูลภาคสนาม</div>
@@ -463,6 +464,97 @@
 
     <div class="section-title" id="officerDetailSectionTitle" style="display:none;">🔍 รายละเอียดเจ้าหน้าที่</div>
     <div id="officerDetailSection" style="display:none;"></div>
+      </div>
+
+      <div class="admin-page" data-page-content="productive-alliance" style="display:none;">
+    <p style="font-size:13px; color:var(--gray-500); margin:0 0 16px;">
+      "พันธมิตรเพื่อการผลิต" (Productive Alliance) ตามแนวคิดนโยบาย RAP-T คือข้อตกลงร่วมลงทุน <strong>3 ฝ่าย</strong>
+      (ภาครัฐ / ผู้รับซื้อภาคเอกชน / สถาบันเกษตรกร) ที่ไปไกลกว่าสัญญาซื้อขาย 2 ฝ่ายทั่วไป — ใครสนับสนุนอะไร (เงิน/สิ่งของ/การค้ำประกัน/ความรู้)
+      และใครต้องทำอะไรให้เสร็จเมื่อไหร่ตามแผนธุรกิจร่วม — <strong>ขอบเขตปัจจุบัน:</strong> ทีมงาน AgroLink (Platform Ops) เป็นผู้บันทึกแทนทุกฝ่ายก่อน
+      (เจ้าหน้าที่ภาครัฐยังไม่มีหน้าจอให้ล็อกอินมาจัดการเอง) และการลงทุนร่วมเป็นการ<strong>บันทึกเป็นข้อมูล</strong>เท่านั้น ยังไม่เดินเงินจริงผ่านระบบบัญชี
+      (ledger) เหมือนรวมออเดอร์ประมูลร่วม — ดูรายละเอียดการออกแบบเต็มได้ที่ <code>grant_productive_alliance.sql</code> ในโค้ดของโครงการ
+    </p>
+
+    <div class="section-title">➕ สร้างข้อตกลงพันธมิตรเพื่อการผลิตใหม่</div>
+    <div class="panel" style="margin-bottom:24px;">
+      <form id="createAllianceForm" class="form-grid">
+        <div class="field full">
+          <label for="allianceTitleInput">ชื่อโครงการ/ข้อตกลง</label>
+          <input type="text" id="allianceTitleInput" placeholder="เช่น โครงการร่วมผลิตข้าวโพดเลี้ยงสัตว์คุณภาพ จ.นครราชสีมา" required />
+        </div>
+        <div class="field">
+          <label for="allianceBuyerSelect">ฝ่ายผู้รับซื้อภาคเอกชน</label>
+          <select id="allianceBuyerSelect" required>
+            <option value="">-- กำลังโหลด... --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="allianceFarmerInstitutionSelect">ฝ่ายสถาบันเกษตรกร (สหกรณ์)</label>
+          <select id="allianceFarmerInstitutionSelect" required>
+            <option value="">-- กำลังโหลด... --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="allianceGovOfficerSelect">ฝ่ายภาครัฐ (เจ้าหน้าที่ผู้รับผิดชอบ)</label>
+          <select id="allianceGovOfficerSelect" required>
+            <option value="">-- กำลังโหลด... --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="allianceCommodityInput">รหัสพืช/สัตว์เศรษฐกิจ (ถ้ามี)</label>
+          <input type="text" id="allianceCommodityInput" placeholder="เช่น CORN_FEED, DURIAN" />
+        </div>
+        <div class="field full">
+          <label for="allianceGovSupportNoteInput">รายละเอียดการสนับสนุนจากภาครัฐ (ถ้ามี)</label>
+          <input type="text" id="allianceGovSupportNoteInput" placeholder="เช่น กองทุนสงเคราะห์เกษตรกร งบประมาณปี 2569" />
+        </div>
+        <div class="field full">
+          <label for="allianceBusinessPlanInput">สรุปแผนธุรกิจร่วม (ถ้ามี)</label>
+          <textarea id="allianceBusinessPlanInput" rows="3" placeholder="สรุปสาระสำคัญของแผนธุรกิจที่ 3 ฝ่ายตกลงร่วมกัน"></textarea>
+        </div>
+        <div class="field">
+          <label for="allianceTotalValueInput">มูลค่าโครงการรวม (บาท, ถ้ามี)</label>
+          <input type="number" id="allianceTotalValueInput" min="0" step="0.01" />
+        </div>
+        <div class="field">
+          <label for="allianceTargetQtyInput">ปริมาณเป้าหมาย (ถ้ามี)</label>
+          <input type="number" id="allianceTargetQtyInput" min="0" step="0.01" />
+        </div>
+        <div class="field">
+          <label for="allianceQtyUnitInput">หน่วย</label>
+          <input type="text" id="allianceQtyUnitInput" placeholder="เช่น ตัน, กิโลกรัม" />
+        </div>
+        <div class="field">
+          <label for="allianceStartDateInput">วันที่เริ่มโครงการ (ถ้ามี)</label>
+          <input type="date" id="allianceStartDateInput" />
+        </div>
+        <div class="field">
+          <label for="allianceEndDateInput">วันที่สิ้นสุดโครงการ (ถ้ามี)</label>
+          <input type="date" id="allianceEndDateInput" />
+        </div>
+        <div class="field full">
+          <label for="allianceContractIdInput">รหัสสัญญาซื้อขายที่เกี่ยวข้อง (ถ้ามี — ไม่บังคับ)</label>
+          <input type="text" id="allianceContractIdInput" placeholder="วาง contract_id ถ้ามีสัญญาซื้อขายอยู่แล้ว" />
+        </div>
+      </form>
+      <button type="button" class="btn btn-primary" id="createAllianceBtn" style="max-width:260px;">สร้างข้อตกลง</button>
+    </div>
+
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field">
+        <label for="allianceStatusFilter">สถานะ</label>
+        <select id="allianceStatusFilter">
+          <option value="">ทั้งหมด</option>
+          <option value="draft">กำลังร่างข้อตกลง</option>
+          <option value="active">ดำเนินการอยู่</option>
+          <option value="completed">ปิดโครงการสำเร็จ</option>
+          <option value="terminated">ยกเลิกแล้ว</option>
+        </select>
+      </div>
+    </div>
+    <div id="allianceListSection" class="card-list">
+      <div class="loading-line">กำลังโหลด…</div>
+    </div>
       </div>
 
       <div class="admin-page" data-page-content="field-survey" style="display:none;">

@@ -16,6 +16,19 @@ router.use(requireAuth, requirePlatform);
 const FARMER_STATUSES = ['pending_kyc', 'active', 'suspended', 'closed'];
 const ORG_KYB_STATUSES = ['Pending', 'Verified', 'Rejected'];
 
+// P2 (RAP-T readiness roadmap) — "พันธมิตรเพื่อการผลิต" (Productive
+// Alliance), see grant_productive_alliance.sql's own header comment for the
+// full design rationale and the 3 decisions confirmed with the user
+// (2026-10-18): Platform Ops records on behalf of the government party (no
+// government-officer-facing dashboard yet), contributions are bookkeeping
+// only (no real ledger money movement this round), and a link to an
+// existing contract.contract is optional, never required.
+const ALLIANCE_STATUSES = ['draft', 'active', 'completed', 'terminated'];
+const ALLIANCE_PARTY_ROLES = ['government', 'buyer', 'farmer_institution'];
+const ALLIANCE_CONTRIBUTION_TYPES = ['cash', 'in_kind', 'guarantee', 'technical_support', 'subsidy', 'other'];
+const ALLIANCE_CONTRIBUTION_STATUSES = ['pledged', 'disbursed', 'cancelled'];
+const ALLIANCE_COMMITMENT_STATUSES = ['pending', 'done', 'cancelled'];
+
 // Same "23505" constant + constraint-name-to-error-code mapping idiom as
 // src/routes/auth.js's REGISTER_CONSTRAINT_ERRORS / ORG_REGISTER_CONSTRAINT_
 // ERRORS — this file never needed it before because nothing here INSERTed
@@ -253,7 +266,10 @@ router.post('/farmers/:id/status', async (req, res, next) => {
  */
 router.get('/organizations', async (req, res, next) => {
   const { subjectId } = req.subject;
-  const { kyb_status: kybStatus, province_code: provinceCode, district_code: districtCode } = req.query;
+  const {
+    kyb_status: kybStatus, province_code: provinceCode, district_code: districtCode,
+    org_type: orgType,
+  } = req.query;
 
   if (kybStatus && !ORG_KYB_STATUSES.includes(kybStatus)) {
     return res.status(400).json({ error: 'invalid_kyb_status', valid: ORG_KYB_STATUSES });
@@ -274,6 +290,13 @@ router.get('/organizations', async (req, res, next) => {
       if (districtCode) {
         params.push(districtCode);
         conditions.push(`o.district_code = $${params.length}`);
+      }
+      // เพิ่มเพื่อ P2 พันธมิตรเพื่อการผลิต — หน้าแอดมินต้องกรองรายชื่อ
+      // องค์กรเฉพาะ org_type = 'Buyer' เวลาเลือกฝ่ายผู้รับซื้อให้ข้อตกลง
+      // (ไม่บังคับระดับฐานข้อมูล แค่กรองฝั่ง query string นี้)
+      if (orgType) {
+        params.push(orgType);
+        conditions.push(`o.org_type = $${params.length}`);
       }
       const filter = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
       const result = await client.query(
@@ -2666,6 +2689,360 @@ router.get('/traffic-summary', async (req, res, next) => {
         daily_30d: daily.rows,
       };
     });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * ============================================================
+ * P2 (RAP-T readiness roadmap) — "พันธมิตรเพื่อการผลิต" (Productive
+ * Alliance). See grant_productive_alliance.sql's header comment for the
+ * full design (schema alliance.agreement / alliance.contribution /
+ * alliance.commitment) and the 3 decisions confirmed with the user.
+ * Platform Ops is the only actor here (requirePlatform gate above already
+ * covers this whole file) — there is no buyer/cooperative/government-
+ * officer-facing route for this feature yet, by deliberate scope decision.
+ * ============================================================
+ */
+
+/**
+ * GET /admin/productive-alliances — list, optionally filtered by status.
+ * Includes a quick contribution/commitment progress rollup per agreement so
+ * the list view doesn't need a second round-trip per card.
+ */
+router.get('/productive-alliances', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { status } = req.query;
+  if (status && !ALLIANCE_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ALLIANCE_STATUSES });
+  }
+
+  try {
+    const rows = await withSessionContext('platform', subjectId, async (client) => {
+      const result = await client.query(
+        `SELECT a.agreement_id, a.title, a.commodity_code, a.status,
+                a.total_project_value, a.target_quantity, a.quantity_unit,
+                a.start_date, a.end_date, a.underlying_contract_id, a.created_at,
+                bo.org_name AS buyer_org_name,
+                fo.org_name AS farmer_institution_org_name,
+                g.full_name AS government_officer_name, g.department_code, dept.department_name_th,
+                COALESCE(SUM(c.amount) FILTER (WHERE c.status = 'pledged'), 0) AS pledged_amount,
+                COALESCE(SUM(c.amount) FILTER (WHERE c.status = 'disbursed'), 0) AS disbursed_amount,
+                COUNT(*) FILTER (WHERE m.status = 'pending')::int AS commitments_pending,
+                COUNT(*) FILTER (WHERE m.status = 'done')::int AS commitments_done,
+                COUNT(DISTINCT m.commitment_id)::int AS commitments_total
+           FROM alliance.agreement a
+           JOIN identity.organization bo ON bo.org_id = a.buyer_org_id
+           JOIN identity.organization fo ON fo.org_id = a.farmer_institution_org_id
+           JOIN identity.government_officer g ON g.officer_id = a.government_officer_id
+           LEFT JOIN registry.department dept ON dept.department_code = g.department_code
+           LEFT JOIN alliance.contribution c ON c.agreement_id = a.agreement_id
+           LEFT JOIN alliance.commitment m ON m.agreement_id = a.agreement_id
+          WHERE ($1::text IS NULL OR a.status = $1)
+          GROUP BY a.agreement_id, bo.org_name, fo.org_name, g.full_name, g.department_code, dept.department_name_th
+          ORDER BY a.created_at DESC`,
+        [status || null],
+      );
+      await logAccess(client, 'read', 'alliance.agreement', null);
+      return result.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/productive-alliances/:id — full detail: the agreement row plus
+ * every contribution and commitment row recorded against it.
+ */
+router.get('/productive-alliances/:id', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const { rows: agreementRows } = await client.query(
+        `SELECT a.*,
+                bo.org_name AS buyer_org_name,
+                fo.org_name AS farmer_institution_org_name,
+                g.full_name AS government_officer_name, g.department_code, dept.department_name_th,
+                g.scope_type AS government_scope_type, g.province_code AS government_province_code
+           FROM alliance.agreement a
+           JOIN identity.organization bo ON bo.org_id = a.buyer_org_id
+           JOIN identity.organization fo ON fo.org_id = a.farmer_institution_org_id
+           JOIN identity.government_officer g ON g.officer_id = a.government_officer_id
+           LEFT JOIN registry.department dept ON dept.department_code = g.department_code
+          WHERE a.agreement_id = $1`,
+        [id],
+      );
+      if (agreementRows.length === 0) return { notFound: true };
+
+      const { rows: contributions } = await client.query(
+        `SELECT * FROM alliance.contribution WHERE agreement_id = $1 ORDER BY created_at ASC`,
+        [id],
+      );
+      const { rows: commitments } = await client.query(
+        `SELECT * FROM alliance.commitment WHERE agreement_id = $1 ORDER BY due_date ASC NULLS LAST, created_at ASC`,
+        [id],
+      );
+      await logAccess(client, 'read', 'alliance.agreement', id);
+      return { agreement: agreementRows[0], contributions, commitments };
+    });
+
+    if (result.notFound) return res.status(404).json({ error: 'agreement_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/productive-alliances — create a new alliance agreement.
+ * Body: { title, buyer_org_id, farmer_institution_org_id,
+ *         government_officer_id, commodity_code?, government_support_note?,
+ *         underlying_contract_id?, business_plan_summary?,
+ *         total_project_value?, target_quantity?, quantity_unit?,
+ *         start_date?, end_date? }
+ */
+router.post('/productive-alliances', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const {
+    title, buyer_org_id: buyerOrgId, farmer_institution_org_id: farmerInstitutionOrgId,
+    government_officer_id: governmentOfficerId, commodity_code: commodityCode,
+    government_support_note: governmentSupportNote, underlying_contract_id: underlyingContractId,
+    business_plan_summary: businessPlanSummary, total_project_value: totalProjectValue,
+    target_quantity: targetQuantity, quantity_unit: quantityUnit,
+    start_date: startDate, end_date: endDate,
+  } = req.body || {};
+
+  if (!title || !String(title).trim()) return res.status(400).json({ error: 'title_required' });
+  if (!buyerOrgId) return res.status(400).json({ error: 'buyer_org_id_required' });
+  if (!farmerInstitutionOrgId) return res.status(400).json({ error: 'farmer_institution_org_id_required' });
+  if (!governmentOfficerId) return res.status(400).json({ error: 'government_officer_id_required' });
+  if (buyerOrgId === farmerInstitutionOrgId) {
+    return res.status(400).json({ error: 'buyer_and_farmer_institution_must_differ' });
+  }
+
+  try {
+    const agreement = await withSessionContext('platform', subjectId, async (client) => {
+      const orgCheck = await client.query(
+        `SELECT org_id FROM identity.organization WHERE org_id IN ($1, $2)`,
+        [buyerOrgId, farmerInstitutionOrgId],
+      );
+      if (orgCheck.rows.length < 2) {
+        throw Object.assign(new Error('องค์กรผู้ซื้อหรือสถาบันเกษตรกรไม่ถูกต้อง'), { statusCode: 400, errorCode: 'invalid_organization' });
+      }
+      const officerCheck = await client.query(
+        `SELECT officer_id FROM identity.government_officer WHERE officer_id = $1 AND status = 'Active'`,
+        [governmentOfficerId],
+      );
+      if (officerCheck.rows.length === 0) {
+        throw Object.assign(new Error('ไม่พบเจ้าหน้าที่ภาครัฐ หรือบัญชีถูกปิดใช้งานแล้ว'), { statusCode: 400, errorCode: 'invalid_government_officer' });
+      }
+
+      const result = await client.query(
+        `INSERT INTO alliance.agreement
+           (title, commodity_code, buyer_org_id, farmer_institution_org_id, government_officer_id,
+            government_support_note, underlying_contract_id, business_plan_summary,
+            total_project_value, target_quantity, quantity_unit, start_date, end_date,
+            created_by_subject_type, created_by_subject_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'platform', $14)
+         RETURNING *`,
+        [
+          String(title).trim(), commodityCode || null, buyerOrgId, farmerInstitutionOrgId, governmentOfficerId,
+          governmentSupportNote || null, underlyingContractId || null, businessPlanSummary || null,
+          totalProjectValue || null, targetQuantity || null, quantityUnit || null,
+          startDate || null, endDate || null, subjectId,
+        ],
+      );
+      await logAccess(client, 'write', 'alliance.agreement', result.rows[0].agreement_id);
+      return result.rows[0];
+    });
+    return res.status(201).json(agreement);
+  } catch (err) {
+    if (err.errorCode) return res.status(err.statusCode).json({ error: err.errorCode });
+    if (err.code === '23514') return res.status(400).json({ error: 'invalid_agreement_fields' });
+    return next(err);
+  }
+});
+
+/**
+ * PATCH /admin/productive-alliances/:id/status — body: { status }.
+ * Deliberately a plain manual transition (no automatic state machine, see
+ * grant_productive_alliance.sql's header note on MVP scope).
+ */
+router.patch('/productive-alliances/:id/status', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { status } = req.body || {};
+  if (!status || !ALLIANCE_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ALLIANCE_STATUSES });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const updateRes = await client.query(
+        `UPDATE alliance.agreement SET status = $1, updated_at = now() WHERE agreement_id = $2 RETURNING agreement_id`,
+        [status, id],
+      );
+      if (updateRes.rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'alliance.agreement', id);
+      return { ok: true };
+    });
+    if (result.notFound) return res.status(404).json({ error: 'agreement_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/productive-alliances/:id/contributions — record a new
+ * pledge from one of the 3 parties. Body: { party_role, contribution_type,
+ * description, amount? }.
+ */
+router.post('/productive-alliances/:id/contributions', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const {
+    party_role: partyRole, contribution_type: contributionType, description, amount,
+  } = req.body || {};
+
+  if (!ALLIANCE_PARTY_ROLES.includes(partyRole)) {
+    return res.status(400).json({ error: 'invalid_party_role', valid: ALLIANCE_PARTY_ROLES });
+  }
+  if (!ALLIANCE_CONTRIBUTION_TYPES.includes(contributionType)) {
+    return res.status(400).json({ error: 'invalid_contribution_type', valid: ALLIANCE_CONTRIBUTION_TYPES });
+  }
+  if (!description || !String(description).trim()) return res.status(400).json({ error: 'description_required' });
+  if (amount !== undefined && amount !== null && Number(amount) < 0) {
+    return res.status(400).json({ error: 'invalid_amount' });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const agreementRes = await client.query(`SELECT agreement_id FROM alliance.agreement WHERE agreement_id = $1`, [id]);
+      if (agreementRes.rows.length === 0) return { notFound: true };
+
+      const insertRes = await client.query(
+        `INSERT INTO alliance.contribution
+           (agreement_id, party_role, contribution_type, description, amount, recorded_by_subject_type, recorded_by_subject_id)
+         VALUES ($1, $2, $3, $4, $5, 'platform', $6)
+         RETURNING *`,
+        [id, partyRole, contributionType, String(description).trim(), amount ?? null, subjectId],
+      );
+      await logAccess(client, 'write', 'alliance.contribution', insertRes.rows[0].contribution_id);
+      return { contribution: insertRes.rows[0] };
+    });
+    if (result.notFound) return res.status(404).json({ error: 'agreement_not_found' });
+    return res.status(201).json(result.contribution);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PATCH /admin/productive-alliances/:id/contributions/:contributionId —
+ * body: { status }. Moving to 'disbursed' stamps disbursed_at; this never
+ * touches ledger.* — see header note on scope.
+ */
+router.patch('/productive-alliances/:id/contributions/:contributionId', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id, contributionId } = req.params;
+  const { status } = req.body || {};
+  if (!ALLIANCE_CONTRIBUTION_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ALLIANCE_CONTRIBUTION_STATUSES });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const updateRes = await client.query(
+        `UPDATE alliance.contribution
+            SET status = $1, disbursed_at = CASE WHEN $1 = 'disbursed' THEN now() ELSE disbursed_at END
+          WHERE contribution_id = $2 AND agreement_id = $3
+          RETURNING contribution_id`,
+        [status, contributionId, id],
+      );
+      if (updateRes.rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'alliance.contribution', contributionId);
+      return { ok: true };
+    });
+    if (result.notFound) return res.status(404).json({ error: 'contribution_not_found' });
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/productive-alliances/:id/commitments — add a milestone from
+ * the agreed business plan. Body: { party_role, description, due_date? }.
+ */
+router.post('/productive-alliances/:id/commitments', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id } = req.params;
+  const { party_role: partyRole, description, due_date: dueDate } = req.body || {};
+
+  if (!ALLIANCE_PARTY_ROLES.includes(partyRole)) {
+    return res.status(400).json({ error: 'invalid_party_role', valid: ALLIANCE_PARTY_ROLES });
+  }
+  if (!description || !String(description).trim()) return res.status(400).json({ error: 'description_required' });
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const agreementRes = await client.query(`SELECT agreement_id FROM alliance.agreement WHERE agreement_id = $1`, [id]);
+      if (agreementRes.rows.length === 0) return { notFound: true };
+
+      const insertRes = await client.query(
+        `INSERT INTO alliance.commitment
+           (agreement_id, party_role, description, due_date, recorded_by_subject_type, recorded_by_subject_id)
+         VALUES ($1, $2, $3, $4, 'platform', $5)
+         RETURNING *`,
+        [id, partyRole, String(description).trim(), dueDate || null, subjectId],
+      );
+      await logAccess(client, 'write', 'alliance.commitment', insertRes.rows[0].commitment_id);
+      return { commitment: insertRes.rows[0] };
+    });
+    if (result.notFound) return res.status(404).json({ error: 'agreement_not_found' });
+    return res.status(201).json(result.commitment);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * PATCH /admin/productive-alliances/:id/commitments/:commitmentId —
+ * body: { status, evidence_note? }. Moving to 'done' stamps completed_at.
+ * "เลยกำหนด" (overdue) is a display-only derivation in the frontend
+ * (due_date < today AND status = 'pending'), never written here — see
+ * grant_productive_alliance.sql's COMMENT ON TABLE alliance.commitment.
+ */
+router.patch('/productive-alliances/:id/commitments/:commitmentId', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { id, commitmentId } = req.params;
+  const { status, evidence_note: evidenceNote } = req.body || {};
+  if (!ALLIANCE_COMMITMENT_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'invalid_status', valid: ALLIANCE_COMMITMENT_STATUSES });
+  }
+
+  try {
+    const result = await withSessionContext('platform', subjectId, async (client) => {
+      const updateRes = await client.query(
+        `UPDATE alliance.commitment
+            SET status = $1, evidence_note = COALESCE($2, evidence_note), updated_at = now(),
+                completed_at = CASE WHEN $1 = 'done' THEN now() ELSE completed_at END
+          WHERE commitment_id = $3 AND agreement_id = $4
+          RETURNING commitment_id`,
+        [status, evidenceNote || null, commitmentId, id],
+      );
+      if (updateRes.rows.length === 0) return { notFound: true };
+      await logAccess(client, 'write', 'alliance.commitment', commitmentId);
+      return { ok: true };
+    });
+    if (result.notFound) return res.status(404).json({ error: 'commitment_not_found' });
     return res.json(result);
   } catch (err) {
     return next(err);
