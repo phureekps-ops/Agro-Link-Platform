@@ -192,7 +192,41 @@ grant_oae_data_portal.sql
 grant_web_traffic.sql
 grant_agrimap_water_climate_adapter.sql
 grant_productive_alliance.sql
+grant_biomass_producer_portal.sql
 ```
+
+**เพิ่มเมื่อ 2026-10-24:** `grant_biomass_producer_portal.sql` — ตามคำขอ
+"สร้างพอร์ทัลผู้ผลิตสินค้าจากชีวมวล ในพอร์ทัลให้เลือกได้ว่าสมาชิกผลิตอะไร
+1.ฟางอัดก้อน 2.ยอดอ้อยอัดก้อน 3.ฟางอัดเม็ด 4.Biochar 5.ปุ๋ยอินทรีย์ และสร้าง
+การ์ดในหน้าพอร์ทัลรวมด้วย" — เพิ่มพอร์ทัลใหม่ **"ผู้ผลิตสินค้าจากชีวมวล"**
+(`BiomassProducer`) ให้องค์กรที่ลงทะเบียนแล้ว (สหกรณ์/กลุ่มเกษตรกร) ขอเป็น
+บทบาทเพิ่มเติมได้ (ผ่าน `POST /organization/roles` ที่มีอยู่แล้ว — เพิ่มใน
+`organization_role_role_type_check` เท่านั้น **ไม่เพิ่ม**ใน
+`organization_org_type_check` เพราะไม่เปิดให้ลงทะเบียนจากศูนย์เป็นประเภทนี้
+โดยตรง ตามคำตอบของผู้ใช้ที่ว่าสมาชิกคือองค์กรที่ลงทะเบียนและผ่าน KYB แล้ว):
+
+1. **`biomass.producer_profile`** — โปรไฟล์สาธารณะ 1 แถวต่อองค์กร (คำอธิบาย,
+   ปริมาณผลิตโดยประมาณ, เบอร์ติดต่อ, รูปหน้าการ์ด, สวิตช์แสดง/ซ่อนการ์ด)
+2. **`biomass.producer_product`** — ตาราง join ประเภทสินค้าที่เลือกผลิต
+   (เลือกได้หลายประเภทพร้อมกัน — ใช้ตาราง join ตามธรรมเนียมเดิมของโปรเจกต์
+   ไม่ใช้ array column) ค่าที่รองรับ: `baled_straw`, `baled_sugarcane_top`,
+   `pelletized_straw`, `biochar`, `organic_fertilizer`
+3. **`biomass.v_producer_directory`** — view รวมสำหรับหน้าทำเนียบสาธารณะ
+   (เฉพาะองค์กรที่บทบาทนี้ผ่านอนุมัติแล้ว + เปิดแสดงการ์ด)
+4. พอร์ทัลใหม่ **`frontend/biomassproducer/`** (login + dashboard เลือก
+   ประเภทสินค้า/กรอกโปรไฟล์) และหน้าทำเนียบสาธารณะใหม่
+   **`frontend/biomassproducer-directory.html`** (แยกจากพอร์ทัลผู้รับซื้อ
+   เดิม `biomass-portal.html` ซึ่งเป็นหน้า static ล้วนไม่มี backend) — หน้า
+   ทำเนียบนี้เปิดเป็นสาธารณะ ไม่ต้อง login (`GET /biomass/directory`) เพื่อ
+   ให้ผู้รับซื้อที่ยังไม่มีบัญชีค้นหาผู้ผลิตได้ — **เป็นสมมติฐานที่ตั้งไว้เอง
+   ยังไม่ได้ยืนยันกับผู้ใช้โดยตรง** หากต้องการให้ต้อง login ก่อนดูได้แจ้งได้
+5. ไม่กระทบ `partner.activate_vendor_role()` เดิม — ฟังก์ชันนี้รองรับทุก
+   role_type แบบทั่วไปอยู่แล้ว (สาขา ELSE -> vendor_settlement account) จึง
+   ใช้งานกับบทบาทใหม่นี้ได้ทันทีไม่ต้องแก้โค้ด
+
+**หมายเหตุสำคัญ:** migration นี้ยังไม่ได้รันกับฐานข้อมูลจริงบน Render —
+ต้องรันเองผ่าน psql ตามขั้นตอนใน DEPLOY.md ข้อ 5-7 ก่อนฟีเจอร์นี้จะใช้งาน
+ได้ เช่นเดียวกับทุก migration ก่อนหน้า
 
 **เพิ่มเมื่อ 2026-10-18 (ค่ำ):** `grant_productive_alliance.sql` — ตามคำขอ
 "ออกแบบโครงสร้างข้อมูล/หน้าจอสำหรับ P2" ของรายงาน AgroLink × RAP-T Gap
