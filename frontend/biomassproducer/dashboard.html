@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้ผลิตสินค้าจากชีวมวล</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .product-check {
+    display: flex; align-items: center; gap: 10px; border: 1px solid #e2e2e2; border-radius: 10px;
+    padding: 12px 14px; cursor: pointer; font-size: 14px; font-weight: 600; transition: border-color .15s, background .15s;
+  }
+  .product-check:hover { border-color: var(--green-700, #2e7d32); }
+  .product-check input { width: 18px; height: 18px; }
+  .product-check.checked { border-color: var(--green-700, #2e7d32); background: #f1f8f2; }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>♻️</span><span>AgroLink Platform — พอร์ทัลผู้ผลิตสินค้าจากชีวมวล</span></div>
+    <div class="who">
+      <span class="name" id="orgName">กำลังโหลด…</span>
+      <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container" id="mainContainer">
+
+    <div class="section-title">📊 ภาพรวม</div>
+    <div id="summarySection" class="summary-grid">
+      <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+    </div>
+
+    <div class="section-title">🌾 ประเภทสินค้าจากชีวมวลที่ผลิต</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
+      เลือกได้หลายประเภทพร้อมกัน — รายการที่เลือกจะแสดงในการ์ดของท่านที่หน้าทำเนียบผู้ผลิตสาธารณะ
+      (เมื่อบทบาทของท่านได้รับการอนุมัติแล้ว และเปิดการแสดงผลการ์ดไว้ในส่วนโปรไฟล์ด้านล่าง)
+    </p>
+    <div class="panel">
+      <div id="productTypeGrid" class="product-grid">
+        <div class="loading-line">กำลังโหลด…</div>
+      </div>
+      <button type="button" class="btn btn-primary" id="productTypeSaveBtn" style="max-width:220px;">บันทึกประเภทสินค้า</button>
+    </div>
+
+    <div class="section-title">🪪 โปรไฟล์สาธารณะ (แสดงในทำเนียบผู้ผลิต)</div>
+    <div class="panel">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="descriptionInput">คำอธิบายกิจการ/กลุ่มผลิต (ไม่บังคับ)</label>
+          <textarea id="descriptionInput" rows="3" placeholder="เช่น สหกรณ์การเกษตร... รวบรวมฟางข้าวจากสมาชิก 120 ราย ผลิตฟางอัดก้อนและปุ๋ยอินทรีย์จำหน่ายตลอดปี"></textarea>
+        </div>
+        <div class="field full">
+          <label for="capacityNoteInput">ปริมาณ/กำลังการผลิตโดยประมาณ (ไม่บังคับ)</label>
+          <input type="text" id="capacityNoteInput" placeholder="เช่น ฟางอัดก้อน ~200 ตัน/เดือน ช่วงหลังเก็บเกี่ยว" />
+        </div>
+        <div class="field">
+          <label for="contactPhoneInput">เบอร์โทรติดต่อสำหรับผู้รับซื้อ</label>
+          <input type="text" id="contactPhoneInput" placeholder="เช่น 08x-xxx-xxxx" />
+        </div>
+        <div class="field">
+          <label for="isActiveSelect">การแสดงผลการ์ดในทำเนียบสาธารณะ</label>
+          <select id="isActiveSelect">
+            <option value="true">แสดงการ์ด (เปิดให้ผู้รับซื้อค้นหาเจอ)</option>
+            <option value="false">ซ่อนการ์ด (ไม่แสดงในทำเนียบชั่วคราว)</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="coverPhotoFileInput">รูปภาพหน้าการ์ด (ไม่บังคับ, สูงสุด 2MB)</label>
+          <input type="file" id="coverPhotoFileInput" accept="image/*" />
+          <div id="coverPhotoPreviewWrap" style="margin-top:8px; display:none;">
+            <img id="coverPhotoPreview" style="max-width:220px; border-radius:10px; border:1px solid #e2e2e2;" />
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" id="profileSaveBtn" style="max-width:220px; margin-top:8px;">บันทึกโปรไฟล์</button>
+      <div class="hint" style="margin-top:10px;">
+        ต้องการดูตัวอย่างหน้าทำเนียบที่ผู้รับซื้อเห็น?
+        <a href="../biomassproducer-directory.html" target="_blank">เปิดหน้าทำเนียบผู้ผลิต</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="../js/support-widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ทำเนียบผู้ผลิตสินค้าจากชีวมวล | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+  header.nav { background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+  .logo-img { height: 56px; width: auto; max-width: none; display: block; }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 10px; font-weight: 700; font-size: 14.5px; cursor: pointer; border: 1px solid transparent; }
+  .btn-outline { border-color: var(--border); background: var(--white); color: var(--text); }
+  .btn-outline:hover { border-color: var(--green); color: var(--green); }
+  .btn-primary { background: var(--green); color: var(--white); }
+  .btn-primary:hover { background: var(--green-dark); }
+
+  .page-header { background: linear-gradient(135deg, var(--green-dark), var(--green)); color: var(--white); padding: 56px 0 44px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-light); background: rgba(255,255,255,.12); padding: 6px 14px; border-radius: 999px; margin-bottom: 16px; }
+  .page-header h1 { font-size: 34px; margin-bottom: 10px; }
+  .page-header p { max-width: 680px; opacity: .92; font-size: 15.5px; }
+
+  .filter-section { background: var(--white); border-bottom: 1px solid var(--border); padding: 22px 0; position: sticky; top: 76px; z-index: 15; }
+  .filter-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+  .filter-field label { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+  .filter-field select, .filter-field input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--white); }
+  .result-count { font-size: 13px; color: var(--muted); margin-left: auto; align-self: center; }
+
+  .directory-section { padding: 40px 0 70px; }
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  @media (max-width: 980px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .card-grid { grid-template-columns: 1fr; } }
+
+  .producer-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+  .producer-card .cover { width: 100%; height: 150px; background: var(--green-light); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .producer-card .cover img { width: 100%; height: 100%; object-fit: cover; }
+  .producer-card .cover .fallback-icon { font-size: 40px; }
+  .producer-card .body { padding: 18px 18px 20px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .producer-card .org-name { font-size: 16.5px; font-weight: 700; color: var(--green-dark); }
+  .producer-card .location { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .producer-card .desc { font-size: 13.5px; color: var(--text); flex: 1; }
+  .producer-card .capacity { font-size: 12.5px; color: var(--muted); }
+  .producer-card .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .producer-card .tag { font-size: 11.5px; font-weight: 700; background: var(--green-light); color: var(--green-dark); padding: 4px 10px; border-radius: 999px; }
+  .producer-card .contact-row { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+  .producer-card .phone { font-size: 13.5px; font-weight: 700; color: var(--green); }
+
+  .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+  footer { background: var(--green-dark); color: rgba(255,255,255,.85); padding: 28px 0; margin-top: 0; }
+  footer .container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 13px; }
+  footer a { color: var(--gold-light); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container nav-top">
+    <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+    <div class="nav-cta">
+      <a href="biomass-economy.html" class="btn btn-outline">เศรษฐกิจชีวมวล</a>
+      <a href="biomass-portal.html" class="btn btn-outline">พอร์ทัลผู้รับซื้อชีวมวล</a>
+      <a href="biomassproducer/index.html" class="btn btn-primary">เข้าสู่ระบบผู้ผลิต</a>
+    </div>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="container">
+    <div class="eyebrow"><i class="fa-solid fa-recycle"></i> ทำเนียบผู้ผลิต</div>
+    <h1>ทำเนียบผู้ผลิตสินค้าจากชีวมวล</h1>
+    <p>
+      ค้นหาสหกรณ์และกลุ่มเกษตรกรในเครือข่าย AgroLink ที่ผลิตฟางอัดก้อน/อัดเม็ด ยอดอ้อยอัดก้อน
+      ไบโอชาร์ และปุ๋ยอินทรีย์ — ติดต่อจัดซื้อได้โดยตรงจากข้อมูลในการ์ดแต่ละราย
+    </p>
+  </div>
+</section>
+
+<section class="filter-section">
+  <div class="container filter-row">
+    <div class="filter-field">
+      <label for="productTypeFilter">ประเภทสินค้า</label>
+      <select id="productTypeFilter">
+        <option value="">ทุกประเภท</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label for="regionFilter">จังหวัด</label>
+      <select id="regionFilter">
+        <option value="">ทุกจังหวัด</option>
+      </select>
+    </div>
+    <div class="result-count" id="resultCount"></div>
+  </div>
+</section>
+
+<section class="directory-section">
+  <div class="container">
+    <div id="directoryGrid" class="card-grid">
+      <div class="empty-state"><div class="icon">⏳</div>กำลังโหลดทำเนียบผู้ผลิต…</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <span>© AgroLink Platform — ทำเนียบผู้ผลิตสินค้าจากชีวมวล</span>
+    <span>เป็นผู้ผลิต? <a href="biomassproducer/index.html">เข้าสู่ระบบ/ขอบทบาทผู้ผลิต</a></span>
+  </div>
+</footer>
+
+<script src="js/provinces.js"></script>
+<script>
+  const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname))
+    ? "http://localhost:4000"
+    : "https://agrolink-backend-vhv6.onrender.com";
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  const regionFilter = document.getElementById("regionFilter");
+  (TH_PROVINCES || []).forEach(([code, name]) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = name;
+    regionFilter.appendChild(opt);
+  });
+
+  function producerCardHtml(p) {
+    const tags = (p.product_type_labels || []).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join("");
+    const location = p.region_code
+      ? (TH_PROVINCES.find(([code]) => code === p.region_code) || [null, p.region_code])[1]
+      : "ไม่ระบุพื้นที่";
+    const cover = p.cover_photo_data_url
+      ? `<img src="${p.cover_photo_data_url}" alt="${escapeHtml(p.org_name)}" />`
+      : `<span class="fallback-icon">♻️</span>`;
+    return `
+      <div class="producer-card">
+        <div class="cover">${cover}</div>
+        <div class="body">
+          <div class="org-name">${escapeHtml(p.org_name)}</div>
+          <div class="location"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(location)}</div>
+          ${p.description ? `<div class="desc">${escapeHtml(p.description)}</div>` : ""}
+          ${p.capacity_note ? `<div class="capacity"><i class="fa-solid fa-boxes-stacked"></i> ${escapeHtml(p.capacity_note)}</div>` : ""}
+          <div class="tags">${tags}</div>
+          <div class="contact-row">
+            <span class="phone">${p.contact_phone ? "📞 " + escapeHtml(p.contact_phone) : "ไม่ระบุเบอร์ติดต่อ"}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  let allProducers = [];
+
+  function renderGrid() {
+    const productType = document.getElementById("productTypeFilter").value;
+    const region = document.getElementById("regionFilter").value;
+    const filtered = allProducers.filter((p) => {
+      if (productType && !(p.product_types || []).includes(productType)) return false;
+      if (region && p.region_code !== region) return false;
+      return true;
+    });
+    document.getElementById("resultCount").textContent = `พบ ${filtered.length} ราย`;
+    const grid = document.getElementById("directoryGrid");
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🔍</div>ไม่พบผู้ผลิตตามเงื่อนไขที่เลือก</div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map(producerCardHtml).join("");
+  }
+
+  async function loadDirectory() {
+    try {
+      const res = await fetch(`${API_BASE}/biomass/directory`);
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "load_failed");
+
+      const productTypeFilter = document.getElementById("productTypeFilter");
+      (body.product_types || []).forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.product_type;
+        opt.textContent = p.label_th;
+        productTypeFilter.appendChild(opt);
+      });
+
+      allProducers = body.producers || [];
+      if (allProducers.length === 0) {
+        document.getElementById("directoryGrid").innerHTML =
+          `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🌱</div>ยังไม่มีผู้ผลิตที่เปิดแสดงการ์ดในทำเนียบขณะนี้</div>`;
+        document.getElementById("resultCount").textContent = "";
+        return;
+      }
+      renderGrid();
+    } catch (err) {
+      document.getElementById("directoryGrid").innerHTML =
+        `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">⚠️</div>โหลดทำเนียบผู้ผลิตไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  document.getElementById("productTypeFilter").addEventListener("change", renderGrid);
+  document.getElementById("regionFilter").addEventListener("change", renderGrid);
+
+  loadDirectory();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/track.js"></script>
+</body>
+</html>

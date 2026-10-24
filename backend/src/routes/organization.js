@@ -53,10 +53,19 @@ router.use(requireAuth, requireOrganization);
 // requests the one consolidated type instead of up to four separate ones.
 // The four individual values stay valid in the DB domain for any org that
 // already holds one of them — only removed from this requestable list.
+// 'BiomassProducer' added 2026-10-24 for the "พอร์ทัลผู้ผลิตสินค้าจากชีวมวล"
+// (Biomass Product Producer Portal) feature — per the user's own explicit
+// scoping, members are already-registered organizations (Cooperative/
+// farmer-group etc.), not a from-scratch org_type, so this is
+// REQUESTABLE-only, same additive pattern as every type above. See
+// grant_biomass_producer_portal.sql for why this is deliberately NOT also
+// added to auth.js's ORG_SELF_REGISTER_TYPES / organization_org_type_check
+// (only to organization_role_role_type_check).
 const ORG_REQUESTABLE_ROLE_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer', 'VillageFund',
   'MachineryService', 'DryingYardService',
   'FertilizerMixingService',
+  'BiomassProducer',
 ];
 
 // Kept covering ALL of TractorService/DroneService/HarvesterService/
@@ -76,6 +85,7 @@ const ROLE_LABEL_TH = {
   HarvesterService: 'บริการรถเกี่ยวข้าว', TruckService: 'บริการรถบรรทุก',
   DryingYardService: 'บริการลานตากข้าว/โกดังและไซโล',
   FertilizerMixingService: 'ผู้ให้บริการผสมปุ๋ยสั่งตัด',
+  BiomassProducer: 'ผู้ผลิตสินค้าจากชีวมวล',
 };
 
 /**
