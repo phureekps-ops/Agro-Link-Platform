@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โครงการมะพร้าวน้ำหอมครบวงจร | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; max-width: none; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
+  /* TOC */
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  /* ROLE CARDS */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; scroll-margin-top: 90px; }
+  .role-card h4 { font-size: 15.5px; margin-bottom: 12px; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+  .role-card h4 .badge-num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background: var(--green-light); color: var(--green); font-size:12.5px; font-weight:800; flex-shrink:0; }
+  .role-card ul { margin: 0; }
+  .role-card ul li { position: relative; padding-left: 18px; font-size: 13.8px; color: var(--text); margin-bottom: 9px; }
+  .role-card ul li:last-child { margin-bottom: 0; }
+  .role-card ul li::before { content: "•"; position: absolute; left: 0; color: var(--gold); font-weight: 800; }
+
+  /* DATA TABLES */
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* DISCLAIMER / NOTE BLOCK */
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / other pages */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <a href="about-video.html" data-i18n="nav_about">เกี่ยวกับเรา</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="integrated-sugarcane-business.html" data-i18n="nav_coop_sugarcane">อ้อยน้ำตาล</a>
+            <a href="integrated-palmoil-business.html" data-i18n="nav_coop_palmoil">ปาล์มน้ำมัน</a>
+            <a href="integrated-longan-business.html" data-i18n="nav_coop_longan">ลำไย</a>
+            <a href="integrated-coconut-business.html" data-i18n="nav_coop_coconut">มะพร้าวน้ำหอมครบวงจร</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="for-farmers.html"><span data-i18n="nav_farmers">สำหรับเกษตรกร</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="for-farmers-crop.html" data-i18n="nav_farmers_crop">เกษตรกรผู้ปลูกพืช</a>
+            <a href="for-farmers-livestock.html" data-i18n="nav_farmers_livestock">เกษตรกรผู้เลี้ยงสัตว์บก</a>
+            <a href="for-farmers-aquaculture.html" data-i18n="nav_farmers_aquaculture">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="rap-t-project.html"><span data-i18n="nav_rapt">RAP-T</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-durian-business.html" data-i18n="nav_rapt_durian">ทุเรียน</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_rapt_cassava">มันสำปะหลัง</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_rapt_corn">ข้าวโพดเลี้ยงสัตว์</a>
+            <a href="rap-t-coffee.html" data-i18n="nav_rapt_coffee">กาแฟ</a>
+            <a href="integrated-coconut-business.html" data-i18n="nav_rapt_coconut">มะพร้าวน้ำหอม</a>
+            <a href="rap-t-shrimp.html" data-i18n="nav_rapt_shrimp">กุ้ง</a>
+            <a href="rap-t-tilapia.html" data-i18n="nav_rapt_tilapia">ปลานิล/ทับทิมกระชัง</a>
+            <a href="rap-t-seabass.html" data-i18n="nav_rapt_seabass">ปลากระพง/เก๋ากระชัง</a>
+          </div>
+        </div>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="agri-insurance-ecosystem.html" data-i18n="nav_insurance">ประกันภัย</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-coconut-business_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-leaf"></i><span data-i18n="integrated-coconut-business_2"> คู่มือแนะนำโครงการ</span></div>
+    <h1 class="section-title" data-i18n="integrated-coconut-business_3">โครงการพัฒนาระบบนิเวศเศรษฐกิจมะพร้าวน้ำหอมครบวงจรด้วยเทคโนโลยีดิจิทัล</h1>
+    <p class="section-sub" data-i18n="integrated-coconut-business_4">&ldquo;มะพร้าวน้ำหอมไทยสู่ตลาดโลก ด้วยเทคโนโลยีดิจิทัลและการบริหารจัดการอย่างยั่งยืน&rdquo; — เอกสารแนวคิดโครงการ (Concept Paper) ภายใต้โครงการ RAP-T (Resilient Agribusiness Program Thailand) เสนอต่อกระทรวงเกษตรและสหกรณ์</p>
+    <span class="draft-tag" data-i18n="integrated-coconut-business_5">ฉบับร่างเพื่อพิจารณา — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/coconut-ecosystem-infographic.jpg" data-i18n="integrated-coconut-business_6" data-i18n-attr="alt" alt="อินโฟกราฟิกโครงการพัฒนาระบบนิเวศมะพร้าวน้ำหอม" loading="lazy">
+      <figcaption data-i18n="integrated-coconut-business_7">ภาพรวมโครงการพัฒนาระบบนิเวศมะพร้าวน้ำหอม ภายใต้โครงการ RAP-T — กระทรวงเกษตรและสหกรณ์</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-coconut-business_8">สารบัญ</h4>
+      <ol>
+<li><a href="#sec-1" data-i18n="integrated-coconut-business_9">1. บทสรุปผู้บริหาร</a></li>
+<li><a href="#sec-2" data-i18n="integrated-coconut-business_10">2. หลักการและเหตุผล — โครงการ RAP-T และมะพร้าวน้ำหอมไทย</a></li>
+<li><a href="#sec-3" data-i18n="integrated-coconut-business_11">3. วัตถุประสงค์</a></li>
+<li><a href="#sec-4" data-i18n="integrated-coconut-business_12">4. โครงสร้างระบบนิเวศและบทบาทผู้เกี่ยวข้อง</a></li>
+<li><a href="#sec-5" data-i18n="integrated-coconut-business_13">5. ระบบงานหลักของ AgroLink Smart Coconut Ecosystem</a></li>
+<li><a href="#sec-6" data-i18n="integrated-coconut-business_14">6. มาตรฐานการรับซื้อหน้าสวนและการคัดเกรด</a></li>
+<li><a href="#sec-7" data-i18n="integrated-coconut-business_15">7. ผลประโยชน์ที่คาดว่าจะได้รับ</a></li>
+<li><a href="#sec-8" data-i18n="integrated-coconut-business_16">8. ความเสี่ยงและแนวทางบริหารจัดการ</a></li>
+<li><a href="#sec-9" data-i18n="integrated-coconut-business_17">9. ข้อเสนอเชิงนโยบายและสิ่งที่ขอรับการพิจารณา</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-coconut-business_18">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="integrated-coconut-business_19">มะพร้าวน้ำหอมเป็นพืชเศรษฐกิจที่มีมูลค่าสูงและความต้องการเติบโตต่อเนื่องทั้งตลาดในประเทศและตลาดส่งออก แต่ปัจจุบันเกษตรกร สหกรณ์ ผู้รับซื้อหน้าสวน และหน่วยงานรัฐในห่วงโซ่มะพร้าวน้ำหอมยังทำงานแยกส่วนกัน เกณฑ์การรับซื้อและคัดเกรดไม่เป็นมาตรฐานเดียวกัน เกษตรกรขาดเงินทุนหมุนเวียนระหว่างรอผลผลิตซึ่งใช้เวลาปลูกถึงเก็บเกี่ยวยาวนานกว่า 200 วัน และเศษเหลือจากการแปรรูป เช่น กะลาและเปลือกมะพร้าว จำนวนมากยังไม่ถูกนำไปใช้ประโยชน์อย่างเป็นระบบ</p>
+<p data-i18n="integrated-coconut-business_20">โครงการนี้เสนอให้พัฒนา AgroLink Smart Coconut Ecosystem ภายใต้โครงการ RAP-T (Resilient Agribusiness Program Thailand) เป็นระบบนิเวศเศรษฐกิจมะพร้าวน้ำหอมที่เชื่อมโยงข้อมูลการผลิต เงินทุน คุณภาพ การรับซื้อ และการใช้ประโยชน์จากเศษเหลือไว้ในโครงสร้างเดียว โดย AgroLink ทำหน้าที่เป็นผู้พัฒนาโครงสร้างพื้นฐานดิจิทัล ไม่ปล่อยสินเชื่อและไม่กำหนดราคาเอง แนวคิดหลักประกอบด้วย 5 ด้าน</p>
+<ul class="check-list">
+<li><strong data-i18n="integrated-coconut-business_21">มาตรฐานการรับซื้อหน้าสวนที่เป็นธรรมและตรวจสอบได้</strong><span data-i18n="integrated-coconut-business_22"> ชั่งน้ำหนักดิจิทัล คัดเกรดตามเกณฑ์กลาง ออกใบรับรองคุณภาพ และเปิดเผยราคาอ้างอิงที่โปร่งใส ลดข้อโต้แย้งระหว่างเกษตรกรกับผู้รับซื้อ</span></li>
+<li><strong data-i18n="integrated-coconut-business_23">สินเชื่อตามงวดการผลิตที่อ้างอิงปฏิทินการผลิตจริง</strong><span data-i18n="integrated-coconut-business_24"> เบิกจ่ายเป็นงวดตามระยะการเจริญเติบโตของมะพร้าวน้ำหอมภายใต้ปฏิทินการผลิตของโครงการ RAP-T ช่วยให้สถาบันการเงินประเมินความเสี่ยงได้แม่นยำขึ้นและเกษตรกรมีเงินทุนหมุนเวียนตรงช่วงที่ต้องใช้จริง</span></li>
+<li><strong data-i18n="integrated-coconut-business_25">การแปรรูปเศษเหลือสู่ Biochar แบบครบวงจร</strong><span data-i18n="integrated-coconut-business_26"> เชื่อมโยงกะลาและเปลือกมะพร้าวที่เหลือจากการแปรรูปเข้าสู่พอร์ทัลผู้ผลิตสินค้าจากชีวมวลของ AgroLink ลดการเผาในที่โล่ง ลดก๊าซเรือนกระจก และสร้างรายได้เสริมจากของเหลือทิ้ง</span></li>
+<li><strong data-i18n="integrated-coconut-business_27">การบริหารจัดการน้ำและความเค็มสำหรับพื้นที่ปลูกริมชายฝั่ง</strong><span data-i18n="integrated-coconut-business_28"> สวนมะพร้าวน้ำหอมจำนวนมากอยู่ในพื้นที่ราบลุ่มใกล้ทะเลซึ่งเสี่ยงต่อความเค็มของดินและน้ำ ระบบจะช่วยตรวจวัด แจ้งเตือน และแนะนำการจัดการเพื่อรักษาคุณภาพผลผลิต</span></li>
+<li><strong data-i18n="integrated-coconut-business_29">Carbon Credit แบบรวมกลุ่ม</strong><span data-i18n="integrated-coconut-business_30"> ต่อยอดจากการลดการเผาเศษเหลือและการบริหารจัดการสวนอย่างยั่งยืน เข้าสู่กระบวนการรับรองคาร์บอนเครดิตร่วมกันระหว่างเกษตรกรรายย่อย</span></li>
+</ul>
+<div class="note-block" style="margin-top:22px;"><strong data-i18n="integrated-coconut-business_31">สิ่งที่ขอรับการพิจารณา:</strong><span data-i18n="integrated-coconut-business_32"> เห็นชอบในหลักการของแนวคิดโครงการภายใต้ RAP-T แต่งตั้งคณะทำงานร่วม และสนับสนุนการเชื่อมโยงข้อมูลภาครัฐที่เกี่ยวข้อง (รายละเอียดหัวข้อ 9)</span></div>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-coconut-business_33">2. หลักการและเหตุผล — โครงการ RAP-T และมะพร้าวน้ำหอมไทย</h2>
+<p data-i18n="integrated-coconut-business_34">ภายใต้โครงการ RAP-T (Resilient Agribusiness Program Thailand) มะพร้าวน้ำหอมได้รับการกำหนดเป็นหนึ่งในห่วงโซ่มูลค่าเป้าหมาย โดยมีการกำหนดรหัสสินค้ามาตรฐาน COCONUT_AROMATIC และปฏิทินการผลิตอ้างอิง 5 ระยะ รวมระยะเวลาประมาณ 210 วันต่อรอบการผลิต ได้แก่ การผสมเกสรและให้ปุ๋ยเริ่มต้น (วันที่ 0) ระยะออกดอก (วันที่ 40) ระยะติดผล (วันที่ 90) ระยะผลแก่เต็มที่ (วันที่ 180) และระยะเก็บเกี่ยว (วันที่ 210) ปฏิทินนี้เป็นฐานข้อมูลสำคัญสำหรับการวางแผนปุ๋ย น้ำ และการเบิกจ่ายสินเชื่อตามงวดการผลิตให้สอดคล้องกับความต้องการจริงของต้นมะพร้าวในแต่ละช่วง</p>
+<p data-i18n="integrated-coconut-business_35">โครงการนี้ยังให้ความสำคัญเป็นพิเศษกับการพัฒนาเศษเหลือจากการแปรรูปมะพร้าวน้ำหอม โดยเฉพาะกะลาและเปลือกมะพร้าว ให้กลายเป็น Biochar ซึ่งเป็นแนวทางหนึ่งของ RAP-T ในการลดการเผาวัสดุเหลือใช้ทางการเกษตรในที่โล่ง ลดการปล่อยก๊าซเรือนกระจก และสร้างมูลค่าเพิ่มให้แก่ผลพลอยได้ที่เดิมแทบไม่มีมูลค่าทางเศรษฐกิจ โดยเชื่อมโยงกับโครงสร้างพื้นฐานด้านชีวมวลที่ AgroLink พัฒนาไว้แล้ว (รายละเอียดหัวข้อ 5.2)</p>
+<p data-i18n="integrated-coconut-business_36">อย่างไรก็ตาม ห่วงโซ่อุปทานมะพร้าวน้ำหอมในปัจจุบันยังเผชิญปัญหาเชิงโครงสร้างใน 4 ด้าน</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:30px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-coconut-business_37">ด้าน</th>
+<th data-i18n="integrated-coconut-business_38">ปัญหาหลัก</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-coconut-business_39">การผลิต</strong></td><td data-i18n="integrated-coconut-business_40">สวนจำนวนมากอยู่ในพื้นที่ราบลุ่มใกล้ชายฝั่งหรือปากแม่น้ำ เสี่ยงต่อความเค็มของดินและน้ำที่กระทบรสชาติและผลผลิต; การใช้ปุ๋ยยังไม่อิงค่าวิเคราะห์ดิน/ใบรายแปลง; ต้นพันธุ์ที่ตรวจสอบแหล่งที่มาได้ยังมีจำกัด</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_41">คุณภาพและมาตรฐาน</strong></td><td data-i18n="integrated-coconut-business_42">เกณฑ์การรับซื้อและคัดเกรดหน้าสวนยังไม่เป็นมาตรฐานเดียวกัน; การชั่งน้ำหนักและคัดขนาด (เล็ก/กลาง/ใหญ่/จัมโบ้) มักทำด้วยสายตา เกิดข้อโต้แย้งเรื่องราคา</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_43">ตลาดและการเงิน</strong></td><td data-i18n="integrated-coconut-business_44">เกษตรกรขาดเงินทุนหมุนเวียนระหว่างรอผลผลิตที่ใช้เวลานานกว่า 200 วัน; การเข้าถึงสินเชื่อตามวงจรการผลิตจริงและประกันภัยพืชผลยังมีจำกัด</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_45">สิ่งแวดล้อมและเศษเหลือ</strong></td><td data-i18n="integrated-coconut-business_46">กะลา เปลือก และกาบมะพร้าวจำนวนมากไม่ได้ใช้ประโยชน์อย่างเป็นระบบ บางส่วนถูกเผาทิ้งในที่โล่งแทนที่จะแปรรูปเป็น Biochar หรือผลิตภัณฑ์ชีวมวลอื่น</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-coconut-business_47">จึงเสนอให้กระทรวงเกษตรและสหกรณ์ร่วมกับภาคเอกชน สหกรณ์ กลุ่มเกษตรกร ผู้รับซื้อหน้าสวน และสถาบันการเงิน พัฒนา AgroLink Smart Coconut Ecosystem ภายใต้กรอบโครงการ RAP-T เพื่อยกระดับอุตสาหกรรมมะพร้าวน้ำหอมไทยอย่างครบวงจร</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-coconut-business_48">3. วัตถุประสงค์</h2>
+<p data-i18n="integrated-coconut-business_49">วัตถุประสงค์หลัก: สร้างระบบนิเวศเศรษฐกิจมะพร้าวน้ำหอมที่ทำให้เกษตรกรมีรายได้มั่นคง มีตลาดรองรับ ผลิตมะพร้าวน้ำหอมคุณภาพสูง และใช้ประโยชน์จากเศษเหลือได้อย่างยั่งยืน</p>
+<h3 data-i18n="integrated-coconut-business_50">วัตถุประสงค์เฉพาะ</h3>
+<ul class="check-list">
+<li data-i18n="integrated-coconut-business_51">สร้างโครงสร้างพื้นฐานดิจิทัลที่เชื่อมข้อมูลเกษตรกร สวน ผู้รับซื้อหน้าสวน สหกรณ์ และหน่วยงานรัฐ ภายใต้กรอบโครงการ RAP-T</li>
+<li data-i18n="integrated-coconut-business_52">ติดตามการผลิตตามปฏิทินมาตรฐาน COCONUT_AROMATIC ตั้งแต่การปลูกจนถึงการเก็บเกี่ยว</li>
+<li data-i18n="integrated-coconut-business_53">บริหารจัดการน้ำและความเค็มของดิน/น้ำในพื้นที่ปลูกริมชายฝั่งอย่างเป็นระบบ</li>
+<li data-i18n="integrated-coconut-business_54">ลดต้นทุนการผลิตด้วยปุ๋ยสั่งตัดเฉพาะแปลง</li>
+<li data-i18n="integrated-coconut-business_55">สร้างมาตรฐานการรับซื้อหน้าสวนและการคัดเกรดที่โปร่งใสและตรวจสอบได้</li>
+<li data-i18n="integrated-coconut-business_56">พัฒนาระบบสินเชื่อตามงวดการผลิตและประกันภัยพืชผลที่เข้าถึงง่ายขึ้น</li>
+<li data-i18n="integrated-coconut-business_57">ส่งเสริมการแปรรูปเศษเหลือจากมะพร้าวน้ำหอมสู่ Biochar ผ่านพอร์ทัลผู้ผลิตสินค้าจากชีวมวล แทนการเผาในที่โล่ง</li>
+<li data-i18n="integrated-coconut-business_58">ส่งเสริมการลดก๊าซเรือนกระจกและ Carbon Credit แบบรวมกลุ่ม</li>
+<li data-i18n="integrated-coconut-business_59">สร้างฐานข้อมูลมะพร้าวน้ำหอมระดับประเทศสนับสนุนการวางแผนและการตัดสินใจของภาครัฐ</li>
+</ul>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-4">
+<div class="container">
+<div class="section-head reveal" style="margin-bottom:30px;">
+<div class="eyebrow"><i class="fa-solid fa-people-group"></i><span data-i18n="integrated-coconut-business_60"> ผู้เกี่ยวข้อง</span></div>
+<h2 class="section-title" data-i18n="integrated-coconut-business_61">4. โครงสร้างระบบนิเวศและบทบาทผู้เกี่ยวข้อง</h2>
+<p class="section-sub" data-i18n="integrated-coconut-business_62">AgroLink เป็นศูนย์กลางเชื่อมข้อมูลและธุรกรรมตลอดห่วงโซ่ โดยไม่ทำหน้าที่ปล่อยสินเชื่อหรือกำหนดราคามะพร้าวน้ำหอม แต่พัฒนาโครงสร้างพื้นฐานดิจิทัลให้ผู้เกี่ยวข้องทำธุรกรรมอย่างโปร่งใสและเป็นธรรม เชื่อมโยงข้อมูลดาวเทียม เซ็นเซอร์ IoT และ AI เข้ากับเกษตรกร สหกรณ์ ผู้ประกอบการ หน่วยงานภาครัฐ และผู้ซื้อ/ตลาด ไว้ในศูนย์กลางข้อมูลเดียวกัน</p>
+</div>
+<div class="data-table-wrap" style="max-width:980px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-coconut-business_63">กลุ่ม</th>
+<th data-i18n="integrated-coconut-business_64">ผู้เกี่ยวข้อง</th>
+<th data-i18n="integrated-coconut-business_65">บทบาทในโครงการ</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-coconut-business_66">ต้นน้ำ</strong></td><td data-i18n="integrated-coconut-business_67">เกษตรกรผู้ปลูกมะพร้าวน้ำหอม</td><td data-i18n="integrated-coconut-business_68">ผลิตตามมาตรฐาน บันทึกข้อมูลการผลิต จำหน่ายผ่านระบบ</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_69">ต้นน้ำ</strong></td><td data-i18n="integrated-coconut-business_70">กลุ่มเกษตรกร / สหกรณ์</td><td data-i18n="integrated-coconut-business_71">รวมซื้อปัจจัยการผลิต ผสมปุ๋ยสั่งตัด รวมรับซื้อผลผลิต บริหารสมาชิก</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_72">ต้นน้ำ</strong></td><td data-i18n="integrated-coconut-business_73">ผู้ผลิตต้นพันธุ์ (เพาะเลี้ยงเนื้อเยื่อ)</td><td data-i18n="integrated-coconut-business_74">จำหน่ายต้นพันธุ์มะพร้าวน้ำหอมคุณภาพสูงพร้อมตรวจสอบแหล่งที่มาได้</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_75">ต้นน้ำ</strong></td><td data-i18n="integrated-coconut-business_76">ผู้จำหน่ายปัจจัยการผลิต</td><td data-i18n="integrated-coconut-business_77">ปุ๋ย สารชีวภัณฑ์ อุปกรณ์ระบบน้ำ บริการผสมปุ๋ยสั่งตัด</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_78">กลางน้ำ</strong></td><td data-i18n="integrated-coconut-business_79">ผู้รับซื้อหน้าสวน / ผู้รวบรวมผลผลิต</td><td data-i18n="integrated-coconut-business_80">รับซื้อตามมาตรฐาน ชั่งน้ำหนักดิจิทัล คัดเกรด ออกใบรับรองคุณภาพ</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_81">กลางน้ำ</strong></td><td data-i18n="integrated-coconut-business_82">ผู้ผลิตสินค้าจากชีวมวล (Biochar)</td><td data-i18n="integrated-coconut-business_83">แปรรูปกะลา/เปลือกมะพร้าวเหลือใช้เป็น Biochar และปุ๋ยอินทรีย์ ลงทะเบียนผ่านพอร์ทัลผู้ผลิตสินค้าจากชีวมวล</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_84">ปลายน้ำ</strong></td><td data-i18n="integrated-coconut-business_85">โรงงานแปรรูป / ผู้ส่งออก</td><td data-i18n="integrated-coconut-business_86">แปรรูปน้ำมะพร้าว เนื้อมะพร้าว ผลิตภัณฑ์แปรรูป และส่งออก</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_87">ปลายน้ำ</strong></td><td data-i18n="integrated-coconut-business_88">Modern Trade / ผู้ซื้อในประเทศ</td><td data-i18n="integrated-coconut-business_89">รับซื้อตามมาตรฐานคุณภาพที่ตรวจสอบได้</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_90">สนับสนุน</strong></td><td data-i18n="integrated-coconut-business_91">สถาบันการเงิน / ประกันภัย</td><td data-i18n="integrated-coconut-business_92">สินเชื่อตามงวดการผลิต เงินทุนหมุนเวียน ประกันภัยพืชผล</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_93">สนับสนุน</strong></td><td data-i18n="integrated-coconut-business_94">หน่วยงานภาครัฐ</td><td data-i18n="integrated-coconut-business_95">ส่งเสริม กำกับมาตรฐาน ตรวจสอบ วางแผนนโยบายภายใต้กรอบ RAP-T</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_96">แกนกลาง</strong></td><td data-i18n="integrated-coconut-business_97">AgroLink Platform</td><td data-i18n="integrated-coconut-business_98">Digital Infrastructure เชื่อมโยงข้อมูล บริหารธุรกรรม สนับสนุนการตรวจสอบตลอดห่วงโซ่</td></tr>
+</tbody></table></div>
+</div></section>
+
+
+<section class="prose-section" id="sec-5">
+<div class="container">
+<div class="section-head reveal" style="margin-bottom:30px;">
+<div class="eyebrow"><i class="fa-solid fa-microchip"></i><span data-i18n="integrated-coconut-business_99"> ระบบงานหลัก</span></div>
+<h2 class="section-title" data-i18n="integrated-coconut-business_100">5. ระบบงานหลักของ AgroLink Smart Coconut Ecosystem</h2>
+<p class="section-sub" data-i18n="integrated-coconut-business_101">ทั้ง 11 ระบบงานเชื่อมโยงกันผ่าน AgroLink Platform ซึ่งทำหน้าที่เป็นศูนย์กลางข้อมูล รวบรวมข้อมูลดาวเทียม (ขอบเขตแปลง สุขภาพพืช) ข้อมูล IoT ภาคสนาม (ความชื้นดิน ความเค็ม สภาพอากาศ) และผลวิเคราะห์ด้วย AI เข้าด้วยกัน แล้วส่งต่อให้เกษตรกร สหกรณ์/กลุ่ม ผู้ประกอบการ หน่วยงานภาครัฐ และผู้ซื้อ/ตลาด ใช้งานร่วมกัน</p>
+</div>
+<div class="role-grid">
+<div class="role-card"><h4><span class="badge-num">1</span> <span data-i18n="integrated-coconut-business_102">การพัฒนาสายพันธุ์</span></h4><ul><li data-i18n="integrated-coconut-business_103">คัดเลือกสายพันธุ์มะพร้าวน้ำหอมคุณภาพสูง ขยายพันธุ์ด้วยการเพาะเลี้ยงเนื้อเยื่อ (Tissue Culture) และจัดจำหน่ายต้นพันธุ์มาตรฐานที่ตรวจสอบแหล่งที่มาได้</li><li><strong data-i18n="integrated-coconut-business_104">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_105">ต้นพันธุ์คุณภาพสม่ำเสมอ ผลผลิตสูง รสชาติหอมหวานตรงมาตรฐาน</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">2</span> <span data-i18n="integrated-coconut-business_106">การป้องกันโรคแมลง</span></h4><ul><li data-i18n="integrated-coconut-business_107">เฝ้าระวังศัตรูพืชด้วยโดรนและ AI พร้อมระบบแจ้งเตือนล่วงหน้า และการจัดการแบบผสมผสานด้วยชีวภัณฑ์</li><li><strong data-i18n="integrated-coconut-business_108">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_109">ลดความเสียหายจากโรคแมลง ลดการใช้สารเคมีเกินจำเป็น</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">3</span> <span data-i18n="integrated-coconut-business_110">การบริหารจัดการน้ำ</span></h4><ul><li data-i18n="integrated-coconut-business_111">ระบบน้ำหยด/สปริงเกอร์ เซ็นเซอร์ความชื้นดิน และการบริหารจัดการน้ำอัจฉริยะตามความต้องการจริงของแต่ละระยะการเจริญเติบโต</li><li><strong data-i18n="integrated-coconut-business_112">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_113">ใช้น้ำอย่างมีประสิทธิภาพ ลดความเสี่ยงจากภัยแล้ง</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">4</span> <span data-i18n="integrated-coconut-business_114">การจัดการความเค็ม</span></h4><ul><li data-i18n="integrated-coconut-business_115">ตรวจวิเคราะห์ความเค็มในดินและน้ำ ปรับปรุงดินและระบบระบายน้ำ และเลือกพื้นที่/พันธุ์ที่เหมาะสมกับพื้นที่ราบลุ่มชายฝั่ง</li><li><strong data-i18n="integrated-coconut-business_116">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_117">รักษาคุณภาพและปริมาณผลผลิตในพื้นที่เสี่ยงความเค็ม</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">5</span> <span data-i18n="integrated-coconut-business_118">ปุ๋ยสั่งตัด</span></h4><ul><li data-i18n="integrated-coconut-business_119">วิเคราะห์ดินและใบรายแปลง คำนวณสูตรปุ๋ยเฉพาะแปลง ลดต้นทุนและเพิ่มผลผลิตคุณภาพดี</li><li><strong data-i18n="integrated-coconut-business_120">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_121">ลดต้นทุนปุ๋ยซึ่งเป็นต้นทุนหลักของสวน</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">6</span> <span data-i18n="integrated-coconut-business_122">มาตรฐานการคัดเกรด</span></h4><ul><li data-i18n="integrated-coconut-business_123">คัดเกรดด้วย AI และระบบอัตโนมัติ แบ่งขนาดเล็ก กลาง ใหญ่ จัมโบ้ ตามมาตรฐานคุณภาพกลาง</li><li><strong data-i18n="integrated-coconut-business_124">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_125">เกรดสินค้าเป็นมาตรฐานเดียวกันทั้งห่วงโซ่ ลดข้อโต้แย้ง</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">7</span> <span data-i18n="integrated-coconut-business_126">การแปรรูปและเพิ่มมูลค่า</span></h4><ul><li data-i18n="integrated-coconut-business_127">แปรรูปเป็นน้ำมะพร้าว เนื้อมะพร้าว ผลิตภัณฑ์อาหารและเครื่องดื่ม พร้อมใช้ประโยชน์จากเศษเหลือ (กะลา/เปลือก) เป็น Biochar (รายละเอียดหัวข้อ 5.2)</li><li><strong data-i18n="integrated-coconut-business_128">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_129">เพิ่มมูลค่าให้ทั้งผลผลิตหลักและเศษเหลือ ลดของเสียสู่ศูนย์</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">8</span> <span data-i18n="integrated-coconut-business_130">ประกันภัยพืชผล</span></h4><ul><li data-i18n="integrated-coconut-business_131">คุ้มครองความเสี่ยงจากภัยธรรมชาติ โรคแมลง และราคาตกต่ำ ร่วมกับพันธมิตรประกันภัย</li><li><strong data-i18n="integrated-coconut-business_132">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_133">เกษตรกรมีหลักประกันรายได้เมื่อเกิดเหตุนอกเหนือการควบคุม</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">9</span> <span data-i18n="integrated-coconut-business_134">ระบบสินเชื่อตามงวดการผลิต</span></h4><ul><li data-i18n="integrated-coconut-business_135">สินเชื่อแบบเบิกจ่ายเป็นขั้นบันไดตามช่วงการผลิตจริงภายใต้ปฏิทิน RAP-T ข้อมูลจาก AgroLink ช่วยสถาบันการเงินประเมินความเสี่ยง เชื่อมต่อสถาบันการเงินและสหกรณ์ (รายละเอียดหัวข้อ 5.1)</li><li><strong data-i18n="integrated-coconut-business_136">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_137">เกษตรกรมีเงินทุนหมุนเวียนตรงช่วงที่ต้องใช้จริง</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">10</span> <span data-i18n="integrated-coconut-business_138">มาตรฐานการรับซื้อหน้าสวน</span></h4><ul><li data-i18n="integrated-coconut-business_139">ตรวจคุณภาพและคัดเกรดตามมาตรฐาน ชั่งน้ำหนักดิจิทัล ออกใบรับรองคุณภาพ ราคายุติธรรม โปร่งใส ตรวจสอบได้ (รายละเอียดหัวข้อ 6)</li><li><strong data-i18n="integrated-coconut-business_140">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_141">ลดข้อโต้แย้งเรื่องคุณภาพและราคาระหว่างเกษตรกรกับผู้รับซื้อ</span></li></ul></div>
+<div class="role-card"><h4><span class="badge-num">11</span> <span data-i18n="integrated-coconut-business_142">Carbon Credit</span></h4><ul><li data-i18n="integrated-coconut-business_143">ลดการปล่อยก๊าซเรือนกระจกจากการจัดการสวนและลดการเผาเศษเหลือ จัดการแปลงแบบคาร์บอนต่ำ และรวมกลุ่มเพื่อขอรับรองคาร์บอนเครดิต</li><li><strong data-i18n="integrated-coconut-business_144">ผลลัพธ์ที่คาดหวัง: </strong><span data-i18n="integrated-coconut-business_145">รายได้เสริมจากคาร์บอนเครดิต นอกเหนือจากรายได้ขายผลผลิต</span></li></ul></div>
+</div>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-5-1">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-coconut-business_146">5.1 ระบบสินเชื่อตามงวดการผลิต (210 วัน)</h3>
+<p data-i18n="integrated-coconut-business_147">ระบบสินเชื่อของโครงการอ้างอิงปฏิทินการผลิตมาตรฐาน COCONUT_AROMATIC ภายใต้ RAP-T ซึ่งแบ่งรอบการผลิตออกเป็น 5 ระยะ รวม 210 วัน โดยเบิกจ่ายสินเชื่อเป็น 4 งวดตามช่วงที่เกษตรกรต้องใช้เงินทุนจริง แทนการให้เงินก้อนเดียวตั้งแต่ต้น ซึ่งช่วยลดความเสี่ยงทั้งฝั่งเกษตรกรและสถาบันการเงิน</p>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:860px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-coconut-business_148">งวดที่</th>
+<th data-i18n="integrated-coconut-business_149">ช่วงการผลิต (อ้างอิงปฏิทิน RAP-T)</th>
+<th data-i18n="integrated-coconut-business_150">สัดส่วนการเบิกจ่าย</th>
+</tr></thead><tbody>
+<tr><td><strong data-i18n="integrated-coconut-business_151">งวดที่ 1</strong></td><td data-i18n="integrated-coconut-business_152">เตรียมสวน (วันที่ 0 — ผสมเกสร/ให้ปุ๋ยเริ่มต้น)</td><td class="num-cell">20%</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_153">งวดที่ 2</strong></td><td data-i18n="integrated-coconut-business_154">ดูแลต้น (วันที่ 40 — ระยะออกดอก)</td><td class="num-cell">25%</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_155">งวดที่ 3</strong></td><td data-i18n="integrated-coconut-business_156">ระยะติดผล/บำรุงผล (วันที่ 90 — ผลแก่ถึงวันที่ 180)</td><td class="num-cell">30%</td></tr>
+<tr><td><strong data-i18n="integrated-coconut-business_157">งวดที่ 4</strong></td><td data-i18n="integrated-coconut-business_158">เก็บเกี่ยว (วันที่ 210)</td><td class="num-cell">25%</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in" style="margin-top:20px;">
+<div class="note-block"><strong data-i18n="integrated-coconut-business_159">ข้อควรทราบ:</strong><span data-i18n="integrated-coconut-business_160"> สัดส่วนการเบิกจ่ายเป็นตัวอย่างอ้างอิงเท่านั้น สถาบันการเงินแต่ละแห่งเป็นผู้พิจารณาอนุมัติวงเงินและเงื่อนไขจริง โดยใช้ข้อมูลปฏิทินการผลิตและประวัติของ AgroLink ประกอบการประเมินความเสี่ยง</span></div>
+</div></section>
+
+
+<section class="prose-section" id="sec-5-2">
+<div class="container prose-block reveal in">
+<h3 data-i18n="integrated-coconut-business_161">5.2 การแปรรูปเศษเหลือสู่ Biochar ภายใต้โครงการ RAP-T</h3>
+<p data-i18n="integrated-coconut-business_162">การแปรรูปมะพร้าวน้ำหอมในแต่ละวันก่อให้เกิดเศษเหลือจำนวนมาก โดยเฉพาะกะลา เปลือก และกาบมะพร้าว ซึ่งในอดีตมักถูกเผาทิ้งในที่โล่งหรือทิ้งเป็นขยะ ก่อให้เกิดก๊าซเรือนกระจกและมลพิษทางอากาศ โครงการ RAP-T จึงกำหนดให้ &ldquo;การพัฒนาเศษเหลือให้เป็น Biochar&rdquo; เป็นหนึ่งในแนวทางหลักของห่วงโซ่มะพร้าวน้ำหอม เพื่อเปลี่ยนของเสียให้เป็นสินค้าที่มีมูลค่า พร้อมช่วยปรับปรุงดิน ลดการเผา และลดการปล่อยก๊าซเรือนกระจก</p>
+<p data-i18n="integrated-coconut-business_163">กลไกที่ใช้จริงบนแพลตฟอร์ม AgroLink คือพอร์ทัลผู้ผลิตสินค้าจากชีวมวล (Biomass Product Producer Portal) ซึ่งเปิดให้สหกรณ์ กลุ่มเกษตรกร หรือผู้ประกอบการที่แปรรูปกะลา/เปลือกมะพร้าวเป็น Biochar ลงทะเบียนเลือกประเภทสินค้า &ldquo;ไบโอชาร์ (Biochar)&rdquo; พร้อมข้อมูลกำลังการผลิตและช่องทางติดต่อ แล้วปรากฏเป็นการ์ดในทำเนียบผู้ผลิตสาธารณะให้ผู้รับซื้อค้นหาและติดต่อได้โดยตรง เชื่อมฝั่งผู้ผลิตเศษเหลือกับฝั่งผู้ต้องการ Biochar ไปปรับปรุงดินหรือใช้ประโยชน์ด้านอื่นเข้าด้วยกัน</p>
+<ul class="check-list">
+<li data-i18n="integrated-coconut-business_164">ลงทะเบียนและเลือกประเภทสินค้า &ldquo;ไบโอชาร์ (Biochar)&rdquo; ในพอร์ทัลผู้ผลิตสินค้าจากชีวมวล</li>
+<li data-i18n="integrated-coconut-business_165">แสดงการ์ดในทำเนียบผู้ผลิตสินค้าจากชีวมวล (สาธารณะ) ให้ผู้รับซื้อค้นหาและติดต่อได้</li>
+<li data-i18n="integrated-coconut-business_166">ใช้ประโยชน์ Biochar จากกะลา/เปลือกมะพร้าวในการปรับปรุงดิน ลดการเผา และลดก๊าซเรือนกระจกของสวนมะพร้าวน้ำหอมเอง</li>
+</ul>
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:18px;">
+<a href="biomassproducer/index.html" class="btn btn-outline" data-i18n="integrated-coconut-business_167">ไปที่พอร์ทัลผู้ผลิตสินค้าจากชีวมวล</a>
+<a href="biomassproducer-directory.html" class="btn btn-outline" data-i18n="integrated-coconut-business_168">ดูทำเนียบผู้ผลิตสินค้าจากชีวมวล</a>
+</div>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-coconut-business_169">6. มาตรฐานการรับซื้อหน้าสวนและการคัดเกรด</h2>
+<p data-i18n="integrated-coconut-business_170">ปัจจุบันเกณฑ์การรับซื้อมะพร้าวน้ำหอมหน้าสวนแตกต่างกันไปตามผู้รับซื้อแต่ละราย ขาดมาตรฐานกลางที่เกษตรกรใช้อ้างอิงได้ โครงการจึงกำหนดมาตรฐานการรับซื้อหน้าสวนร่วมกัน ประกอบด้วย</p>
+<ul class="check-list">
+<li data-i18n="integrated-coconut-business_171">ตรวจคุณภาพและคัดเกรดด้วยมาตรฐานกลาง แบ่งเป็นเล็ก กลาง ใหญ่ และจัมโบ้</li>
+<li data-i18n="integrated-coconut-business_172">ชั่งน้ำหนักด้วยเครื่องชั่งดิจิทัลที่เชื่อมข้อมูลเข้าระบบโดยตรง ลดข้อโต้แย้งเรื่องน้ำหนัก</li>
+<li data-i18n="integrated-coconut-business_173">ออกใบรับรองคุณภาพทุกครั้งที่รับซื้อ ผูกกับรหัสสวนและวันที่เก็บเกี่ยว</li>
+<li data-i18n="integrated-coconut-business_174">เปิดเผยราคารับซื้ออ้างอิงตามเกรดอย่างโปร่งใส ตรวจสอบย้อนหลังได้</li>
+</ul>
+<p data-i18n="integrated-coconut-business_175">มาตรฐานนี้ใช้ร่วมกับระบบคัดเกรดในหัวข้อ 5 (มาตรฐานการคัดเกรด) และเชื่อมโยงกับข้อมูลปฏิทินการผลิตในหัวข้อ 5.1 เพื่อให้ราคารับซื้อสะท้อนทั้งคุณภาพจริงของผลผลิตและช่วงเวลาที่เก็บเกี่ยว</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-coconut-business_176">7. ผลประโยชน์ที่คาดว่าจะได้รับ</h2>
+<p data-i18n="integrated-coconut-business_177">โครงการคาดว่าจะสร้างผลลัพธ์เชิงบวกแก่ทุกฝ่ายในห่วงโซ่มะพร้าวน้ำหอม สอดคล้องกับเป้าหมายของโครงการ RAP-T</p>
+<ul class="check-list">
+<li><strong data-i18n="integrated-coconut-business_178">รายได้เกษตรกรเพิ่มขึ้น</strong><span data-i18n="integrated-coconut-business_179"> จากราคารับซื้อที่เป็นธรรม สินเชื่อตามงวดการผลิต และรายได้เสริมจากเศษเหลือ/Biochar และคาร์บอนเครดิต</span></li>
+<li><strong data-i18n="integrated-coconut-business_180">ต้นทุนการผลิตลดลง</strong><span data-i18n="integrated-coconut-business_181"> จากปุ๋ยสั่งตัดเฉพาะแปลงและการบริหารจัดการน้ำ/ความเค็มที่แม่นยำขึ้น</span></li>
+<li><strong data-i18n="integrated-coconut-business_182">ผลผลิตมีคุณภาพได้มาตรฐานสากล</strong><span data-i18n="integrated-coconut-business_183"> จากต้นพันธุ์คุณภาพ การป้องกันโรคแมลงเชิงรุก และมาตรฐานการคัดเกรด</span></li>
+<li><strong data-i18n="integrated-coconut-business_184">ตลาดรองรับทั้งในและต่างประเทศ</strong><span data-i18n="integrated-coconut-business_185"> จากมาตรฐานการรับซื้อหน้าสวนที่โปร่งใสและตรวจสอบย้อนกลับได้</span></li>
+<li><strong data-i18n="integrated-coconut-business_186">ลดการใช้ทรัพยากรและรักษาสิ่งแวดล้อม</strong><span data-i18n="integrated-coconut-business_187"> จากการบริหารจัดการน้ำอัจฉริยะและการแปรรูปเศษเหลือสู่ Biochar แทนการเผา</span></li>
+<li><strong data-i18n="integrated-coconut-business_188">เชื่อมโยงทุกภาคส่วนสู่การเติบโตอย่างยั่งยืน</strong><span data-i18n="integrated-coconut-business_189"> ผ่านฐานข้อมูลและโครงสร้างพื้นฐานดิจิทัลร่วมกันภายใต้กรอบ RAP-T</span></li>
+
+</ul>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-coconut-business_190">8. ความเสี่ยงและแนวทางบริหารจัดการ</h2>
+</div>
+<div class="container" style="margin-top:6px;">
+<div class="data-table-wrap" style="max-width:980px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-coconut-business_191">ความเสี่ยง</th>
+<th data-i18n="integrated-coconut-business_192">แนวทางบริหารจัดการ</th>
+</tr></thead><tbody>
+<tr><td data-i18n="integrated-coconut-business_193">ความเค็มของดินและน้ำที่เปลี่ยนแปลงตามฤดูกาล</td><td data-i18n="integrated-coconut-business_194">ตรวจวัดและแจ้งเตือนผ่านระบบจัดการความเค็ม (หัวข้อ 5) ร่วมกับคำแนะนำการปรับปรุงดินและระบบระบายน้ำ</td></tr>
+<tr><td data-i18n="integrated-coconut-business_195">ความผันผวนของราคาตลาดส่งออก</td><td data-i18n="integrated-coconut-business_196">มาตรฐานการรับซื้อหน้าสวนที่โปร่งใส (หัวข้อ 6) และข้อมูลราคาตามเกรดช่วยให้เกษตรกรวางแผนการขายได้ดีขึ้น</td></tr>
+<tr><td data-i18n="integrated-coconut-business_197">ภัยธรรมชาติและโรคแมลงระบาด</td><td data-i18n="integrated-coconut-business_198">ประกันภัยพืชผล (หัวข้อ 5) และระบบเฝ้าระวังด้วยโดรน/AI ช่วยลดความเสียหายและผลกระทบต่อรายได้</td></tr>
+<tr><td data-i18n="integrated-coconut-business_199">ความเสี่ยงด้านสินเชื่อของเกษตรกรรายย่อย</td><td data-i18n="integrated-coconut-business_200">สินเชื่อตามงวดการผลิตที่อ้างอิงข้อมูลจริง (หัวข้อ 5.1) ช่วยให้สถาบันการเงินประเมินความเสี่ยงได้แม่นยำขึ้นโดยไม่เพิ่มภาระหนี้เกินจำเป็น</td></tr>
+</tbody></table></div>
+</div></section>
+
+
+<section class="prose-section" id="sec-9">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-coconut-business_201">9. ข้อเสนอเชิงนโยบายและสิ่งที่ขอรับการพิจารณา</h2>
+<ul class="check-list">
+<li data-i18n="integrated-coconut-business_202">เห็นชอบในหลักการของแนวคิดโครงการภายใต้กรอบ RAP-T แต่งตั้งคณะทำงานร่วมระหว่างหน่วยงานภาครัฐ เกษตรกร สหกรณ์ ผู้ประกอบการ และ AgroLink</li>
+<li data-i18n="integrated-coconut-business_203">สนับสนุนการเชื่อมโยงข้อมูลที่จำเป็นจากหน่วยงานภาครัฐภายใต้กรอบกฎหมายและข้อตกลงการใช้ข้อมูล</li>
+<li data-i18n="integrated-coconut-business_204">สนับสนุนการขยายผลพอร์ทัลผู้ผลิตสินค้าจากชีวมวลในพื้นที่ปลูกมะพร้าวน้ำหอม เพื่อให้การแปรรูปเศษเหลือสู่ Biochar เกิดผลจริงในระดับพื้นที่</li>
+<li data-i18n="integrated-coconut-business_205">สนับสนุนมาตรฐานการรับซื้อหน้าสวนร่วมกันระหว่างเกษตรกร สหกรณ์ และผู้รับซื้อ</li>
+<li data-i18n="integrated-coconut-business_206">ทดลองนำร่องในพื้นที่ที่มีความพร้อม และประเมินผลก่อนขยายสู่พื้นที่ปลูกมะพร้าวน้ำหอมทั่วประเทศ</li>
+</ul>
+<div class="note-block" style="margin-top:22px;"><strong data-i18n="integrated-coconut-business_207">เป้าหมายสูงสุด:</strong><span data-i18n="integrated-coconut-business_208"> เกษตรกรผลิตมะพร้าวน้ำหอมได้คุณภาพ มีต้นทุนที่เหมาะสม ขายได้ราคาที่เป็นธรรม มีตลาดรองรับ ใช้ประโยชน์จากเศษเหลือได้เต็มที่ และมีอาชีพที่มั่นคงอย่างยั่งยืน</span></div>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 class="section-title" data-i18n="integrated-coconut-business_209">สนใจเข้าร่วมโครงการมะพร้าวน้ำหอมครบวงจร</h2>
+<p class="section-sub" data-i18n="integrated-coconut-business_210">ไม่ว่าจะในฐานะสหกรณ์ เกษตรกร ผู้รับซื้อหน้าสวน ผู้ผลิตสินค้าจากชีวมวล หรือพันธมิตรทางธุรกิจ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-coconut-business_211">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-coconut-business_212">กลับหน้าแรก</a>
+</div></div></section>
+
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-tree"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+          <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
+          <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
+          <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
+          <li><a href="integrated-coconut-business.html" data-i18n="footer_product_18">มะพร้าวน้ำหอมครบวงจร</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="insurance-portal.html" data-i18n="footer_partner_8">ผู้ให้บริการประกันภัย</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-coconut-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+<script src="js/track.js"></script>
+
+</body>
+</html>
