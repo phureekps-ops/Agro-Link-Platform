@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายงานวิเคราะห์อุตสาหกรรมปลากะพงขาว | AgroLink Platform</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 68px; width: auto; max-width: none; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .draft-tag { display:block; margin-top:18px; font-size:13px; color:#9BB5A9; }
+
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+  .prose-block h3 { font-size: 19px; margin: 26px 0 12px; color: var(--navy); }
+  .prose-block h4 { font-size: 16px; margin: 20px 0 10px; color: var(--navy); }
+  .prose-block ul.check-list { margin: 0 0 16px; }
+  .prose-block ul.check-list li { position: relative; padding-left: 26px; font-size: 15px; margin-bottom: 10px; }
+  .prose-block ul.check-list li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--green); font-weight: 800; }
+  .prose-block ol.plain-list { margin: 0 0 16px; padding-left: 22px; list-style: decimal; }
+  .prose-block ol.plain-list li { font-size: 15px; margin-bottom: 10px; padding-left: 4px; }
+
+  .toc { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 30px; }
+  .toc h4 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 14px; }
+  .toc .toc-part-label { font-size: 12.5px; font-weight: 700; color: var(--gold); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .toc .toc-part-label:first-of-type { margin-top: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { margin-bottom: 9px; font-size: 14.3px; break-inside: avoid; }
+  .toc a { color: var(--navy); font-weight: 600; }
+  .toc a:hover { color: var(--green); }
+
+  .data-table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  table.data-table th, table.data-table td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  table.data-table th { background: var(--green-light); color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--cream); }
+  table.data-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .note-block {
+    background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
+    padding: 22px 26px; font-size: 14.3px; line-height: 1.75;
+  }
+  .note-block strong { color: #7A5E10; }
+  .quote-block {
+    background: var(--green-light); border-left: 4px solid var(--green); border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 20px 24px; font-size: 15px; font-style: italic; color: var(--green-dark); line-height: 1.75;
+  }
+
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <div class="nav-top">
+      <a href="index.html" class="logo"><img src="assets/agrolink-logo.png" alt="AgroLink" class="logo-img" /></a>
+      <nav class="nav-links">
+        <a href="index.html#top" data-i18n="nav_home">หน้าแรก</a>
+        <a href="about-video.html" data-i18n="nav_about">เกี่ยวกับเรา</a>
+        <div class="nav-item-dropdown">
+          <a href="coop-portal.html"><span data-i18n="nav_coop">สำหรับสหกรณ์</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-rice-business.html" data-i18n="nav_coop_rice">ธุรกิจข้าวครบวงจร</a>
+            <a href="integrated-durian-business.html" data-i18n="nav_coop_durian">ทุเรียนครบวงจร</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_coop_cassava">มันสำปะหลังครบวงจร</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_coop_corn">ข้าวโพดครบวงจร</a>
+            <a href="integrated-sugarcane-business.html" data-i18n="nav_coop_sugarcane">อ้อยน้ำตาล</a>
+            <a href="integrated-palmoil-business.html" data-i18n="nav_coop_palmoil">ปาล์มน้ำมัน</a>
+            <a href="integrated-longan-business.html" data-i18n="nav_coop_longan">ลำไย</a>
+            <a href="integrated-coconut-business.html" data-i18n="nav_coop_coconut">มะพร้าวน้ำหอมครบวงจร</a>
+            <a href="custom-fertilizer.html" data-i18n="nav_coop_fert">ปุ๋ยสั่งตัด</a>
+            <a href="carbon-credit-article.html" data-i18n="nav_coop_carbon">คาร์บอนเครดิต</a>
+            <a href="biomass-economy.html" data-i18n="nav_coop_biomass">เศรษฐกิจชีวมวล</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="for-farmers.html"><span data-i18n="nav_farmers">สำหรับเกษตรกร</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="for-farmers-crop.html" data-i18n="nav_farmers_crop">เกษตรกรผู้ปลูกพืช</a>
+            <a href="for-farmers-livestock.html" data-i18n="nav_farmers_livestock">เกษตรกรผู้เลี้ยงสัตว์บก</a>
+            <a href="for-farmers-aquaculture.html" data-i18n="nav_farmers_aquaculture">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+          </div>
+        </div>
+        <div class="nav-item-dropdown">
+          <a href="rap-t-project.html"><span data-i18n="nav_rapt">RAP-T</span> <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="nav-dropdown-menu">
+            <a href="integrated-durian-business.html" data-i18n="nav_rapt_durian">ทุเรียน</a>
+            <a href="integrated-cassava-business.html" data-i18n="nav_rapt_cassava">มันสำปะหลัง</a>
+            <a href="integrated-corn-business.html" data-i18n="nav_rapt_corn">ข้าวโพดเลี้ยงสัตว์</a>
+            <a href="rap-t-coffee.html" data-i18n="nav_rapt_coffee">กาแฟ</a>
+            <a href="integrated-coconut-business.html" data-i18n="nav_rapt_coconut">มะพร้าวน้ำหอม</a>
+            <a href="rap-t-shrimp.html" data-i18n="nav_rapt_shrimp">กุ้ง</a>
+            <a href="rap-t-tilapia.html" data-i18n="nav_rapt_tilapia">ปลานิล/ทับทิมกระชัง</a>
+            <a href="integrated-seabass-business.html" data-i18n="nav_rapt_seabass">ปลากระพง/เก๋ากระชัง</a>
+          </div>
+        </div>
+        <a href="finance-partners.html" data-i18n="nav_finance">การเงิน</a>
+        <a href="agri-insurance-ecosystem.html" data-i18n="nav_insurance">ประกันภัย</a>
+        <a href="marketplace-partners.html" data-i18n="nav_marketplace">ตลาดกลาง</a>
+        <a href="ai-satellite-guide.html" data-i18n="nav_ai">AI และดาวเทียม</a>
+        <a href="business-model.html" data-i18n="nav_investor">นักลงทุน</a>
+      </nav>
+      <div class="nav-right">
+        <button type="button" class="btn btn-outline lang-toggle-btn" data-lang-toggle>EN</button>
+        <div class="nav-cta"><a href="index.html" class="btn btn-outline" style="padding:10px 18px;font-size:14px;" data-i18n="nav_back_home">← กลับหน้าแรก</a>
+          <a href="index.html#contact" class="btn btn-primary" style="padding:10px 18px;font-size:14px;" data-i18n="integrated-seabass-business_1">ติดต่อสอบถาม</a></div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+<section class="page-header">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-chart-line"></i><span data-i18n="integrated-seabass-business_2"> บทวิเคราะห์อุตสาหกรรม</span></div>
+    <h1 class="section-title" data-i18n="integrated-seabass-business_3">รายงานวิเคราะห์อุตสาหกรรมการเพาะเลี้ยงปลากะพงขาวของประเทศไทย</h1>
+    <p class="section-sub" data-i18n="integrated-seabass-business_4">ปริมาณการผลิต มูลค่าตลาด ต้นทุน และความสามารถในการแข่งขันกับต่างประเทศ — ข้อมูลสำหรับประเมินโอกาสพัฒนาห่วงโซ่คุณค่าปลากะพงขาวผ่าน AgroLink Platform พร้อมภาคผนวกว่าด้วยการพัฒนาสายพันธุ์ปลากะพงขาวโตเร็ว</p>
+    <span class="draft-tag" data-i18n="integrated-seabass-business_5">เอกสารวิเคราะห์ภายใน — บริษัท ภักดี คอร์ปอเรชั่น จำกัด (AgroLink)</span>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="toc reveal in">
+      <h4 data-i18n="integrated-seabass-business_6">สารบัญ</h4>
+      <div class="toc-part-label" data-i18n="integrated-seabass-business_7">ส่วนที่ 1 — บทวิเคราะห์อุตสาหกรรม</div>
+      <ol>
+<li><a href="#sec-1" data-i18n="integrated-seabass-business_9">1. บทสรุปผู้บริหาร</a></li>
+<li><a href="#sec-2" data-i18n="integrated-seabass-business_10">2. ปริมาณการผลิตปลากะพงขาวของประเทศไทย</a></li>
+<li><a href="#sec-3" data-i18n="integrated-seabass-business_11">3. ต้นทุนการเลี้ยงปลากะพงขาวของไทย</a></li>
+<li><a href="#sec-4" data-i18n="integrated-seabass-business_12">4. ไทยแข่งขันกับประเทศอื่นได้หรือไม่?</a></li>
+<li><a href="#sec-5" data-i18n="integrated-seabass-business_13">5. แนวทางเพิ่มความสามารถในการแข่งขัน</a></li>
+<li><a href="#sec-6" data-i18n="integrated-seabass-business_14">6. โอกาสพัฒนาห่วงโซ่คุณค่าผ่าน AgroLink</a></li>
+<li><a href="#sec-7" data-i18n="integrated-seabass-business_15">7. ประเด็นที่ต้องตรวจสอบก่อนตัดสินใจลงทุน</a></li>
+<li><a href="#sec-8" data-i18n="integrated-seabass-business_16">8. ข้อสรุปสำหรับ AgroLink</a></li>
+      </ol>
+      <div class="toc-part-label" data-i18n="integrated-seabass-business_8">ส่วนที่ 2 — การพัฒนาสายพันธุ์โตเร็ว</div>
+      <ol>
+<li><a href="#sec-9" data-i18n="integrated-seabass-business_17">9. เป้าหมายการพัฒนาสายพันธุ์โตเร็ว</a></li>
+<li><a href="#sec-10" data-i18n="integrated-seabass-business_18">10. ความก้าวหน้าในต่างประเทศ</a></li>
+<li><a href="#sec-11" data-i18n="integrated-seabass-business_19">11. งานวิจัยและศักยภาพพันธุกรรมของไทย</a></li>
+<li><a href="#sec-12" data-i18n="integrated-seabass-business_20">12. แนวทางพัฒนาโครงการปลากะพงขาวโตเร็วของไทย</a></li>
+<li><a href="#sec-13" data-i18n="integrated-seabass-business_21">13. ผลประโยชน์ทางเศรษฐกิจ</a></li>
+<li><a href="#sec-14" data-i18n="integrated-seabass-business_22">14. บทบาทของ AgroLink</a></li>
+<li><a href="#sec-15" data-i18n="integrated-seabass-business_23">15. ข้อเสนอที่ควรดำเนินการก่อน</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+<section class="prose-section" id="sec-1">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_24">1. บทสรุปผู้บริหาร</h2>
+<p data-i18n="integrated-seabass-business_25">ปลากะพงขาว (Asian Seabass / Barramundi) เป็นสัตว์น้ำเศรษฐกิจที่ไทยมีศักยภาพในการผลิตสูง แต่กำลังเผชิญการแข่งขันด้านต้นทุนและราคาจากต่างประเทศ โดยเฉพาะมาเลเซีย</p>
+<p data-i18n="integrated-seabass-business_26">ประเด็นสำคัญที่พบจากการศึกษามีดังนี้</p>
+<ol class="plain-list">
+<li data-i18n="integrated-seabass-business_27">ผลผลิตไทยอยู่ในระดับประมาณ 60,000 ตันต่อปี โดยข้อมูลปี 2567 ระบุผลผลิต 59,407 ตัน และตัวเลขปี 2568 อยู่ที่ 61,631 ตัน</li>
+<li data-i18n="integrated-seabass-business_28">มูลค่าการผลิตระดับฟาร์มอยู่ที่ประมาณ 6,000–7,000 ล้านบาทต่อปี ขึ้นอยู่กับปริมาณและราคาที่เกษตรกรได้รับ</li>
+<li data-i18n="integrated-seabass-business_29">ต้นทุนการเลี้ยงเป็นอุปสรรคสำคัญ โดยข้อมูลศึกษาของกรมประมงพบต้นทุนปลากะพงขาวขนาดตลาดประมาณ 86.58 บาท/กิโลกรัม แต่ต้นทุนจริงแตกต่างกันมากตามระบบการเลี้ยง</li>
+<li data-i18n="integrated-seabass-business_30">มาเลเซียเป็นคู่แข่งสำคัญที่สุดในตลาดไทย ปี 2566 ไทยนำเข้าปลากะพงขาวจากมาเลเซีย 13,458 ตัน มูลค่า 918 ล้านบาท</li>
+<li data-i18n="integrated-seabass-business_31">ไทยยังมีโอกาสแข่งขันได้ โดยเฉพาะหากลดต้นทุนอาหาร เพิ่มอัตรารอด ควบคุมโรค จัดการผลผลิตรวมกลุ่ม และเชื่อมโยงตลาดแปรรูปที่ให้ราคาสูงกว่าการขายปลาสดทั่วไป</li>
+</ol>
+<p data-i18n="integrated-seabass-business_32">ข้อค้นพบสำคัญคือ ไทยไม่ได้เสียเปรียบทุกประเทศในด้านเทคโนโลยีหรือประสิทธิภาพการเลี้ยง แต่การผลิตปลากะพงขาวในไทยยังมีปัญหาเรื่องต้นทุน ความผันผวนของราคา และการจัดการห่วงโซ่อุปทาน</p>
+<p data-i18n="integrated-seabass-business_33">สำหรับ AgroLink จึงมีโอกาสพัฒนาระบบเชื่อมโยง ผู้เพาะพันธุ์ลูกปลา → เกษตรกร → ผู้ผลิตอาหารสัตว์ → สถาบันการเงิน → ผู้รวบรวม → โรงงานแปรรูป → ตลาดในประเทศและส่งออก</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-2">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_34">2. ปริมาณการผลิตปลากะพงขาวของประเทศไทย</h2>
+<p data-i18n="integrated-seabass-business_35">ปลากะพงขาวมีชื่อวิทยาศาสตร์ว่า Lates calcarifer สามารถเลี้ยงได้ทั้งในน้ำเค็ม น้ำกร่อย และน้ำจืดที่มีการจัดการสภาพน้ำอย่างเหมาะสม</p>
+<p data-i18n="integrated-seabass-business_36">ระบบการผลิตหลักของประเทศไทยประกอบด้วยการเลี้ยงในบ่อดินและกระชัง โดยมีทั้งการเลี้ยงแบบใช้ปลาสดและอาหารเม็ดสำเร็จรูป</p>
+<h3 data-i18n="integrated-seabass-business_37">2.1 สถิติการผลิตย้อนหลัง</h3>
+<p data-i18n="integrated-seabass-business_38">ข้อมูลจากกรมประมงและรายงานสถานการณ์ปลากะพงขาวมีดังนี้</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:720px;margin:0 auto;">
+<table class="data-table">
+<thead><tr>
+<th data-i18n="integrated-seabass-business_39">ปี พ.ศ.</th>
+<th data-i18n="integrated-seabass-business_40">ปริมาณผลผลิต (ตัน)</th>
+<th data-i18n="integrated-seabass-business_41">มูลค่าผลผลิต (ล้านบาท)</th>
+</tr></thead><tbody>
+<tr><td>2559</td><td class="num-cell">17,177</td><td class="num-cell">2,229</td></tr>
+<tr><td>2560</td><td class="num-cell">20,454</td><td class="num-cell">2,636</td></tr>
+<tr><td>2561</td><td class="num-cell">39,278</td><td class="num-cell">4,617</td></tr>
+<tr><td>2562</td><td class="num-cell">47,203</td><td class="num-cell">5,310</td></tr>
+<tr><td>2563</td><td class="num-cell">45,415</td><td class="num-cell">4,561</td></tr>
+<tr><td>2564</td><td class="num-cell">48,139</td><td class="num-cell">5,049</td></tr>
+<tr><td>2565</td><td class="num-cell">51,893</td><td class="num-cell">6,058</td></tr>
+<tr><td>2566</td><td class="num-cell">53,420</td><td class="num-cell">6,177</td></tr>
+<tr><td>2567</td><td class="num-cell">59,407</td><td data-i18n="integrated-seabass-business_42">ยังไม่ยืนยันในชุดข้อมูลที่ตรวจสอบ</td></tr>
+<tr><td>2568</td><td class="num-cell">61,631</td><td data-i18n="integrated-seabass-business_42">ยังไม่ยืนยันในชุดข้อมูลที่ตรวจสอบ</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<div class="note-block" style="margin-bottom:26px;"><strong data-i18n="integrated-seabass-business_43">หมายเหตุ:</strong><span data-i18n="integrated-seabass-business_44"> ปี 2566 เป็นตัวเลขคาดการณ์ในรายงานสถานการณ์ฉบับที่นำมาอ้างอิง ส่วนปี 2567–2568 เป็นตัวเลขผลผลิตจากรายงานที่เผยแพร่ภายหลัง จึงควรตรวจสอบความเป็นข้อมูลจริงหรือประมาณการก่อนนำไปใช้ในข้อเสนอโครงการอย่างเป็นทางการ (ที่มา: AnyFlip)</span></div>
+<h4 data-i18n="integrated-seabass-business_45">แนวโน้มสำคัญ</h4>
+<p data-i18n="integrated-seabass-business_46">เมื่อเปรียบเทียบปี 2559 กับ 2568 ผลผลิตเพิ่มจากประมาณ 17,000 ตัน เป็นมากกว่า 61,000 ตัน หรือเพิ่มขึ้นประมาณ 3.6 เท่า</p>
+<p data-i18n="integrated-seabass-business_47">แสดงให้เห็นว่าอุตสาหกรรมปลากะพงขาวไทยมีการขยายตัวในระยะยาวอย่างมีนัยสำคัญ</p>
+<p data-i18n="integrated-seabass-business_48">หากใช้ผลผลิตปี 2568 ที่ 61,631 ตัน และสมมติราคาหน้าฟาร์มเฉลี่ย 100–120 บาท/กิโลกรัม จะคิดเป็นมูลค่าประมาณ 6,163–7,396 ล้านบาทต่อปี</p>
+<p data-i18n="integrated-seabass-business_49">ตัวเลขนี้เป็นการประมาณมูลค่าผลผลิต ไม่ใช่มูลค่าตลาดที่กรมประมงรายงานโดยตรง</p>
+<h3 data-i18n="integrated-seabass-business_50" style="margin-top:34px;">2.2 จำนวนฟาร์มเลี้ยง</h3>
+<p data-i18n="integrated-seabass-business_51">ข้อมูลปี 2566 ระบุว่า</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:600px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_52">รายการ</th><th data-i18n="integrated-seabass-business_53">ปริมาณ</th></tr></thead>
+<tbody>
+<tr><td data-i18n="integrated-seabass-business_54">จำนวนฟาร์ม</td><td data-i18n="integrated-seabass-business_55">6,101 ฟาร์ม</td></tr>
+<tr><td data-i18n="integrated-seabass-business_56">พื้นที่เลี้ยง</td><td data-i18n="integrated-seabass-business_57">27,290 ไร่</td></tr>
+<tr><td data-i18n="integrated-seabass-business_58">ผลผลิตประมาณการ</td><td data-i18n="integrated-seabass-business_59">53,420 ตัน</td></tr>
+<tr><td data-i18n="integrated-seabass-business_60">ผลผลิตเฉลี่ยต่อพื้นที่</td><td data-i18n="integrated-seabass-business_61">1.96 ตัน/ไร่/ปี</td></tr>
+<tr><td data-i18n="integrated-seabass-business_62">มูลค่าผลผลิต</td><td data-i18n="integrated-seabass-business_63">6,177 ล้านบาท</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_64" style="font-size:13.5px;color:var(--muted);">ผลผลิตเฉลี่ยต่อไร่เป็นการหารผลผลิตรวมด้วยพื้นที่เลี้ยงทั้งหมด ไม่ใช่ผลผลิตต่อรอบของฟาร์มตัวอย่าง</p>
+<p data-i18n="integrated-seabass-business_65">ข้อมูลยังแสดงว่าในปี 2566 พื้นที่ฟาร์มเลี้ยงปลาทะเลที่ได้รับการรับรอง GAP มีประมาณ 5,456 ไร่ หรือราว 20% ของพื้นที่เลี้ยงปลากะพงขาวทั้งหมด ซึ่งสะท้อนโอกาสในการยกระดับมาตรฐานการผลิตและระบบตรวจสอบย้อนกลับ (ที่มา: AnyFlip)</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-3">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_66">3. ต้นทุนการเลี้ยงปลากะพงขาวของไทย</h2>
+<p data-i18n="integrated-seabass-business_67">ข้อมูลที่น่าสนใจที่สุดมาจากรายงานวิชาการของกรมประมง เรื่อง โลจิสติกส์และโซ่อุปทานของธุรกิจการเลี้ยงปลากะพงขาว ซึ่งศึกษาต้นทุนการเลี้ยงปลากะพงขาวขนาดตลาด</p>
+<h3 data-i18n="integrated-seabass-business_68">3.1 ต้นทุนการเลี้ยงในบ่อดิน</h3>
+<p data-i18n="integrated-seabass-business_69">ข้อมูลการผลิตปี 2564 ซึ่งเผยแพร่ในรายงานกรมประมง ระบุว่า</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:720px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_70">รายการ</th><th data-i18n="integrated-seabass-business_71">ต้นทุนต่อไร่ต่อรอบ (บาท)</th><th data-i18n="integrated-seabass-business_72">สัดส่วนต้นทุน</th></tr></thead>
+<tbody>
+<tr><td data-i18n="integrated-seabass-business_73">อาหารเม็ดสำเร็จรูป</td><td class="num-cell">221,000</td><td class="num-cell">75.08%</td></tr>
+<tr><td data-i18n="integrated-seabass-business_74">ลูกพันธุ์ปลา</td><td class="num-cell">30,000</td><td class="num-cell">10.19%</td></tr>
+<tr><td data-i18n="integrated-seabass-business_75">แรงงาน</td><td class="num-cell">18,087.50</td><td class="num-cell">6.14%</td></tr>
+<tr><td data-i18n="integrated-seabass-business_76">ต้นทุนอื่น ๆ</td><td class="num-cell">25,280.94</td><td class="num-cell">8.59%</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_77">รวม</strong></td><td class="num-cell"><strong>294,368.44</strong></td><td class="num-cell"><strong>100%</strong></td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_78" style="font-size:13px;color:var(--muted);margin-bottom:26px;">หมายเหตุ: สัดส่วนค่าแรงคำนวณใหม่จากตัวเลขต้นทุนในรายงาน</p>
+<h4 data-i18n="integrated-seabass-business_79">ประสิทธิภาพการผลิต</h4>
+</div>
+<div class="container" style="margin-top:14px;margin-bottom:10px;">
+<div class="data-table-wrap" style="max-width:600px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_80">ตัวชี้วัด</th><th data-i18n="integrated-seabass-business_81">ผลการศึกษา</th></tr></thead>
+<tbody>
+<tr><td data-i18n="integrated-seabass-business_82">ระยะเวลาเลี้ยง</td><td data-i18n="integrated-seabass-business_83">5 เดือน</td></tr>
+<tr><td data-i18n="integrated-seabass-business_84">ขนาดปลาที่จำหน่าย</td><td data-i18n="integrated-seabass-business_85">700–900 กรัม</td></tr>
+<tr><td data-i18n="integrated-seabass-business_86">ผลผลิตต่อไร่</td><td data-i18n="integrated-seabass-business_87">3,400 กก.</td></tr>
+<tr><td data-i18n="integrated-seabass-business_88">อัตรารอด</td><td data-i18n="integrated-seabass-business_89">85%</td></tr>
+<tr><td data-i18n="integrated-seabass-business_90">FCR (อัตราแลกเนื้อ)</td><td data-i18n="integrated-seabass-business_91">1.30</td></tr>
+<tr><td data-i18n="integrated-seabass-business_92">ต้นทุนการผลิต</td><td data-i18n="integrated-seabass-business_93">86.58 บาท/กก.</td></tr>
+<tr><td data-i18n="integrated-seabass-business_94">ราคาขาย</td><td data-i18n="integrated-seabass-business_95">110 บาท/กก.</td></tr>
+<tr><td data-i18n="integrated-seabass-business_96">กำไรสุทธิ</td><td data-i18n="integrated-seabass-business_97">23.42 บาท/กก.</td></tr>
+<tr><td data-i18n="integrated-seabass-business_98">กำไรต่อไร่ต่อรอบ</td><td data-i18n="integrated-seabass-business_99">79,631.56 บาท</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_100" style="font-size:13px;color:var(--muted);">ที่มา: รายงานต้นทุนและห่วงโซ่อุปทานปลากะพงขาว กรมประมง (Fisheries Department)</p>
+<div class="note-block" style="margin-top:16px;"><strong data-i18n="integrated-seabass-business_101">ข้อสังเกตสำคัญ:</strong><span data-i18n="integrated-seabass-business_102"> ตัวเลขนี้เป็นข้อมูลการศึกษาฟาร์มในอดีต ไม่ใช่ต้นทุนเฉลี่ยของฟาร์มไทยทั้งหมดในปี 2569 จึงควรใช้เป็นฐานสำหรับสร้างแบบจำลอง แล้วสำรวจต้นทุนปัจจุบันเพิ่มเติม</span></div>
+<h3 data-i18n="integrated-seabass-business_103" style="margin-top:34px;">3.2 ต้นทุนที่ AgroLink สามารถช่วยลดได้</h3>
+<p data-i18n="integrated-seabass-business_104">ค่าอาหารคิดเป็นประมาณ 75% ของต้นทุนทั้งหมด จึงเป็นจุดที่ควรให้ความสำคัญมากที่สุด</p>
+<p data-i18n="integrated-seabass-business_105">ตัวอย่างการลดต้นทุนอาหารจากฐานเดิม 221,000 บาทต่อไร่ต่อรอบ</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:22px;">
+<div class="data-table-wrap" style="max-width:720px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_106">การลดต้นทุนอาหาร</th><th data-i18n="integrated-seabass-business_107">เงินประหยัดต่อไร่</th><th data-i18n="integrated-seabass-business_108">ต้นทุนปลาต่อกก. หลังลด</th></tr></thead>
+<tbody>
+<tr><td class="num-cell">0%</td><td class="num-cell">0 บาท</td><td class="num-cell">86.58 บาท</td></tr>
+<tr><td class="num-cell">5%</td><td class="num-cell">11,050 บาท</td><td class="num-cell">83.33 บาท</td></tr>
+<tr><td class="num-cell">10%</td><td class="num-cell">22,100 บาท</td><td class="num-cell">80.08 บาท</td></tr>
+<tr><td class="num-cell">15%</td><td class="num-cell">33,150 บาท</td><td class="num-cell">76.83 บาท</td></tr>
+<tr><td class="num-cell">20%</td><td class="num-cell">44,200 บาท</td><td class="num-cell">73.58 บาท</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_109" style="font-size:13.5px;color:var(--muted);">ตารางนี้เป็นการจำลองโดยสมมติว่าผลผลิตและต้นทุนอื่นคงเดิม</p>
+<p data-i18n="integrated-seabass-business_110">หากสามารถลดค่าอาหารได้ 10% โดยไม่กระทบการเจริญเติบโตและอัตรารอด ต้นทุนปลาจะลดลงประมาณ 6.50 บาทต่อกิโลกรัม</p>
+<p data-i18n="integrated-seabass-business_111">สำหรับอุตสาหกรรมที่มีผลผลิต 60,000 ตันต่อปี หากลดต้นทุนได้เฉลี่ย 5 บาทต่อกิโลกรัม จะเท่ากับการลดต้นทุนรวมทั้งอุตสาหกรรมได้ประมาณ 300 ล้านบาทต่อปี</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-4">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_112">4. ไทยแข่งขันกับประเทศอื่นได้หรือไม่?</h2>
+<p data-i18n="integrated-seabass-business_113">คำตอบคือ แข่งขันได้ในบางตลาด แต่ยังเสียเปรียบด้านราคาต่อมาเลเซีย โดยเฉพาะตลาดปลากะพงขาวสดราคาประหยัด</p>
+<p data-i18n="integrated-seabass-business_114">การเปรียบเทียบจำเป็นต้องแยกระหว่างราคาขาย ต้นทุนการผลิต และคุณภาพสินค้า เพราะราคาขายต่ำไม่ได้หมายความว่าต้นทุนต่ำเสมอไป</p>
+<h3 data-i18n="integrated-seabass-business_115">4.1 เปรียบเทียบคู่แข่ง</h3>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:16px;">
+<div class="data-table-wrap" style="max-width:1080px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_116">ประเทศ</th><th data-i18n="integrated-seabass-business_117">จุดแข็ง</th><th data-i18n="integrated-seabass-business_118">ข้อจำกัดหรือประเด็นแข่งขัน</th><th data-i18n="integrated-seabass-business_119">ประเมินเทียบกับไทย</th></tr></thead>
+<tbody>
+<tr><td><strong data-i18n="integrated-seabass-business_120">ไทย</strong></td><td data-i18n="integrated-seabass-business_121">ฐานการเพาะเลี้ยงขนาดใหญ่ ตลาดภายในประเทศ ระบบเพาะพันธุ์</td><td data-i18n="integrated-seabass-business_122">ค่าอาหารสูง ราคาผันผวน</td><td data-i18n="integrated-seabass-business_123">มีศักยภาพพัฒนา</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_124">มาเลเซีย</strong></td><td data-i18n="integrated-seabass-business_125">ราคาปลาส่งเข้าไทยแข่งขันได้ ระยะทางขนส่งใกล้</td><td data-i18n="integrated-seabass-business_126">ต้องตรวจสอบต้นทุนรายระบบการเลี้ยง</td><td data-i18n="integrated-seabass-business_127">คู่แข่งโดยตรง</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_128">อินโดนีเซีย</strong></td><td data-i18n="integrated-seabass-business_129">ฐานการผลิตสัตว์น้ำและพื้นที่ชายฝั่งขนาดใหญ่</td><td data-i18n="integrated-seabass-business_130">คุณภาพและโลจิสติกส์แตกต่างตามพื้นที่</td><td data-i18n="integrated-seabass-business_131">คู่แข่งด้านราคา</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_132">เวียดนาม</strong></td><td data-i18n="integrated-seabass-business_133">อุตสาหกรรมแปรรูปสัตว์น้ำและส่งออกเข้มแข็ง</td><td data-i18n="integrated-seabass-business_134">ต้องแยกปลากะพงจากปลาชนิดอื่น</td><td data-i18n="integrated-seabass-business_135">คู่แข่งด้านการแปรรูป</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_136">สิงคโปร์</strong></td><td data-i18n="integrated-seabass-business_137">เทคโนโลยีฟาร์มและตลาดปลาคุณภาพสูง</td><td data-i18n="integrated-seabass-business_138">ต้นทุนพื้นที่และแรงงานสูง</td><td data-i18n="integrated-seabass-business_139">ไทยมีโอกาสแข่งขันด้านต้นทุน</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_140">ออสเตรเลีย</strong></td><td data-i18n="integrated-seabass-business_141">ภาพลักษณ์ Barramundi คุณภาพสูง ตลาดพรีเมียม</td><td data-i18n="integrated-seabass-business_142">ต้นทุนแรงงานและการดำเนินงานสูง</td><td data-i18n="integrated-seabass-business_143">ไทยมีโอกาสในตลาดส่งออกบางประเภท</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_144" style="font-size:13.5px;color:var(--muted);">ตารางนี้เป็นการประเมินเชิงโครงสร้างอุตสาหกรรม ไม่ใช่ผลการเปรียบเทียบต้นทุนจริงต่อกิโลกรัมของทุกประเทศ</p>
+<p data-i18n="integrated-seabass-business_145" style="font-size:13.5px;color:var(--muted);margin-bottom:26px;">ข้อมูล SEAFDEC ปี 2023 ระบุราคาผู้ผลิตปลากะพงขาวในอินโดนีเซียประมาณ 2.8 ดอลลาร์สหรัฐ/กก. และสิงคโปร์ประมาณ 7.6 ดอลลาร์สหรัฐ/กก. แต่ไม่ควรนำราคานี้มาใช้แทนต้นทุนการเลี้ยง (ที่มา: SEAFDEC)</p>
+<h3 data-i18n="integrated-seabass-business_146">4.2 มาเลเซียเป็นคู่แข่งสำคัญที่สุด</h3>
+<p data-i18n="integrated-seabass-business_147">ข้อมูลปี 2566 พบว่าไทยนำเข้าปลากะพงขาวและผลิตภัณฑ์รวม 14,192 ตัน มูลค่า 961 ล้านบาท</p>
+<p data-i18n="integrated-seabass-business_148">ในจำนวนนี้เป็นการนำเข้าจากมาเลเซีย 13,458 ตัน มูลค่า 918 ล้านบาท</p>
+<p data-i18n="integrated-seabass-business_149">คิดเป็นราคาเฉลี่ยจากมูลค่าการนำเข้าประมาณ</p>
+<div class="quote-block" data-i18n="integrated-seabass-business_150">918 ล้านบาท ÷ 13.458 ล้านกิโลกรัม = 68.21 บาท/กก.</div>
+<p data-i18n="integrated-seabass-business_151" style="margin-top:16px;">ตัวเลขนี้เป็นมูลค่านำเข้าเฉลี่ยตามสถิติการค้า ไม่ใช่ราคาหน้าฟาร์มมาเลเซียหรือต้นทุนที่แท้จริงของผู้ผลิต</p>
+<p data-i18n="integrated-seabass-business_152">อย่างไรก็ตาม เมื่อเปรียบเทียบกับต้นทุนฟาร์มตัวอย่างของไทย 86.58 บาท/กก. จะเห็นแรงกดดันด้านราคาที่ชัดเจน แม้ตัวเลขทั้งสองจะต่างปีและต่างฐานการคำนวณ จึงไม่สามารถสรุปส่วนต่างต้นทุนที่แท้จริงได้</p>
+<p data-i18n="integrated-seabass-business_153">รายงานสถานการณ์ปลากะพงขาวยังระบุว่าปลาจากมาเลเซียมีข้อได้เปรียบด้านราคา คุณภาพรูปลักษณ์ และระยะทางขนส่ง โดยเฉพาะปลาสดแช่เย็น (ที่มา: AnyFlip)</p>
+<p data-i18n="integrated-seabass-business_154">นั่นหมายความว่า หากไทยต้องการแข่งขันกับมาเลเซีย จะลดต้นทุนการเลี้ยงอย่างเดียวไม่ได้ แต่ต้องเพิ่มประสิทธิภาพการรวบรวม การขนส่ง และการตลาดด้วย</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-5">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_155">5. แนวทางเพิ่มความสามารถในการแข่งขันของปลากะพงขาวไทย</h2>
+<p data-i18n="integrated-seabass-business_156">ผมเห็นว่ามี 4 เรื่องที่ควรพัฒนาไปพร้อมกัน</p>
+
+<h3 data-i18n="integrated-seabass-business_157">5.1 ลดต้นทุนอาหารและเพิ่มประสิทธิภาพ FCR</h3>
+<p data-i18n="integrated-seabass-business_158">หากฟาร์มใช้ FCR 1.30 และสามารถลดเหลือ 1.15 ได้โดยไม่ลดอัตราการเติบโต จะประหยัดอาหารประมาณ 0.15 กิโลกรัมต่อปลาที่ผลิตได้ 1 กิโลกรัม</p>
+<p data-i18n="integrated-seabass-business_159">สมมติอาหารราคา 50 บาท/กก.</p>
+<p data-i18n="integrated-seabass-business_160">ต้นทุนอาหารจะลดลง:</p>
+<div class="quote-block" data-i18n="integrated-seabass-business_161">0.15 × 50 = 7.50 บาทต่อกิโลกรัมปลา</div>
+<p data-i18n="integrated-seabass-business_162" style="margin-top:16px;">วิธีดำเนินการ ได้แก่ การจัดซื้ออาหารรวมกลุ่ม การใช้ระบบให้อาหารอัตโนมัติ การตรวจสอบคุณภาพน้ำ และการติดตามการเจริญเติบโต</p>
+
+<h3 data-i18n="integrated-seabass-business_163">5.2 ลดอัตราการตาย</h3>
+<p data-i18n="integrated-seabass-business_164">จากตัวอย่างฟาร์มที่มีอัตรารอด 85% หากเพิ่มเป็น 90% จะสามารถเพิ่มผลผลิตจากลูกปลาที่ปล่อยเท่าเดิมได้ประมาณ 5.9% ภายใต้สมมติฐานว่าน้ำหนักปลาต่อหน่วยเท่าเดิม</p>
+<p data-i18n="integrated-seabass-business_165">อย่างไรก็ตาม การเพิ่มผลผลิตอาจทำให้ค่าอาหารและค่าใช้จ่ายอื่นเพิ่ม จึงต้องวิเคราะห์กำไรสุทธิ ไม่ใช่ดูเฉพาะจำนวนปลาที่รอด</p>
+<p data-i18n="integrated-seabass-business_166">เทคโนโลยีที่เหมาะสม ได้แก่ เซนเซอร์ออกซิเจนละลายน้ำ (DO) อุณหภูมิ ความเค็ม ระบบแจ้งเตือนคุณภาพน้ำ และระบบบันทึกโรค</p>
+
+<h3 data-i18n="integrated-seabass-business_167">5.3 สร้างตลาดรับซื้อล่วงหน้า</h3>
+<p data-i18n="integrated-seabass-business_168">เกษตรกรควรรู้ก่อนปล่อยลูกปลาว่าจะขายให้ใคร ต้องการปลาขนาดเท่าไร และช่วงเวลาใด</p>
+<p data-i18n="integrated-seabass-business_169">ตัวอย่างการเชื่อมโยงตลาดคือโรงงานแปรรูปตกลงรับซื้อปลาขนาด 800 กรัมถึง 1 กิโลกรัม โดยกำหนดปริมาณและเงื่อนไขคุณภาพล่วงหน้า</p>
+<p data-i18n="integrated-seabass-business_170">ระบบนี้จะช่วยลดความเสี่ยงจากการเลี้ยงปลาเกินขนาดตลาดและการจับขายพร้อมกันจำนวนมาก</p>
+
+<h3 data-i18n="integrated-seabass-business_171">5.4 เพิ่มสัดส่วนการแปรรูป</h3>
+<p data-i18n="integrated-seabass-business_172">ตลาดปลากะพงขาวไม่ควรจำกัดอยู่เพียงปลาสดสำหรับร้านอาหาร</p>
+<p data-i18n="integrated-seabass-business_173">ผลิตภัณฑ์ที่มีโอกาสพัฒนา ได้แก่ ปลาแล่เนื้อแช่เย็น ปลาแล่แช่แข็ง ปลาพร้อมปรุง และผลิตภัณฑ์อาหารพร้อมรับประทาน</p>
+<p data-i18n="integrated-seabass-business_174">อย่างไรก็ตาม ตลาดส่งออกต้องประเมินต้นทุนการแล่ อัตราได้เนื้อ ค่าห้องเย็น ค่าขนส่ง และข้อกำหนดประเทศปลายทางก่อนลงทุน</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-6">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_175">6. โอกาสพัฒนาห่วงโซ่คุณค่าผ่าน AgroLink</h2>
+<p data-i18n="integrated-seabass-business_176">ผมเสนอให้พัฒนาเป็นโครงการ AgroLink Smart Seabass Value Chain โดยมีสหกรณ์หรือวิสาหกิจชุมชนเป็นศูนย์กลาง</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:16px;">
+<div class="data-table-wrap" style="max-width:980px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_177">ระบบ</th><th data-i18n="integrated-seabass-business_178">หน้าที่ของ AgroLink</th><th data-i18n="integrated-seabass-business_179">ผลประโยชน์</th></tr></thead>
+<tbody>
+<tr><td><strong>Digital Farm</strong></td><td data-i18n="integrated-seabass-business_180">ลงทะเบียนฟาร์มและบันทึกข้อมูลการเลี้ยง</td><td data-i18n="integrated-seabass-business_181">ทราบต้นทุนและผลผลิต</td></tr>
+<tr><td><strong>Smart Aquaculture</strong></td><td data-i18n="integrated-seabass-business_182">เชื่อม IoT ตรวจสอบคุณภาพน้ำ</td><td data-i18n="integrated-seabass-business_183">ลดความเสี่ยงการตาย</td></tr>
+<tr><td><strong>Feed Marketplace</strong></td><td data-i18n="integrated-seabass-business_184">รวมคำสั่งซื้ออาหารปลา</td><td data-i18n="integrated-seabass-business_185">เพิ่มอำนาจต่อรอง</td></tr>
+<tr><td><strong>Aquaculture Finance</strong></td><td data-i18n="integrated-seabass-business_186">เชื่อมข้อมูลฟาร์มกับธนาคาร</td><td data-i18n="integrated-seabass-business_187">เพิ่มโอกาสเข้าถึงสินเชื่อ</td></tr>
+<tr><td><strong>Aquaculture Insurance</strong></td><td data-i18n="integrated-seabass-business_188">เชื่อมผู้ให้บริการประกันภัย</td><td data-i18n="integrated-seabass-business_189">บริหารความเสี่ยง</td></tr>
+<tr><td><strong>Production Forecast</strong></td><td data-i18n="integrated-seabass-business_190">คาดการณ์ปริมาณปลาออกตลาด</td><td data-i18n="integrated-seabass-business_191">ลดความผันผวน</td></tr>
+<tr><td><strong>Buyer Marketplace</strong></td><td data-i18n="integrated-seabass-business_192">เชื่อมผู้ซื้อและโรงงานแปรรูป</td><td data-i18n="integrated-seabass-business_193">เพิ่มช่องทางขาย</td></tr>
+<tr><td><strong>Traceability</strong></td><td data-i18n="integrated-seabass-business_194">ตรวจสอบย้อนกลับแหล่งผลิต</td><td data-i18n="integrated-seabass-business_195">รองรับตลาดคุณภาพสูง</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_196">AgroLink ไม่จำเป็นต้องเป็นผู้ปล่อยสินเชื่อหรือผู้รับซื้อปลาเอง แต่ทำหน้าที่เป็นโครงสร้างพื้นฐานดิจิทัลให้ผู้ประกอบการในห่วงโซ่คุณค่าทำธุรกรรมร่วมกัน</p>
+<h3 data-i18n="integrated-seabass-business_197" style="margin-top:30px;">6.1 ตัวอย่างโครงการนำร่อง</h3>
+<p data-i18n="integrated-seabass-business_198">สมมติโครงการนำร่องมีเกษตรกร 100 ฟาร์ม ผลผลิตเฉลี่ยฟาร์มละ 20 ตันต่อปี</p>
+<p data-i18n="integrated-seabass-business_199"><strong>ผลผลิตรวม = 2,000 ตันต่อปี</strong></p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:16px;">
+<div class="data-table-wrap" style="max-width:600px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_200">รายการ</th><th data-i18n="integrated-seabass-business_201">สมมติฐาน</th></tr></thead>
+<tbody>
+<tr><td data-i18n="integrated-seabass-business_202">ฟาร์มเข้าร่วม</td><td data-i18n="integrated-seabass-business_203">100 ฟาร์ม</td></tr>
+<tr><td data-i18n="integrated-seabass-business_204">ผลผลิตรวม</td><td data-i18n="integrated-seabass-business_205">2,000 ตัน/ปี</td></tr>
+<tr><td data-i18n="integrated-seabass-business_206">ราคาขายเฉลี่ย</td><td data-i18n="integrated-seabass-business_207">110 บาท/กก.</td></tr>
+<tr><td data-i18n="integrated-seabass-business_208">มูลค่าผลผลิต</td><td data-i18n="integrated-seabass-business_209">220 ล้านบาท/ปี</td></tr>
+<tr><td data-i18n="integrated-seabass-business_210">เป้าหมายลดต้นทุน</td><td data-i18n="integrated-seabass-business_211">5 บาท/กก.</td></tr>
+<tr><td data-i18n="integrated-seabass-business_212">มูลค่าการลดต้นทุน</td><td data-i18n="integrated-seabass-business_213">10 ล้านบาท/ปี</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_214">หาก AgroLink สามารถสร้างผลประหยัดจริงได้ 10 ล้านบาทต่อปี และช่วยเพิ่มความแน่นอนของตลาดรับซื้อ จะเป็นเหตุผลทางเศรษฐกิจที่ชัดเจนในการขยายโครงการ</p>
+<p data-i18n="integrated-seabass-business_215" style="font-size:13.5px;color:var(--muted);">ตัวเลขทั้งหมดในส่วนนี้เป็นแบบจำลองเบื้องต้น ยังไม่ใช่ผลตอบแทนที่ยืนยันจากโครงการจริง</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-7">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_216">7. ประเด็นที่ต้องตรวจสอบก่อนตัดสินใจลงทุน</h2>
+<p data-i18n="integrated-seabass-business_217">สำหรับการนำปลากะพงขาวเข้าสู่โครงการพัฒนาห่วงโซ่คุณค่าระดับประเทศ ผมเสนอให้เก็บข้อมูลเพิ่มเติมใน 5 ประเด็น ได้แก่</p>
+<ol class="plain-list">
+<li data-i18n="integrated-seabass-business_218">ต้นทุนการผลิตปัจจุบัน: แยกบ่อดิน กระชัง และระบบความหนาแน่นสูง รวมทั้งค่าอาหาร ลูกพันธุ์ พลังงาน และอัตรารอด</li>
+<li data-i18n="integrated-seabass-business_219">ต้นทุนมาเลเซีย: ต้องมีข้อมูลฟาร์มตัวอย่างมาเลเซียที่ใช้วิธีคำนวณเดียวกับไทย เพื่อพิสูจน์ส่วนต่างต้นทุนที่แท้จริง</li>
+<li data-i18n="integrated-seabass-business_220">ตลาดปลากะพงขาว: ตรวจสอบความต้องการของร้านอาหาร ห้างค้าปลีก ห้องเย็น โรงงานแปรรูป และผู้ส่งออก</li>
+<li data-i18n="integrated-seabass-business_221">การกระจายผลผลิต: สำรวจจังหวัดผลิตหลัก ปริมาณออกตลาดรายเดือน และความพร้อมของสหกรณ์หรือกลุ่มเกษตรกร</li>
+<li data-i18n="integrated-seabass-business_222">โอกาสส่งออก: ศึกษาตลาดปลากะพงขาวแล่แช่แข็งและปลาคุณภาพสูง โดยเฉพาะต้นทุนสินค้าถึงปลายทาง</li>
+</ol>
+<p data-i18n="integrated-seabass-business_223">แหล่งข้อมูลทางการที่ควรใช้ต่อคือ ชุดข้อมูลปริมาณและมูลค่าผลผลิตสัตว์น้ำจากการเพาะเลี้ยงของกรมประมง ซึ่งมีข้อมูลจำแนกตามจังหวัดและชนิดสัตว์น้ำ โดยข้อมูลทางการที่ระบุว่าเผยแพร่ล่าสุดในชุดนี้คือปี 2567</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-8">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_224">8. ข้อสรุปสำหรับ AgroLink</h2>
+<p data-i18n="integrated-seabass-business_225">ผมประเมินว่า ปลากะพงขาวมีความเหมาะสมที่จะพัฒนาเป็นหนึ่งในห่วงโซ่คุณค่าของ AgroLink ด้วยเหตุผลสามประการ</p>
+<p data-i18n="integrated-seabass-business_226">ประการแรก มีฐานการผลิตและตลาดภายในประเทศอยู่แล้ว ไม่จำเป็นต้องเริ่มสร้างตลาดใหม่ทั้งหมด</p>
+<p data-i18n="integrated-seabass-business_227">ประการที่สอง มีปัญหาด้านต้นทุนที่สามารถวัดผลการแก้ไขได้ชัดเจน โดยเฉพาะค่าอาหารซึ่งเป็นต้นทุนหลัก</p>
+<p data-i18n="integrated-seabass-business_228">ประการที่สาม มีโอกาสใช้ Digital Farm, IoT, AI, Marketplace และ Digital Finance ร่วมกันอย่างเป็นรูปธรรม</p>
+<p data-i18n="integrated-seabass-business_229">แต่ก่อนขยายโครงการ ผมเห็นว่าควรตอบคำถามเชิงธุรกิจให้ชัดเจนที่สุดข้อหนึ่งคือ</p>
+<div class="quote-block" data-i18n="integrated-seabass-business_230">&ldquo;ถ้าปลากะพงขาวจากมาเลเซียสามารถเข้าสู่ตลาดไทยได้ในราคาต่ำกว่าต้นทุนฟาร์มไทยบางแห่ง เราจะออกแบบระบบการผลิตและการตลาดอย่างไรให้เกษตรกรไทยมีกำไร โดยไม่ต้องพึ่งมาตรการกีดกันการนำเข้า?&rdquo;</div>
+<p data-i18n="integrated-seabass-business_231" style="margin-top:16px;">นี่ควรเป็นโจทย์หลักของโครงการนำร่อง</p>
+<div class="note-block" style="margin-top:22px;"><strong data-i18n="integrated-seabass-business_232">ข้อเสนอขั้นต่อไป:</strong><span data-i18n="integrated-seabass-business_233"> จัดทำ Pre-Feasibility Study: Thailand Seabass Value Chain Transformation โดยเน้นการเปรียบเทียบต้นทุนไทย–มาเลเซีย วิเคราะห์โครงสร้างอุตสาหกรรมอาหารปลาและลูกพันธุ์ ประเมินตลาดโรงงานแปรรูป และออกแบบโครงการนำร่อง 100 ฟาร์มผ่าน AgroLink เพื่อพิสูจน์ว่าสามารถลดต้นทุนและเพิ่มกำไรให้เกษตรกรได้จริงหรือไม่</span></div>
+</div></section>
+
+
+<section class="page-header" style="padding:48px 0 38px;">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-dna"></i><span data-i18n="integrated-seabass-business_234"> ภาคผนวก</span></div>
+    <h2 class="section-title" style="font-size:28px;" data-i18n="integrated-seabass-business_235">ส่วนที่ 2 — การพัฒนาสายพันธุ์ปลากะพงขาวโตเร็ว (Fast-Growing Asian Seabass)</h2>
+    <p class="section-sub" data-i18n="integrated-seabass-business_236">แนวทางเพิ่มขีดความสามารถการแข่งขันของอุตสาหกรรมปลากะพงขาวไทยผ่านการปรับปรุงพันธุกรรม</p>
+  </div>
+</section>
+<section class="prose-section">
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_237">ทำได้ครับ และผมเห็นว่าการพัฒนาสายพันธุ์ปลากะพงขาวโตเร็วเป็นหนึ่งในแนวทางสำคัญที่สุดที่จะช่วยให้ประเทศไทยแข่งขันกับมาเลเซียและประเทศอื่นได้ในระยะยาว</p>
+<p data-i18n="integrated-seabass-business_238">ปลากะพงขาว (Lates calcarifer) เป็นปลาที่เหมาะกับการปรับปรุงพันธุ์ เนื่องจากสามารถเพาะพันธุ์ในระบบโรงเพาะฟักได้ มีการศึกษาพันธุกรรมอย่างต่อเนื่อง และมีเทคโนโลยีคัดเลือกพันธุ์ที่นำมาใช้ได้จริง</p>
+<p data-i18n="integrated-seabass-business_239">ที่สำคัญคือ ไม่จำเป็นต้องใช้เทคโนโลยีตัดต่อยีน (GMO) แต่สามารถใช้การคัดเลือกพันธุ์ตามลักษณะทางพันธุกรรม (Selective Breeding) ร่วมกับการวิเคราะห์ DNA เพื่อให้ได้ปลาที่โตเร็วขึ้น</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-9">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_240">9. สามารถทำให้ปลากะพงขาวโตเร็วขึ้นเท่าไร?</h2>
+<p data-i18n="integrated-seabass-business_241">เป้าหมายการพัฒนาสายพันธุ์สามารถกำหนดได้ดังนี้</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:16px;">
+<div class="data-table-wrap" style="max-width:900px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_242">ตัวชี้วัด</th><th data-i18n="integrated-seabass-business_243">สายพันธุ์ทั่วไป (สมมติฐาน)</th><th data-i18n="integrated-seabass-business_244">เป้าหมายสายพันธุ์ปรับปรุง</th></tr></thead>
+<tbody>
+<tr><td data-i18n="integrated-seabass-business_245">ระยะเวลาเลี้ยงถึงขนาดตลาด</td><td data-i18n="integrated-seabass-business_246">6–8 เดือน</td><td data-i18n="integrated-seabass-business_247">5–6 เดือน</td></tr>
+<tr><td data-i18n="integrated-seabass-business_248">น้ำหนักปลาขนาดตลาด</td><td data-i18n="integrated-seabass-business_249">800–1,000 กรัม</td><td data-i18n="integrated-seabass-business_250">800–1,000 กรัม</td></tr>
+<tr><td data-i18n="integrated-seabass-business_251">อัตรารอด</td><td data-i18n="integrated-seabass-business_252">80–85%</td><td data-i18n="integrated-seabass-business_253">90%</td></tr>
+<tr><td data-i18n="integrated-seabass-business_254">FCR</td><td data-i18n="integrated-seabass-business_255">1.4–1.6</td><td data-i18n="integrated-seabass-business_256">1.2–1.3</td></tr>
+<tr><td data-i18n="integrated-seabass-business_257">ความสม่ำเสมอของขนาดปลา</td><td data-i18n="integrated-seabass-business_258">ปานกลาง</td><td data-i18n="integrated-seabass-business_259">สูง</td></tr>
+<tr><td data-i18n="integrated-seabass-business_260">ความทนทานต่อโรค</td><td data-i18n="integrated-seabass-business_261">แตกต่างตามแหล่งพันธุ์</td><td data-i18n="integrated-seabass-business_262">คัดเลือกให้ดีขึ้น</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_263" style="font-size:13.5px;color:var(--muted);margin-bottom:22px;">หมายเหตุ: ตัวเลขเป็นเป้าหมายสำหรับการวิจัยและพัฒนา ไม่ใช่ผลที่ยืนยันว่าจะทำได้ทุกฟาร์ม และการปรับปรุงพันธุ์เพื่อให้โตเร็วไม่ได้รับประกันว่าจะทำให้ FCR หรืออัตรารอดดีขึ้นพร้อมกัน</p>
+<p data-i18n="integrated-seabass-business_264">หากลดระยะเวลาเลี้ยงจาก 7 เดือนเหลือ 5.5 เดือน จะลดเวลาเลี้ยงลงประมาณ 21%</p>
+<p data-i18n="integrated-seabass-business_265">ผลดีที่อาจเกิดขึ้น ได้แก่ ลดระยะเวลาการใช้บ่อ ลดความเสี่ยงระหว่างเลี้ยง เพิ่มความยืดหยุ่นในการจัดรอบผลิต และลดต้นทุนคงที่ต่อกิโลกรัม</p>
+<p data-i18n="integrated-seabass-business_266">อย่างไรก็ตาม จำนวนรอบผลิตจริงยังขึ้นอยู่กับระยะเวลาพักบ่อ การเตรียมน้ำ และความพร้อมของลูกพันธุ์</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-10">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_267">10. ประเทศอื่นพัฒนาปลากะพงขาวโตเร็วแล้วหรือยัง?</h2>
+<p data-i18n="integrated-seabass-business_268">มีแล้ว โดยเฉพาะออสเตรเลียและสิงคโปร์</p>
+<h3 data-i18n="integrated-seabass-business_269">ออสเตรเลีย</h3>
+<p data-i18n="integrated-seabass-business_270">ออสเตรเลียมีงานวิจัยด้านพันธุกรรมปลากะพงขาวและการคัดเลือกพ่อแม่พันธุ์เพื่อเพิ่มอัตราการเจริญเติบโต รวมถึงการศึกษาความสัมพันธ์ระหว่างพันธุกรรม การเจริญเติบโต และความทนทานต่อโรค</p>
+<p data-i18n="integrated-seabass-business_271">หน่วยงานวิจัยที่เกี่ยวข้อง เช่น CSIRO ซึ่งมีงานวิจัยด้านพันธุกรรมและการเพาะเลี้ยงสัตว์น้ำ</p>
+<h3 data-i18n="integrated-seabass-business_272">สิงคโปร์</h3>
+<p data-i18n="integrated-seabass-business_273">สิงคโปร์มีการพัฒนาการเพาะเลี้ยงปลากะพงขาวเชิงอุตสาหกรรม รวมถึงการใช้เทคโนโลยีพันธุกรรมเพื่อคัดเลือกปลาที่เติบโตดีและทนต่อโรค</p>
+<p data-i18n="integrated-seabass-business_274">ตัวอย่างที่น่าสนใจคือ Barramundi Group ซึ่งมีประสบการณ์ด้านการผลิตปลากะพงขาวและการพัฒนาลูกพันธุ์สำหรับการเพาะเลี้ยงเชิงพาณิชย์</p>
+<p data-i18n="integrated-seabass-business_275">กรณีเหล่านี้แสดงให้เห็นว่า การปรับปรุงพันธุ์ปลากะพงขาวไม่ใช่เทคโนโลยีที่ต้องเริ่มต้นคิดค้นใหม่ทั้งหมด แต่ไทยสามารถนำองค์ความรู้มาประยุกต์และพัฒนาสายพันธุ์ที่เหมาะกับสภาพแวดล้อมของประเทศได้</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-11">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_276">11. ข่าวดี: ประเทศไทยมีงานวิจัยปลากะพงขาวโตเร็วอยู่แล้ว</h2>
+<p data-i18n="integrated-seabass-business_277">จากการตรวจสอบข้อมูลวิจัย พบว่าประเทศไทยมีความก้าวหน้ามากกว่าที่คิด และ AgroLink ไม่จำเป็นต้องเริ่มต้นจากศูนย์</p>
+
+<h3 data-i18n="integrated-seabass-business_278">11.1 มหาวิทยาลัยเกษตรศาสตร์</h3>
+<p data-i18n="integrated-seabass-business_279">มหาวิทยาลัยเกษตรศาสตร์ มีโครงการปรับปรุงพันธุกรรมปลากะพงขาวเพื่อให้เจริญเติบโตเร็ว โดยสถานีวิจัยประมงสมุทรสงคราม คณะประมง</p>
+<p data-i18n="integrated-seabass-business_280">งานวิจัยดำเนินการคัดเลือกประชากรปลากะพงขาว 4 กลุ่ม เปรียบเทียบการเจริญเติบโต และใช้ข้อมูลพันธุกรรมคัดเลือกพ่อแม่พันธุ์ที่มีศักยภาพสูง</p>
+<p data-i18n="integrated-seabass-business_281">โครงการใช้เทคนิค Genomic Selection เพื่อเพิ่มความแม่นยำในการคัดเลือกพันธุ์</p>
+<div class="note-block">
+<strong data-i18n="integrated-seabass-business_282">ข้อมูลโครงการและช่องทางติดต่อ:</strong>
+<ul style="margin-top:10px;">
+<li data-i18n="integrated-seabass-business_283">โครงการ Genetic Improvement in Asian Seabass – มหาวิทยาลัยเกษตรศาสตร์</li>
+<li data-i18n="integrated-seabass-business_284">สถานีวิจัยประมงสมุทรสงคราม โทร. 034-756-624</li>
+</ul>
+</div>
+
+<h3 data-i18n="integrated-seabass-business_285" style="margin-top:30px;">11.2 กรมประมงร่วมกับหน่วยงานวิจัยด้านพันธุกรรม</h3>
+<p data-i18n="integrated-seabass-business_286">มีผลงานวิจัยที่เผยแพร่ในปี 2024 เรื่อง Genetic diversity, heritability, and estimated breeding values for growth of domesticated Asian seabass Lates calcarifer from Thailand</p>
+<p data-i18n="integrated-seabass-business_287">ผลการศึกษาพบว่า</p>
+<ul class="check-list">
+<li data-i18n="integrated-seabass-business_288">มีประชากรพื้นฐาน 51 ครอบครัว</li>
+<li data-i18n="integrated-seabass-business_289">ศึกษาปลา 1,655 ตัว</li>
+<li data-i18n="integrated-seabass-business_290">ค่าการถ่ายทอดทางพันธุกรรมของการเจริญเติบโต (Heritability) เท่ากับ 0.386</li>
+<li data-i18n="integrated-seabass-business_291">มีความแปรปรวนทางพันธุกรรมเพียงพอสำหรับการคัดเลือกพันธุ์</li>
+<li data-i18n="integrated-seabass-business_292">แบบจำลองคาดการณ์ความก้าวหน้าทางพันธุกรรมได้ถึง 28.5% ต่อรุ่น ภายใต้เกณฑ์การคัดเลือกที่ศึกษา</li>
+</ul>
+<p data-i18n="integrated-seabass-business_293" style="font-size:13.5px;color:var(--muted);">ตัวเลข 28.5% เป็นผลคาดการณ์ทางพันธุกรรม ไม่ใช่ผลยืนยันว่าปลาในฟาร์มจะโตเร็วขึ้น 28.5% ทุกรุ่น</p>
+<p data-i18n="integrated-seabass-business_294" style="font-size:13px;color:var(--muted);">ที่มา: งานวิจัยในฐานข้อมูล สวทช.</p>
+<p data-i18n="integrated-seabass-business_295" style="margin-top:14px;">นี่เป็นข้อมูลสำคัญมากสำหรับการพัฒนาโครงการระดับประเทศ เพราะพิสูจน์ว่าประชากรปลากะพงขาวของไทยมีศักยภาพทางพันธุกรรมสำหรับการพัฒนาสายพันธุ์โตเร็วจริง</p>
+
+<h3 data-i18n="integrated-seabass-business_296" style="margin-top:30px;">11.3 ผลการปรับปรุงพันธุ์ในต่างประเทศ</h3>
+<p data-i18n="integrated-seabass-business_297">งานวิจัยของสิงคโปร์พบว่าปลากะพงขาวรุ่น F2 มีสมรรถนะการเจริญเติบโตเพิ่มขึ้น 14.4% เมื่อเทียบกับรุ่น F1</p>
+<p data-i18n="integrated-seabass-business_298">การศึกษาดังกล่าวยังพบว่าลักษณะการเจริญเติบโตมีการถ่ายทอดทางพันธุกรรม จึงสามารถปรับปรุงต่อเนื่องผ่านการคัดเลือกพันธุ์ได้ (ที่มา: ScienceDirect)</p>
+<p data-i18n="integrated-seabass-business_299">สิงคโปร์ยังพัฒนาโครงการปรับปรุงพันธุ์ต่อเนื่องประมาณ 20 ปี จนได้สายพันธุ์เด่น 3 กลุ่ม ได้แก่ สายพันธุ์โตเร็ว สายพันธุ์ทนโรค และสายพันธุ์ที่มีโอเมกา 3 สูง (ที่มา: Temasek Life Sciences Laboratory)</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-12">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_300">12. แนวทางพัฒนาโครงการปลากะพงขาวโตเร็วของไทย</h2>
+<p data-i18n="integrated-seabass-business_301">ผมเสนอให้ AgroLink ร่วมมือกับมหาวิทยาลัยเกษตรศาสตร์ กรมประมง และ สวทช. โดยแบ่งเป็น 3 ระยะ</p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:16px;">
+<div class="data-table-wrap" style="max-width:900px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_302">ระยะ</th><th data-i18n="integrated-seabass-business_303">ระยะเวลา</th><th data-i18n="integrated-seabass-business_304">กิจกรรมหลัก</th></tr></thead>
+<tbody>
+<tr><td><strong data-i18n="integrated-seabass-business_305">ระยะที่ 1</strong></td><td data-i18n="integrated-seabass-business_306">ปีที่ 1</td><td data-i18n="integrated-seabass-business_307">รวบรวมสายพันธุ์ที่มีอยู่ ตรวจสอบพันธุกรรม ทดลองเลี้ยงเปรียบเทียบ</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_308">ระยะที่ 2</strong></td><td data-i18n="integrated-seabass-business_309">ปีที่ 2–3</td><td data-i18n="integrated-seabass-business_310">คัดเลือกพ่อแม่พันธุ์ ขยายประชากรพันธุ์ และทดลองในฟาร์ม</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_311">ระยะที่ 3</strong></td><td data-i18n="integrated-seabass-business_312">ปีที่ 4–6</td><td data-i18n="integrated-seabass-business_313">คัดเลือกพันธุ์ต่อเนื่อง ขยายการผลิตลูกพันธุ์ และส่งเสริมเชิงพาณิชย์</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_314">ปลากะพงขาวมีช่วงอายุการสืบพันธุ์ค่อนข้างยาว และมีการเปลี่ยนเพศตามธรรมชาติ ดังนั้นการพัฒนาสายพันธุ์หลายรุ่นอาจต้องใช้เวลามากกว่า 6 ปี</p>
+<p data-i18n="integrated-seabass-business_315">วิธีที่เหมาะสมที่สุดคือเริ่มจากสายพันธุ์ที่หน่วยงานวิจัยไทยคัดเลือกไว้แล้ว เพื่อลดระยะเวลาการพัฒนา</p>
+<h3 data-i18n="integrated-seabass-business_316" style="margin-top:30px;">งบประมาณโครงการเบื้องต้น</h3>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:16px;">
+<div class="data-table-wrap" style="max-width:720px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_317">กิจกรรม</th><th data-i18n="integrated-seabass-business_318">งบประมาณประมาณการ</th></tr></thead>
+<tbody>
+<tr><td data-i18n="integrated-seabass-business_319">สำรวจสายพันธุ์และตรวจสอบพันธุกรรม</td><td data-i18n="integrated-seabass-business_320">5 ล้านบาท</td></tr>
+<tr><td data-i18n="integrated-seabass-business_321">พัฒนาระบบพ่อแม่พันธุ์และโรงเพาะฟัก</td><td data-i18n="integrated-seabass-business_322">15 ล้านบาท</td></tr>
+<tr><td data-i18n="integrated-seabass-business_323">ทดลองเลี้ยงและคัดเลือกพันธุ์</td><td data-i18n="integrated-seabass-business_324">12 ล้านบาท</td></tr>
+<tr><td data-i18n="integrated-seabass-business_325">ระบบฐานข้อมูลพันธุกรรมและ AI</td><td data-i18n="integrated-seabass-business_326">5 ล้านบาท</td></tr>
+<tr><td data-i18n="integrated-seabass-business_327">ทดลองเลี้ยงในฟาร์มเกษตรกร</td><td data-i18n="integrated-seabass-business_328">8 ล้านบาท</td></tr>
+<tr><td data-i18n="integrated-seabass-business_329">ขยายพันธุ์และถ่ายทอดเทคโนโลยี</td><td data-i18n="integrated-seabass-business_330">10 ล้านบาท</td></tr>
+<tr><td><strong data-i18n="integrated-seabass-business_331">รวม 6 ปี</strong></td><td><strong>55 ล้านบาท</strong></td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_332" style="font-size:13.5px;color:var(--muted);">งบประมาณนี้เป็นกรอบสมมติฐานสำหรับพัฒนาแนวคิดโครงการ ยังไม่ได้สำรวจโครงสร้างพื้นฐานเดิมของหน่วยงานพันธมิตรหรือจัดทำราคากลาง</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-13">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_333">13. ผลประโยชน์ทางเศรษฐกิจ</h2>
+<p data-i18n="integrated-seabass-business_334">หากประเทศไทยสามารถพัฒนาปลากะพงขาวที่โตเร็วขึ้นและลดต้นทุนได้ 5–10 บาทต่อกิโลกรัม จะเกิดผลประโยชน์ดังนี้</p>
+<p data-i18n="integrated-seabass-business_335"><strong>สมมติผลผลิตประเทศไทย 60,000 ตันต่อปี</strong></p>
+</div>
+<div class="container" style="margin-top:6px;margin-bottom:16px;">
+<div class="data-table-wrap" style="max-width:720px;margin:0 auto;">
+<table class="data-table">
+<thead><tr><th data-i18n="integrated-seabass-business_336">สัดส่วนผลผลิตที่ใช้พันธุ์ปรับปรุง</th><th data-i18n="integrated-seabass-business_337">ลดต้นทุน 5 บาท/กก.</th><th data-i18n="integrated-seabass-business_338">ลดต้นทุน 10 บาท/กก.</th></tr></thead>
+<tbody>
+<tr><td class="num-cell">25%</td><td class="num-cell" data-i18n="integrated-seabass-business_339">75 ล้านบาท/ปี</td><td class="num-cell" data-i18n="integrated-seabass-business_340">150 ล้านบาท/ปี</td></tr>
+<tr><td class="num-cell">50%</td><td class="num-cell" data-i18n="integrated-seabass-business_341">150 ล้านบาท/ปี</td><td class="num-cell" data-i18n="integrated-seabass-business_342">300 ล้านบาท/ปี</td></tr>
+<tr><td class="num-cell">75%</td><td class="num-cell" data-i18n="integrated-seabass-business_343">225 ล้านบาท/ปี</td><td class="num-cell" data-i18n="integrated-seabass-business_344">450 ล้านบาท/ปี</td></tr>
+<tr><td class="num-cell">100%</td><td class="num-cell" data-i18n="integrated-seabass-business_345">300 ล้านบาท/ปี</td><td class="num-cell" data-i18n="integrated-seabass-business_346">600 ล้านบาท/ปี</td></tr>
+</tbody></table></div>
+</div>
+<div class="container prose-block reveal in">
+<p data-i18n="integrated-seabass-business_347" style="font-size:13.5px;color:var(--muted);">ตัวเลขนี้เป็นสถานการณ์จำลอง โดยสมมติว่าการใช้พันธุ์ปรับปรุงทำให้ต้นทุนสุทธิลดลงจริงตามเป้าหมาย หลังหักต้นทุนลูกพันธุ์และต้นทุนเพิ่มเติมแล้ว</p>
+</div></section>
+
+
+<section class="prose-section" id="sec-14">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_348">14. บทบาทของ AgroLink</h2>
+<p data-i18n="integrated-seabass-business_349">AgroLink สามารถเป็นแพลตฟอร์มกลางที่เชื่อมงานวิจัยพันธุกรรมเข้ากับการผลิตเชิงพาณิชย์</p>
+<ul class="check-list">
+<li data-i18n="integrated-seabass-business_350">มหาวิทยาลัยและกรมประมง รับผิดชอบการวิจัย การคัดเลือกพันธุ์ และการรักษาคุณภาพทางพันธุกรรม</li>
+<li data-i18n="integrated-seabass-business_351">โรงเพาะฟักพันธมิตร รับผิดชอบการขยายพันธุ์และจำหน่ายลูกพันธุ์ที่ผ่านการรับรอง</li>
+<li data-i18n="integrated-seabass-business_352">สหกรณ์และเกษตรกร รับลูกพันธุ์ไปทดลองเลี้ยงและผลิตเชิงพาณิชย์</li>
+<li data-i18n="integrated-seabass-business_353">AgroLink จัดเก็บข้อมูลพันธุ์ปลา อาหาร อัตราการเติบโต FCR อัตรารอด ต้นทุน และผลผลิตจริง พร้อมเชื่อมผู้ซื้อและสถาบันการเงิน</li>
+</ul>
+<p data-i18n="integrated-seabass-business_354">ข้อมูลการเลี้ยงจากหลายฟาร์มจะช่วยให้ผู้ปรับปรุงพันธุ์ประเมินได้ว่าสายพันธุ์ใดเหมาะกับบ่อดิน กระชัง หรือสภาพน้ำแต่ละพื้นที่</p>
+<p data-i18n="integrated-seabass-business_355">การคัดเลือกพันธุ์จึงไม่ควรดูเพียงน้ำหนักปลา แต่ควรพิจารณา การเติบโต อัตรารอด ความทนโรค และต้นทุนต่อกิโลกรัมพร้อมกัน</p>
+</div></section>
+
+
+<section class="prose-section alt" id="sec-15">
+<div class="container prose-block reveal in">
+<h2 data-i18n="integrated-seabass-business_356">15. ข้อเสนอที่ควรดำเนินการก่อน</h2>
+<p data-i18n="integrated-seabass-business_357">ผมเสนอให้ AgroLink ติดต่อสถานีวิจัยประมงสมุทรสงครามของมหาวิทยาลัยเกษตรศาสตร์เป็นลำดับแรก เพื่อสอบถามว่า</p>
+<ol class="plain-list">
+<li data-i18n="integrated-seabass-business_358">ปัจจุบันมีพ่อแม่พันธุ์ปลากะพงขาวโตเร็วที่ผ่านการคัดเลือกแล้วกี่รุ่น</li>
+<li data-i18n="integrated-seabass-business_359">มีลูกพันธุ์พร้อมนำไปทดลองเลี้ยงเชิงพาณิชย์หรือไม่</li>
+<li data-i18n="integrated-seabass-business_360">ผลการเจริญเติบโตเมื่อเทียบกับพันธุ์ทั่วไปแตกต่างกันเท่าไร</li>
+<li data-i18n="integrated-seabass-business_361">สามารถร่วมพัฒนาโครงการขยายผลกับ AgroLink และสหกรณ์ประมงได้หรือไม่</li>
+</ol>
+<p data-i18n="integrated-seabass-business_362">ข้อเสนอสำคัญที่สุดของผมคือ ไม่ควรเริ่มด้วยการลงทุนสร้างศูนย์วิจัยพันธุกรรมแห่งใหม่ทันที แต่ควรนำสายพันธุ์ที่มหาวิทยาลัยเกษตรศาสตร์และกรมประมงพัฒนาไว้แล้วมาทดลองเปรียบเทียบในฟาร์มจริงก่อน</p>
+<div class="note-block" style="margin-top:22px;" data-i18n="integrated-seabass-business_363">หากพิสูจน์ได้ว่าลูกพันธุ์ปรับปรุงสามารถลดต้นทุนสุทธิได้ 5–10 บาทต่อกิโลกรัม โครงการนี้จะมีเหตุผลทางเศรษฐกิจที่แข็งแรงมาก และสามารถพัฒนาเป็น โครงการยกระดับอุตสาหกรรมปลากะพงขาวไทยระยะ 6 ปี ที่ผสานการปรับปรุงพันธุ์ เทคโนโลยีการเลี้ยง อาหารสัตว์ การเงิน และการตลาดผ่าน AgroLink ได้อย่างครบวงจร</div>
+</div></section>
+
+<section class="prose-section">
+<div class="container section-head reveal">
+<h2 class="section-title" data-i18n="integrated-seabass-business_364">สนใจพัฒนาห่วงโซ่คุณค่าปลากะพงขาวร่วมกับ AgroLink</h2>
+<p class="section-sub" data-i18n="integrated-seabass-business_365">ไม่ว่าจะในฐานะสหกรณ์ เกษตรกรผู้เลี้ยงปลากะพงขาว หน่วยงานวิจัย โรงเพาะฟัก โรงงานแปรรูป หรือพันธมิตรทางธุรกิจ ติดต่อทีมงาน AgroLink เพื่อขอข้อมูลเพิ่มเติมได้ทันที</p>
+<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+<a href="index.html#contact" class="btn btn-gold" data-i18n="integrated-seabass-business_366">ติดต่อทีมงาน AgroLink</a>
+<a href="index.html" class="btn btn-outline" data-i18n="integrated-seabass-business_367">กลับหน้าแรก</a>
+</div></div></section>
+
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><span class="mark"><i class="fa-solid fa-fish"></i></span>AgroLink</div>
+        <div class="footer-tagline-en" data-i18n="footer_tagline">โครงสร้างพื้นฐานดิจิทัลสำหรับภาคเกษตร</div>
+        <p class="desc" data-i18n="footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_products">ผลิตภัณฑ์</h5>
+        <ul>
+          <li><a href="coop-portal.html" data-i18n="footer_product_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="for-farmers.html" data-i18n="footer_product_2">เกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_product_3">การเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_product_4">ตลาดกลาง</a></li>
+          <li><a href="custom-fertilizer.html" data-i18n="footer_product_5">ปุ๋ยสั่งตัด</a></li>
+          <li><a href="integrated-rice-business.html" data-i18n="footer_product_6">ธุรกิจข้าวครบวงจร</a></li>
+          <li><a href="ai-satellite-guide.html" data-i18n="footer_product_7">AI และดาวเทียม</a></li>
+          <li><a href="carbon-credit-article.html" data-i18n="footer_product_8">คาร์บอนเครดิต</a></li>
+          <li><a href="biomass-economy.html" data-i18n="footer_product_9">เศรษฐกิจชีวมวล</a></li>
+          <li><a href="index.html#roadmap" data-i18n="footer_product_10">แผนขยายสินค้า</a></li>
+          <li><a href="integrated-durian-business.html" data-i18n="footer_product_11">ทุเรียนครบวงจร</a></li>
+          <li><a href="integrated-cassava-business.html" data-i18n="footer_product_12">มันสำปะหลังครบวงจร</a></li>
+          <li><a href="integrated-corn-business.html" data-i18n="footer_product_13">ข้าวโพดครบวงจร</a></li>
+          <li><a href="for-farmers-crop.html" data-i18n="footer_product_14">เกษตรกรผู้ปลูกพืช</a></li>
+          <li><a href="for-farmers-livestock.html" data-i18n="footer_product_15">เกษตรกรผู้เลี้ยงสัตว์บก</a></li>
+          <li><a href="for-farmers-aquaculture.html" data-i18n="footer_product_16">เกษตรกรผู้เลี้ยงสัตว์น้ำ</a></li>
+          <li><a href="integrated-coconut-business.html" data-i18n="footer_product_18">มะพร้าวน้ำหอมครบวงจร</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_partners">พันธมิตร</h5>
+        <ul>
+          <li><a href="index.html#partners" data-i18n="footer_partner_1">สหกรณ์/กลุ่มเกษตรกร</a></li>
+          <li><a href="finance-partners.html" data-i18n="footer_partner_2">สถาบันการเงิน</a></li>
+          <li><a href="marketplace-partners.html" data-i18n="footer_partner_3">ผู้ซื้อ</a></li>
+          <li><a href="index.html#partners" data-i18n="footer_partner_4">ผู้ให้บริการ</a></li>
+          <li><a href="technology-partners.html" data-i18n="footer_partner_5">พันธมิตรเทคโนโลยี</a></li>
+          <li><a href="biomass-portal.html" data-i18n="footer_partner_6">ผู้รับซื้อชีวมวล</a></li>
+          <li><a href="logistics-portal.html" data-i18n="footer_partner_7">ผู้ให้บริการขนส่ง</a></li>
+          <li><a href="insurance-portal.html" data-i18n="footer_partner_8">ผู้ให้บริการประกันภัย</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 data-i18n="footer_h_company">บริษัท</h5>
+        <ul>
+          <li><a href="about.html" data-i18n="footer_company_1">เกี่ยวกับเรา</a></li>
+          <li><a href="business-model.html" data-i18n="footer_company_2">นักลงทุน</a></li>
+          <li><a href="contact.html" data-i18n="footer_company_3">ติดต่อเรา</a></li>
+          <li><a href="privacy-policy.html" data-i18n="footer_company_4">นโยบายความเป็นส่วนตัว</a></li>
+          <li><a href="terms-of-use.html" data-i18n="footer_company_5">ข้อกำหนดการใช้งาน</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_bottom_tagline">AgroLink — เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</span>
+      <span data-i18n="footer_copyright">© 2026 Pakdee Corporation Co.,Ltd. — เว็บไซต์ต้นแบบสำหรับนำเสนอแนวคิดผลิตภัณฑ์ (Product Concept Preview)</span>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-integrated-seabass-business.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinksEl = document.querySelector('.nav-links');
+  navToggle.addEventListener('click', () => navLinksEl.classList.toggle('open'));
+
+  // nav shadow on scroll
+  const navEl = document.querySelector('header.nav');
+  window.addEventListener('scroll', () => {
+    navEl.style.boxShadow = window.scrollY > 10 ? '0 2px 12px rgba(0,0,0,.06)' : 'none';
+  });
+</script>
+<script src="js/track.js"></script>
+
+</body>
+</html>
