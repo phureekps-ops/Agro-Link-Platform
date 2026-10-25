@@ -327,7 +327,7 @@
       if (!res.ok) throw new Error('request_failed_' + res.status);
       const sections = await res.json();
       if (!sections.length) {
-        el.innerHTML = `<div class="about-empty">ยังไม่มีเนื้อหาในขณะนี้ — กลับมาดูใหม่อีกครั้ง หรือติดต่อเราได้ที่ <a href="index.html#contact" style="color:var(--green);font-weight:700;">หน้าติดต่อ</a></div>`;
+        el.innerHTML = `<div class="about-empty">ยังไม่มีเนื้อหาในขณะนี้ — กลับมาดูใหม่อีกครั้ง หรือติดต่อเราได้ที่ <a href="contact.html" style="color:var(--green);font-weight:700;">หน้าติดต่อ</a></div>`;
         return;
       }
       el.innerHTML = sections.map((s) => `
