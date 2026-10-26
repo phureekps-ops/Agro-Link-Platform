@@ -12,6 +12,7 @@ const machineryRouter = require('./routes/machinery');
 const organizationRouter = require('./routes/organization');
 const inputSupplierRouter = require('./routes/inputsupplier');
 const biomassRouter = require('./routes/biomass');
+const biomassBuyerRouter = require('./routes/biomassbuyer');
 const marketVenueRouter = require('./routes/marketvenue');
 const contentRouter = require('./routes/content');
 // traffic.js — public marketing-site page-view counter, surfaced on the
@@ -198,6 +199,7 @@ app.use('/fertilizermixing', fertilizerMixingRouter);
 app.use('/organization', organizationRouter);
 app.use('/inputsupplier', inputSupplierRouter);
 app.use('/biomass', biomassRouter);
+app.use('/biomassbuyer', biomassBuyerRouter);
 // GET /about — public, no auth (see content.js's own doc comment).
 app.use('/about', contentRouter);
 app.use('/traffic', trafficRouter);

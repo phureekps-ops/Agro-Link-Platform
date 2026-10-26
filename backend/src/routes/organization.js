@@ -61,11 +61,16 @@ router.use(requireAuth, requireOrganization);
 // grant_biomass_producer_portal.sql for why this is deliberately NOT also
 // added to auth.js's ORG_SELF_REGISTER_TYPES / organization_org_type_check
 // (only to organization_role_role_type_check).
+// 'BiomassBuyer' added 2026-10-26 for the "พอร์ทัลผู้รับซื้อชีวมวล"
+// (Biomass Buyer Registration Portal) feature — same REQUESTABLE-only
+// reasoning and scoping as 'BiomassProducer' immediately above; see
+// grant_biomass_buyer_portal.sql.
 const ORG_REQUESTABLE_ROLE_TYPES = [
   'InputSupplier', 'Lender', 'Logistics', 'Buyer', 'VillageFund',
   'MachineryService', 'DryingYardService',
   'FertilizerMixingService',
   'BiomassProducer',
+  'BiomassBuyer',
 ];
 
 // Kept covering ALL of TractorService/DroneService/HarvesterService/
@@ -86,6 +91,7 @@ const ROLE_LABEL_TH = {
   DryingYardService: 'บริการลานตากข้าว/โกดังและไซโล',
   FertilizerMixingService: 'ผู้ให้บริการผสมปุ๋ยสั่งตัด',
   BiomassProducer: 'ผู้ผลิตสินค้าจากชีวมวล',
+  BiomassBuyer: 'ผู้รับซื้อชีวมวล',
 };
 
 /**

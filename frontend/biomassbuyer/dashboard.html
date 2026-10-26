@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — พอร์ทัลผู้รับซื้อชีวมวล</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  /* Sidebar SPA navigation — same structure/classes as admin/dashboard.html's
+     .admin-shell/.admin-sidebar/.admin-nav-item pattern (and buyer/
+     dashboard.html's own .buyer-shell copy of it), reused here per the
+     user's explicit request for a sidebar "like other portals". UI-only:
+     these classes/JS only show/hide which page is currently on screen —
+     every section still loads its own data on page load. */
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .bbuyer-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  .bbuyer-sidebar {
+    width: 260px; flex: 0 0 260px; background: var(--green-900); color: #fff;
+    display: flex; flex-direction: column; padding: 20px 14px; box-sizing: border-box;
+  }
+  .bbuyer-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; }
+  .bbuyer-sidebar-logo { font-size: 26px; line-height: 1; }
+  .bbuyer-sidebar-brand-name { font-weight: 700; font-size: 16px; }
+  .bbuyer-sidebar-brand-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .bbuyer-nav { flex: 1; overflow-y: auto; }
+  .bbuyer-nav-group { margin-bottom: 16px; }
+  .bbuyer-nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.5); padding: 0 10px 6px; }
+  .bbuyer-nav-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13.5px;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  }
+  .bbuyer-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .bbuyer-nav-item.active { background: rgba(255,255,255,0.16); color: #fff; font-weight: 600; }
+  .bbuyer-sidebar-footer { font-size: 11px; color: rgba(255,255,255,0.5); padding: 12px 10px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 12px; }
+  .bbuyer-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .bbuyer-breadcrumb { font-size: 14.5px; }
+  .bbuyer-breadcrumb-sep { opacity: 0.5; margin: 0 6px; }
+  @media (max-width: 860px) {
+    .bbuyer-shell { flex-direction: column; }
+    .bbuyer-sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 14px; }
+    .bbuyer-sidebar-brand { border-bottom: none; margin-bottom: 0; padding: 0 10px 0 0; }
+    .bbuyer-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; overflow-y: visible; }
+    .bbuyer-nav-group { margin-bottom: 0; display: flex; align-items: center; gap: 4px; }
+    .bbuyer-nav-group-title { display: none; }
+    .bbuyer-sidebar-footer { display: none; }
+  }
+
+  /* registration form — biomass-type checkbox grid, same visual pattern
+     as biomassproducer/dashboard.html's .product-grid/.product-check */
+  .biomass-type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .biomass-type-check {
+    display: flex; align-items: center; gap: 10px; border: 1px solid #e2e2e2; border-radius: 10px;
+    padding: 12px 14px; cursor: pointer; font-size: 14px; font-weight: 600; transition: border-color .15s, background .15s;
+  }
+  .biomass-type-check:hover { border-color: var(--green-700, #2e7d32); }
+  .biomass-type-check input { width: 18px; height: 18px; }
+  .biomass-type-check.checked { border-color: var(--green-700, #2e7d32); background: #f1f8f2; }
+</style>
+</head>
+<body>
+  <div class="bbuyer-shell">
+    <aside class="bbuyer-sidebar">
+      <div class="bbuyer-sidebar-brand">
+        <span class="bbuyer-sidebar-logo">🏭</span>
+        <div>
+          <div class="bbuyer-sidebar-brand-name">AgroLink</div>
+          <div class="bbuyer-sidebar-brand-sub">พอร์ทัลผู้รับซื้อชีวมวล</div>
+        </div>
+      </div>
+      <nav class="bbuyer-nav">
+        <div class="bbuyer-nav-group">
+          <div class="bbuyer-nav-group-title">ภาพรวม</div>
+          <button type="button" class="bbuyer-nav-item active" data-page="overview">📊 ภาพรวม</button>
+        </div>
+        <div class="bbuyer-nav-group">
+          <div class="bbuyer-nav-group-title">สมาชิกผู้รับซื้อ</div>
+          <button type="button" class="bbuyer-nav-item" data-page="registration">📝 ข้อมูลลงทะเบียนสมาชิก</button>
+          <button type="button" class="bbuyer-nav-item" data-page="biomass-types">🌾 ชนิดชีวมวลที่ใช้</button>
+        </div>
+      </nav>
+      <div class="bbuyer-sidebar-footer">
+        พอร์ทัลผู้รับซื้อชีวมวล — ทุกฟีเจอร์รวมอยู่ในหน้าเดียว เช่นเดียวกับพอร์ทัลอื่น
+      </div>
+    </aside>
+    <div class="bbuyer-main">
+      <header class="app-header">
+        <div class="brand bbuyer-breadcrumb">
+          <span>พอร์ทัลผู้รับซื้อชีวมวล</span><span class="bbuyer-breadcrumb-sep">/</span><span id="bbuyerBreadcrumbCurrent">ภาพรวม</span>
+        </div>
+        <div class="who">
+          <span class="name" id="orgName">กำลังโหลด…</span>
+          <a href="../manage-roles.html" class="logout-btn" style="text-decoration:none;">จัดการบทบาทธุรกิจ</a>
+          <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+        </div>
+      </header>
+
+      <div class="container" id="mainContainer">
+
+      <div class="bbuyer-page" data-page-content="overview">
+        <div class="section-title">📊 ภาพรวม</div>
+        <div id="summarySection" class="summary-grid">
+          <div class="loading-line">กำลังโหลดข้อมูลภาพรวม…</div>
+        </div>
+      </div>
+
+      <div class="bbuyer-page" data-page-content="registration" style="display:none;">
+        <div class="section-title">📝 ข้อมูลลงทะเบียนสมาชิกผู้รับซื้อชีวมวล</div>
+        <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
+          กรอกข้อมูลบริษัทของท่าน ทีมงาน AgroLink และผู้ผลิตในเครือข่ายจะใช้ข้อมูลนี้เพื่อช่วยจับคู่แหล่งชีวมวลที่เหมาะสม
+        </p>
+        <div class="panel">
+          <div class="form-grid">
+            <div class="field full">
+              <label for="companyNameInput">ชื่อบริษัท *</label>
+              <input type="text" id="companyNameInput" placeholder="เช่น บริษัท ตัวอย่างพลังงานชีวมวล จำกัด" required />
+            </div>
+            <div class="field full">
+              <label for="addressDetailInput">ที่อยู่โดยละเอียด</label>
+              <textarea id="addressDetailInput" rows="3" placeholder="เลขที่/หมู่/ซอย/ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์ (ที่อยู่โรงงาน/จุดรับซื้อ)"></textarea>
+            </div>
+            <div class="field full">
+              <label for="monthlyUsageInput">ปริมาณที่ใช้/เดือน</label>
+              <input type="text" id="monthlyUsageInput" placeholder="เช่น ~500 ตัน/เดือน (รวมทุกชนิด) หรือระบุแยกตามชนิดในช่องนี้" />
+            </div>
+            <div class="field full">
+              <label for="usagePurposeInput">วัตถุประสงค์การใช้</label>
+              <textarea id="usagePurposeInput" rows="2" placeholder="เช่น เชื้อเพลิงชีวมวลสำหรับโรงไฟฟ้า / วัตถุดิบผลิตอาหารสัตว์ / ผลิตปุ๋ยอินทรีย์"></textarea>
+            </div>
+            <div class="field full">
+              <label for="desiredSpecInput">สเปคสินค้าชีวมวลที่ต้องการ</label>
+              <textarea id="desiredSpecInput" rows="3" placeholder="เช่น ความชื้นไม่เกิน 15% ขนาดอัดก้อน 80x90x120 ซม. ไม่มีสิ่งปนเปื้อน ปริมาณกำมะถันต่ำ"></textarea>
+            </div>
+            <div class="field">
+              <label for="contactPhoneInput">เบอร์โทรติดต่อ</label>
+              <input type="text" id="contactPhoneInput" placeholder="เช่น 08x-xxx-xxxx" />
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" id="profileSaveBtn" style="max-width:220px; margin-top:8px;">บันทึกข้อมูลลงทะเบียน</button>
+        </div>
+      </div>
+
+      <div class="bbuyer-page" data-page-content="biomass-types" style="display:none;">
+        <div class="section-title">🌾 ชนิดชีวมวลที่ใช้</div>
+        <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 12px;">
+          เลือกได้หลายชนิดพร้อมกัน — ระบุชนิดชีวมวลที่บริษัทของท่านต้องการรับซื้อ
+        </p>
+        <div class="panel">
+          <div id="biomassTypeGrid" class="biomass-type-grid">
+            <div class="loading-line">กำลังโหลด…</div>
+          </div>
+          <button type="button" class="btn btn-primary" id="biomassTypeSaveBtn" style="max-width:220px;">บันทึกชนิดชีวมวล</button>
+        </div>
+      </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="../js/support-widget.js"></script>
+</body>
+</html>

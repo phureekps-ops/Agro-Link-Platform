@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — เข้าสู่ระบบผู้รับซื้อชีวมวล</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="leaf">🏭</span>
+      <h1>AgroLink Platform</h1>
+    </div>
+    <p class="login-sub">พอร์ทัลผู้รับซื้อชีวมวล — ลงทะเบียนสมาชิกผู้รับซื้อ ระบุชนิดชีวมวลที่ใช้ ปริมาณการใช้/เดือน วัตถุประสงค์ และสเปคสินค้าที่ต้องการ เพื่อให้ทีมงาน AgroLink ช่วยจับคู่กับผู้ผลิตในเครือข่าย</p>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="claimInput">รหัสยืนยันตัวตนองค์กร (จากระบบยืนยันตัวตนกลาง)</label>
+        <input type="text" id="claimInput" placeholder="เช่น oidc|org-..." autocomplete="off" required />
+        <div class="hint">
+          หมายเหตุ: ระบบยืนยันตัวตน (OIDC) จริงยังไม่ได้เชื่อมต่อในสภาพแวดล้อมนี้ —
+          ช่องนี้จำลองค่า <code>sub claim</code> ขององค์กร ที่ปกติจะมาจากโทเค็นที่ยืนยันตัวตนแล้ว
+          ใช้รหัสเดียวกับที่ท่านใช้เข้าสู่ระบบพอร์ทัลอื่นขององค์กรนี้ได้ (บัญชีเดียวกัน
+          เพียงมีบทบาท "ผู้รับซื้อชีวมวล" เพิ่มเติม)
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ</button>
+    </form>
+
+    <div class="divider">องค์กรของท่านยังไม่มีบทบาทผู้รับซื้อชีวมวล?</div>
+    <p style="font-size:12.5px; color:var(--gray-500); margin:0 0 10px; text-align:center;">
+      หากองค์กรของท่าน (เช่น โรงงาน/บริษัท ที่ลงทะเบียนและผ่านการตรวจสอบ (KYB) กับ AgroLink แล้ว)
+      ให้เข้าสู่ระบบพอร์ทัลเดิมของท่าน แล้วไปที่หน้า <strong>"จัดการบทบาทธุรกิจ"</strong> เพื่อส่งคำขอเพิ่มบทบาทนี้ได้ทันที
+    </p>
+    <a href="../manage-roles.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่หน้าจัดการบทบาทธุรกิจ</a>
+
+    <div class="divider">เกษตรกร / ผู้ปล่อยกู้ / ผู้รับซื้อผลผลิตและชีวมวล / ผู้ผลิตสินค้าจากชีวมวล / ผู้ให้บริการเครื่องจักรกล / ผู้ดูแลระบบ?</div>
+    <a href="../index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลเกษตรกร</a>
+    <a href="../lender/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ปล่อยกู้</a>
+    <a href="../villagefund/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลกองทุนหมู่บ้าน</a>
+    <a href="../buyer/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้รับซื้อผลผลิตและชีวมวล</a>
+    <a href="../biomassproducer/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ผลิตสินค้าจากชีวมวล</a>
+    <a href="../machinery/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ให้บริการเครื่องจักรกล</a>
+    <a href="../inputsupplier/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้จำหน่ายปัจจัยการผลิต</a>
+    <a href="../marketvenue/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลตลาดค้าส่ง/ผู้ให้บริการพื้นที่ขายสินค้าเกษตร</a>
+    <a href="../fertilizermixing/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลผู้ให้บริการผสมปุ๋ยสั่งตัด</a>
+    <a href="../coop/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลสหกรณ์</a>
+    <a href="../communityenterprise/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลวิสาหกิจชุมชนด้านการเกษตร</a>
+    <a href="../gov/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">ไปที่พอร์ทัลเจ้าหน้าที่ภาครัฐ</a>
+    <a href="../admin/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">ไปที่พอร์ทัลผู้ดูแลระบบ</a>
+
+    <div class="divider">ยังไม่มีบัญชีองค์กร?</div>
+    <a href="../register-provider.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">สมัครเป็นผู้ให้บริการ</a>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
