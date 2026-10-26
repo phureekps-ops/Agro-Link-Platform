@@ -208,7 +208,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Only once a project reaches registered/credits_issued status can it be listed for sale (specifying the quantity in tonnes of CO2 equivalent and the desired price). On the buyer side, a parallel purchase order is created (desired quantity + offered price), without the buyer seeing any seller's identity directly"
   },
   "carbon-module-guide_52": {
-    "th": "ผู้ขาย: สหกรณ์ฯ · ผู้ซื้อ: พอร์ทัลผู้รับซื้อผลผลิตและชีวมวล (แท็บคาร์บอนเครดิต)",
+    "th": "ผู้ขาย: สหกรณ์ฯ · ผู้ซื้อ: พอร์ทัลผู้รับซื้อผลผลิตการเกษตร (แท็บคาร์บอนเครดิต)",
     "en": "Seller: Cooperative, etc. · Buyer: Produce & Biomass Buyer Portal (Carbon Credit tab)"
   },
   "carbon-module-guide_53": {
@@ -656,7 +656,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "\"Carbon Module\" widget on each portal's dashboard"
   },
   "carbon-module-guide_164": {
-    "th": "ผู้รับซื้อผลผลิตและชีวมวล (Buyer)",
+    "th": "ผู้รับซื้อผลผลิตการเกษตร (Buyer)",
     "en": "Produce & Biomass Buyer"
   },
   "carbon-module-guide_165": {
@@ -664,7 +664,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Creates/cancels credit purchase orders; views match results once matched (view-only, cannot edit)"
   },
   "carbon-module-guide_166": {
-    "th": "พอร์ทัลผู้รับซื้อผลผลิตและชีวมวล แท็บ \"ตลาดคาร์บอนเครดิต\"",
+    "th": "พอร์ทัลผู้รับซื้อผลผลิตการเกษตร แท็บ \"ตลาดคาร์บอนเครดิต\"",
     "en": "Produce & Biomass Buyer Portal, \"Carbon Credit Marketplace\" tab"
   },
   "carbon-module-guide_167": {

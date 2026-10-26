@@ -48,7 +48,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Agricultural Produce Buyers"
   },
   "marketplace-partners_12": {
-    "th": "กลุ่มโรงงานและผู้รับซื้อผลผลิตและชีวมวลทางการเกษตรโดยตรงจากแปลง เชื่อมต่อผ่านบทบาท \"ผู้รับซื้อผลผลิตและชีวมวล\" (Buyer) บนระบบ AgroLink",
+    "th": "กลุ่มโรงงานและผู้รับซื้อผลผลิตการเกษตรทางการเกษตรโดยตรงจากแปลง เชื่อมต่อผ่านบทบาท \"ผู้รับซื้อผลผลิตการเกษตร\" (Buyer) บนระบบ AgroLink",
     "en": "Factories and buyers purchasing agricultural produce and biomass directly from the plot, connected through the \"Produce & Biomass Buyer\" role on the AgroLink system"
   },
   "marketplace-partners_13": {
@@ -116,7 +116,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Are You a Buyer or Market Service Provider Looking to Join?"
   },
   "marketplace-partners_29": {
-    "th": "โรงงาน โรงสี ผู้รับซื้อผลผลิตและชีวมวล หรือผู้ให้บริการพื้นที่ตลาด ที่สนใจเข้าร่วมเป็นพันธมิตรกลุ่มตลาดสินค้าและบริการบน AgroLink สามารถสมัครเป็นผู้ให้บริการ หรือเข้าสู่ระบบหากมีบัญชีอยู่แล้ว",
+    "th": "โรงงาน โรงสี ผู้รับซื้อผลผลิตการเกษตร หรือผู้ให้บริการพื้นที่ตลาด ที่สนใจเข้าร่วมเป็นพันธมิตรกลุ่มตลาดสินค้าและบริการบน AgroLink สามารถสมัครเป็นผู้ให้บริการ หรือเข้าสู่ระบบหากมีบัญชีอยู่แล้ว",
     "en": "Factories, mills, produce and biomass buyers, or marketplace operators interested in joining as goods & services marketplace partners on AgroLink can register as a service provider, or log in if you already have an account."
   },
   "marketplace-partners_30": {
