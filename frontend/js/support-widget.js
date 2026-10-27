@@ -23,6 +23,13 @@
  * them populated (its own portal's session). Uses SUPPORT_ prefixed names
  * throughout to avoid colliding with each page's own already-declared
  * `API_BASE`/`session` etc.
+ *
+ * FAQ accordion (added 2026-10-27): a static, client-only "คำถามที่พบบ่อย"
+ * list toggled from a new header button — no backend call, no relation to
+ * the real support ticket thread below it. Lets a user self-serve common
+ * questions about AgroLink before (or instead of) messaging staff.
+ * FAQ_ITEMS content should be reviewed/updated by the AgroLink team
+ * directly in this file when policies (pricing, security, etc.) change.
  */
 (function () {
   const SUPPORT_SESSION_KEYS = [
@@ -91,6 +98,50 @@
     return new Date(iso).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
   }
 
+  // ---------- คำถามที่พบบ่อย (FAQ) — static content, client-side only ----------
+  const FAQ_ITEMS = [
+    {
+      q: "AgroLink คืออะไร",
+      a: "AgroLink คือแพลตฟอร์มดิจิทัลสำหรับภาคเกษตรกรรมไทย ที่เชื่อมโยงเกษตรกร ผู้รับซื้อผลผลิต สถาบันการเงิน หน่วยงานภาครัฐ และผู้ให้บริการต่างๆ ในซัพพลายเชนการเกษตรไว้บนระบบเดียว เพื่อให้การซื้อขาย การเข้าถึงแหล่งทุน และการบริหารจัดการผลผลิตเป็นไปอย่างโปร่งใสและมีประสิทธิภาพมากขึ้น",
+    },
+    {
+      q: "AgroLink มีบริการอะไรบ้าง",
+      a: "แพลตฟอร์มแบ่งเป็นพอร์ทัลตามกลุ่มผู้ใช้งาน เช่น พอร์ทัลเกษตรกร พอร์ทัลผู้รับซื้อผลผลิตการเกษตร พอร์ทัลผู้ปล่อยกู้และกองทุนหมู่บ้าน พอร์ทัลผู้ให้บริการเครื่องจักรกลและปัจจัยการผลิต พอร์ทัลสหกรณ์และวิสาหกิจชุมชน รวมถึงบริการเฉพาะทางอย่างตลาดชีวมวล ตลาดคาร์บอนเครดิต และตลาดประกันภัยทางการเกษตร",
+    },
+    {
+      q: "ใครบ้างที่เป็นสมาชิกหรือใช้งาน AgroLink ได้",
+      a: "ครอบคลุมทั้งเกษตรกรรายบุคคล สหกรณ์และวิสาหกิจชุมชน ผู้รับซื้อผลผลิตและโรงงานแปรรูป สถาบันการเงินและกองทุนหมู่บ้าน ผู้ให้บริการเครื่องจักรกลและปัจจัยการผลิต ผู้ให้บริการประกันภัย ตลอดจนหน่วยงานภาครัฐที่กำกับดูแลภาคเกษตร",
+    },
+    {
+      q: "การลงทะเบียนเข้าใช้งานต้องทำอย่างไร",
+      a: "องค์กรที่ต้องการเข้าใช้งานต้องสมัครและผ่านการตรวจสอบข้อมูลธุรกิจ (KYB) กับทีมงาน AgroLink ก่อน หลังผ่านการอนุมัติแล้วจึงจะสามารถเข้าสู่ระบบผ่านพอร์ทัลของบทบาทนั้นๆ ได้ และหากต้องการเพิ่มบทบาทธุรกิจอื่นในภายหลัง สามารถส่งคำขอได้จากหน้า \"จัดการบทบาทธุรกิจ\"",
+    },
+    {
+      q: "AgroLink ใช้เทคโนโลยีอะไรบ้าง",
+      a: "ระบบพัฒนาเป็นเว็บแอปพลิเคชันที่ทำงานบนคลาวด์ มีระบบยืนยันตัวตนและจัดการสิทธิ์การเข้าถึงแยกตามองค์กรและบทบาท นำเทคโนโลยี AI และ IoT มาใช้ในการวิเคราะห์และติดตามข้อมูลการเกษตร รวมถึงข้อมูลภาพถ่ายดาวเทียมเพื่อประเมินผลผลิตในบางฟีเจอร์",
+    },
+    {
+      q: "การใช้งาน AgroLink มีค่าใช้จ่ายหรือไม่",
+      a: "สมาชิกทุกประเภทเริ่มใช้บริการได้โดยไม่มีค่าใช้จ่าย และเมื่อมีกิจกรรมที่ต้องใช้บริการของแพลตฟอร์มซึ่งก่อให้เกิดค่าใช้จ่าย จึงจะมีอัตราค่าบริการเกิดขึ้น โดยมีรายละเอียดระบุไว้ในข้อตกลงการใช้งาน",
+    },
+    {
+      q: "ข้อมูลของผู้ใช้งานบน AgroLink ปลอดภัยแค่ไหน",
+      a: "ข้อมูลของสมาชิกทุกองค์กรได้รับการดูแลความปลอดภัยตามข้อบังคับและกฎหมายที่เกี่ยวข้องอย่างเคร่งครัด โดยจำกัดสิทธิ์การเข้าถึงข้อมูลไว้เฉพาะองค์กรเจ้าของข้อมูลและผู้ที่ได้รับอนุมัติบทบาทที่เกี่ยวข้องเท่านั้น",
+    },
+    {
+      q: "บริการประกันภัยทางการเกษตรของ AgroLink ครอบคลุมอะไรบ้าง",
+      a: "ตลาดประกันภัยของ AgroLink แบ่งตามประเภทความเสี่ยงหลัก ได้แก่ ประกันภัยพืชไร่ ผลไม้ สัตว์บก สัตว์น้ำ และโรงเรือน/สิ่งปลูกสร้าง เกษตรกรและผู้ประกอบการสามารถเข้าดูและเลือกแผนประกันที่เหมาะกับกิจการของตนได้จากพอร์ทัลประกันภัยโดยตรง",
+    },
+    {
+      q: "ตลาดชีวมวลและผู้รับซื้อชีวมวลบน AgroLink ทำงานอย่างไร",
+      a: "ผู้ผลิตวัสดุชีวมวล (เช่น ฟางข้าว ซังข้าวโพด ไม้ยูคา) และผู้รับซื้อชีวมวล (เช่น โรงไฟฟ้า โรงงานผลิตเชื้อเพลิง) สามารถลงทะเบียนความต้องการและสเปคสินค้าที่ต้องการบนพอร์ทัลของตนเอง เพื่อให้ทีมงาน AgroLink ช่วยจับคู่แหล่งชีวมวลกับผู้รับซื้อในเครือข่ายได้อย่างเหมาะสม",
+    },
+    {
+      q: "หากต้องการสอบถามเพิ่มเติมหรือติดต่อทีมงาน AgroLink ทำอย่างไร",
+      a: "สามารถกดปุ่ม \"ติดต่อทีมงาน\" หรือ \"ติดต่อ AgroLink\" จากหน้าใดก็ได้บนเว็บไซต์ ซึ่งจะนำไปยังหน้าติดต่อที่สามารถส่งข้อความหรืออีเมลถึงทีมงานได้โดยตรง หรือพิมพ์คำถามในช่องแชทนี้เพื่อพูดคุยกับทีมงานได้ทันที",
+    },
+  ];
+
   // ---------- Inject markup + styles ----------
   const style = document.createElement("style");
   style.textContent = `
@@ -116,11 +167,33 @@
     #agrolinkSupportPanel.agrolink-support-open { display: flex; }
     #agrolinkSupportHeader {
       background: #2e7d32; color: #fff; padding: 10px 14px; font-weight: 700;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto;
     }
     #agrolinkSupportHeader button {
       background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;
     }
+    #agrolinkSupportHeaderActions { display: flex; align-items: center; gap: 10px; }
+    #agrolinkSupportFaqBtn { font-size: 16px; }
+    #agrolinkSupportFaqBtn.agrolink-support-faq-active { opacity: 0.7; }
+    #agrolinkSupportFaqPanel {
+      display: none; flex: 0 0 auto; max-height: 180px; overflow-y: auto;
+      border-bottom: 1px solid #e2e2e2; background: #fafafa;
+    }
+    #agrolinkSupportFaqPanel.agrolink-support-faq-visible { display: block; }
+    .agrolink-support-faq-hint { padding: 8px 10px 4px; font-size: 11px; color: #888; }
+    .agrolink-support-faq-item {
+      padding: 7px 10px; border-top: 1px solid #ececec; cursor: pointer;
+    }
+    .agrolink-support-faq-item:first-of-type { border-top: none; }
+    .agrolink-support-faq-question {
+      font-weight: 600; font-size: 12.5px; color: #2e7d32; line-height: 1.4;
+    }
+    .agrolink-support-faq-question::before { content: "▸ "; }
+    .agrolink-support-faq-item.agrolink-support-faq-open .agrolink-support-faq-question::before { content: "▾ "; }
+    .agrolink-support-faq-answer {
+      display: none; font-size: 12px; color: #444; margin: 5px 0 2px 14px; line-height: 1.5;
+    }
+    .agrolink-support-faq-item.agrolink-support-faq-open .agrolink-support-faq-answer { display: block; }
     #agrolinkSupportMessages {
       flex: 1; overflow-y: auto; padding: 10px; background: #f7f7f7;
     }
@@ -160,7 +233,14 @@
   panel.innerHTML = `
     <div id="agrolinkSupportHeader">
       <span>💬 แชทกับทีมงาน AgroLink</span>
-      <button type="button" id="agrolinkSupportCloseBtn" aria-label="ปิด">✕</button>
+      <div id="agrolinkSupportHeaderActions">
+        <button type="button" id="agrolinkSupportFaqBtn" aria-label="คำถามที่พบบ่อย" title="คำถามที่พบบ่อย">❓</button>
+        <button type="button" id="agrolinkSupportCloseBtn" aria-label="ปิด">✕</button>
+      </div>
+    </div>
+    <div id="agrolinkSupportFaqPanel">
+      <div class="agrolink-support-faq-hint">คำถามที่พบบ่อย — แตะคำถามเพื่อดูคำตอบ</div>
+      <div id="agrolinkSupportFaqList"></div>
     </div>
     <div id="agrolinkSupportMessages">
       <div class="agrolink-support-empty">กำลังโหลด…</div>
@@ -171,6 +251,29 @@
     </div>
   `;
   document.body.appendChild(panel);
+
+  function renderFaq() {
+    const list = document.getElementById("agrolinkSupportFaqList");
+    list.innerHTML = FAQ_ITEMS.map((item, idx) => `
+      <div class="agrolink-support-faq-item" data-faq-index="${idx}">
+        <div class="agrolink-support-faq-question">${supportEscapeHtml(item.q)}</div>
+        <div class="agrolink-support-faq-answer">${supportEscapeHtml(item.a)}</div>
+      </div>
+    `).join("");
+    list.querySelectorAll(".agrolink-support-faq-item").forEach((row) => {
+      row.addEventListener("click", () => {
+        row.classList.toggle("agrolink-support-faq-open");
+      });
+    });
+  }
+  renderFaq();
+
+  let faqVisible = false;
+  document.getElementById("agrolinkSupportFaqBtn").addEventListener("click", () => {
+    faqVisible = !faqVisible;
+    document.getElementById("agrolinkSupportFaqPanel").classList.toggle("agrolink-support-faq-visible", faqVisible);
+    document.getElementById("agrolinkSupportFaqBtn").classList.toggle("agrolink-support-faq-active", faqVisible);
+  });
 
   let isOpen = false;
   let hasUnseenReply = false;
