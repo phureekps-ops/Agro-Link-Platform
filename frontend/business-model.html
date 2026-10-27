@@ -138,6 +138,55 @@
   .bm-card h4 { font-size: 16.5px; margin-bottom: 8px; }
   .bm-card p { font-size: 13.8px; color: var(--muted); line-height: 1.6; }
 
+  /* NETWORK EFFECT FLYWHEEL */
+  .flywheel-wrap {
+    display: grid; grid-template-columns: minmax(300px, 460px) 1fr; gap: 40px; align-items: center;
+    max-width: 1040px; margin: 0 auto;
+  }
+  @media (max-width: 860px) { .flywheel-wrap { grid-template-columns: 1fr; justify-items: center; } }
+  .flywheel-diagram { position: relative; width: 100%; max-width: 460px; aspect-ratio: 1 / 1; margin: 0 auto; }
+  .flywheel-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .flywheel-guide { fill: none; stroke: var(--border); stroke-width: .6; stroke-dasharray: 2 2; }
+  .flywheel-arc { fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; }
+  .flywheel-arrowhead { fill: var(--green); }
+  .flywheel-center {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 34%; aspect-ratio: 1/1; border-radius: 50%; background: var(--green-dark); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    padding: 6%; box-shadow: 0 8px 22px rgba(18,61,43,.25); z-index: 2;
+  }
+  .flywheel-center i { font-size: clamp(16px, 3.2vw, 22px); color: var(--gold); margin-bottom: 4px; }
+  .flywheel-spin { animation: flywheel-rotate 6s linear infinite; display: inline-block; }
+  @media (prefers-reduced-motion: reduce) { .flywheel-spin { animation: none; } }
+  @keyframes flywheel-rotate { to { transform: rotate(360deg); } }
+  .flywheel-center-brand { font-size: clamp(10px, 2vw, 12px); font-weight: 800; letter-spacing: .06em; }
+  .flywheel-center-caption { font-size: clamp(9.5px, 1.8vw, 11.5px); color: #C8DBD1; margin-top: 2px; line-height: 1.3; }
+  .flywheel-node {
+    position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column;
+    align-items: center; width: 108px; z-index: 3;
+  }
+  .flywheel-node-badge {
+    position: relative; width: clamp(48px, 9vw, 64px); height: clamp(48px, 9vw, 64px); border-radius: 50%;
+    background: #fff; border: 2px solid var(--green); color: var(--green);
+    display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 3vw, 21px);
+    box-shadow: 0 4px 12px rgba(18,61,43,.1);
+  }
+  .flywheel-node-num {
+    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--gold); color: var(--green-dark); font-size: 11px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flywheel-node-label { margin-top: 8px; font-size: 12.5px; font-weight: 700; color: var(--navy); text-align: center; line-height: 1.35; }
+  .flywheel-legend { list-style: none; display: flex; flex-direction: column; gap: 16px; counter-reset: fw; }
+  .flywheel-legend li { display: flex; flex-direction: column; gap: 3px; padding-left: 38px; position: relative; counter-increment: fw; }
+  .flywheel-legend li::before {
+    content: counter(fw); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--green-light); color: var(--green-dark); font-size: 12.5px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flywheel-legend li b { font-size: 14.5px; color: var(--navy); }
+  .flywheel-legend li span { font-size: 13.3px; color: var(--muted); line-height: 1.55; }
+
   /* DISCLAIMER / NOTE BLOCK */
   .note-block {
     background: var(--gold-light); border: 1px solid #EBD98A; border-radius: var(--radius);
@@ -308,6 +357,71 @@
         <p data-i18n="business-model_12">รายได้จากธุรกิจโฆษณาและ Enterprise Solutions</p>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<section class="bm-section" style="padding-top:0;">
+  <div class="container">
+    <div class="reveal in" style="text-align:center; max-width:760px; margin:0 auto 48px;">
+      <div class="eyebrow" style="margin-left:auto; margin-right:auto;"><i class="fa-solid fa-arrows-rotate"></i><span data-i18n="business-model_19"> เอฟเฟกต์เครือข่าย</span></div>
+      <h2 class="section-title" style="font-size:28px;">AgroLink Network Effect Flywheel</h2>
+      <p class="section-sub" style="margin-left:auto; margin-right:auto;" data-i18n="business-model_20">
+        ยิ่งมีผู้ใช้งานเข้าร่วมมากขึ้น แพลตฟอร์มยิ่งมีข้อมูลและมูลค่ามากขึ้น และยิ่งดึงดูดผู้เล่นรายใหม่เข้าสู่ระบบนิเวศมากขึ้นไปอีก — วงจรนี้ขับเคลื่อนการเติบโตของ AgroLink อย่างต่อเนื่อง
+      </p>
+    </div>
+
+    <div class="flywheel-wrap reveal in">
+      <div class="flywheel-diagram">
+        <svg class="flywheel-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <marker id="flywheelArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.4" markerHeight="5.4" orient="auto-start-reverse">
+              <path class="flywheel-arrowhead" d="M0,0 L10,5 L0,10 z"></path>
+            </marker>
+          </defs>
+          <circle class="flywheel-guide" cx="50" cy="50" r="36"></circle>
+          <path class="flywheel-arc" marker-end="url(#flywheelArrow)" d="M 56.87 14.66 A 36 36 0 0 1 81.49 32.55"></path>
+          <path class="flywheel-arc" marker-end="url(#flywheelArrow)" d="M 85.73 45.61 A 36 36 0 0 1 76.33 74.55"></path>
+          <path class="flywheel-arc" marker-end="url(#flywheelArrow)" d="M 65.21 82.63 A 36 36 0 0 1 34.79 82.63"></path>
+          <path class="flywheel-arc" marker-end="url(#flywheelArrow)" d="M 23.67 74.55 A 36 36 0 0 1 14.27 45.61"></path>
+          <path class="flywheel-arc" marker-end="url(#flywheelArrow)" d="M 18.51 32.55 A 36 36 0 0 1 43.13 14.66"></path>
+        </svg>
+
+        <div class="flywheel-center">
+          <i class="fa-solid fa-arrows-rotate flywheel-spin"></i>
+          <div class="flywheel-center-brand">AGROLINK</div>
+          <div class="flywheel-center-caption" data-i18n="business-model_31">ยิ่งหมุน ยิ่งแข็งแกร่ง</div>
+        </div>
+
+        <div class="flywheel-node" style="left:50.00%; top:14.00%;">
+          <div class="flywheel-node-badge"><span class="flywheel-node-num">1</span><i class="fa-solid fa-user-plus"></i></div>
+          <div class="flywheel-node-label" data-i18n="business-model_21">เกษตรกรเข้าร่วมเพิ่มขึ้น</div>
+        </div>
+        <div class="flywheel-node" style="left:84.24%; top:38.88%;">
+          <div class="flywheel-node-badge"><span class="flywheel-node-num">2</span><i class="fa-solid fa-chart-line"></i></div>
+          <div class="flywheel-node-label" data-i18n="business-model_22">ข้อมูลเพิ่มขึ้น</div>
+        </div>
+        <div class="flywheel-node" style="left:71.16%; top:79.12%;">
+          <div class="flywheel-node-badge"><span class="flywheel-node-num">3</span><i class="fa-solid fa-handshake"></i></div>
+          <div class="flywheel-node-label" data-i18n="business-model_23">ดึงดูดผู้ซื้อ/สถาบันการเงิน</div>
+        </div>
+        <div class="flywheel-node" style="left:28.84%; top:79.12%;">
+          <div class="flywheel-node-badge"><span class="flywheel-node-num">4</span><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="flywheel-node-label" data-i18n="business-model_24">เกษตรกรได้ประโยชน์มากขึ้น</div>
+        </div>
+        <div class="flywheel-node" style="left:15.76%; top:38.88%;">
+          <div class="flywheel-node-badge"><span class="flywheel-node-num">5</span><i class="fa-solid fa-star"></i></div>
+          <div class="flywheel-node-label" data-i18n="business-model_25">มูลค่าแพลตฟอร์มเพิ่มขึ้น</div>
+        </div>
+      </div>
+
+      <ol class="flywheel-legend">
+        <li><b data-i18n="business-model_21">เกษตรกรเข้าร่วมเพิ่มขึ้น</b><span data-i18n="business-model_26">เกษตรกรลงทะเบียนแปลงและเริ่มบันทึกข้อมูลการผลิตจริงบนแพลตฟอร์ม</span></li>
+        <li><b data-i18n="business-model_22">ข้อมูลเพิ่มขึ้น</b><span data-i18n="business-model_27">ข้อมูลแปลง ผลผลิต ธุรกรรมซื้อขาย และภาพถ่ายดาวเทียมสะสมมากขึ้นเรื่อยๆ</span></li>
+        <li><b data-i18n="business-model_23">ดึงดูดผู้ซื้อ/สถาบันการเงิน</b><span data-i18n="business-model_28">ข้อมูลที่แม่นยำช่วยให้ผู้ซื้อ สถาบันการเงิน และผู้ให้บริการประกันภัยประเมินความเสี่ยงและจับคู่ได้ดีขึ้น จึงเข้าร่วมแพลตฟอร์มมากขึ้น</span></li>
+        <li><b data-i18n="business-model_24">เกษตรกรได้ประโยชน์มากขึ้น</b><span data-i18n="business-model_29">การแข่งขันระหว่างผู้ซื้อและผู้ให้บริการบนแพลตฟอร์มทำให้เกษตรกรได้ราคาที่ดีขึ้นและเข้าถึงแหล่งทุนได้ง่ายขึ้น</span></li>
+        <li><b data-i18n="business-model_25">มูลค่าแพลตฟอร์มเพิ่มขึ้น</b><span data-i18n="business-model_30">ความน่าเชื่อถือและมูลค่าของระบบนิเวศ AgroLink เพิ่มขึ้น วนกลับไปดึงดูดเกษตรกรรายใหม่ให้เข้าร่วมมากขึ้นไปอีก</span></li>
+      </ol>
     </div>
   </div>
 </section>
