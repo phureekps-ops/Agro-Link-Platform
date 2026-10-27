@@ -923,6 +923,18 @@
     },
   ];
 
+  // ชื่อแบรนด์ "AgroLink" ที่ผู้ใช้อาจพิมพ์เป็นภาษาไทยตามเสียงอ่าน (เช่น
+  // "อะโกรลิ้งค์คืออะไร") แทนตัวสะกดภาษาอังกฤษ — ใช้ตรวจแยกต่างหาก
+  // เพราะไม่สามารถใส่ไว้ใน keywords ของแต่ละหัวข้อแบบตายตัวได้ครบทุก
+  // รูปแบบการสะกด
+  const QC_BRAND_KEYWORDS = [
+    'agrolink', 'agro link',
+    'อะโกรลิงค์', 'อะโกรลิ้งค์', 'อะโกรลิงก์', 'อะโกรลิ้งก์',
+    'อโกรลิงค์', 'อโกรลิ้งค์', 'อโกรลิงก์', 'อโกรลิ้งก์',
+    'แอโกรลิงค์', 'แอโกรลิ้งค์',
+  ];
+  const QC_WHAT_IS_KEYWORDS = ['คืออะไร', 'คือ', 'เป็นอะไร', 'what is'];
+
   function qcFindFaqAnswer(rawText) {
     const text = rawText.toLowerCase();
     let bestItem = null;
@@ -937,7 +949,16 @@
         bestItem = item;
       }
     });
-    return bestItem ? bestItem.a : null;
+    if (bestItem) return bestItem.a;
+
+    // Fallback: ไม่ตรงกับ keyword ของหัวข้อไหนเลย แต่มีทั้งชื่อแบรนด์
+    // (ไม่ว่าจะสะกดแบบไทยหรืออังกฤษ) และคำถามแบบ "...คืออะไร" อยู่ด้วย —
+    // ถือว่ากำลังถาม AgroLink คืออะไร จึงตอบด้วยคำตอบของหัวข้อแรก
+    const hasBrand = QC_BRAND_KEYWORDS.some((kw) => text.includes(kw));
+    const hasWhatIs = QC_WHAT_IS_KEYWORDS.some((kw) => text.includes(kw));
+    if (hasBrand && hasWhatIs) return QC_FAQ_ITEMS[0].a;
+
+    return null;
   }
 
   if (qcForm && qcInput) {
