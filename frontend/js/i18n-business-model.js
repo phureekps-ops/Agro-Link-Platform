@@ -126,5 +126,89 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "business-model_31": {
     "th": "ยิ่งหมุน ยิ่งแข็งแกร่ง",
     "en": "The More It Spins, The Stronger It Gets"
+  },
+  "business-model_32": {
+    "th": " แผนการเติบโต (Roadmap)",
+    "en": " Growth Roadmap"
+  },
+  "business-model_33": {
+    "th": "นำร่องด้วยข้าว แล้วขยายสู่สินค้าเกษตรทุกชนิด",
+    "en": "Pilot with Rice, Then Expand to Every Agricultural Product"
+  },
+  "business-model_34": {
+    "th": "แม่แบบเดียวกันปรับใช้ได้กับพืชไร่ พืชยืนต้น ปศุสัตว์ และประมง โดยปรับเฉพาะรายละเอียดขั้นตอนและสัญญาณยืนยัน",
+    "en": "The same template adapts to field crops, perennial crops, livestock, and fisheries — only the step details and verification signals change."
+  },
+  "business-model_35": {
+    "th": "ระยะที่ 1 — เรือธง",
+    "en": "Phase 1 — Flagship"
+  },
+  "business-model_36": {
+    "th": "ข้าว",
+    "en": "Rice"
+  },
+  "business-model_37": {
+    "th": "พิสูจน์แม่แบบครั้งแรกทั้ง 6 องค์ประกอบ เริ่มภาคกลางตอนล่าง",
+    "en": "Prove the 6-part template for the first time, starting in the lower central region."
+  },
+  "business-model_38": {
+    "th": "ระยะที่ 1 ต่อเนื่อง",
+    "en": "Phase 1 Continued"
+  },
+  "business-model_39": {
+    "th": "มันสำปะหลัง / ข้าวโพด",
+    "en": "Cassava / Corn"
+  },
+  "business-model_40": {
+    "th": "ใช้โครงสร้างเดียวกับข้าวเกือบทั้งหมด ปรับปฏิทินเพาะปลูก",
+    "en": "Uses nearly the same structure as rice, with the planting calendar adjusted."
+  },
+  "business-model_41": {
+    "th": "ระยะที่ 2",
+    "en": "Phase 2"
+  },
+  "business-model_42": {
+    "th": "ปศุสัตว์",
+    "en": "Livestock"
+  },
+  "business-model_43": {
+    "th": "ไก่ สุกร โค — เปลี่ยนสัญญาณยืนยันเป็นน้ำหนักสัตว์และบันทึกวัคซีน",
+    "en": "Chickens, pigs, cattle — verification signals shift to animal weight and vaccination records."
+  },
+  "business-model_44": {
+    "th": "ระยะที่ 3",
+    "en": "Phase 3"
+  },
+  "business-model_45": {
+    "th": "ยาง / ปาล์ม / ผลไม้ส่งออก",
+    "en": "Rubber / Palm / Export Fruit"
+  },
+  "business-model_46": {
+    "th": "รองรับหักบัญชีแบบสะสมทีละน้อย พร้อม Traceability มาตรฐานส่งออก",
+    "en": "Supports gradual installment-based settlement, with export-standard traceability."
+  },
+  "business-model_47": {
+    "th": "ระยะที่ 4",
+    "en": "Phase 4"
+  },
+  "business-model_48": {
+    "th": "ประมง",
+    "en": "Fishery"
+  },
+  "business-model_49": {
+    "th": "กุ้ง ปลา — เชื่อมเซนเซอร์ IoT บ่อและข้อมูลเตือนภัยจากกรมประมง",
+    "en": "Shrimp, fish — connects pond IoT sensors and early-warning data from the Department of Fisheries."
+  },
+  "business-model_50": {
+    "th": " ดูโมเดลรายได้",
+    "en": " View Revenue Model"
+  },
+  "business-model_51": {
+    "th": " ดูแผนการเติบโต",
+    "en": " View Growth Roadmap"
+  },
+  "business-model_52": {
+    "th": "ทุกระยะใหม่ที่เปิดเพิ่มช่องทางรายได้ตามโมเดลธุรกิจที่แสดงไว้ด้านบน — ยิ่งขยายสินค้า ยิ่งเพิ่มพื้นที่การเติบโตของรายได้",
+    "en": "Every new phase adds revenue channels under the business model shown above — the more products expand, the more room for revenue growth."
   }
 });

@@ -125,6 +125,17 @@
   .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
   .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
 
+  /* SECTION QUICK-NAV */
+  .cycle-nav { padding: 26px 0 0; }
+  .cycle-nav-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+  .cycle-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13.5px; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    padding: 8px 16px; border-radius: 999px; transition: background .15s ease, border-color .15s ease;
+  }
+  .cycle-chip:hover { background: rgba(255,255,255,.18); border-color: var(--gold); }
+
   /* BUSINESS MODEL CARDS */
   .bm-section { padding: 64px 0; }
   .bm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -186,6 +197,17 @@
   }
   .flywheel-legend li b { font-size: 14.5px; color: var(--navy); }
   .flywheel-legend li span { font-size: 13.3px; color: var(--muted); line-height: 1.55; }
+
+  /* GROWTH ROADMAP */
+  .phase-track { display: flex; gap: 0; overflow-x: auto; padding-bottom: 10px; }
+  .phase-item { flex: 1; min-width: 190px; padding: 22px 18px; border-right: 1px dashed var(--border); position: relative; }
+  .phase-item:last-child { border-right: none; }
+  .phase-tag { display: inline-block; font-size: 11.5px; font-weight: 800; color: var(--green); background: var(--green-light); padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; }
+  .phase-tag.flagship { color: var(--green-dark); background: var(--gold-light); border: 1px solid var(--gold); }
+  .phase-item h4 { font-size: 16px; margin-bottom: 6px; }
+  .phase-item p { font-size: 13px; color: var(--muted); }
+  .phase-item .icn-row { display: flex; gap: 8px; margin-bottom: 10px; font-size: 20px; color: var(--green); }
+  .roadmap-link-note { max-width: 760px; margin: 22px auto 0; text-align: center; font-size: 13.5px; color: var(--muted); }
 
   /* DISCLAIMER / NOTE BLOCK */
   .note-block {
@@ -297,9 +319,15 @@
       ครอบคลุมทั้งค่าบริการระบบ ค่าธรรมเนียมธุรกรรม และบริการต่อยอดตลอดห่วงโซ่การผลิต
     </p>
   </div>
+  <div class="container cycle-nav">
+    <div class="cycle-nav-row">
+      <a href="#business-model" class="cycle-chip"><i class="fa-solid fa-sitemap"></i><span data-i18n="business-model_50"> ดูโมเดลรายได้</span></a>
+      <a href="#roadmap" class="cycle-chip"><i class="fa-solid fa-flag-checkered"></i><span data-i18n="business-model_51"> ดูแผนการเติบโต</span></a>
+    </div>
+  </div>
 </section>
 
-<section class="bm-section">
+<section id="business-model" class="bm-section">
   <div class="container">
     <div class="bm-grid">
 
@@ -423,6 +451,51 @@
         <li><b data-i18n="business-model_25">มูลค่าแพลตฟอร์มเพิ่มขึ้น</b><span data-i18n="business-model_30">ความน่าเชื่อถือและมูลค่าของระบบนิเวศ AgroLink เพิ่มขึ้น วนกลับไปดึงดูดเกษตรกรรายใหม่ให้เข้าร่วมมากขึ้นไปอีก</span></li>
       </ol>
     </div>
+  </div>
+</section>
+
+<section id="roadmap" class="bm-section" style="padding-top:0;">
+  <div class="container">
+    <div class="reveal in" style="text-align:center; max-width:760px; margin:0 auto 40px;">
+      <div class="eyebrow" style="margin-left:auto; margin-right:auto;"><i class="fa-solid fa-flag-checkered"></i><span data-i18n="business-model_32"> แผนการเติบโต (Roadmap)</span></div>
+      <h2 class="section-title" style="font-size:28px;" data-i18n="business-model_33">นำร่องด้วยข้าว แล้วขยายสู่สินค้าเกษตรทุกชนิด</h2>
+      <p class="section-sub" style="margin-left:auto; margin-right:auto;" data-i18n="business-model_34">แม่แบบเดียวกันปรับใช้ได้กับพืชไร่ พืชยืนต้น ปศุสัตว์ และประมง โดยปรับเฉพาะรายละเอียดขั้นตอนและสัญญาณยืนยัน</p>
+    </div>
+
+    <div class="phase-track reveal in">
+      <div class="phase-item">
+        <span class="phase-tag flagship" data-i18n="business-model_35">ระยะที่ 1 — เรือธง</span>
+        <div class="icn-row"><i class="fa-solid fa-wheat-awn"></i></div>
+        <h4 data-i18n="business-model_36">ข้าว</h4>
+        <p data-i18n="business-model_37">พิสูจน์แม่แบบครั้งแรกทั้ง 6 องค์ประกอบ เริ่มภาคกลางตอนล่าง</p>
+      </div>
+      <div class="phase-item">
+        <span class="phase-tag" data-i18n="business-model_38">ระยะที่ 1 ต่อเนื่อง</span>
+        <div class="icn-row"><i class="fa-solid fa-carrot"></i><i class="fa-solid fa-wheat-awn"></i></div>
+        <h4 data-i18n="business-model_39">มันสำปะหลัง / ข้าวโพด</h4>
+        <p data-i18n="business-model_40">ใช้โครงสร้างเดียวกับข้าวเกือบทั้งหมด ปรับปฏิทินเพาะปลูก</p>
+      </div>
+      <div class="phase-item">
+        <span class="phase-tag" data-i18n="business-model_41">ระยะที่ 2</span>
+        <div class="icn-row"><i class="fa-solid fa-cow"></i></div>
+        <h4 data-i18n="business-model_42">ปศุสัตว์</h4>
+        <p data-i18n="business-model_43">ไก่ สุกร โค — เปลี่ยนสัญญาณยืนยันเป็นน้ำหนักสัตว์และบันทึกวัคซีน</p>
+      </div>
+      <div class="phase-item">
+        <span class="phase-tag" data-i18n="business-model_44">ระยะที่ 3</span>
+        <div class="icn-row"><i class="fa-solid fa-tree"></i></div>
+        <h4 data-i18n="business-model_45">ยาง / ปาล์ม / ผลไม้ส่งออก</h4>
+        <p data-i18n="business-model_46">รองรับหักบัญชีแบบสะสมทีละน้อย พร้อม Traceability มาตรฐานส่งออก</p>
+      </div>
+      <div class="phase-item">
+        <span class="phase-tag" data-i18n="business-model_47">ระยะที่ 4</span>
+        <div class="icn-row"><i class="fa-solid fa-fish"></i></div>
+        <h4 data-i18n="business-model_48">ประมง</h4>
+        <p data-i18n="business-model_49">กุ้ง ปลา — เชื่อมเซนเซอร์ IoT บ่อและข้อมูลเตือนภัยจากกรมประมง</p>
+      </div>
+    </div>
+
+    <p class="roadmap-link-note reveal in" data-i18n="business-model_52">ทุกระยะใหม่ที่เปิดเพิ่มช่องทางรายได้ตามโมเดลธุรกิจที่แสดงไว้ด้านบน — ยิ่งขยายสินค้า ยิ่งเพิ่มพื้นที่การเติบโตของรายได้</p>
   </div>
 </section>
 
