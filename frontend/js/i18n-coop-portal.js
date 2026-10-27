@@ -40,12 +40,12 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": " Bulk Fertilizer Auction"
   },
   "coop-portal_10": {
-    "th": "สหกรณ์คือแกนกลางที่เชื่อมสมาชิกเข้ากับทุกบริการ",
-    "en": "The Cooperative Is the Hub Connecting Members to Every Service"
+    "th": "สหกรณ์คือศูนย์กลางของเอฟเฟกต์เครือข่าย AgroLink",
+    "en": "The Cooperative Is the Center of AgroLink's Network Effect"
   },
   "coop-portal_11": {
-    "th": "สหกรณ์การเกษตรมีบทบาทพิเศษที่ไม่มีผู้เล่นรายอื่นทำแทนได้ คือเป็นทั้งจุดรวบรวมผลผลิตของสมาชิก และเป็นตัวแทนต่อรองกับตลาดภายนอกในนามของสมาชิกทั้งกลุ่ม พอร์ทัลสหกรณ์บน AgroLink จึงออกแบบมาให้เจ้าหน้าที่สหกรณ์ทำงานทั้งสองบทบาทนี้ได้จากบัญชีเดียว ทั้งรับซื้อผลผลิตจากสมาชิก ประกาศความต้องการปัจจัยการผลิตและบริการเครื่องจักรกลแทนสมาชิกให้ผู้ให้บริการมาแข่งราคากัน และสำหรับสหกรณ์ที่ได้รับสิทธิ์เพิ่มเติม ยังปล่อยสินเชื่อแบบเป็นงวดให้สมาชิกได้โดยตรงในระบบเดียวกัน",
-    "en": "Agricultural cooperatives play a unique role that no other player can replace — serving both as the collection point for members’ produce and as the negotiating representative with external markets on behalf of the whole membership. The AgroLink Cooperative Portal is designed to let cooperative staff handle both roles from a single account: purchasing produce from members, posting input and machinery service needs on members’ behalf for providers to compete on price, and — for cooperatives granted additional privileges — issuing installment credit directly to members within the same system."
+    "th": "สหกรณ์การเกษตรมีบทบาทพิเศษที่ไม่มีผู้เล่นรายอื่นทำแทนได้ คือเป็นทั้งจุดรวบรวมผลผลิตของสมาชิก และเป็นตัวแทนต่อรองกับตลาดภายนอกในนามของสมาชิกทั้งกลุ่ม พอร์ทัลสหกรณ์บน AgroLink จึงออกแบบมาให้เจ้าหน้าที่สหกรณ์ทำงานทั้งสองบทบาทนี้ได้จากบัญชีเดียว ทั้งรับซื้อผลผลิตจากสมาชิก ประกาศความต้องการปัจจัยการผลิตและบริการเครื่องจักรกลแทนสมาชิกให้ผู้ให้บริการมาแข่งราคากัน และสำหรับสหกรณ์ที่ได้รับสิทธิ์เพิ่มเติม ยังปล่อยสินเชื่อแบบเป็นงวดให้สมาชิกได้โดยตรงในระบบเดียวกัน ทุกธุรกรรมที่เกิดขึ้นผ่านพอร์ทัลนี้ ไม่ว่าจะเป็นผลตรวจดิน ปริมาณผลผลิตที่ซื้อขาย หรือการเบิกใช้สินเชื่อ จะกลายเป็นข้อมูลการผลิตจริงที่ขับเคลื่อนวงจรข้อมูล→การเงิน→ตลาด ซึ่งเป็นแกนกลางของโมเดลธุรกิจ AgroLink ยิ่งสหกรณ์และสมาชิกใช้งานมากขึ้น ข้อมูลที่สะสมได้ก็ยิ่งแม่นยำและมีมูลค่ามากขึ้น ดึงดูดผู้ซื้อ สถาบันการเงิน และผู้ให้บริการประกันภัยเข้าสู่เครือข่ายมากขึ้นตามไปด้วย",
+    "en": "Agricultural cooperatives play a unique role that no other player can replace — serving both as the collection point for members' produce and as the negotiating representative with external markets on behalf of the whole membership. The AgroLink Cooperative Portal is designed to let cooperative staff handle both roles from a single account: purchasing produce from members, posting input and machinery service needs on members' behalf for providers to compete on price, and — for cooperatives granted additional privileges — issuing installment credit directly to members within the same system. Every transaction that passes through this portal — a soil test result, a traded production volume, or a credit disbursement — becomes real production data that drives the data-to-finance-to-market loop at the core of AgroLink's business model. The more cooperatives and members use the platform, the more accurate and valuable the accumulated data becomes, drawing more buyers, financial institutions, and insurance providers into the network."
   },
   "coop-portal_12": {
     "th": " บริการหลักของพอร์ทัลสหกรณ์",
@@ -274,5 +274,129 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "coop-portal_68": {
     "th": "ติดต่อเราเพื่อเปิดบัญชีสหกรณ์ใหม่",
     "en": "Contact Us to Open a New Cooperative Account"
+  },
+  "coop-portal_69": {
+    "th": "ภาพรวมบทบาท",
+    "en": "Role Overview"
+  },
+  "coop-portal_70": {
+    "th": "สหกรณ์คือศูนย์กลางที่เชื่อม 6 บริการเข้าด้วยกัน",
+    "en": "The Cooperative Is the Hub Connecting All 6 Services"
+  },
+  "coop-portal_71": {
+    "th": "ทุกบริการด้านล่างไม่ได้ทำงานแยกจากกัน แต่หมุนรอบสหกรณ์ในฐานะศูนย์กลางข้อมูลและธุรกรรมของสมาชิก — ยิ่งสหกรณ์ใช้งานหลายบริการพร้อมกัน ข้อมูลการผลิตจริงที่สะสมได้ก็ยิ่งแม่นยำและมีมูลค่ามากขึ้น",
+    "en": "None of the services below work in isolation — they all revolve around the cooperative as the hub for members' data and transactions. The more services a cooperative uses together, the more accurate and valuable the real production data it accumulates becomes."
+  },
+  "coop-portal_72": {
+    "th": "สหกรณ์",
+    "en": "Cooperative"
+  },
+  "coop-portal_73": {
+    "th": "ศูนย์กลางข้อมูลและธุรกรรม",
+    "en": "Data & Transaction Hub"
+  },
+  "coop-portal_74": {
+    "th": "ข้อมูลดินของแต่ละแปลงเข้าสู่ระบบ กลายเป็นฐานข้อมูลการผลิตจริงชุดแรกของสมาชิก",
+    "en": "Each plot's soil data enters the system, forming the member's first set of real production data."
+  },
+  "coop-portal_75": {
+    "th": "สหกรณ์ใช้ข้อมูลเดียวกันสั่งซื้อปัจจัยการผลิตแทนสมาชิกได้ตรงความต้องการ ลดต้นทุนส่วนเกิน",
+    "en": "The cooperative uses that same data to order inputs on members' behalf precisely matched to need, cutting excess cost."
+  },
+  "coop-portal_76": {
+    "th": "สหกรณ์ที่ได้รับสิทธิ์ปล่อยกู้ตามข้อมูลปฏิทินการผลิตจริง ไม่ใช่การประเมินด้วยความรู้สึก",
+    "en": "Cooperatives granted lending rights disburse credit based on the real production calendar, not guesswork."
+  },
+  "coop-portal_77": {
+    "th": "ยอดขายของสมาชิกกระทบยอดหนี้อัตโนมัติ และกลายเป็นข้อมูลธุรกรรมที่ดึงดูดผู้รับซื้อรายใหญ่เข้าสู่ระบบ",
+    "en": "Members' sales automatically offset outstanding credit and become transaction data that attracts large buyers to the system."
+  },
+  "coop-portal_78": {
+    "th": "สหกรณ์รวมความต้องการของสมาชิกเพื่อต่อรองราคาและคิวบริการที่ดีกว่าการติดต่อเอง",
+    "en": "The cooperative pools members' needs to negotiate better prices and service queues than members could get on their own."
+  },
+  "coop-portal_79": {
+    "th": "สหกรณ์หลายรายรวมกันเพื่อสร้างอำนาจต่อรองที่สหกรณ์เดียวทำไม่ได้",
+    "en": "Multiple cooperatives combine to create bargaining power no single cooperative could achieve alone."
+  },
+  "coop-portal_80": {
+    "th": "ทุกธุรกรรมที่หมุนผ่านสหกรณ์กลายเป็นข้อมูลการผลิตจริงที่ขับเคลื่อน",
+    "en": "Every transaction that flows through the cooperative becomes real production data that drives the"
+  },
+  "coop-portal_81": {
+    "th": " — ยิ่งสหกรณ์ใช้งานมาก ยิ่งดึงดูดผู้ซื้อและสถาบันการเงินเข้าสู่เครือข่ายมากขึ้นตามไปด้วย",
+    "en": " — the more cooperatives that use it, the more buyers and financial institutions it draws into the network."
+  },
+  "coop-portal_82": {
+    "th": "เป้าหมายผลกระทบ",
+    "en": "Impact Targets"
+  },
+  "coop-portal_83": {
+    "th": "ผลกระทบที่คาดหวังเมื่อสหกรณ์เข้าร่วมเครือข่าย",
+    "en": "Expected Impact as Cooperatives Join the Network"
+  },
+  "coop-portal_84": {
+    "th": "ตัวเลขด้านล่างเป็นเป้าหมายของแผนการขยายเครือข่ายสหกรณ์ของ AgroLink ไม่ใช่ข้อมูลที่เกิดขึ้นจริงในปัจจุบัน ใช้เพื่อสื่อสารขนาดของผลกระทบที่ตั้งใจสร้างเมื่อเครือข่ายเติบโตเต็มรูปแบบ",
+    "en": "The figures below are targets from AgroLink's cooperative-network expansion plan, not figures that have actually occurred to date. They are meant to communicate the scale of impact intended once the network reaches full growth."
+  },
+  "coop-portal_85": {
+    "th": "สหกรณ์ที่เชื่อมต่อในเครือข่าย (เป้าหมายระยะ 3 ปี)",
+    "en": "Cooperatives connected to the network (3-year target)"
+  },
+  "coop-portal_86": {
+    "th": "สมาชิกเกษตรกรที่เข้าถึงบริการผ่านสหกรณ์ (เป้าหมาย)",
+    "en": "Farmer members reached through cooperatives (target)"
+  },
+  "coop-portal_87": {
+    "th": "ตันผลผลิตที่ซื้อขายผ่านระบบต่อปี (เป้าหมาย)",
+    "en": "Tons of produce traded through the system per year (target)"
+  },
+  "coop-portal_88": {
+    "th": "ล้านบาท มูลค่าธุรกรรมสะสมผ่านพอร์ทัลสหกรณ์ต่อปี (เป้าหมาย)",
+    "en": "THB million in transaction value through the Cooperative Portal per year (target)"
+  },
+  "coop-portal_89": {
+    "th": " ตัวเลขข้างต้นเป็นเป้าหมายเชิงกลยุทธ์สำหรับการวางแผนขยายเครือข่าย ไม่ใช่ข้อมูลสถิติที่เกิดขึ้นจริงในปัจจุบัน และไม่ถือเป็นการรับประกันผลตอบแทนหรือผลประกอบการในอนาคต",
+    "en": " The figures above are strategic planning targets for network expansion, not statistics that have actually occurred to date, and do not constitute a guarantee of future returns or performance."
+  },
+  "coop-portal_90": {
+    "th": "เชื่อมต่อระบบนิเวศ",
+    "en": "Connect to the Ecosystem"
+  },
+  "coop-portal_91": {
+    "th": "สหกรณ์ต่อยอดไปยังบริการอื่นในระบบนิเวศ AgroLink ได้อีก",
+    "en": "Cooperatives Can Extend Into Other AgroLink Ecosystem Services"
+  },
+  "coop-portal_92": {
+    "th": "นอกเหนือจาก 6 บริการหลักข้างต้น สหกรณ์ยังสามารถใช้ข้อมูลที่สะสมไว้ต่อยอดไปยังบริการอื่นในระบบนิเวศ AgroLink เพื่อสร้างรายได้เสริมให้สมาชิก",
+    "en": "Beyond the 6 core services above, cooperatives can also use their accumulated data to extend into other AgroLink ecosystem services, creating additional income for members."
+  },
+  "coop-portal_93": {
+    "th": "ตลาดคาร์บอนเครดิต",
+    "en": "Carbon Credit Marketplace"
+  },
+  "coop-portal_94": {
+    "th": "สหกรณ์ที่มีข้อมูลแปลงและกิจกรรมลดการเผาหรือปรับปรุงดินที่บันทึกไว้ในระบบ สามารถรวบรวมข้อมูลจากสมาชิกหลายรายเพื่อยื่นขอขึ้นทะเบียนคาร์บอนเครดิตแบบกลุ่มได้ง่ายกว่าการยื่นทีละแปลง",
+    "en": "Cooperatives with plot data and recorded activities such as reduced burning or soil improvement can pool data from multiple members to register for carbon credits as a group, more easily than filing plot by plot."
+  },
+  "coop-portal_95": {
+    "th": "ตลาดประกันภัยการเกษตร",
+    "en": "Agricultural Insurance Marketplace"
+  },
+  "coop-portal_96": {
+    "th": "ข้อมูลผลผลิตและผลตรวจดินที่สหกรณ์สะสมไว้ ช่วยให้สมาชิกเข้าถึงแผนประกันภัยพืชผลที่ประเมินความเสี่ยงได้แม่นยำขึ้น และสหกรณ์สามารถช่วยบริหารกรมธรรม์กลุ่มแทนสมาชิกได้",
+    "en": "Production and soil-test data accumulated by the cooperative help members access crop insurance plans with more accurate risk assessment, and the cooperative can help manage group policies on members' behalf."
+  },
+  "coop-portal_97": {
+    "th": "เศรษฐกิจชีวมวล",
+    "en": "Biomass Economy"
+  },
+  "coop-portal_98": {
+    "th": "เศษวัสดุเหลือจากการผลิต เช่น ฟางข้าวหรือซังข้าวโพดของสมาชิก สามารถรวบรวมโดยสหกรณ์และลงทะเบียนขายในตลาดชีวมวลให้ผู้รับซื้อ เช่น โรงไฟฟ้าชีวมวล เป็นรายได้เสริมอีกช่องทาง",
+    "en": "Residual production materials such as members' rice straw or corn cobs can be collected by the cooperative and registered for sale on the biomass marketplace to buyers such as biomass power plants, creating another income channel."
+  },
+  "coop-portal_99": {
+    "th": "ดูรายละเอียด",
+    "en": "Learn More"
   }
 });

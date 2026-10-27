@@ -179,6 +179,74 @@
     border-radius: var(--radius); padding: 20px 26px; font-size: 14.5px; color: #6B5410;
   }
 
+  /* COOPERATIVE = HUB DIAGRAM */
+  .hub-wrap {
+    display: grid; grid-template-columns: minmax(300px, 460px) 1fr; gap: 40px; align-items: center;
+    max-width: 1040px; margin: 0 auto;
+  }
+  @media (max-width: 860px) { .hub-wrap { grid-template-columns: 1fr; justify-items: center; } }
+  .hub-diagram { position: relative; width: 100%; max-width: 460px; aspect-ratio: 1 / 1; margin: 0 auto; }
+  .hub-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .hub-guide { fill: none; stroke: var(--border); stroke-width: .6; stroke-dasharray: 2 2; }
+  .hub-spoke { stroke: var(--green); stroke-width: 2; stroke-linecap: round; }
+  .hub-arrowhead { fill: var(--green); }
+  .hub-center {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 34%; aspect-ratio: 1/1; border-radius: 50%; background: var(--green-dark); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    padding: 6%; box-shadow: 0 8px 22px rgba(18,61,43,.25); z-index: 2;
+  }
+  .hub-center i { font-size: clamp(16px, 3.2vw, 22px); color: var(--gold); margin-bottom: 4px; }
+  .hub-center-brand { font-size: clamp(11px, 2.2vw, 13px); font-weight: 800; letter-spacing: .02em; }
+  .hub-center-caption { font-size: clamp(9.5px, 1.8vw, 11.5px); color: #C8DBD1; margin-top: 2px; line-height: 1.3; }
+  .hub-node {
+    position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column;
+    align-items: center; width: 108px; z-index: 3;
+  }
+  .hub-node-badge {
+    width: clamp(48px, 9vw, 64px); height: clamp(48px, 9vw, 64px); border-radius: 50%;
+    background: #fff; border: 2px solid var(--green); color: var(--green);
+    display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 3vw, 21px);
+    box-shadow: 0 4px 12px rgba(18,61,43,.1);
+  }
+  .hub-node-label { margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--navy); text-align: center; line-height: 1.3; }
+  .hub-legend { list-style: none; display: flex; flex-direction: column; gap: 14px; counter-reset: hb; }
+  .hub-legend li { display: flex; flex-direction: column; gap: 3px; padding-left: 38px; position: relative; counter-increment: hb; }
+  .hub-legend li::before {
+    content: counter(hb); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--green-light); color: var(--green-dark); font-size: 12.5px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hub-legend li b { font-size: 14px; color: var(--navy); }
+  .hub-legend li span { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .hub-note { max-width: 860px; margin: 28px auto 0; text-align: center; font-size: 14px; color: var(--muted); }
+  .hub-note a { color: var(--green); font-weight: 700; }
+  .hub-note a:hover { text-decoration: underline; }
+
+  /* IMPACT STATS */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin: 8px 0 28px; }
+  @media (max-width: 960px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .stat-grid { grid-template-columns: 1fr; } }
+  .stat-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 20px; text-align: center; }
+  .stat-card .num { font-size: 28px; font-weight: 800; color: var(--green); display: block; margin-bottom: 8px; }
+  .stat-card .label { font-size: 13.3px; color: var(--muted); line-height: 1.5; }
+
+  /* ECOSYSTEM CROSS-LINKS */
+  .eco-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  @media (max-width: 860px) { .eco-grid { grid-template-columns: 1fr; } }
+  .eco-card {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .eco-card .icn {
+    width: 46px; height: 46px; border-radius: 12px; background: var(--gold-light); color: var(--gold);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eco-card h3 { font-size: 18px; }
+  .eco-card p { font-size: 14px; color: var(--text); flex-grow: 1; }
+  .eco-card a.eco-link { font-size: 13.5px; font-weight: 700; color: var(--green); display: inline-flex; align-items: center; gap: 6px; }
+  .eco-card a.eco-link:hover { color: var(--green-dark); }
+
   /* FOOTER — identical to index.html / about.html */
   footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
   .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
@@ -284,8 +352,79 @@
 
 <section class="prose-section">
   <div class="container prose-block reveal in">
-    <h2 data-i18n="coop-portal_10">สหกรณ์คือแกนกลางที่เชื่อมสมาชิกเข้ากับทุกบริการ</h2>
-    <p data-i18n="coop-portal_11">สหกรณ์การเกษตรมีบทบาทพิเศษที่ไม่มีผู้เล่นรายอื่นทำแทนได้ คือเป็นทั้งจุดรวบรวมผลผลิตของสมาชิก และเป็นตัวแทนต่อรองกับตลาดภายนอกในนามของสมาชิกทั้งกลุ่ม พอร์ทัลสหกรณ์บน AgroLink จึงออกแบบมาให้เจ้าหน้าที่สหกรณ์ทำงานทั้งสองบทบาทนี้ได้จากบัญชีเดียว ทั้งรับซื้อผลผลิตจากสมาชิก ประกาศความต้องการปัจจัยการผลิตและบริการเครื่องจักรกลแทนสมาชิกให้ผู้ให้บริการมาแข่งราคากัน และสำหรับสหกรณ์ที่ได้รับสิทธิ์เพิ่มเติม ยังปล่อยสินเชื่อแบบเป็นงวดให้สมาชิกได้โดยตรงในระบบเดียวกัน</p>
+    <h2 data-i18n="coop-portal_10">สหกรณ์คือศูนย์กลางของเอฟเฟกต์เครือข่าย AgroLink</h2>
+    <p data-i18n="coop-portal_11">สหกรณ์การเกษตรมีบทบาทพิเศษที่ไม่มีผู้เล่นรายอื่นทำแทนได้ คือเป็นทั้งจุดรวบรวมผลผลิตของสมาชิก และเป็นตัวแทนต่อรองกับตลาดภายนอกในนามของสมาชิกทั้งกลุ่ม พอร์ทัลสหกรณ์บน AgroLink จึงออกแบบมาให้เจ้าหน้าที่สหกรณ์ทำงานทั้งสองบทบาทนี้ได้จากบัญชีเดียว ทั้งรับซื้อผลผลิตจากสมาชิก ประกาศความต้องการปัจจัยการผลิตและบริการเครื่องจักรกลแทนสมาชิกให้ผู้ให้บริการมาแข่งราคากัน และสำหรับสหกรณ์ที่ได้รับสิทธิ์เพิ่มเติม ยังปล่อยสินเชื่อแบบเป็นงวดให้สมาชิกได้โดยตรงในระบบเดียวกัน ทุกธุรกรรมที่เกิดขึ้นผ่านพอร์ทัลนี้ ไม่ว่าจะเป็นผลตรวจดิน ปริมาณผลผลิตที่ซื้อขาย หรือการเบิกใช้สินเชื่อ จะกลายเป็นข้อมูลการผลิตจริงที่ขับเคลื่อนวงจรข้อมูล→การเงิน→ตลาด ซึ่งเป็นแกนกลางของโมเดลธุรกิจ AgroLink ยิ่งสหกรณ์และสมาชิกใช้งานมากขึ้น ข้อมูลที่สะสมได้ก็ยิ่งแม่นยำและมีมูลค่ามากขึ้น ดึงดูดผู้ซื้อ สถาบันการเงิน และผู้ให้บริการประกันภัยเข้าสู่เครือข่ายมากขึ้นตามไปด้วย</p>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal in" style="margin-bottom:0;">
+      <div class="eyebrow"><i class="fa-solid fa-circle-nodes"></i><span data-i18n="coop-portal_69"> ภาพรวมบทบาท</span></div>
+      <h2 class="section-title" style="font-size:28px;" data-i18n="coop-portal_70">สหกรณ์คือศูนย์กลางที่เชื่อม 6 บริการเข้าด้วยกัน</h2>
+      <p class="section-sub" data-i18n="coop-portal_71">ทุกบริการด้านล่างไม่ได้ทำงานแยกจากกัน แต่หมุนรอบสหกรณ์ในฐานะศูนย์กลางข้อมูลและธุรกรรมของสมาชิก — ยิ่งสหกรณ์ใช้งานหลายบริการพร้อมกัน ข้อมูลการผลิตจริงที่สะสมได้ก็ยิ่งแม่นยำและมีมูลค่ามากขึ้น</p>
+    </div>
+
+    <div class="hub-wrap reveal in">
+      <div class="hub-diagram">
+        <svg class="hub-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <marker id="hubArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path class="hub-arrowhead" d="M0,0 L10,5 L0,10 z"></path>
+            </marker>
+          </defs>
+          <circle class="hub-guide" cx="50" cy="50" r="36"></circle>
+          <line class="hub-spoke" marker-end="url(#hubArrow)" x1="50.00" y1="31.00" x2="50.00" y2="20.00"></line>
+          <line class="hub-spoke" marker-end="url(#hubArrow)" x1="66.45" y1="40.50" x2="75.98" y2="35.00"></line>
+          <line class="hub-spoke" marker-end="url(#hubArrow)" x1="66.45" y1="59.50" x2="75.98" y2="65.00"></line>
+          <line class="hub-spoke" marker-end="url(#hubArrow)" x1="50.00" y1="69.00" x2="50.00" y2="80.00"></line>
+          <line class="hub-spoke" marker-end="url(#hubArrow)" x1="33.55" y1="59.50" x2="24.02" y2="65.00"></line>
+          <line class="hub-spoke" marker-end="url(#hubArrow)" x1="33.55" y1="40.50" x2="24.02" y2="35.00"></line>
+        </svg>
+
+        <div class="hub-center">
+          <i class="fa-solid fa-people-roof"></i>
+          <div class="hub-center-brand" data-i18n="coop-portal_72">สหกรณ์</div>
+          <div class="hub-center-caption" data-i18n="coop-portal_73">ศูนย์กลางข้อมูลและธุรกรรม</div>
+        </div>
+
+        <div class="hub-node" style="left:50.00%; top:14.00%;">
+          <div class="hub-node-badge"><i class="fa-solid fa-vial"></i></div>
+          <div class="hub-node-label" data-i18n="coop-portal_15">ช่วยตรวจดิน</div>
+        </div>
+        <div class="hub-node" style="left:81.18%; top:32.00%;">
+          <div class="hub-node-badge"><i class="fa-solid fa-seedling"></i></div>
+          <div class="hub-node-label" data-i18n="coop-portal_23">ปุ๋ยสั่งตัด</div>
+        </div>
+        <div class="hub-node" style="left:81.18%; top:68.00%;">
+          <div class="hub-node-badge"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="hub-node-label" data-i18n="coop-portal_31">สินเชื่อแบบเป็นงวด</div>
+        </div>
+        <div class="hub-node" style="left:50.00%; top:86.00%;">
+          <div class="hub-node-badge"><i class="fa-solid fa-warehouse"></i></div>
+          <div class="hub-node-label" data-i18n="coop-portal_39">รับซื้อผลผลิต</div>
+        </div>
+        <div class="hub-node" style="left:18.82%; top:68.00%;">
+          <div class="hub-node-badge"><i class="fa-solid fa-tractor"></i></div>
+          <div class="hub-node-label" data-i18n="coop-portal_47">จัดหาเครื่องจักรกลเกษตร</div>
+        </div>
+        <div class="hub-node" style="left:18.82%; top:32.00%;">
+          <div class="hub-node-badge"><i class="fa-solid fa-gavel"></i></div>
+          <div class="hub-node-label" data-i18n="coop-portal_55">ประมูลซื้อแม่ปุ๋ยและปัจจัยการผลิตปริมาณมาก</div>
+        </div>
+      </div>
+
+      <ol class="hub-legend">
+        <li><b data-i18n="coop-portal_15">ช่วยตรวจดิน</b><span data-i18n="coop-portal_74">ข้อมูลดินของแต่ละแปลงเข้าสู่ระบบ กลายเป็นฐานข้อมูลการผลิตจริงชุดแรกของสมาชิก</span></li>
+        <li><b data-i18n="coop-portal_23">ปุ๋ยสั่งตัด</b><span data-i18n="coop-portal_75">สหกรณ์ใช้ข้อมูลเดียวกันสั่งซื้อปัจจัยการผลิตแทนสมาชิกได้ตรงความต้องการ ลดต้นทุนส่วนเกิน</span></li>
+        <li><b data-i18n="coop-portal_31">สินเชื่อแบบเป็นงวด</b><span data-i18n="coop-portal_76">สหกรณ์ที่ได้รับสิทธิ์ปล่อยกู้ตามข้อมูลปฏิทินการผลิตจริง ไม่ใช่การประเมินด้วยความรู้สึก</span></li>
+        <li><b data-i18n="coop-portal_39">รับซื้อผลผลิต</b><span data-i18n="coop-portal_77">ยอดขายของสมาชิกกระทบยอดหนี้อัตโนมัติ และกลายเป็นข้อมูลธุรกรรมที่ดึงดูดผู้รับซื้อรายใหญ่เข้าสู่ระบบ</span></li>
+        <li><b data-i18n="coop-portal_47">จัดหาเครื่องจักรกลเกษตร</b><span data-i18n="coop-portal_78">สหกรณ์รวมความต้องการของสมาชิกเพื่อต่อรองราคาและคิวบริการที่ดีกว่าการติดต่อเอง</span></li>
+        <li><b data-i18n="coop-portal_55">ประมูลซื้อแม่ปุ๋ยและปัจจัยการผลิตปริมาณมาก</b><span data-i18n="coop-portal_79">สหกรณ์หลายรายรวมกันเพื่อสร้างอำนาจต่อรองที่สหกรณ์เดียวทำไม่ได้</span></li>
+      </ol>
+    </div>
+
+    <p class="hub-note reveal in"><span data-i18n="coop-portal_80">ทุกธุรกรรมที่หมุนผ่านสหกรณ์กลายเป็นข้อมูลการผลิตจริงที่ขับเคลื่อน</span> <a href="business-model.html#top">AgroLink Network Effect Flywheel</a><span data-i18n="coop-portal_81"> — ยิ่งสหกรณ์ใช้งานมาก ยิ่งดึงดูดผู้ซื้อและสถาบันการเงินเข้าสู่เครือข่ายมากขึ้นตามไปด้วย</span></p>
   </div>
 </section>
 
@@ -382,6 +521,58 @@
     <div class="note-block reveal in">
       <strong data-i18n="coop-portal_63">หมายเหตุ:</strong><span data-i18n="coop-portal_64"> พอร์ทัลสหกรณ์ยังมีเครื่องมือสนับสนุนอื่นอีก เช่น การบริหารคลังสินค้า/ลานตาก การประสานงานขนส่ง การส่งข้อมูลให้หน่วยงานภาครัฐ และการจัดการบัญชีเจ้าหน้าที่สหกรณ์แยกรายบุคคล — หน้านี้สรุปเฉพาะบริการหลักที่เกี่ยวข้องกับสมาชิกโดยตรงตามด้านบน
     </span></div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal in" style="margin-bottom:28px;">
+      <div class="eyebrow"><i class="fa-solid fa-chart-column"></i><span data-i18n="coop-portal_82"> เป้าหมายผลกระทบ</span></div>
+      <h2 class="section-title" style="font-size:28px;" data-i18n="coop-portal_83">ผลกระทบที่คาดหวังเมื่อสหกรณ์เข้าร่วมเครือข่าย</h2>
+      <p class="section-sub" data-i18n="coop-portal_84">ตัวเลขด้านล่างเป็นเป้าหมายของแผนการขยายเครือข่ายสหกรณ์ของ AgroLink ไม่ใช่ข้อมูลที่เกิดขึ้นจริงในปัจจุบัน ใช้เพื่อสื่อสารขนาดของผลกระทบที่ตั้งใจสร้างเมื่อเครือข่ายเติบโตเต็มรูปแบบ</p>
+    </div>
+
+    <div class="stat-grid reveal in">
+      <div class="stat-card"><span class="num">500+</span><span class="label" data-i18n="coop-portal_85">สหกรณ์ที่เชื่อมต่อในเครือข่าย (เป้าหมายระยะ 3 ปี)</span></div>
+      <div class="stat-card"><span class="num">150,000+</span><span class="label" data-i18n="coop-portal_86">สมาชิกเกษตรกรที่เข้าถึงบริการผ่านสหกรณ์ (เป้าหมาย)</span></div>
+      <div class="stat-card"><span class="num">500,000+</span><span class="label" data-i18n="coop-portal_87">ตันผลผลิตที่ซื้อขายผ่านระบบต่อปี (เป้าหมาย)</span></div>
+      <div class="stat-card"><span class="num">฿3,000+</span><span class="label" data-i18n="coop-portal_88">ล้านบาท มูลค่าธุรกรรมสะสมผ่านพอร์ทัลสหกรณ์ต่อปี (เป้าหมาย)</span></div>
+    </div>
+
+    <div class="note-block reveal in">
+      <strong data-i18n="coop-portal_63">หมายเหตุ:</strong><span data-i18n="coop-portal_89"> ตัวเลขข้างต้นเป็นเป้าหมายเชิงกลยุทธ์สำหรับการวางแผนขยายเครือข่าย ไม่ใช่ข้อมูลสถิติที่เกิดขึ้นจริงในปัจจุบัน และไม่ถือเป็นการรับประกันผลตอบแทนหรือผลประกอบการในอนาคต</span>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal in">
+      <div class="eyebrow"><i class="fa-solid fa-diagram-project"></i><span data-i18n="coop-portal_90"> เชื่อมต่อระบบนิเวศ</span></div>
+      <h2 class="section-title" style="font-size:28px;" data-i18n="coop-portal_91">สหกรณ์ต่อยอดไปยังบริการอื่นในระบบนิเวศ AgroLink ได้อีก</h2>
+      <p class="section-sub" data-i18n="coop-portal_92">นอกเหนือจาก 6 บริการหลักข้างต้น สหกรณ์ยังสามารถใช้ข้อมูลที่สะสมไว้ต่อยอดไปยังบริการอื่นในระบบนิเวศ AgroLink เพื่อสร้างรายได้เสริมให้สมาชิก</p>
+    </div>
+
+    <div class="eco-grid reveal in">
+      <div class="eco-card">
+        <div class="icn"><i class="fa-solid fa-leaf"></i></div>
+        <h3 data-i18n="coop-portal_93">ตลาดคาร์บอนเครดิต</h3>
+        <p data-i18n="coop-portal_94">สหกรณ์ที่มีข้อมูลแปลงและกิจกรรมลดการเผาหรือปรับปรุงดินที่บันทึกไว้ในระบบ สามารถรวบรวมข้อมูลจากสมาชิกหลายรายเพื่อยื่นขอขึ้นทะเบียนคาร์บอนเครดิตแบบกลุ่มได้ง่ายกว่าการยื่นทีละแปลง</p>
+        <a href="carbon-credit-article.html" class="eco-link"><span data-i18n="coop-portal_99">ดูรายละเอียด</span> <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="eco-card">
+        <div class="icn"><i class="fa-solid fa-shield-heart"></i></div>
+        <h3 data-i18n="coop-portal_95">ตลาดประกันภัยการเกษตร</h3>
+        <p data-i18n="coop-portal_96">ข้อมูลผลผลิตและผลตรวจดินที่สหกรณ์สะสมไว้ ช่วยให้สมาชิกเข้าถึงแผนประกันภัยพืชผลที่ประเมินความเสี่ยงได้แม่นยำขึ้น และสหกรณ์สามารถช่วยบริหารกรมธรรม์กลุ่มแทนสมาชิกได้</p>
+        <a href="insurance-marketplace.html" class="eco-link"><span data-i18n="coop-portal_99">ดูรายละเอียด</span> <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="eco-card">
+        <div class="icn"><i class="fa-solid fa-fire-flame-curved"></i></div>
+        <h3 data-i18n="coop-portal_97">เศรษฐกิจชีวมวล</h3>
+        <p data-i18n="coop-portal_98">เศษวัสดุเหลือจากการผลิต เช่น ฟางข้าวหรือซังข้าวโพดของสมาชิก สามารถรวบรวมโดยสหกรณ์และลงทะเบียนขายในตลาดชีวมวลให้ผู้รับซื้อ เช่น โรงไฟฟ้าชีวมวล เป็นรายได้เสริมอีกช่องทาง</p>
+        <a href="biomass-economy.html" class="eco-link"><span data-i18n="coop-portal_99">ดูรายละเอียด</span> <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+    </div>
   </div>
 </section>
 
