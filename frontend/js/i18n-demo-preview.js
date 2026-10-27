@@ -410,5 +410,177 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "demo-preview_102": {
     "th": "เข้าสู่ระบบ",
     "en": "Log In"
+  },
+  "demo-preview_103": {
+    "th": "ลองพิมพ์ กดปุ่ม และสลับแท็บในแต่ละขั้นตอนได้จริง — ข้อมูลที่กรอกเป็นเพียงตัวอย่างสำหรับสาธิต จะไม่ถูกบันทึกจริง",
+    "en": "Try typing, clicking, and switching tabs in each step — everything is live and interactive, though nothing you enter is actually saved."
+  },
+  "demo-preview_104": {
+    "th": "ยินดีต้อนรับ",
+    "en": "Welcome"
+  },
+  "demo-preview_105": {
+    "th": "บัญชีของคุณถูกสร้างเรียบร้อยแล้ว ✓ ไปขั้นตอนถัดไปเพื่อลงทะเบียนแปลงของคุณ",
+    "en": "Your account has been created ✓ Continue to the next step to register your plot."
+  },
+  "demo-preview_106": {
+    "th": "กำลังตรวจสอบ...",
+    "en": "Verifying..."
+  },
+  "demo-preview_107": {
+    "th": "กรุณากรอกชื่อและเบอร์โทรศัพท์ก่อนดำเนินการต่อ",
+    "en": "Please enter your name and phone number to continue"
+  },
+  "demo-preview_108": {
+    "th": "บันทึกแปลงสำเร็จ",
+    "en": "Plot saved successfully"
+  },
+  "demo-preview_109": {
+    "th": "กรุณากรอกชื่อแปลงก่อนบันทึก",
+    "en": "Please enter a plot name before saving"
+  },
+  "demo-preview_110": {
+    "th": "สุพรรณบุรี",
+    "en": "Suphan Buri"
+  },
+  "demo-preview_111": {
+    "th": "นครราชสีมา",
+    "en": "Nakhon Ratchasima"
+  },
+  "demo-preview_112": {
+    "th": "เชียงใหม่",
+    "en": "Chiang Mai"
+  },
+  "demo-preview_113": {
+    "th": "ข้าวเหนียว",
+    "en": "Glutinous Rice"
+  },
+  "demo-preview_114": {
+    "th": "มันสำปะหลัง",
+    "en": "Cassava"
+  },
+  "demo-preview_115": {
+    "th": "ข้าวโพดเลี้ยงสัตว์",
+    "en": "Feed Corn"
+  },
+  "demo-preview_122": {
+    "th": "ไร่",
+    "en": "rai"
+  },
+  "demo-preview_123": {
+    "th": "จำนวนแปลงทั้งหมด",
+    "en": "Total Plots"
+  },
+  "demo-preview_124": {
+    "th": " แปลง",
+    "en": " plot(s)"
+  },
+  "demo-preview_125": {
+    "th": "วันที่เป็นสมาชิก",
+    "en": "Member Since"
+  },
+  "demo-preview_126": {
+    "th": "15 มี.ค. 2568 (ตัวอย่าง)",
+    "en": "Mar 15, 2025 (sample)"
+  },
+  "demo-preview_127": {
+    "th": "เพิ่มจากขั้นตอนที่ 2",
+    "en": "Added from Step 2"
+  },
+  "demo-preview_128": {
+    "th": "สัญญาขายข้าวหอมมะลิ กับโรงสี ก. (ตัวอย่าง)",
+    "en": "Jasmine Rice Sale Contract with Mill A (sample)"
+  },
+  "demo-preview_129": {
+    "th": "มีผลบังคับถึง 30 พ.ย. 2569 (ตัวอย่าง)",
+    "en": "Valid through Nov 30, 2026 (sample)"
+  },
+  "demo-preview_130": {
+    "th": "มีผลบังคับใช้",
+    "en": "Active"
+  },
+  "demo-preview_131": {
+    "th": "กำลังส่งข้อมูล...",
+    "en": "Submitting..."
+  },
+  "demo-preview_132": {
+    "th": "ยืนยันแล้วโดย Platform Ops ✓",
+    "en": "Verified by Platform Ops ✓"
+  },
+  "demo-preview_133": {
+    "th": "บันทึกรอบนี้แล้ว",
+    "en": "This Cycle Saved"
+  },
+  "demo-preview_134": {
+    "th": "ผลประเมินเบื้องต้น: รอบนี้เข้าเกณฑ์ลดก๊าซเรือนกระจกสำหรับคาร์บอนเครดิต (ตัวอย่าง)",
+    "en": "Preliminary result: this cycle meets the greenhouse-gas reduction criteria for carbon credits (sample)"
+  },
+  "demo-preview_135": {
+    "th": " ซม. ต่ำกว่าผิวดิน",
+    "en": " cm below the soil surface"
+  },
+  "demo-preview_136": {
+    "th": "ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร (ตัวอย่าง)",
+    "en": "Bank for Agriculture and Agricultural Cooperatives (sample)"
+  },
+  "demo-preview_137": {
+    "th": "กองทุนหมู่บ้าน (ตัวอย่าง)",
+    "en": "Village Fund (sample)"
+  },
+  "demo-preview_138": {
+    "th": "สถาบันการเงินเอกชน (ตัวอย่าง)",
+    "en": "Private Financial Institution (sample)"
+  },
+  "demo-preview_139": {
+    "th": "กำลังส่งคำขอ...",
+    "en": "Submitting request..."
+  },
+  "demo-preview_140": {
+    "th": "ส่งคำขอสำเร็จ ✓ เลขที่อ้างอิง",
+    "en": "Request submitted ✓ Reference No."
+  },
+  "demo-preview_141": {
+    "th": "จะติดต่อกลับภายใน 3 วันทำการ (ตัวอย่าง)",
+    "en": "will contact you within 3 business days (sample)"
+  },
+  "demo-preview_142": {
+    "th": "กรุณาระบุวงเงินที่ต้องการก่อนส่งคำขอ",
+    "en": "Please enter the amount requested before submitting"
+  },
+  "demo-preview_143": {
+    "th": "โรงสี ค. (ตัวอย่าง)",
+    "en": "Mill C (sample)"
+  },
+  "demo-preview_144": {
+    "th": "ข้าวหอมมะลิ 100% · 12,600 บาท/ตัน",
+    "en": "100% Jasmine Rice · THB 12,600/ton"
+  },
+  "demo-preview_145": {
+    "th": "สหกรณ์การเกษตร ง. (ตัวอย่าง)",
+    "en": "Agricultural Cooperative D (sample)"
+  },
+  "demo-preview_146": {
+    "th": "ข้าวหอมมะลิ 100% · 12,150 บาท/ตัน",
+    "en": "100% Jasmine Rice · THB 12,150/ton"
+  },
+  "demo-preview_147": {
+    "th": "ซ่อนประกาศเพิ่มเติม",
+    "en": "Hide Additional Listings"
+  },
+  "demo-preview_148": {
+    "th": "เลือกขายให้เจ้านี้",
+    "en": "Sell to This Buyer"
+  },
+  "demo-preview_149": {
+    "th": "เลือกแล้ว ✓",
+    "en": "Selected ✓"
+  },
+  "demo-preview_150": {
+    "th": "คุณเลือกขายให้",
+    "en": "You selected to sell to"
+  },
+  "demo-preview_151": {
+    "th": "เรียบร้อยแล้ว (ตัวอย่าง) ทีมงานจะติดต่อยืนยันการขายต่อไป",
+    "en": "successfully (sample). Our team will follow up to confirm the sale."
   }
 });
