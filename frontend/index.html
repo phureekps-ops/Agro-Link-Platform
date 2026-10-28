@@ -267,15 +267,18 @@
     letter-spacing: .04em; margin-bottom: 8px;
   }
   .qc-faq-chips {
-    display: flex; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow-y: auto; padding-right: 2px;
+    display: flex; flex-direction: column; max-height: 150px; overflow-y: auto; padding-right: 2px;
   }
   .qc-faq-chip {
-    border: 1px solid var(--border); background: var(--green-light); color: var(--green-dark);
+    display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+    border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text);
     font-family: inherit; font-size: 12.5px; font-weight: 600; line-height: 1.3;
-    border-radius: 999px; padding: 7px 13px; cursor: pointer;
-    transition: background .15s ease, color .15s ease, border-color .15s ease;
+    border-radius: 0; padding: 8px 4px; cursor: pointer;
+    transition: background .15s ease, color .15s ease;
   }
-  .qc-faq-chip:hover { background: var(--green); border-color: var(--green); color: #fff; }
+  .qc-faq-chip::before { content: '\f105'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 11px; color: var(--green); flex-shrink: 0; }
+  .qc-faq-chip:last-child { border-bottom: none; }
+  .qc-faq-chip:hover { background: var(--green-light); color: var(--green-dark); }
   @media (max-width: 480px) {
     .quick-chat-title span { display: none; }
   }
