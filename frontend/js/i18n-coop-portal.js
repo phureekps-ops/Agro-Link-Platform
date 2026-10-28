@@ -400,11 +400,11 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Learn More"
   },
   "coop-portal_100": {
-    "th": "อินโฟกราฟิกสหกรณ์ Digital Hub ของชุมชน แสดง AgroLink Platform เป็นศูนย์กลางเชื่อมโยงสมาชิกสหกรณ์/เกษตรกร ผู้ซื้อผลผลิต ผู้ขายปัจจัยการผลิต และบริการใหม่ ผ่าน Big Data เศรษฐกิจชีวมวล ศูนย์กลางผลิตปุ๋ยสั่งตัด โครงการลดก๊าซเรือนกระจก และการเชื่อมโยงหน่วยงานรัฐ",
-    "en": "Infographic of the Community Cooperative Digital Hub, showing the AgroLink Platform as the central link between cooperative members/farmers, produce buyers, input suppliers, and new services — powered by Big Data, the biomass economy, a custom fertilizer production hub, a carbon credit project, and links to government agencies."
+    "th": "อินโฟกราฟิกสหกรณ์การเกษตร Digital Hub ของชุมชน แสดง AgroLink Platform เป็นศูนย์กลางที่เชื่อมโยง 9 องค์ประกอบ ได้แก่ สมาชิกสหกรณ์/เกษตรกร ผู้ขายปัจจัยการผลิต ผู้ซื้อผลผลิต บริการใหม่ เศรษฐกิจชีวมวล ศูนย์กลางการผลิตปุ๋ยสั่งตัด โครงการลดก๊าซเรือนกระจก การสื่อสารกับหน่วยงานราชการ และข้อมูลที่มีคุณภาพทันสมัย ผ่านเทคโนโลยี AI, Big Data, Satellite และ IoT",
+    "en": "Infographic of the Community Agricultural Cooperative Digital Hub, showing the AgroLink Platform as the central hub connecting 9 elements: cooperative members/farmers, input suppliers, produce buyers, new services, the biomass economy, a custom fertilizer production hub, a carbon-reduction project, communication with government agencies, and up-to-date quality data — powered by AI, Big Data, Satellite, and IoT."
   },
   "coop-portal_101": {
-    "th": "สหกรณ์ Digital Hub ของชุมชน — เชื่อมโยงทุกภาคส่วนด้วยแพลตฟอร์มดิจิทัล เพื่อเกษตรกรไทยอย่างยั่งยืน",
-    "en": "Cooperative Digital Hub for the Community — Connecting Every Sector Through a Digital Platform for Sustainable Thai Agriculture"
+    "th": "สหกรณ์การเกษตร Digital Hub ของชุมชน — เชื่อมโยงทุกภาคส่วนด้วยแพลตฟอร์มดิจิทัล เพื่อเกษตรกรไทยอย่างยั่งยืน",
+    "en": "Agricultural Cooperative Digital Hub for the Community — Connecting Every Sector Through a Digital Platform for Sustainable Thai Agriculture"
   }
 });
