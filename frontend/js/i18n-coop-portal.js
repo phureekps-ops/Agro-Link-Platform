@@ -398,5 +398,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "coop-portal_99": {
     "th": "ดูรายละเอียด",
     "en": "Learn More"
+  },
+  "coop-portal_100": {
+    "th": "อินโฟกราฟิกสหกรณ์ Digital Hub ของชุมชน แสดง AgroLink Platform เป็นศูนย์กลางเชื่อมโยงสมาชิกสหกรณ์/เกษตรกร ผู้ซื้อผลผลิต ผู้ขายปัจจัยการผลิต และบริการใหม่ ผ่าน Big Data เศรษฐกิจชีวมวล ศูนย์กลางผลิตปุ๋ยสั่งตัด โครงการลดก๊าซเรือนกระจก และการเชื่อมโยงหน่วยงานรัฐ",
+    "en": "Infographic of the Community Cooperative Digital Hub, showing the AgroLink Platform as the central link between cooperative members/farmers, produce buyers, input suppliers, and new services — powered by Big Data, the biomass economy, a custom fertilizer production hub, a carbon credit project, and links to government agencies."
+  },
+  "coop-portal_101": {
+    "th": "สหกรณ์ Digital Hub ของชุมชน — เชื่อมโยงทุกภาคส่วนด้วยแพลตฟอร์มดิจิทัล เพื่อเกษตรกรไทยอย่างยั่งยืน",
+    "en": "Cooperative Digital Hub for the Community — Connecting Every Sector Through a Digital Platform for Sustainable Thai Agriculture"
   }
 });

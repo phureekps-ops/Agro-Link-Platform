@@ -126,6 +126,17 @@
   .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
   .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
 
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
   /* SERVICE OVERVIEW STRIP */
   .cycle-nav { padding: 28px 0 8px; }
   .cycle-nav-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
@@ -347,6 +358,15 @@
       <a href="#machinery-sourcing" class="cycle-chip"><i class="fa-solid fa-tractor"></i><span data-i18n="coop-portal_8"> จัดหาเครื่องจักรกล</span></a>
       <a href="#bulk-fertilizer-auction" class="cycle-chip"><i class="fa-solid fa-gavel"></i><span data-i18n="coop-portal_9"> ประมูลซื้อแม่ปุ๋ย</span></a>
     </div>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/coop-digital-hub-infographic.jpg" data-i18n="coop-portal_100" data-i18n-attr="alt" alt="อินโฟกราฟิกสหกรณ์ Digital Hub ของชุมชน แสดง AgroLink Platform เป็นศูนย์กลางเชื่อมโยงสมาชิกสหกรณ์/เกษตรกร ผู้ซื้อผลผลิต ผู้ขายปัจจัยการผลิต และบริการใหม่ ผ่าน Big Data เศรษฐกิจชีวมวล ศูนย์กลางผลิตปุ๋ยสั่งตัด โครงการลดก๊าซเรือนกระจก และการเชื่อมโยงหน่วยงานรัฐ" loading="eager">
+      <figcaption data-i18n="coop-portal_101">สหกรณ์ Digital Hub ของชุมชน — เชื่อมโยงทุกภาคส่วนด้วยแพลตฟอร์มดิจิทัล เพื่อเกษตรกรไทยอย่างยั่งยืน</figcaption>
+    </figure>
   </div>
 </section>
 
