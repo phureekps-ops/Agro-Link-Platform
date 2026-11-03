@@ -326,5 +326,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "for-farmers_81": {
     "th": " สอบถามทีมงาน",
     "en": " Contact Our Team"
+  },
+  "for-farmers_82": {
+    "th": "อินโฟกราฟิกเกษตรกรยุคดิจิทัล AI โดย AgroLink มีเกษตรกรเป็นศูนย์กลาง เชื่อมโยงข้อมูลแปลง เครื่องจักรกลการเกษตร ปุ๋ยสั่งตัด เมล็ดพันธุ์ เงินกู้เป็นงวดลดดอกเบี้ย 40% โรงสี โรงงานผู้รับซื้อผลผลิต เศรษฐกิจชีวมวล และรายได้จาก Carbon Credit พร้อมเชื่อมต่อข้อมูล Big Data กับหน่วยงานที่เกี่ยวข้อง",
+    "en": "Infographic of the digital AI-era farmer by AgroLink, with the farmer at the center — connected to plot data, agricultural machinery, custom fertilizer, seeds, installment loans with 40% lower interest, rice mills, produce-buying factories, the biomass economy, and Carbon Credit income, with Big Data linked to the relevant agencies."
+  },
+  "for-farmers_83": {
+    "th": "เกษตรกรยุคดิจิทัล AI — ลดต้นทุน เพิ่มรายได้ สร้างความมั่นคงในอาชีพการเกษตร โดยมีเกษตรกรเป็นศูนย์กลาง",
+    "en": "Farmers in the Digital AI Era — Lower Costs, Higher Income, and a More Secure Farming Livelihood, with the Farmer at the Center"
   }
 });
