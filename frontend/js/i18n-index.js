@@ -8,354 +8,6 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "th": "ปิดเมนู",
     "en": "Close menu"
   },
-  "hn_nav_home": {
-    "th": "หน้าแรก",
-    "en": "Home"
-  },
-  "hn_nav_eco": {
-    "th": "ระบบนิเวศ",
-    "en": "Ecosystem"
-  },
-  "hn_mh_eco_overview": {
-    "th": "ภาพรวม",
-    "en": "Overview"
-  },
-  "hn_md_eco": {
-    "th": "AgroLink เชื่อมทุกฝ่ายด้วยข้อมูลเดียวกัน",
-    "en": "One data layer connecting every party"
-  },
-  "hn_m_eco": {
-    "th": "ภาพรวมระบบนิเวศ",
-    "en": "Ecosystem Overview"
-  },
-  "hn_md_coop": {
-    "th": "Cooperative Digital Hub",
-    "en": "Cooperative Digital Hub"
-  },
-  "hn_m_coop": {
-    "th": "สำหรับสหกรณ์",
-    "en": "For Cooperatives"
-  },
-  "hn_md_farmer": {
-    "th": "ข้อมูลแปลง การเงิน ตลาด ในที่เดียว",
-    "en": "Plot data, finance and markets in one place"
-  },
-  "hn_m_farmer": {
-    "th": "สำหรับเกษตรกร",
-    "en": "For Farmers"
-  },
-  "hn_mh_eco_farmers": {
-    "th": "เกษตรกรแต่ละกลุ่ม",
-    "en": "Farmer Groups"
-  },
-  "hn_m_f_crop": {
-    "th": "เกษตรกรผู้ปลูกพืช",
-    "en": "Crop Farmers"
-  },
-  "hn_m_f_live": {
-    "th": "เกษตรกรผู้เลี้ยงสัตว์บก",
-    "en": "Livestock Farmers"
-  },
-  "hn_m_f_aqua": {
-    "th": "เกษตรกรผู้เลี้ยงสัตว์น้ำ",
-    "en": "Aquaculture Farmers"
-  },
-  "hn_mh_eco_partners": {
-    "th": "ผู้ให้บริการและผู้ซื้อ",
-    "en": "Providers & Buyers"
-  },
-  "hn_m_market": {
-    "th": "ตลาดกลาง / ผู้ซื้อ-โรงงาน",
-    "en": "Marketplace / Buyers & Mills"
-  },
-  "hn_m_logistics": {
-    "th": "ผู้ให้บริการขนส่ง",
-    "en": "Logistics Providers"
-  },
-  "hn_m_biomass_buyer": {
-    "th": "ผู้รับซื้อชีวมวล",
-    "en": "Biomass Buyers"
-  },
-  "hn_m_tech_partner": {
-    "th": "พันธมิตรเทคโนโลยี",
-    "en": "Technology Partners"
-  },
-  "hn_m_auction": {
-    "th": "Auction Place ระบบประมูล",
-    "en": "Auction Place"
-  },
-  "hn_mf_eco_t": {
-    "th": "เกษตรกรและสหกรณ์คือศูนย์กลาง",
-    "en": "Farmers and cooperatives at the center"
-  },
-  "hn_mf_eco_d": {
-    "th": "ทุกบริการทำงานบนโครงสร้างพื้นฐานข้อมูลเดียวกัน",
-    "en": "Every service runs on one shared data infrastructure"
-  },
-  "hn_mf_eco_l": {
-    "th": "สำรวจระบบนิเวศ",
-    "en": "Explore the ecosystem"
-  },
-  "hn_nav_sol": {
-    "th": "โซลูชันธุรกิจ",
-    "en": "Solutions"
-  },
-  "hn_mh_sol_crops": {
-    "th": "พืชเศรษฐกิจครบวงจร",
-    "en": "Integrated Crop Businesses"
-  },
-  "hn_m_rice": {
-    "th": "ธุรกิจข้าวครบวงจร",
-    "en": "Integrated Rice"
-  },
-  "hn_m_durian": {
-    "th": "ทุเรียนครบวงจร",
-    "en": "Integrated Durian"
-  },
-  "hn_m_cassava": {
-    "th": "มันสำปะหลังครบวงจร",
-    "en": "Integrated Cassava"
-  },
-  "hn_m_corn": {
-    "th": "ข้าวโพดครบวงจร",
-    "en": "Integrated Corn"
-  },
-  "hn_m_sugarcane": {
-    "th": "อ้อยน้ำตาล",
-    "en": "Sugarcane"
-  },
-  "hn_mh_sol_more": {
-    "th": "ไม้ผลและพืชยืนต้น",
-    "en": "Fruit & Perennial Crops"
-  },
-  "hn_m_palm": {
-    "th": "ปาล์มน้ำมัน",
-    "en": "Oil Palm"
-  },
-  "hn_m_longan": {
-    "th": "ลำไย",
-    "en": "Longan"
-  },
-  "hn_m_coconut": {
-    "th": "มะพร้าวน้ำหอมครบวงจร",
-    "en": "Integrated Aromatic Coconut"
-  },
-  "hn_m_coffee": {
-    "th": "กาแฟ",
-    "en": "Coffee"
-  },
-  "hn_m_fert": {
-    "th": "ปุ๋ยสั่งตัด",
-    "en": "Custom Fertilizer"
-  },
-  "hn_mh_sol_animal": {
-    "th": "ปศุสัตว์และประมง",
-    "en": "Livestock & Fisheries"
-  },
-  "hn_m_livestock": {
-    "th": "ปศุสัตว์",
-    "en": "Livestock"
-  },
-  "hn_m_fishery": {
-    "th": "ประมง",
-    "en": "Fisheries"
-  },
-  "hn_m_shrimp": {
-    "th": "กุ้ง",
-    "en": "Shrimp"
-  },
-  "hn_m_tilapia": {
-    "th": "ปลานิล/ทับทิมกระชัง",
-    "en": "Cage Tilapia / Red Tilapia"
-  },
-  "hn_m_seabass": {
-    "th": "ปลากระพง/เก๋ากระชัง",
-    "en": "Cage Seabass / Grouper"
-  },
-  "hn_mf_sol_t": {
-    "th": "โครงการ RAP-T",
-    "en": "RAP-T Project"
-  },
-  "hn_mf_sol_d": {
-    "th": "ต่อยอดห่วงโซ่คุณค่าสินค้าเกษตรสำคัญของประเทศ",
-    "en": "Building out Thailand's key agricultural value chains"
-  },
-  "hn_mf_sol_l": {
-    "th": "ดูโครงการ RAP-T",
-    "en": "View RAP-T project"
-  },
-  "hn_nav_tech": {
-    "th": "เทคโนโลยี",
-    "en": "Technology"
-  },
-  "hn_mh_tech": {
-    "th": "เทคโนโลยีและข้อมูล",
-    "en": "Technology & Data"
-  },
-  "hn_md_ai": {
-    "th": "ข้อมูลดาวเทียมและ AI ภาคสนาม",
-    "en": "Satellite data and field AI"
-  },
-  "hn_m_ai": {
-    "th": "AI และดาวเทียม",
-    "en": "AI & Satellite"
-  },
-  "hn_md_farmos": {
-    "th": "แม่แบบวงจรการผลิตและการวางแผน",
-    "en": "Production-cycle template and planning"
-  },
-  "hn_m_farmos": {
-    "th": "Farm OS",
-    "en": "Farm OS"
-  },
-  "hn_md_verify": {
-    "th": "กลไก MRV และการทวนสอบ",
-    "en": "MRV and verification mechanics"
-  },
-  "hn_m_verify": {
-    "th": "ข้อมูลการผลิตและการตรวจสอบ",
-    "en": "Production Data & Verification"
-  },
-  "hn_mh_portal": {
-    "th": "พอร์ทัลและการใช้งาน",
-    "en": "Portals & Usage"
-  },
-  "hn_md_portal": {
-    "th": "เข้าสู่ระบบตามบทบาทของท่าน",
-    "en": "Sign in by your role"
-  },
-  "hn_m_portal": {
-    "th": "พอร์ทัลสมาชิก",
-    "en": "Member Portal"
-  },
-  "hn_md_demo": {
-    "th": "เดินเรื่องการใช้งานจริง 6 ขั้นตอน",
-    "en": "A 6-step product walkthrough"
-  },
-  "hn_m_demo": {
-    "th": "ตัวอย่างการใช้งานทีละขั้นตอน",
-    "en": "Step-by-step Walkthrough"
-  },
-  "hn_mf_tech_t": {
-    "th": "AI + Satellite + IoT",
-    "en": "AI + Satellite + IoT"
-  },
-  "hn_mf_tech_d": {
-    "th": "เปลี่ยนกิจกรรมในแปลงให้เป็นข้อมูลที่ใช้งานได้จริง",
-    "en": "Turning field activity into usable data"
-  },
-  "hn_mf_tech_l": {
-    "th": "เรียนรู้เทคโนโลยี",
-    "en": "Learn about the technology"
-  },
-  "hn_nav_fin": {
-    "th": "การเงินและความยั่งยืน",
-    "en": "Finance & Green"
-  },
-  "hn_mh_fin": {
-    "th": "การเงินและประกันภัย",
-    "en": "Finance & Insurance"
-  },
-  "hn_md_finance": {
-    "th": "เชื่อมข้อมูลการผลิตกับผู้ให้บริการทางการเงิน",
-    "en": "Connecting production data with financial providers"
-  },
-  "hn_m_finance": {
-    "th": "การเงิน",
-    "en": "Finance"
-  },
-  "hn_m_ins_eco": {
-    "th": "ภาพรวมระบบนิเวศประกันภัย",
-    "en": "Insurance Ecosystem Overview"
-  },
-  "hn_m_ins_market": {
-    "th": "พอร์ทัลประกันภัยเกษตร",
-    "en": "Agricultural Insurance Portal"
-  },
-  "hn_m_ins_provider": {
-    "th": "พอร์ทัลผู้ให้บริการประกันภัย",
-    "en": "Insurance Provider Portal"
-  },
-  "hn_mh_green": {
-    "th": "ความยั่งยืน",
-    "en": "Sustainability"
-  },
-  "hn_md_carbon": {
-    "th": "นาเปียกสลับแห้ง (AWD) และการทวนสอบ",
-    "en": "AWD rice and verification"
-  },
-  "hn_m_carbon": {
-    "th": "คาร์บอนเครดิต",
-    "en": "Carbon Credit"
-  },
-  "hn_md_bio": {
-    "th": "เปลี่ยนวัสดุเหลือใช้เป็นรายได้",
-    "en": "Turning residues into income"
-  },
-  "hn_m_bio": {
-    "th": "เศรษฐกิจชีวมวล",
-    "en": "Biomass Economy"
-  },
-  "hn_mf_fin_t": {
-    "th": "AgroLink ไม่ใช่ผู้ให้สินเชื่อ",
-    "en": "AgroLink is not a lender"
-  },
-  "hn_mf_fin_d": {
-    "th": "การอนุมัติ วงเงิน และอัตราดอกเบี้ย เป็นการพิจารณาของผู้ให้บริการทางการเงินแต่ละราย",
-    "en": "Approval, limits and interest rates are decided by each financial provider"
-  },
-  "hn_mf_fin_l": {
-    "th": "ดูพันธมิตรการเงิน",
-    "en": "View finance partners"
-  },
-  "hn_nav_about": {
-    "th": "เกี่ยวกับเรา",
-    "en": "About Us"
-  },
-  "hn_mh_about": {
-    "th": "บริษัท",
-    "en": "Company"
-  },
-  "hn_m_about_video": {
-    "th": "เกี่ยวกับ AgroLink (วิดีโอ)",
-    "en": "About AgroLink (Video)"
-  },
-  "hn_m_about": {
-    "th": "ข้อมูลบริษัท",
-    "en": "Company Profile"
-  },
-  "hn_md_investor": {
-    "th": "โมเดลธุรกิจและแผนการเติบโต",
-    "en": "Business model and growth roadmap"
-  },
-  "hn_m_investor": {
-    "th": "นักลงทุน",
-    "en": "Investors"
-  },
-  "hn_m_contact": {
-    "th": "ติดต่อเรา",
-    "en": "Contact Us"
-  },
-  "hn_skip": {
-    "th": "ข้ามไปยังเนื้อหาหลัก",
-    "en": "Skip to main content"
-  },
-  "hn_nav_aria": {
-    "th": "เมนูหลัก",
-    "en": "Main navigation"
-  },
-  "hn_login": {
-    "th": "เข้าสู่ระบบ",
-    "en": "Log In"
-  },
-  "hn_demo": {
-    "th": "ขอชม Demo",
-    "en": "Request a Demo"
-  },
-  "hn_menu_aria": {
-    "th": "เปิดเมนู",
-    "en": "Open menu"
-  },
   "hn_hero_alt": {
     "th": "เกษตรกรไทยใช้แท็บเล็ตในแปลงนาข้าว พร้อมโดรนและชั้นข้อมูลดิจิทัล",
     "en": "A Thai farmer using a tablet in a rice field with a drone and digital data overlays"
@@ -367,6 +19,10 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "hn_hero_body": {
     "th": "AgroLink เชื่อมข้อมูลจากการผลิตจริงในแปลงเกษตร เข้ากับบริการ การเงิน และตลาด เพื่อสนับสนุนการบริหารการผลิตและการเชื่อมโยงธุรกิจตลอดห่วงโซ่คุณค่า",
     "en": "AgroLink connects real production data from the field with services, finance and markets — supporting production management and business linkages across the value chain."
+  },
+  "hn_demo": {
+    "th": "ขอชม Demo",
+    "en": "Request a Demo"
   },
   "hn_explore": {
     "th": "สำรวจระบบนิเวศ",
@@ -720,6 +376,18 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "th": "เชื่อมผู้ซื้อ โรงสี และโรงงาน",
     "en": "Buyers, mills and factories"
   },
+  "hn_m_f_crop": {
+    "th": "เกษตรกรผู้ปลูกพืช",
+    "en": "Crop Farmers"
+  },
+  "hn_m_f_live": {
+    "th": "เกษตรกรผู้เลี้ยงสัตว์บก",
+    "en": "Livestock Farmers"
+  },
+  "hn_m_f_aqua": {
+    "th": "เกษตรกรผู้เลี้ยงสัตว์น้ำ",
+    "en": "Aquaculture Farmers"
+  },
   "hn_farmer_alt": {
     "th": "เกษตรกรไทยยิ้มพร้อมถือแท็บเล็ต AgroLink",
     "en": "A smiling Thai farmer holding an AgroLink tablet"
@@ -799,6 +467,46 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "hn_vc4d": {
     "th": "สัตว์น้ำ กุ้ง ปลานิล และปลากระพงกระชัง",
     "en": "Aquaculture — shrimp, tilapia and cage seabass"
+  },
+  "hn_m_corn": {
+    "th": "ข้าวโพดครบวงจร",
+    "en": "Integrated Corn"
+  },
+  "hn_m_sugarcane": {
+    "th": "อ้อยน้ำตาล",
+    "en": "Sugarcane"
+  },
+  "hn_m_palm": {
+    "th": "ปาล์มน้ำมัน",
+    "en": "Oil Palm"
+  },
+  "hn_m_longan": {
+    "th": "ลำไย",
+    "en": "Longan"
+  },
+  "hn_m_coconut": {
+    "th": "มะพร้าวน้ำหอมครบวงจร",
+    "en": "Integrated Aromatic Coconut"
+  },
+  "hn_m_coffee": {
+    "th": "กาแฟ",
+    "en": "Coffee"
+  },
+  "hn_m_livestock": {
+    "th": "ปศุสัตว์",
+    "en": "Livestock"
+  },
+  "hn_m_shrimp": {
+    "th": "กุ้ง",
+    "en": "Shrimp"
+  },
+  "hn_m_tilapia": {
+    "th": "ปลานิล/ทับทิมกระชัง",
+    "en": "Cage Tilapia / Red Tilapia"
+  },
+  "hn_m_seabass": {
+    "th": "ปลากระพง/เก๋ากระชัง",
+    "en": "Cage Seabass / Grouper"
   },
   "hn_m_rapt": {
     "th": "โครงการ RAP-T",
@@ -988,17 +696,57 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "th": "* หมวดหมู่พันธมิตรเป้าหมาย ยังไม่ใช่รายชื่อพันธมิตรที่ยืนยันแล้ว",
     "en": "* Target partner categories — not a list of confirmed partners."
   },
+  "hn_m_coop": {
+    "th": "สำหรับสหกรณ์",
+    "en": "For Cooperatives"
+  },
+  "hn_m_farmer": {
+    "th": "สำหรับเกษตรกร",
+    "en": "For Farmers"
+  },
+  "hn_m_finance": {
+    "th": "การเงิน",
+    "en": "Finance"
+  },
   "hn_fl_market": {
     "th": "ตลาดกลาง",
     "en": "Marketplace"
+  },
+  "hn_m_fert": {
+    "th": "ปุ๋ยสั่งตัด",
+    "en": "Custom Fertilizer"
+  },
+  "hn_m_ai": {
+    "th": "AI และดาวเทียม",
+    "en": "AI & Satellite"
   },
   "hn_fl_ins": {
     "th": "ประกันภัยเกษตร",
     "en": "Agricultural Insurance"
   },
+  "hn_m_carbon": {
+    "th": "คาร์บอนเครดิต",
+    "en": "Carbon Credit"
+  },
+  "hn_m_bio": {
+    "th": "เศรษฐกิจชีวมวล",
+    "en": "Biomass Economy"
+  },
   "hn_fc1": {
     "th": "แพลตฟอร์มและบริการ",
     "en": "Platform & Services"
+  },
+  "hn_m_rice": {
+    "th": "ธุรกิจข้าวครบวงจร",
+    "en": "Integrated Rice"
+  },
+  "hn_m_durian": {
+    "th": "ทุเรียนครบวงจร",
+    "en": "Integrated Durian"
+  },
+  "hn_m_cassava": {
+    "th": "มันสำปะหลังครบวงจร",
+    "en": "Integrated Cassava"
   },
   "hn_fl_roadmap": {
     "th": "แผนขยายสินค้า",
@@ -1019,6 +767,30 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "hn_fc3": {
     "th": "พันธมิตร",
     "en": "Partners"
+  },
+  "hn_nav_about": {
+    "th": "เกี่ยวกับเรา",
+    "en": "About Us"
+  },
+  "hn_m_about_video": {
+    "th": "เกี่ยวกับ AgroLink (วิดีโอ)",
+    "en": "About AgroLink (Video)"
+  },
+  "hn_m_investor": {
+    "th": "นักลงทุน",
+    "en": "Investors"
+  },
+  "hn_m_demo": {
+    "th": "ตัวอย่างการใช้งานทีละขั้นตอน",
+    "en": "Step-by-step Walkthrough"
+  },
+  "hn_m_contact": {
+    "th": "ติดต่อเรา",
+    "en": "Contact Us"
+  },
+  "hn_login": {
+    "th": "เข้าสู่ระบบ",
+    "en": "Log In"
   },
   "hn_fc4": {
     "th": "บริษัท",
