@@ -36,8 +36,8 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "\n        After each harvest season, large numbers of Thai farmers are left with substantial amounts of agricultural\n        residue, such as rice straw, rice husk, and crop stubble. Most of this is typically burned in the field,\n        as it is the fastest and lowest-cost method from each individual farmer's point of view. But widespread\n        open-field burning occurring simultaneously across the country during the same period is one of the major\n        causes of the fine particulate (PM2.5) problem that affects health and air quality in many areas of\n        Thailand in the early part of every year. Burning also destroys soil structure and the organic matter\n        accumulated in the topsoil, causing the soil to degrade more quickly over the long term.\n      "
   },
   "biomass-economy_9": {
-    "th": "\n        AgroLink มองว่าเศษวัสดุเหล่านี้ไม่ใช่ขยะที่ต้องกำจัดทิ้ง แต่เป็นวัตถุดิบที่มีมูลค่าหากมีช่องทางนำไปใช้ประโยชน์ต่อ\n        แพลตฟอร์มจึงเชื่อมโยงเกษตรกรและสหกรณ์ที่เก็บรวบรวมฟางข้าวและเศษวัสดุเหลือใช้แทนการเผา เข้ากับสองเส้นทางหลัก\n        คือการขายเป็นวัตถุดิบให้ผู้รับซื้อเชื้อเพลิงชีวมวลภาคอุตสาหกรรม ผ่านบริการแปรรูปอัดก้อน/อัดเม็ดที่จองได้บนแพลตฟอร์ม\n        และการนำมาผลิตเป็นปุ๋ยหมักเพื่อหมุนกลับเข้าสู่กระบวนการปุ๋ยสั่งตัดและบำรุงดินของสหกรณ์เอง ตามแนวทาง 4 ขั้นตอนด้านล่าง\n      ",
-    "en": "\n        AgroLink views this residue not as waste to be disposed of, but as a valuable raw material when there is a\n        channel to put it to further use. The platform therefore connects farmers and cooperatives who collect\n        rice straw and crop residue instead of burning it with two main paths: selling it as raw material to\n        industrial biomass fuel buyers through the baling/pelletizing processing service bookable on the\n        platform, and processing it into compost to feed back into the cooperative's own Custom Fertilizer and\n        soil improvement process, following the 4 steps below.\n      "
+    "th": "AgroLink มองว่าเศษวัสดุเหล่านี้ไม่ใช่ขยะที่ต้องกำจัดทิ้ง แต่เป็นวัตถุดิบที่มีมูลค่าหากมีช่องทางนำไปใช้ประโยชน์ต่อ แพลตฟอร์มจึงเชื่อมโยงเกษตรกรและสหกรณ์ที่เก็บรวบรวมฟางข้าวและเศษวัสดุเหลือใช้แทนการเผา เข้ากับสามเส้นทางหลัก คือการนำมาเพาะเห็ดฟางโดยมีสหกรณ์เป็นศูนย์กลางผลิตกล่องเพาะ การขายเป็นวัตถุดิบให้ผู้รับซื้อเชื้อเพลิงชีวมวลภาคอุตสาหกรรม ผ่านบริการแปรรูปอัดก้อน/อัดเม็ดที่จองได้บนแพลตฟอร์ม และการนำมาผลิตเป็นปุ๋ยหมักเพื่อหมุนกลับเข้าสู่กระบวนการปุ๋ยสั่งตัดและบำรุงดินของสหกรณ์เอง ตามแนวทาง 5 ขั้นตอนด้านล่าง",
+    "en": "AgroLink views this residue not as waste to be disposed of, but as a valuable raw material when there is a channel to put it to further use. The platform therefore connects farmers and cooperatives who collect rice straw and crop residue instead of burning it with three main paths: growing straw mushrooms, with the cooperative as the hub that produces growing boxes; selling it as raw material to industrial biomass fuel buyers through the baling/pelletizing processing service bookable on the platform; and processing it into compost to feed back into the cooperative's own Custom Fertilizer and soil improvement process, following the 5 steps below."
   },
   "biomass-economy_10": {
     "th": " ประโยชน์และปัญหา PM2.5",
@@ -104,12 +104,12 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": " How It Works"
   },
   "biomass-economy_26": {
-    "th": "จากเศษวัสดุเหลือใช้ สู่เชื้อเพลิงและปุ๋ยหมัก",
-    "en": "From Crop Residue to Fuel and Compost"
+    "th": "จากเศษวัสดุชีวมวลสู่ผลผลิตเห็ด เชื้อเพลิงและปุ๋ยหมัก",
+    "en": "From Biomass Residue to Mushrooms, Fuel and Compost"
   },
   "biomass-economy_27": {
-    "th": "4 แนวทางการพัฒนาเศรษฐกิจชีวมวลบนเครือข่ายเกษตรกรและสหกรณ์ของ AgroLink",
-    "en": "4 Steps for Developing the Biomass Economy Across AgroLink's Farmer and Cooperative Network"
+    "th": "5 แนวทางการพัฒนาเศรษฐกิจชีวมวลบนเครือข่ายเกษตรกรและสหกรณ์ของ AgroLink",
+    "en": "5 Steps for Developing the Biomass Economy Across AgroLink's Farmer and Cooperative Network"
   },
   "biomass-economy_28": {
     "th": "เก็บรวบรวมเศษวัสดุเหลือใช้แทนการเผา",
@@ -176,8 +176,8 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": ". Cooperatives can then use the compost they produce alongside the chemical\n            fertilizer formula calculated by the system, improving soil structure over the long term while also\n            reducing the amount of chemical fertilizer that needs to be ordered each season.\n          "
   },
   "biomass-economy_44": {
-    "th": "\n        ความเป็นไปได้ของการอัดก้อน/อัดเม็ดและการผลิตปุ๋ยหมักในแต่ละพื้นที่ ขึ้นอยู่กับผู้ให้บริการเครื่องจักรกลและผู้รับซื้อ\n        ที่เข้าร่วมเครือข่ายจริงในพื้นที่นั้น ๆ AgroLink ทำหน้าที่เป็นผู้เชื่อมโยงข้อมูลและเครือข่าย ไม่ใช่ผู้ผลิตเชื้อเพลิง\n        หรือปุ๋ยหมักโดยตรง\n      ",
-    "en": "\n        The feasibility of baling/pelletizing and compost production in each area depends on the machinery\n        service providers and buyers actually participating in the network in that area. AgroLink acts as the\n        connector of data and the network, not as a direct producer of fuel or compost.\n      "
+    "th": "ความเป็นไปได้ของการเพาะเห็ด การอัดก้อน/อัดเม็ด และการผลิตปุ๋ยหมักในแต่ละพื้นที่ ขึ้นอยู่กับผู้ให้บริการเครื่องจักรกล ผู้เชี่ยวชาญ และผู้รับซื้อที่เข้าร่วมเครือข่ายจริงในพื้นที่นั้น ๆ AgroLink ทำหน้าที่เป็นผู้เชื่อมโยงข้อมูลและเครือข่าย ไม่ใช่ผู้ผลิตเห็ด เชื้อเพลิง หรือปุ๋ยหมักโดยตรง",
+    "en": "The feasibility of mushroom growing, baling/pelletizing and compost production in each area depends on the machinery service providers, experts and buyers actually participating in the network in that area. AgroLink acts as the connector of data and the network, not as a direct producer of mushrooms, fuel or compost."
   },
   "biomass-economy_45": {
     "th": "สหกรณ์หรือกลุ่มเกษตรกรของท่านพร้อมเริ่มเศรษฐกิจชีวมวลหรือยัง?",
@@ -206,5 +206,17 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "biomass-economy_51": {
     "th": "ห่วงโซ่คุณค่าของ Biomass โดย AgroLink — เปลี่ยนเศษเหลือทางการเกษตรให้เป็นพลังงาน ปุ๋ยอินทรีย์ และดินที่สมบูรณ์ ตั้งแต่รวบรวมวัตถุดิบจนถึงฟื้นฟูสภาพดินด้วยข้อมูล AI",
     "en": "AgroLink Biomass Value Chain -- turning agricultural residue into energy, organic fertilizer, and healthy soil, from feedstock collection through to AI-driven soil restoration"
+  },
+  "biomass-economy_52": {
+    "th": "เพาะเห็ดฟางจากเศษวัสดุ: สหกรณ์ผลิตกล่องเพาะ สมาชิกเปิดดอก",
+    "en": "Grow straw mushrooms from residue: the cooperative makes growing boxes, members fruit them"
+  },
+  "biomass-economy_53": {
+    "th": "ก่อนส่งต่อเป็นเชื้อเพลิงหรือปุ๋ยหมัก เศษวัสดุอย่างฟางข้าว ทะลายปาล์ม ผักตบชวา กากมัน รำข้าว และกากฝ้าย นำมาเพาะเห็ดฟางได้ก่อน ตามการผลิตเห็ดฟางแบบใหม่ของ อ.อานนท์ สหกรณ์เป็นศูนย์กลางหมักวัสดุ อบฆ่าเชื้อ และผลิตกล่องเพาะ สมาชิกนำกล่องไปเปิดดอกแล้วส่งดอกเห็ดกลับมาให้สหกรณ์รวบรวมจำหน่าย วัสดุเพาะที่เหลือยังนำไปหมักเป็นปุ๋ยต่อได้",
+    "en": "Before going to fuel or compost, residues such as rice straw, palm bunches, water hyacinth, cassava pulp, rice bran and cotton waste can first grow straw mushrooms, following Ajarn Anon's new production method. The cooperative is the hub that composts, pasteurizes and produces growing boxes; members fruit the boxes at home and sell the mushrooms back to the cooperative. The spent substrate can still be composted afterwards."
+  },
+  "biomass-economy_54": {
+    "th": "อ่านเอกสาร: การผลิตเห็ดฟางแบบใหม่ (แบบอานนท์ 2589)",
+    "en": "Read the guide: new straw mushroom production (Anon 2589 method)"
   }
 });

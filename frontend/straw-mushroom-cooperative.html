@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="smc_1">การผลิตเห็ดฟางแบบใหม่ (แบบอานนท์ 2589) | AgroLink Platform</title>
+<meta name="description" content="การผลิตเห็ดฟางแบบใหม่ของ อ.อานนท์ (แบบ 2589): สหกรณ์เป็นศูนย์กลางผลิตกล่องเพาะจากเศษวัสดุการเกษตร สมาชิกเปิดดอกและส่งขายให้สหกรณ์รวบรวม">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 0; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+  .btn-gold:hover { filter: brightness(.95); }
+
+  /* PAGE HEADER */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+  .page-header .hero-cta { margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
+
+  .prose-section { padding: 64px 0; }
+  .prose-section.alt { background: #fff; }
+  .section-head { max-width: 720px; margin: 0 auto 40px; text-align: center; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .prose-block { max-width: 800px; margin: 0 auto; }
+  .prose-block p { margin-bottom: 16px; font-size: 15.5px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+
+  /* BENEFIT GRID */
+  .benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media (max-width: 900px) { .benefit-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .benefit-grid { grid-template-columns: 1fr; } }
+  .benefit-card {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px; transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .benefit-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(18,61,43,.08); }
+  .benefit-card .icn {
+    width: 52px; height: 52px; border-radius: 14px; background: var(--green-light); color: var(--green-dark);
+    display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 16px;
+  }
+  .benefit-card h4 { font-size: 17px; margin-bottom: 8px; }
+  .benefit-card p { font-size: 14px; color: var(--muted); }
+
+  /* FLOW STEPS */
+  .flow-wrap { display: flex; flex-direction: column; gap: 0; max-width: 880px; margin: 0 auto; }
+  .flow-row { display: flex; gap: 24px; padding: 0 0 40px; position: relative; }
+  .flow-row:last-child { padding-bottom: 0; }
+  .flow-row::before {
+    content: ''; position: absolute; left: 27px; top: 56px; bottom: 0; width: 2px;
+    background: var(--border);
+  }
+  .flow-row:last-child::before { display: none; }
+  .flow-num {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--green); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800;
+    flex-shrink: 0; box-shadow: 0 6px 16px rgba(27,107,74,.28); z-index: 1;
+  }
+  .flow-body { flex: 1; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; }
+  .flow-body h4 { font-size: 17px; margin-bottom: 8px; }
+  .flow-body p { font-size: 14px; color: var(--muted); }
+  .flow-body a { color: var(--green); font-weight: 700; }
+  .flow-body a:hover { text-decoration: underline; }
+
+  .note-block {
+    background: var(--gold-light); border: 1px solid #E6D9A8; border-radius: 12px;
+    padding: 18px 22px; font-size: 13.6px; color: #6B5A15; display: flex; gap: 12px; align-items: flex-start;
+    max-width: 880px; margin: 40px auto 0;
+  }
+  .note-block i { margin-top: 2px; }
+
+  .cta-final {
+    background: linear-gradient(135deg, var(--green-dark), var(--green));
+    color: #fff; padding: 60px 0; text-align: center;
+  }
+  .cta-final h2 { color: #fff; font-size: 28px; margin-bottom: 12px; }
+  .cta-final p { color: #C8DBD1; max-width: 560px; margin: 0 auto 26px; font-size: 15.5px; }
+  .cta-final .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* ---- straw-mushroom-cooperative page ---- */
+  .crumb { font-size: 13.5px; color: #C8DBD1; margin-bottom: 18px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .crumb a { color: #fff; font-weight: 700; }
+  .crumb a:hover { text-decoration: underline; }
+  .page-header h1.section-title { max-width: 900px; margin-left: auto; margin-right: auto; }
+  .page-header .section-sub { max-width: 820px; }
+  :target { scroll-margin-top: 90px; }
+
+  .intro-split { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
+  @media (max-width: 900px) { .intro-split { grid-template-columns: 1fr; gap: 32px; } }
+  .photo-card img { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12); }
+  .photo-card figcaption, .g-item figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .summary .section-title { font-size: 27px; }
+  .summary .lead { font-size: 15.5px; margin-bottom: 18px; }
+  .chk li { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; margin-bottom: 10px; }
+  .chk li:last-child { margin-bottom: 0; }
+  .chk li svg, .chk li i { color: var(--green); margin-top: 5px; flex-shrink: 0; }
+
+  .timeline { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; position: relative; }
+  .timeline::before { content: ''; position: absolute; left: 0; right: 0; top: 17px; height: 2px; background: var(--border); }
+  .tl-item { position: relative; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 50px 18px 20px; }
+  .tl-item::before { content: ''; position: absolute; top: 10px; left: 18px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--green); }
+  .tl-year { display: block; font-size: 12.5px; font-weight: 800; color: var(--green); letter-spacing: .03em; margin-bottom: 6px; }
+  .tl-item h4 { font-size: 15.5px; margin-bottom: 8px; }
+  .tl-item p { font-size: 13.4px; color: var(--muted); }
+  .tl-item.is-new { background: var(--green-dark); border-color: var(--green-dark); }
+  .tl-item.is-new::before { background: var(--gold); border-color: var(--gold); }
+  .tl-item.is-new h4 { color: #fff; }
+  .tl-item.is-new p { color: #C8DBD1; }
+  .tl-item.is-new .tl-year { color: var(--gold); }
+  @media (max-width: 1080px) {
+    .timeline { grid-template-columns: 1fr; gap: 14px; padding-left: 30px; }
+    .timeline::before { left: 9px; right: auto; top: 8px; bottom: 8px; width: 2px; height: auto; }
+    .tl-item { padding: 18px 20px; }
+    .tl-item::before { top: 22px; left: -29px; }
+  }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
+  .compare { width: 100%; border-collapse: collapse; font-size: 14.2px; min-width: 640px; }
+  .compare th, .compare td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .compare tbody tr:last-child th, .compare tbody tr:last-child td { border-bottom: none; }
+  .compare thead th { background: var(--cream); font-size: 13.5px; color: var(--navy); }
+  .compare thead th.new { background: var(--green); color: #fff; }
+  .compare tbody th { color: var(--navy); font-weight: 700; width: 20%; }
+  .compare td { color: var(--muted); width: 40%; }
+  .compare .m-lbl { display: none; }
+  .compare td.new { color: var(--green-dark); background: var(--green-light); font-weight: 600; }
+  @media (max-width: 700px) {
+    .compare { min-width: 0; }
+    .compare thead { display: none; }
+    .compare tr { display: block; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .compare tbody tr:last-child { border-bottom: none; }
+    .compare th, .compare td { display: block; width: auto; padding: 0; border: none; }
+    .compare tbody th { margin-bottom: 6px; width: auto; }
+    .compare td, .compare td.new { width: auto; }
+    .compare td { font-size: 13.6px; margin-bottom: 6px; }
+    .compare .m-lbl { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .04em; color: var(--muted); }
+    .compare td.new .m-lbl { color: var(--green); }
+    .compare td.new { padding: 8px 10px; border-radius: 8px; margin-bottom: 0; }
+  }
+
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 800px) { .roles { grid-template-columns: 1fr; } }
+  .role-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; }
+  .role-card.hub { border-color: var(--green); box-shadow: 0 10px 26px rgba(27,107,74,.10); }
+  .role-top { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+  .role-top .icn { width: 52px; height: 52px; border-radius: 14px; background: var(--green-light); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .role-card.hub .role-top .icn { background: var(--green); color: #fff; }
+  .role-top small { display: block; font-size: 12.5px; font-weight: 700; color: var(--green); }
+  .role-top h3 { font-size: 20px; }
+
+  .loop { margin-top: 32px; background: var(--green-dark); border-radius: var(--radius); padding: 28px; color: #fff; }
+  .loop h4 { color: #fff; font-size: 17px; margin-bottom: 18px; text-align: center; }
+  .loop-list { list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; counter-reset: none; }
+  .loop-list li { position: relative; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 16px 12px 14px; text-align: center; font-size: 13.6px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .loop-list li svg { font-size: 20px; color: var(--gold); }
+  .loop-list li:not(:last-child)::after { content: '›'; position: absolute; right: -11px; top: 50%; transform: translateY(-50%); font-size: 22px; color: var(--gold); line-height: 1; }
+  .lp-n { position: absolute; top: 8px; left: 10px; font-size: 11.5px; font-weight: 800; color: #9BB5A9; }
+  .loop-note { margin-top: 16px; text-align: center; font-size: 13.5px; color: #C8DBD1; }
+  @media (max-width: 1000px) { .loop-list { grid-template-columns: repeat(3, 1fr); } .loop-list li:nth-child(3)::after { display: none; } }
+  @media (max-width: 560px) { .loop { padding: 22px 16px; } .loop-list { grid-template-columns: 1fr 1fr; } .loop-list li::after { display: none; } }
+
+  .who { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: .03em; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+  .who.hub { background: var(--green-light); color: var(--green-dark); }
+  .who.mem { background: var(--gold-light); color: #6B5A15; }
+  .who.both { background: #EEF1F6; color: var(--navy); }
+  @media (max-width: 560px) { .flow-row { gap: 14px; } .flow-num { width: 44px; height: 44px; font-size: 18px; } .flow-row::before { left: 21px; top: 44px; } .flow-body { padding: 18px; } }
+
+  .mat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 900px) { .mat-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .mat-grid { grid-template-columns: 1fr; } }
+  .mat-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 24px; }
+  .mat-card h4 { font-size: 17px; margin: 10px 0 6px; }
+  .mat-card p { font-size: 14px; color: var(--muted); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+  .tag.main { background: var(--green); color: #fff; }
+  .tag.mix { background: #EEF1F6; color: var(--navy); }
+  .tag.sup { background: var(--gold-light); color: #6B5A15; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 420px) { .stats { grid-template-columns: 1fr; } }
+  .stat { background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .stat b { display: block; font-size: 30px; font-weight: 800; color: var(--green-dark); line-height: 1.15; font-family: 'Inter', sans-serif; }
+  .stat small { display: block; font-size: 13px; font-weight: 700; color: var(--green); margin: 2px 0 8px; }
+  .stat p { font-size: 13.6px; color: var(--muted); }
+  .stat-src { font-size: 12.5px; color: var(--muted); margin-top: 12px; text-align: center; }
+  .market-box { margin: 28px auto 0; max-width: 880px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 28px; }
+  .market-box h4 { font-size: 17px; margin-bottom: 14px; }
+
+  .role-grid .benefit-card a { color: var(--green); font-weight: 700; }
+  .role-grid .benefit-card a:hover { text-decoration: underline; }
+
+  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 800px) { .gallery { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .gallery { grid-template-columns: 1fr; } }
+  .g-item img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); }
+  .credit { margin-top: 18px; text-align: center; font-size: 13px; color: var(--muted); font-style: italic; }
+  .note-block p + p { margin-top: 8px; }
+  .note-sec { padding: 48px 0 56px; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/site-header.css">
+<link rel="stylesheet" href="css/site-footer.css">
+</head>
+<body>
+
+<!-- ===== AgroLink shared site header (same on every public page; styles css/site-header.css, behaviour js/site-header.js) ===== -->
+<a class="sh-skip" href="#sh-content" data-i18n="sh_skip">ข้ามไปยังเนื้อหาหลัก</a>
+<header class="sh-header" id="shHeader">
+  <div class="sh-container sh-row">
+    <a class="sh-brand" href="index.html"><img src="assets/agrolink-logo.png" width="284" height="220" alt="AgroLink" /></a>
+    <nav class="sh-nav" id="shNav" data-i18n="sh_nav_aria" data-i18n-attr="aria-label" aria-label="เมนูหลัก">
+      <ul class="sh-list"><li><a class="sh-link" href="index.html" data-sh-home><i class="fa-solid fa-house" aria-hidden="true"></i> <span data-i18n="sh_nav_home">หน้าแรก</span></a></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-eco"><span data-i18n="sh_nav_eco">ระบบนิเวศ</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-eco"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_eco_overview">ภาพรวม</h3><ul><li><a href="index.html#ecosystem"><span class="sh-mi"><i class="fa-solid fa-circle-nodes" aria-hidden="true"></i></span><span><b data-i18n="sh_m_eco">ภาพรวมระบบนิเวศ</b><span class="sh-d" data-i18n="sh_md_eco">AgroLink เชื่อมทุกฝ่ายด้วยข้อมูลเดียวกัน</span></span></a></li><li><a href="coop-portal.html"><span class="sh-mi"><i class="fa-solid fa-people-roof" aria-hidden="true"></i></span><span><b data-i18n="sh_m_coop">สำหรับสหกรณ์</b><span class="sh-d" data-i18n="sh_md_coop">Cooperative Digital Hub</span></span></a></li><li><a href="for-farmers.html"><span class="sh-mi"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span><span><b data-i18n="sh_m_farmer">สำหรับเกษตรกร</b><span class="sh-d" data-i18n="sh_md_farmer">ข้อมูลแปลง การเงิน ตลาด ในที่เดียว</span></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_eco_farmers">เกษตรกรแต่ละกลุ่ม</h3><ul><li><a href="for-farmers-crop.html"><span class="sh-mi"><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_crop">เกษตรกรผู้ปลูกพืช</b></span></a></li><li><a href="for-farmers-livestock.html"><span class="sh-mi"><i class="fa-solid fa-cow" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_live">เกษตรกรผู้เลี้ยงสัตว์บก</b></span></a></li><li><a href="for-farmers-aquaculture.html"><span class="sh-mi"><i class="fa-solid fa-fish" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_aqua">เกษตรกรผู้เลี้ยงสัตว์น้ำ</b></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_eco_partners">ผู้ให้บริการและผู้ซื้อ</h3><ul><li><a href="marketplace-partners.html"><span class="sh-mi"><i class="fa-solid fa-store" aria-hidden="true"></i></span><span><b data-i18n="sh_m_market">ตลาดกลาง / ผู้ซื้อ-โรงงาน</b></span></a></li><li><a href="logistics-portal.html"><span class="sh-mi"><i class="fa-solid fa-truck" aria-hidden="true"></i></span><span><b data-i18n="sh_m_logistics">ผู้ให้บริการขนส่ง</b></span></a></li><li><a href="biomass-portal.html"><span class="sh-mi"><i class="fa-solid fa-recycle" aria-hidden="true"></i></span><span><b data-i18n="sh_m_biomass_buyer">ผู้รับซื้อชีวมวล</b></span></a></li><li><a href="technology-partners.html"><span class="sh-mi"><i class="fa-solid fa-microchip" aria-hidden="true"></i></span><span><b data-i18n="sh_m_tech_partner">พันธมิตรเทคโนโลยี</b></span></a></li><li><a href="auction-intro.html"><span class="sh-mi"><i class="fa-solid fa-gavel" aria-hidden="true"></i></span><span><b data-i18n="sh_m_auction">Auction Place ระบบประมูล</b></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_eco_t">เกษตรกรและสหกรณ์คือศูนย์กลาง</b><p data-i18n="sh_mf_eco_d">ทุกบริการทำงานบนโครงสร้างพื้นฐานข้อมูลเดียวกัน</p><a href="index.html#ecosystem"><span data-i18n="sh_mf_eco_l">สำรวจระบบนิเวศ</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-sol"><span data-i18n="sh_nav_sol">โซลูชันธุรกิจ</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-sol"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_sol_crops">พืชเศรษฐกิจครบวงจร</h3><ul><li><a class="sh-plain" href="integrated-rice-business.html"><span data-i18n="sh_m_rice">ธุรกิจข้าวครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-durian-business.html"><span data-i18n="sh_m_durian">ทุเรียนครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-cassava-business.html"><span data-i18n="sh_m_cassava">มันสำปะหลังครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-corn-business.html"><span data-i18n="sh_m_corn">ข้าวโพดครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-sugarcane-business.html"><span data-i18n="sh_m_sugarcane">อ้อยน้ำตาล</span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_sol_more">ไม้ผลและพืชยืนต้น</h3><ul><li><a class="sh-plain" href="integrated-palmoil-business.html"><span data-i18n="sh_m_palm">ปาล์มน้ำมัน</span></a></li><li><a class="sh-plain" href="integrated-longan-business.html"><span data-i18n="sh_m_longan">ลำไย</span></a></li><li><a class="sh-plain" href="integrated-coconut-business.html"><span data-i18n="sh_m_coconut">มะพร้าวน้ำหอมครบวงจร</span></a></li><li><a class="sh-plain" href="rap-t-coffee.html"><span data-i18n="sh_m_coffee">กาแฟ</span></a></li><li><a class="sh-plain" href="custom-fertilizer.html"><span data-i18n="sh_m_fert">ปุ๋ยสั่งตัด</span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_sol_animal">ปศุสัตว์และประมง</h3><ul><li><a class="sh-plain" href="for-farmers-livestock.html"><span data-i18n="sh_m_livestock">ปศุสัตว์</span></a></li><li><a class="sh-plain" href="for-farmers-aquaculture.html"><span data-i18n="sh_m_fishery">ประมง</span></a></li><li><a class="sh-plain" href="rap-t-shrimp.html"><span data-i18n="sh_m_shrimp">กุ้ง</span></a></li><li><a class="sh-plain" href="rap-t-tilapia.html"><span data-i18n="sh_m_tilapia">ปลานิล/ทับทิมกระชัง</span></a></li><li><a class="sh-plain" href="integrated-seabass-business.html"><span data-i18n="sh_m_seabass">ปลากระพง/เก๋ากระชัง</span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_sol_t">โครงการ RAP-T</b><p data-i18n="sh_mf_sol_d">ต่อยอดห่วงโซ่คุณค่าสินค้าเกษตรสำคัญของประเทศ</p><a href="rap-t-project.html"><span data-i18n="sh_mf_sol_l">ดูโครงการ RAP-T</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-tech"><span data-i18n="sh_nav_tech">เทคโนโลยี</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-tech"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_tech">เทคโนโลยีและข้อมูล</h3><ul><li><a href="ai-satellite-guide.html"><span class="sh-mi"><i class="fa-solid fa-satellite" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ai">AI และดาวเทียม</b><span class="sh-d" data-i18n="sh_md_ai">ข้อมูลดาวเทียมและ AI ภาคสนาม</span></span></a></li><li><a href="production-cycle-template.html"><span class="sh-mi"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><span><b data-i18n="sh_m_farmos">Farm OS</b><span class="sh-d" data-i18n="sh_md_farmos">แม่แบบวงจรการผลิตและการวางแผน</span></span></a></li><li><a href="carbon-module-guide.html"><span class="sh-mi"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span><span><b data-i18n="sh_m_verify">ข้อมูลการผลิตและการตรวจสอบ</b><span class="sh-d" data-i18n="sh_md_verify">กลไก MRV และการทวนสอบ</span></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_portal">พอร์ทัลและการใช้งาน</h3><ul><li><a href="login.html"><span class="sh-mi"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i></span><span><b data-i18n="sh_m_portal">พอร์ทัลสมาชิก</b><span class="sh-d" data-i18n="sh_md_portal">เข้าสู่ระบบตามบทบาทของท่าน</span></span></a></li><li><a href="demo-preview.html"><span class="sh-mi"><i class="fa-solid fa-route" aria-hidden="true"></i></span><span><b data-i18n="sh_m_demo">ตัวอย่างการใช้งานทีละขั้นตอน</b><span class="sh-d" data-i18n="sh_md_demo">เดินเรื่องการใช้งานจริง 6 ขั้นตอน</span></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_tech_t">AI + Satellite + IoT</b><p data-i18n="sh_mf_tech_d">เปลี่ยนกิจกรรมในแปลงให้เป็นข้อมูลที่ใช้งานได้จริง</p><a href="ai-satellite-guide.html"><span data-i18n="sh_mf_tech_l">เรียนรู้เทคโนโลยี</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-fin"><span data-i18n="sh_nav_fin">การเงินและความยั่งยืน</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-fin"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_fin">การเงินและประกันภัย</h3><ul><li><a href="finance-partners.html"><span class="sh-mi"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span><span><b data-i18n="sh_m_finance">การเงิน</b><span class="sh-d" data-i18n="sh_md_finance">เชื่อมข้อมูลการผลิตกับผู้ให้บริการทางการเงิน</span></span></a></li><li><a href="agri-insurance-ecosystem.html"><span class="sh-mi"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_eco">ภาพรวมระบบนิเวศประกันภัย</b></span></a></li><li><a href="insurance-marketplace.html"><span class="sh-mi"><i class="fa-solid fa-umbrella" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_market">พอร์ทัลประกันภัยเกษตร</b></span></a></li><li><a href="insurance-portal.html"><span class="sh-mi"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_provider">พอร์ทัลผู้ให้บริการประกันภัย</b></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_green">ความยั่งยืน</h3><ul><li><a href="carbon-credit-article.html"><span class="sh-mi"><i class="fa-solid fa-leaf" aria-hidden="true"></i></span><span><b data-i18n="sh_m_carbon">คาร์บอนเครดิต</b><span class="sh-d" data-i18n="sh_md_carbon">นาเปียกสลับแห้ง (AWD) และการทวนสอบ</span></span></a></li><li><a href="biomass-economy.html"><span class="sh-mi"><i class="fa-solid fa-recycle" aria-hidden="true"></i></span><span><b data-i18n="sh_m_bio">เศรษฐกิจชีวมวล</b><span class="sh-d" data-i18n="sh_md_bio">เปลี่ยนวัสดุเหลือใช้เป็นรายได้</span></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_fin_t">AgroLink ไม่ใช่ผู้ให้สินเชื่อ</b><p data-i18n="sh_mf_fin_d">การอนุมัติ วงเงิน และอัตราดอกเบี้ย เป็นการพิจารณาของผู้ให้บริการทางการเงินแต่ละราย</p><a href="finance-partners.html"><span data-i18n="sh_mf_fin_l">ดูพันธมิตรการเงิน</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-about"><span data-i18n="sh_nav_about">เกี่ยวกับเรา</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-about"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_about">บริษัท</h3><ul><li><a href="about-video.html"><span class="sh-mi"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span><span><b data-i18n="sh_m_about_video">เกี่ยวกับ AgroLink (วิดีโอ)</b></span></a></li><li><a href="about.html"><span class="sh-mi"><i class="fa-solid fa-building" aria-hidden="true"></i></span><span><b data-i18n="sh_m_about">ข้อมูลบริษัท</b></span></a></li><li><a href="business-model.html"><span class="sh-mi"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span><span><b data-i18n="sh_m_investor">นักลงทุน</b><span class="sh-d" data-i18n="sh_md_investor">โมเดลธุรกิจและแผนการเติบโต</span></span></a></li><li><a href="contact.html"><span class="sh-mi"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span><span><b data-i18n="sh_m_contact">ติดต่อเรา</b></span></a></li></ul></div></div></div></li></ul>
+      <div class="sh-mobile-cta"><a class="sh-btn sh-btn-ghost" href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a><a class="sh-btn sh-btn-gold" href="demo-preview.html"><span data-i18n="sh_demo">ขอชม Demo</span></a></div>
+    </nav>
+    <div class="sh-actions">
+      <button type="button" class="sh-lang" data-lang-toggle>EN</button>
+      <a class="sh-btn sh-btn-ghost" href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a>
+      <a class="sh-btn sh-btn-gold" href="demo-preview.html"><span data-i18n="sh_demo">ขอชม Demo</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+      <button type="button" class="sh-toggle" id="shToggle" aria-expanded="false" aria-controls="shNav" data-i18n="sh_menu_aria" data-i18n-attr="aria-label" aria-label="เปิดเมนู"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+    </div>
+  </div>
+</header>
+<!-- ===== /shared site header ===== -->
+
+<main id="sh-content">
+<section class="page-header">
+  <div class="container reveal in">
+    <nav class="crumb" aria-label="breadcrumb"><a href="biomass-economy.html"><i class="fa-solid fa-recycle" aria-hidden="true"></i> <span data-i18n="smc_2">เศรษฐกิจชีวมวล</span></a> <span aria-hidden="true">/</span> <span data-i18n="smc_3">จากเศษวัสดุชีวมวลสู่ผลผลิตเห็ด</span></nav>
+    <div class="eyebrow"><i class="fa-solid fa-seedling" aria-hidden="true"></i><span data-i18n="smc_4">เอกสารแนะนำสำหรับสหกรณ์</span></div>
+    <h1 class="section-title" data-i18n="smc_5">การผลิตเห็ดฟางแบบใหม่ “แบบอานนท์ 2589”: สหกรณ์ผลิตกล่องเพาะ สมาชิกเปิดดอก</h1>
+    <p class="section-sub" data-i18n="smc_6">เปลี่ยนฟางข้าว ทะลายปาล์ม ผักตบชวา กากมัน รำข้าว กากฝ้าย และเศษวัสดุการเกษตรเหลือทิ้ง ให้เป็นเห็ดฟางคุณภาพ — สหกรณ์ทำหน้าที่ศูนย์กลางเตรียมวัสดุและผลิตกล่องเพาะ สมาชิกนำกล่องไปเปิดดอก แล้วส่งดอกเห็ดกลับมาให้สหกรณ์รวบรวมจำหน่าย</p>
+    <div class="hero-cta">
+      <a href="#process" class="btn btn-gold"><i class="fa-solid fa-list-ol" aria-hidden="true"></i><span data-i18n="smc_7"> ดูขั้นตอนการผลิต</span></a>
+      <a href="biomass-economy.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span data-i18n="smc_8"> กลับสู่เศรษฐกิจชีวมวล</span></a>
+    </div>
+  </div>
+</section>
+<section class="prose-section">
+  <div class="container intro-split">
+    <figure class="photo-card reveal">
+      <img src="assets/mushroom/mushroom-crates-stacked.jpg" width="1280" height="960" loading="lazy" data-i18n="smc_9" data-i18n-attr="alt" alt="ลังเพาะเห็ดฟางวางซ้อนกันในห้องคลุมผ้าใบ ตามวิธีแยกกระบวนการของ อ.อานนท์">
+      <figcaption data-i18n="smc_10">ลังเพาะวางซ้อนในห้องคลุมผ้าใบ — ภาพการทดลองแบบแยกกระบวนการ เมษายน 2552</figcaption>
+    </figure>
+    <div class="summary reveal">
+      <div class="eyebrow"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i><span data-i18n="smc_11">สาระสำคัญ</span></div>
+      <h2 class="section-title" data-i18n="smc_12">แยกงานยาก–งานง่าย ให้แต่ละฝ่ายทำในส่วนที่ถนัด</h2>
+      <p class="lead" data-i18n="smc_13">หัวใจของแบบอานนท์ 2589 คือ “การแยกกระบวนการ” งานที่ต้องใช้เครื่องจักร พลังงาน และความรู้เฉพาะ (หมักวัสดุ อบฆ่าเชื้อ ใส่เชื้อ บ่มเส้นใย) ทำรวมที่ศูนย์ของสหกรณ์ ส่วนงานดูแลการออกดอกที่ใช้แรงงานน้อย ให้สมาชิกทำที่บ้าน</p>
+      <ul class="chk"><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_14">สหกรณ์ลงทุนจุดเดียว ใช้เครื่องจักรแทนแรงงานคน</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_15">สมาชิกไม่ต้องสร้างโรงเรือนราคาแพง แค่พื้นที่เปิดดอกที่กันลมได้</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_16">กล่องที่บ่มเส้นใยแล้วขนส่งได้ไกลราว 150 กิโลเมตร</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_17">ใช้ได้กับวัสดุเหลือทิ้งหลายชนิด ไม่ต้องพึ่งฟางข้าวอย่างเดียว</span></li></ul>
+    </div>
+  </div>
+</section>
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span data-i18n="smc_31">ทำไมต้องเห็ดฟาง</span></div><h2 class="section-title" data-i18n="smc_32">เห็ดฟาง: กิจกรรมเพิ่มมูลค่าเศษวัสดุการเกษตรที่ตลาดรองรับ</h2><p class="section-sub" data-i18n="smc_30">เหมาะกับสหกรณ์ที่มีสมาชิกจำนวนมากและมีวัสดุเหลือใช้ในพื้นที่</p></div>
+    <div class="benefit-grid"><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-recycle" aria-hidden="true"></i></div><h4 data-i18n="smc_18">เพิ่มมูลค่าเศษวัสดุแทนการเผา</h4><p data-i18n="smc_19">ฟางข้าว ทะลายปาล์ม ผักตบชวา กากมัน ที่เคยถูกเผาหรือทิ้ง กลายเป็นวัตถุดิบเพาะเห็ดที่สร้างรายได้ ช่วยลดหมอกควันและ PM2.5</p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-store" aria-hidden="true"></i></div><h4 data-i18n="smc_20">ตลาดในประเทศยังขาดแคลน</h4><p data-i18n="smc_21">อ.อานนท์ประเมินว่าคนไทยบริโภคเห็ดฟางราว 1 ล้านตันต่อปี แต่ผลิตได้ไม่เกิน 350,000 ตัน ส่วนที่เหลือต้องนำเข้า</p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-house-chimney" aria-hidden="true"></i></div><h4 data-i18n="smc_22">สมาชิกลงทุนต่ำ</h4><p data-i18n="smc_23">สมาชิกไม่ต้องหมักวัสดุ อบไอน้ำ หรือทำเชื้อเอง แค่เตรียมพื้นที่เปิดดอกง่าย ๆ ใช้แรงงานในครัวเรือนดูแล</p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-rotate" aria-hidden="true"></i></div><h4 data-i18n="smc_24">รอบการผลิตสั้น หมุนเวียนรายได้เร็ว</h4><p data-i18n="smc_25">เห็ดฟางเป็นเห็ดที่โตเร็ว ใช้เวลาไม่กี่สัปดาห์ต่อรอบ สมาชิกจึงมีรายได้หมุนเวียนต่อเนื่องระหว่างฤดูทำนา</p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-seedling" aria-hidden="true"></i></div><h4 data-i18n="smc_26">วัสดุหลังเก็บดอกกลับคืนสู่ดิน</h4><p data-i18n="smc_27">อ.อานนท์ชี้ว่าเห็ดเปลี่ยนเศษวัสดุการเกษตรให้เป็นปุ๋ย ดิน และอาหารที่มีคุณค่า วัสดุเพาะเก่านำไปหมักเป็นปุ๋ยบำรุงดินต่อได้</p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-people-roof" aria-hidden="true"></i></div><h4 data-i18n="smc_28">สร้างธุรกิจใหม่ให้สหกรณ์</h4><p data-i18n="smc_29">สหกรณ์มีรายได้จากการขายกล่องเพาะและการรวบรวม แปรรูป จำหน่ายเห็ด เป็นกิจกรรมเศรษฐกิจหมุนเวียนแบบ BCG</p></div></div>
+  </div>
+</section>
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-timeline" aria-hidden="true"></i><span data-i18n="smc_49">วิวัฒนาการ</span></div><h2 class="section-title" data-i18n="smc_50">เส้นทางการเพาะเห็ดฟางไทย จากกองฟางกลางแจ้งสู่ระบบศูนย์กลาง–เครือข่าย</h2><p class="section-sub" data-i18n="smc_48">สรุปจากประสบการณ์กว่า 50 ปีของ อ.อานนท์ ผู้พัฒนาวิธีเพาะเห็ดฟางในโรงเรือนที่ใช้กันทั่วประเทศ</p></div>
+    <ol class="timeline"><li class="tl-item reveal"><span class="tl-year" data-i18n="smc_33">พ.ศ. 2489–2510</span><h4 data-i18n="smc_34">แบบกองสูง (กลางแจ้ง)</h4><p data-i18n="smc_35">ใช้ฟางปริมาณมาก ออกดอกภายใน 15–20 วัน แต่เชื้อโรคสะสมในพื้นที่เดิม ต้องย้ายที่เพาะไปเรื่อย ๆ</p></li><li class="tl-item reveal"><span class="tl-year" data-i18n="smc_36">ยุคถัดมา</span><h4 data-i18n="smc_37">แบบกองเตี้ย</h4><p data-i18n="smc_38">ใช้วัสดุน้อยลงราว 10 เท่า และใช้วัสดุได้หลากหลาย เช่น ฟาง ขี้ฝ้าย ผักตบชวา กากถั่ว กากมัน ทะลายปาล์มเก่า</p></li><li class="tl-item reveal"><span class="tl-year" data-i18n="smc_39">พ.ศ. 2517</span><h4 data-i18n="smc_40">แบบอานนท์ 2517 (โรงเรือน)</h4><p data-i18n="smc_41">พัฒนาเพื่อผลิตส่งออกฮ่องกง เพาะในโรงเรือนได้ทั้งปี ปัจจุบันใช้แพร่หลายทั่วประเทศ แต่มีต้นทุนเชื้อเพลิงและแรงงานสูง ความร้อนสูญเสียผ่านผนังพลาสติก ชั้นถาวรใส่วัสดุได้น้อย และควบคุมสภาพแวดล้อมได้ยาก</p></li><li class="tl-item reveal"><span class="tl-year" data-i18n="smc_42">พ.ศ. 2552</span><h4 data-i18n="smc_43">แบบอานนท์ 2552 (แยกกระบวนการ)</h4><p data-i18n="smc_44">หมักวัสดุนอกโรงเรือน บรรจุลงลังที่เคลื่อนย้ายได้ แล้วเลี้ยงเชื้อและพาสเจอไรซ์ในห้องเฉพาะ ประหยัดเชื้อเพลิง ใส่วัสดุได้มากขึ้น ใช้เครื่องจักรได้ เหมาะกับการทำเป็นกลุ่ม</p></li><li class="tl-item reveal is-new"><span class="tl-year" data-i18n="smc_45">แนวทางใหม่</span><h4 data-i18n="smc_46">แบบอานนท์ 2589 (ศูนย์กลาง–เครือข่าย)</h4><p data-i18n="smc_47">กลับกองด้วยเครื่องจักร บรรจุลังหรือกล่องโฟม คลุมผ้าใบอบไอน้ำ ลงทุนและใช้พลังงานต่ำ แล้วส่งกล่องที่บ่มเส้นใยแล้วไปเปิดดอกที่บ้านสมาชิก ชื่อ “2589” สะท้อนว่าอาจใช้เวลาราว 20 ปีกว่าวิธีนี้จะแพร่หลายในประเทศไทย</p></li></ol>
+  </div>
+</section>
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-code-compare" aria-hidden="true"></i><span data-i18n="smc_82">หลักการแยกกระบวนการ</span></div><h2 class="section-title" data-i18n="smc_83">โรงเรือนแบบเดิม กับ แบบใหม่ ต่างกันอย่างไร</h2><p class="section-sub" data-i18n="smc_81">จุดที่ทำให้ต้นทุนสูงในแบบเดิม คือเชื้อเพลิงและแรงงาน แบบใหม่แก้ทั้งสองจุดด้วยการแยกงานและใช้ภาชนะเคลื่อนย้ายได้</p></div>
+    <div class="table-wrap reveal">
+      <table class="compare">
+        <thead><tr><th scope="col" data-i18n="smc_84">ประเด็น</th><th scope="col" data-i18n="smc_85">โรงเรือนแบบเดิม (แบบ 2517)</th><th scope="col" class="new" data-i18n="smc_86">แบบใหม่ (แบบ 2589)</th></tr></thead>
+        <tbody><tr><th scope="row" data-i18n="smc_51">การหมักวัสดุ</th><td><span class="m-lbl" data-i18n="smc_52">แบบเดิม</span><span data-i18n="smc_53">หมักนอกโรงเรือน แล้วใช้แรงงานขนขึ้นชั้นในโรงเรือน (งานหนัก)</span></td><td class="new"><span class="m-lbl" data-i18n="smc_54">แบบใหม่</span><span data-i18n="smc_55">หมักกลางแจ้ง กลับกองบ่อย ๆ ด้วยเครื่องจักร เช่น รถตักขนาดเล็ก</span></td></tr><tr><th scope="row" data-i18n="smc_56">ภาชนะเพาะ</th><td><span class="m-lbl" data-i18n="smc_57">แบบเดิม</span><span data-i18n="smc_58">ชั้นถาวรในโรงเรือน ใส่วัสดุได้น้อย</span></td><td class="new"><span class="m-lbl" data-i18n="smc_59">แบบใหม่</span><span data-i18n="smc_60">ลังหรือกล่องโฟมความหนาแน่นสูง เคลื่อนย้ายได้ วางซ้อนกัน</span></td></tr><tr><th scope="row" data-i18n="smc_61">การอบฆ่าเชื้อ</th><td><span class="m-lbl" data-i18n="smc_62">แบบเดิม</span><span data-i18n="smc_63">อบทั้งโรงเรือน ความร้อนสูญเสียผ่านผนังพลาสติก</span></td><td class="new"><span class="m-lbl" data-i18n="smc_64">แบบใหม่</span><span data-i18n="smc_65">คลุมผ้าใบอบเฉพาะกองลัง ใช้ความร้อนเดิมของวัสดุหมัก (45–54°C)</span></td></tr><tr><th scope="row" data-i18n="smc_66">การเปิดดอก</th><td><span class="m-lbl" data-i18n="smc_67">แบบเดิม</span><span data-i18n="smc_68">อยู่ในโรงเรือนเดิมตลอดรอบการผลิต</span></td><td class="new"><span class="m-lbl" data-i18n="smc_69">แบบใหม่</span><span data-i18n="smc_70">บ่มเส้นใยที่ศูนย์ แล้วแยกไปเปิดดอกที่บ้านสมาชิก</span></td></tr><tr><th scope="row" data-i18n="smc_71">ผู้ทำงาน</th><td><span class="m-lbl" data-i18n="smc_72">แบบเดิม</span><span data-i18n="smc_73">เจ้าของโรงเรือนทำเองทุกขั้นตอน</span></td><td class="new"><span class="m-lbl" data-i18n="smc_74">แบบใหม่</span><span data-i18n="smc_75">สหกรณ์ทำงานส่วนกลาง สมาชิกดูแลการออกดอกและเก็บเกี่ยว</span></td></tr><tr><th scope="row" data-i18n="smc_76">การขยายผล</th><td><span class="m-lbl" data-i18n="smc_77">แบบเดิม</span><span data-i18n="smc_78">ขยายได้ตามจำนวนโรงเรือนที่ลงทุน</span></td><td class="new"><span class="m-lbl" data-i18n="smc_79">แบบใหม่</span><span data-i18n="smc_80">ขยายได้ตามจำนวนสมาชิกในเครือข่าย</span></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-people-group" aria-hidden="true"></i><span data-i18n="smc_93">บทบาทของแต่ละฝ่าย</span></div><h2 class="section-title" data-i18n="smc_94">สหกรณ์เป็นศูนย์กลาง สมาชิกเป็นเครือข่ายเปิดดอก</h2></div>
+    <div class="roles">
+      <div class="role-card hub reveal"><div class="role-top"><div class="icn"><i class="fa-solid fa-industry" aria-hidden="true"></i></div><div><small data-i18n="smc_95">ศูนย์ผลิตกล่องเพาะ</small><h3 data-i18n="smc_96">สหกรณ์ / กลุ่มเกษตรกร</h3></div></div><ul class="chk"><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_97">รับซื้อฟางข้าวจากสมาชิก และจัดหาวัสดุอื่น เช่น ทะลายปาล์ม กากมัน ผักตบชวา รำข้าว</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_98">หมักวัสดุและอบไอน้ำฆ่าเชื้อด้วยเครื่องจักรที่ศูนย์</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_99">จัดหาเชื้อเห็ดฟางคุณภาพ ใส่เชื้อ และบ่มเส้นใยให้เดินเต็มกล่อง</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_100">จัดรถส่งกล่องเพาะถึงบ้านสมาชิก และรับดอกเห็ดสดกลับ</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_101">รวบรวม คัดเกรด แปรรูป (ลวกแช่แข็ง ดองซีอิ๊ว) และหาตลาด</span></li></ul></div>
+      <div class="role-card reveal"><div class="role-top"><div class="icn"><i class="fa-solid fa-house-chimney" aria-hidden="true"></i></div><div><small data-i18n="smc_102">เครือข่ายเปิดดอก</small><h3 data-i18n="smc_103">สมาชิกสหกรณ์</h3></div></div><ul class="chk"><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_104">ส่งฟางข้าวให้สหกรณ์แทนการเผา</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_105">เตรียมพื้นที่เปิดดอกง่าย ๆ ที่กันลมได้ ไม่ต้องสร้างโรงเรือนราคาแพง</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_106">รับกล่องเพาะ ดูแลน้ำและความชื้นให้เห็ดออกดอก</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_107">เก็บดอกเห็ดตามมาตรฐานที่สหกรณ์กำหนด แล้วส่งขายให้สหกรณ์</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_108">นำวัสดุเพาะเก่าไปหมักเป็นปุ๋ยบำรุงดิน</span></li></ul></div>
+    </div>
+    <div class="loop reveal">
+      <h4 data-i18n="smc_109">วงจรการทำงานในแต่ละรอบ</h4>
+      <ol class="loop-list"><li><span class="lp-n">1</span><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i><span data-i18n="smc_87">สมาชิกส่งฟาง</span></li><li><span class="lp-n">2</span><i class="fa-solid fa-fire-flame-curved" aria-hidden="true"></i><span data-i18n="smc_88">สหกรณ์หมักและอบไอน้ำ</span></li><li><span class="lp-n">3</span><i class="fa-solid fa-vial" aria-hidden="true"></i><span data-i18n="smc_89">ใส่เชื้อ บ่มเส้นใย</span></li><li><span class="lp-n">4</span><i class="fa-solid fa-truck" aria-hidden="true"></i><span data-i18n="smc_90">รถส่งกล่องถึงบ้านสมาชิก</span></li><li><span class="lp-n">5</span><i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i><span data-i18n="smc_91">สมาชิกเปิดดอก เก็บเกี่ยว</span></li><li><span class="lp-n">6</span><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i><span data-i18n="smc_92">สหกรณ์รวบรวม แปรรูป จำหน่าย</span></li></ol>
+      <p class="loop-note" data-i18n="smc_110">เมื่อครบรอบ สหกรณ์เริ่มผลิตกล่องชุดใหม่ สมาชิกนำวัสดุเพาะเก่าไปทำปุ๋ยหมัก แล้วรับกล่องชุดถัดไป</p>
+    </div>
+  </div>
+</section>
+<section class="prose-section alt" id="process">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-list-ol" aria-hidden="true"></i><span data-i18n="smc_140">ขั้นตอนการผลิต</span></div><h2 class="section-title" data-i18n="smc_141">8 ขั้นตอน จากเศษวัสดุสู่ดอกเห็ดฟาง</h2><p class="section-sub" data-i18n="smc_139">ค่าอุณหภูมิและระยะเวลาเป็นแนวทางจาก อ.อานนท์ ควรทดลองปรับให้เหมาะกับวัสดุและสภาพพื้นที่</p></div>
+    <div class="flow-wrap"><div class="flow-row reveal"><div class="flow-num">1</div><div class="flow-body"><span class="who both" data-i18n="smc_112">สมาชิก + สหกรณ์</span><h4 data-i18n="smc_113">รวบรวมและเตรียมวัสดุเพาะ</h4><p data-i18n="smc_111">สมาชิกส่งฟางข้าวหลังเก็บเกี่ยว สหกรณ์จัดหาวัสดุหลักราคาถูกในพื้นที่ เช่น ทะลายปาล์มจากโรงหีบ กากมันสำปะหลัง ผักตบชวาสด และอาหารเสริม เช่น รำข้าว กากฝ้าย (ใช้ฟางอย่างเดียวได้ผลผลิตต่ำมาก)</p></div></div><div class="flow-row reveal"><div class="flow-num">2</div><div class="flow-body"><span class="who hub" data-i18n="smc_115">สหกรณ์</span><h4 data-i18n="smc_116">หมักกองกลางแจ้ง กลับกองด้วยเครื่องจักร</h4><p data-i18n="smc_114">หมักวัสดุเป็นกองนอกอาคารและกลับกองบ่อย ๆ ด้วยเครื่องจักร เช่น รถตักขนาดเล็ก แทนแรงงานคน ลดงานหนักซึ่งเป็นต้นทุนหลักของแบบโรงเรือนเดิม</p></div></div><div class="flow-row reveal"><div class="flow-num">3</div><div class="flow-body"><span class="who hub" data-i18n="smc_118">สหกรณ์</span><h4 data-i18n="smc_119">บรรจุลงลังหรือกล่องโฟม แล้ววางซ้อนกัน</h4><p data-i18n="smc_117">บรรจุวัสดุหมักลงลังพลาสติกหรือกล่องโฟมความหนาแน่นสูง (อ.อานนท์แนะนำกล่องใส่ปลาแซลมอน) วางซ้อนเป็นกองเพื่อเตรียมอบไอน้ำ</p></div></div><div class="flow-row reveal"><div class="flow-num">4</div><div class="flow-body"><span class="who hub" data-i18n="smc_121">สหกรณ์</span><h4 data-i18n="smc_122">คลุมผ้าใบ อบไอน้ำฆ่าเชื้อ</h4><p data-i18n="smc_120">คลุมกองลังด้วยผ้าใบแล้วอบไอน้ำ เลี้ยงเชื้อจุลินทรีย์ที่เป็นอาหารของเห็ด และพาสเจอไรซ์ตามหลักของแบบอานนท์ (ราว 65–72°C นาน 4–6 ชั่วโมง ซึ่งฆ่าไข่หนอนและไรได้ด้วย) ใช้พลังงานน้อยเพราะวัสดุหมักร้อนอยู่แล้ว 45–54°C</p></div></div><div class="flow-row reveal"><div class="flow-num">5</div><div class="flow-body"><span class="who hub" data-i18n="smc_124">สหกรณ์</span><h4 data-i18n="smc_125">ใส่เชื้อเห็ดและบ่มเส้นใย</h4><p data-i18n="smc_123">สหกรณ์ใส่เชื้อเห็ดฟางคุณภาพ แล้วบ่มที่ 32–36°C นาน 6–7 วัน ในห้องอบเดิมหรือห้องปิดใดก็ได้ จนเส้นใยเดินเต็มกล่อง</p></div></div><div class="flow-row reveal"><div class="flow-num">6</div><div class="flow-body"><span class="who hub" data-i18n="smc_129">สหกรณ์</span><h4 data-i18n="smc_130">ขนส่งกล่องถึงบ้านสมาชิก</h4><p><span data-i18n="smc_126">การเคลื่อนย้ายกล่องทำหน้าที่คล้าย “ตัดใย” ซึ่งกระตุ้นการออกดอก กล่องจึงขนส่งได้ไกลราว 150 กิโลเมตร โดยคลุมผ้าใบระหว่างทาง</span><span data-i18n="smc_127"> สหกรณ์ที่ไม่มีรถเอง จัดหาผู้ขนส่งได้ผ่าน</span><a href="logistics-portal.html" data-i18n="smc_128">พอร์ทัลผู้ให้บริการขนส่ง</a></p></div></div><div class="flow-row reveal"><div class="flow-num">7</div><div class="flow-body"><span class="who mem" data-i18n="smc_132">สมาชิก</span><h4 data-i18n="smc_133">สมาชิกเปิดดอกและเก็บเกี่ยว</h4><p data-i18n="smc_131">วางกล่องในพื้นที่เปิดดอกที่กันลม รดน้ำกระตุ้นจนเส้นใยยุบตัว (ตัดใย) แล้วดูแลความชื้นจนเห็ดออกดอก เก็บดอกตูมตามมาตรฐาน รถของสหกรณ์มารับดอกเห็ดสดกลับไปรวบรวม</p></div></div><div class="flow-row reveal"><div class="flow-num">8</div><div class="flow-body"><span class="who mem" data-i18n="smc_137">สมาชิก</span><h4 data-i18n="smc_138">วัสดุเพาะเก่ากลับคืนสู่ดิน</h4><p><span data-i18n="smc_134">หลังเก็บดอก วัสดุเพาะเก่านำไปหมักเป็นปุ๋ยอินทรีย์ ใช้คู่กับสูตร</span> <a href="custom-fertilizer.html" data-i18n="smc_135">ปุ๋ยสั่งตัด</a><span data-i18n="smc_136"> เพื่อบำรุงดินและลดการซื้อปุ๋ยเคมี</span></p></div></div></div>
+  </div>
+</section>
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><span data-i18n="smc_161">วัสดุเพาะ</span></div><h2 class="section-title" data-i18n="smc_162">เศษวัสดุการเกษตรที่นำมาเพาะเห็ดฟางได้</h2><p class="section-sub" data-i18n="smc_160">เลือกวัสดุที่มีมากและราคาถูกในพื้นที่ แล้วผสมสัดส่วนให้เหมาะสม สูตรที่ใช้จริงควรทดลองร่วมกับผู้เชี่ยวชาญ</p></div>
+    <div class="mat-grid"><div class="mat-card reveal"><span class="tag main" data-i18n="smc_142">วัสดุหลัก ราคาถูก</span><h4 data-i18n="smc_143">ทะลายปาล์มเปล่า</h4><p data-i18n="smc_144">หาได้จากโรงหีบปาล์มน้ำมันซึ่งมีทุกภาค อ.อานนท์ระบุว่าเป็นหนึ่งในวัสดุที่ถูกที่สุด</p></div><div class="mat-card reveal"><span class="tag main" data-i18n="smc_145">วัสดุหลัก ราคาถูก</span><h4 data-i18n="smc_146">กากมันสำปะหลัง</h4><p data-i18n="smc_147">ผลพลอยได้จากโรงแป้งมัน มีมากในภาคอีสานและภาคตะวันออก</p></div><div class="mat-card reveal"><span class="tag main" data-i18n="smc_148">วัสดุหลัก ราคาถูก</span><h4 data-i18n="smc_149">ผักตบชวาสด</h4><p data-i18n="smc_150">วัชพืชน้ำที่ต้องกำจัดอยู่แล้ว นำมาใช้เป็นวัสดุเพาะได้</p></div><div class="mat-card reveal"><span class="tag mix" data-i18n="smc_151">ใช้ผสม</span><h4 data-i18n="smc_152">ฟางข้าว</h4><p data-i18n="smc_153">วัสดุที่สมาชิกมีมากที่สุด แต่ใช้อย่างเดียวได้ผลผลิตต่ำมาก ควรผสมกับวัสดุหลักอื่น</p></div><div class="mat-card reveal"><span class="tag sup" data-i18n="smc_154">อาหารเสริม</span><h4 data-i18n="smc_155">รำข้าว</h4><p data-i18n="smc_156">เสริมธาตุอาหารให้วัสดุเพาะ หาได้จากโรงสีในชุมชน</p></div><div class="mat-card reveal"><span class="tag sup" data-i18n="smc_157">อาหารเสริม / ใช้ผสม</span><h4 data-i18n="smc_158">กากฝ้าย / ขี้ฝ้าย</h4><p data-i18n="smc_159">ใช้ได้ทั้งเป็นส่วนผสมและอาหารเสริม ช่วยให้ผลผลิตสูงขึ้น</p></div></div>
+  </div>
+</section>
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span data-i18n="smc_176">ตลาด</span></div><h2 class="section-title" data-i18n="smc_177">ความต้องการสูงกว่าการผลิตในประเทศหลายเท่า</h2><p class="section-sub" data-i18n="smc_175">ไทยเคยเป็นผู้ผลิตเห็ดฟางรายใหญ่ที่สุดของโลกราว พ.ศ. 2520 ปัจจุบันเวียดนามและเมียนมาแซงหน้าไปแล้ว</p></div>
+    <div class="stats"><div class="stat reveal"><b data-i18n="smc_163">12,000</b><small data-i18n="smc_164">กรัม/คน/ปี</small><p data-i18n="smc_165">การบริโภคเห็ดฟางของคนไทย เพิ่มจากราว 235 กรัม</p></div><div class="stat reveal"><b data-i18n="smc_166">~1 ล้าน</b><small data-i18n="smc_167">ตัน/ปี</small><p data-i18n="smc_168">ความต้องการบริโภคในประเทศ</p></div><div class="stat reveal"><b data-i18n="smc_169">≤350,000</b><small data-i18n="smc_170">ตัน/ปี</small><p data-i18n="smc_171">ผลผลิตในประเทศ</p></div><div class="stat reveal"><b data-i18n="smc_172">&gt;600,000</b><small data-i18n="smc_173">ตัน/ปี</small><p data-i18n="smc_174">ปริมาณนำเข้า</p></div></div>
+    <p class="stat-src" data-i18n="smc_178">ตัวเลขประมาณการจาก อ.อานนท์ ยังไม่ได้ตรวจสอบกับแหล่งข้อมูลทางการ</p>
+    <div class="market-box reveal"><h4 data-i18n="smc_179">แนวทางการตลาดสำหรับสหกรณ์</h4><ul class="chk"><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_180">ตลาดเห็ดสดในประเทศอย่างเดียวไม่พอรองรับผลผลิตจำนวนมาก ควรวางแผนแปรรูปตั้งแต่ต้น</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_181">แปรรูปแบบลวกแล้วแช่แข็ง เก็บได้ราว 1 ปี หรือดองซีอิ๊ว เพื่อทดแทนสินค้านำเข้า</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_182">เห็ดฟางสดเก็บข้ามคืนได้ยาก ผู้ผลิตที่อยู่ใกล้ตลาดได้เปรียบด้านความสด</span></li><li><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="smc_183">ไม่ควรมุ่งตลาดส่งออก เพราะผู้บริโภคนอกเอเชียส่วนใหญ่ไม่รู้จักเห็ดฟาง</span></li></ul></div>
+  </div>
+</section>
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i><span data-i18n="smc_200">บทบาทของ AgroLink</span></div><h2 class="section-title" data-i18n="smc_201">AgroLink เป็นโครงสร้างพื้นฐานข้อมูลให้เครือข่ายเห็ดฟางของสหกรณ์</h2></div>
+    <div class="benefit-grid role-grid"><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-circle-nodes" aria-hidden="true"></i></div><h4 data-i18n="smc_186">เชื่อมเครือข่าย</h4><p><span data-i18n="smc_184">เชื่อมสหกรณ์ สมาชิก โรงหีบปาล์ม โรงแป้งมัน ผู้ขายเชื้อเห็ด และผู้รับซื้อ/โรงงานแปรรูป บนข้อมูลชุดเดียวกัน ผ่าน</span><a href="marketplace-partners.html" data-i18n="smc_185">ตลาดกลาง</a></p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i></div><h4 data-i18n="smc_188">บันทึกข้อมูลรายสมาชิก</h4><p><span data-i18n="smc_187">บันทึกการส่งฟาง การรับกล่องเพาะ และการส่งดอกเห็ดของสมาชิกแต่ละราย ตรวจสอบย้อนกลับได้ตั้งแต่วัสดุถึงผลผลิต</span></p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></div><h4 data-i18n="smc_191">หักกลบบัญชีอัตโนมัติ</h4><p><span data-i18n="smc_189">ค่ากล่องเพาะหักกลบกับค่าเห็ดที่สมาชิกส่งขายได้อัตโนมัติ ภายใต้วงเงินที่ผู้ให้บริการทางการเงินอนุมัติ (AgroLink ไม่ใช่ผู้ให้สินเชื่อ) ดู</span><a href="finance-partners.html" data-i18n="smc_190">พันธมิตรการเงิน</a></p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-temperature-half" aria-hidden="true"></i></div><h4 data-i18n="smc_193">IoT ในพื้นที่เปิดดอก</h4><p><span data-i18n="smc_192">เซนเซอร์วัดอุณหภูมิ ความชื้น และควบคุมระบบพ่นหมอก ส่งข้อมูลเข้า AgroLink ช่วยสหกรณ์ติดตามคุณภาพและคาดการณ์ผลผลิต</span></p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i></div><h4 data-i18n="smc_196">จัดการขนส่งไป–กลับ</h4><p><span data-i18n="smc_194">วางรอบรถส่งกล่องและรับดอกเห็ดสดให้คุ้มค่าเที่ยว หรือหาผู้ขนส่งผ่าน</span><a href="logistics-portal.html" data-i18n="smc_195">พอร์ทัลผู้ให้บริการขนส่ง</a></p></div><div class="benefit-card reveal"><div class="icn"><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i></div><h4 data-i18n="smc_199">ต่อยอดธุรกิจข้าวครบวงจร</h4><p><span data-i18n="smc_197">ฟางข้าวผ่านการเพาะเห็ดก่อน แล้ววัสดุเหลือจึงไปเป็นปุ๋ยหมักหรือเชื้อเพลิง เพิ่มรายได้อีกชั้นให้สหกรณ์ข้าว ดู</span><a href="integrated-rice-business.html" data-i18n="smc_198">ธุรกิจข้าวครบวงจร</a></p></div></div>
+  </div>
+</section>
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal"><div class="eyebrow"><i class="fa-solid fa-images" aria-hidden="true"></i><span data-i18n="smc_212">ภาพจากการทดลอง</span></div><h2 class="section-title" data-i18n="smc_213">ภาพการเพาะเห็ดฟางในลังแบบแยกกระบวนการ</h2><p class="section-sub" data-i18n="smc_211">ภาพการทดลองแบบอานนท์ 2552 ซึ่งเป็นพื้นฐานของแบบ 2589</p></div>
+    <div class="gallery"><figure class="g-item reveal"><img src="assets/mushroom/mushroom-substrate-buttons.jpg" width="1280" height="960" loading="lazy" data-i18n="smc_202" data-i18n-attr="alt" alt="ดอกเห็ดตูมเริ่มออกบนวัสดุเพาะ"><figcaption><span data-i18n="smc_203">ดอกเห็ดตูมเริ่มออกบนวัสดุเพาะ</span> · <span data-i18n="smc_204">กุมภาพันธ์ 2552</span></figcaption></figure><figure class="g-item reveal"><img src="assets/mushroom/mushroom-crate-pinheads.jpg" width="960" height="1280" loading="lazy" data-i18n="smc_205" data-i18n-attr="alt" alt="ดอกเห็ดฟางระยะกระดุมในลังเพาะ"><figcaption><span data-i18n="smc_206">ดอกเห็ดฟางระยะกระดุมในลังเพาะ</span> · <span data-i18n="smc_207">เมษายน 2552</span></figcaption></figure><figure class="g-item reveal"><img src="assets/mushroom/mushroom-crate-harvest.jpg" width="1280" height="960" loading="lazy" data-i18n="smc_208" data-i18n-attr="alt" alt="ผลผลิตเห็ดฟางจากลังเพาะ"><figcaption><span data-i18n="smc_209">ผลผลิตเห็ดฟางจากลังเพาะ</span> · <span data-i18n="smc_210">พฤษภาคม 2552</span></figcaption></figure></div>
+    <p class="credit" data-i18n="smc_214">ภาพและองค์ความรู้: อาจารย์อานนท์ (Thaibiotec Mushroom)</p>
+  </div>
+</section>
+<section class="note-sec">
+  <div class="container">
+    <div class="note-block reveal" style="margin-top:0">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      <div><p data-i18n="smc_215">เอกสารนี้เรียบเรียงจากการสนทนากับ อ.อานนท์ ผู้พัฒนาวิธีเพาะเห็ดฟางแบบอานนท์ ตัวเลขตลาดเป็นการประมาณการของ อ.อานนท์ ส่วนค่าอุณหภูมิ ระยะเวลา และสูตรวัสดุเป็นแนวทางเบื้องต้น สหกรณ์ควรทดลองผลิตในพื้นที่ร่วมกับผู้เชี่ยวชาญก่อนขยายผล</p>
+      <p data-i18n="smc_216">AgroLink ทำหน้าที่เชื่อมโยงข้อมูลและเครือข่าย ไม่ใช่ผู้ผลิตหรือผู้รับซื้อเห็ดโดยตรง ติดตามความรู้เพิ่มเติมได้ที่เพจ Facebook “Thaibiotec Mushroom”</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final reveal">
+  <div class="container">
+    <h2 data-i18n="smc_217">สหกรณ์ของท่านสนใจเป็นศูนย์ผลิตกล่องเพาะเห็ดฟางหรือไม่?</h2>
+    <p data-i18n="smc_218">ติดต่อทีมงาน AgroLink เพื่อหารือการนำร่อง การเชื่อมผู้เชี่ยวชาญ และการวางระบบข้อมูลสมาชิกบนพอร์ทัลสหกรณ์</p>
+    <div class="cta-btns">
+      <a href="contact.html" class="btn btn-gold"><i class="fa-solid fa-comments" aria-hidden="true"></i><span data-i18n="smc_219"> ติดต่อทีมงาน</span></a>
+      <a href="coop-portal.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-people-roof" aria-hidden="true"></i><span data-i18n="smc_220"> ดูพอร์ทัลสหกรณ์</span></a>
+      <a href="biomass-economy.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.4); color:#fff;"><i class="fa-solid fa-recycle" aria-hidden="true"></i><span data-i18n="smc_221"> กลับสู่เศรษฐกิจชีวมวล</span></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ===== AgroLink shared site footer (same on every public page; styles css/site-footer.css, behaviour js/site-footer.js) ===== -->
+<footer class="sf-footer">
+  <div class="sf-container sf-top">
+    <div class="sf-brand">
+      <a class="sf-brand-logo" href="index.html"><img src="assets/agrolink-logo.png" width="284" height="220" alt="AgroLink" loading="lazy" /></a>
+      <p data-i18n="sh_footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      <p class="sf-slogan" data-i18n="sh_footer_slogan">เกษตรไทยก้าวไกล ไปด้วยกัน</p>
+    </div>
+    <details class="sf-col" open><summary><span data-i18n="sh_fc1">แพลตฟอร์มและบริการ</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="coop-portal.html"><span data-i18n="sh_m_coop">สำหรับสหกรณ์</span></a></li><li><a href="for-farmers.html"><span data-i18n="sh_m_farmer">สำหรับเกษตรกร</span></a></li><li><a href="finance-partners.html"><span data-i18n="sh_m_finance">การเงิน</span></a></li><li><a href="marketplace-partners.html"><span data-i18n="sh_fl_market">ตลาดกลาง</span></a></li><li><a href="custom-fertilizer.html"><span data-i18n="sh_m_fert">ปุ๋ยสั่งตัด</span></a></li><li><a href="ai-satellite-guide.html"><span data-i18n="sh_m_ai">AI และดาวเทียม</span></a></li><li><a href="insurance-marketplace.html"><span data-i18n="sh_fl_ins">ประกันภัยเกษตร</span></a></li><li><a href="carbon-credit-article.html"><span data-i18n="sh_m_carbon">คาร์บอนเครดิต</span></a></li><li><a href="biomass-economy.html"><span data-i18n="sh_m_bio">เศรษฐกิจชีวมวล</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc2">โซลูชันธุรกิจ</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="integrated-rice-business.html"><span data-i18n="sh_m_rice">ธุรกิจข้าวครบวงจร</span></a></li><li><a href="integrated-durian-business.html"><span data-i18n="sh_m_durian">ทุเรียนครบวงจร</span></a></li><li><a href="integrated-cassava-business.html"><span data-i18n="sh_m_cassava">มันสำปะหลังครบวงจร</span></a></li><li><a href="integrated-corn-business.html"><span data-i18n="sh_m_corn">ข้าวโพดครบวงจร</span></a></li><li><a href="integrated-coconut-business.html"><span data-i18n="sh_m_coconut">มะพร้าวน้ำหอมครบวงจร</span></a></li><li><a href="index.html#roadmap"><span data-i18n="sh_fl_roadmap">แผนขยายสินค้า</span></a></li><li><a href="for-farmers-crop.html"><span data-i18n="sh_m_f_crop">เกษตรกรผู้ปลูกพืช</span></a></li><li><a href="for-farmers-livestock.html"><span data-i18n="sh_m_f_live">เกษตรกรผู้เลี้ยงสัตว์บก</span></a></li><li><a href="for-farmers-aquaculture.html"><span data-i18n="sh_m_f_aqua">เกษตรกรผู้เลี้ยงสัตว์น้ำ</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc3">พันธมิตร</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="index.html#partners"><span data-i18n="sh_pc1">สหกรณ์/กลุ่มเกษตรกร</span></a></li><li><a href="finance-partners.html"><span data-i18n="sh_pc2">สถาบันการเงิน</span></a></li><li><a href="marketplace-partners.html"><span data-i18n="sh_fl_buyer">ผู้ซื้อ</span></a></li><li><a href="index.html#partners"><span data-i18n="sh_fl_provider">ผู้ให้บริการ</span></a></li><li><a href="technology-partners.html"><span data-i18n="sh_pc5">พันธมิตรเทคโนโลยี</span></a></li><li><a href="biomass-portal.html"><span data-i18n="sh_pc6">ผู้รับซื้อชีวมวล</span></a></li><li><a href="logistics-portal.html"><span data-i18n="sh_pc4">ผู้ให้บริการขนส่ง</span></a></li><li><a href="insurance-portal.html"><span data-i18n="sh_pc7">ผู้ให้บริการประกันภัย</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc4">บริษัท</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="about.html"><span data-i18n="sh_nav_about">เกี่ยวกับเรา</span></a></li><li><a href="about-video.html"><span data-i18n="sh_m_about_video">เกี่ยวกับ AgroLink (วิดีโอ)</span></a></li><li><a href="business-model.html"><span data-i18n="sh_m_investor">นักลงทุน</span></a></li><li><a href="demo-preview.html"><span data-i18n="sh_m_demo">ตัวอย่างการใช้งานทีละขั้นตอน</span></a></li><li><a href="contact.html"><span data-i18n="sh_m_contact">ติดต่อเรา</span></a></li><li><a href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a></li></ul></details>
+  </div>
+  <div class="sf-container sf-bottom">
+    <span data-i18n="sh_copyright">© 2026 Pakdee Corporation Co.,Ltd. — สงวนลิขสิทธิ์</span>
+    <nav data-i18n="sh_legal_aria" data-i18n-attr="aria-label" aria-label="ข้อกฎหมาย">
+      <a href="privacy-policy.html"><span data-i18n="sh_privacy">นโยบายความเป็นส่วนตัว</span></a>
+      <a href="terms-of-use.html"><span data-i18n="sh_terms">ข้อกำหนดการใช้งาน</span></a>
+      <a href="contact.html"><span data-i18n="sh_m_contact">ติดต่อเรา</span></a>
+    </nav>
+  </div>
+</footer>
+<!-- ===== /shared site footer ===== -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-straw-mushroom-cooperative.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/site-header.js"></script>
+<script src="js/site-footer.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+<script src="js/track.js"></script>
+</body>
+</html>

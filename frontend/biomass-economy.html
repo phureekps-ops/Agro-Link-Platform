@@ -181,6 +181,13 @@
   .flow-body a { color: var(--green); font-weight: 700; }
   .flow-body a:hover { text-decoration: underline; }
 
+  .flow-body .doc-link {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 9px 16px; border-radius: 10px;
+    background: var(--green-light); color: var(--green-dark); font-size: 14px; font-weight: 700;
+  }
+  .flow-body .doc-link:hover { background: var(--green); color: #fff; text-decoration: none; }
+  .flow-mush { border-color: var(--green); box-shadow: 0 10px 26px rgba(27,107,74,.08); }
+
   .note-block {
     background: var(--gold-light); border: 1px solid #E6D9A8; border-radius: 12px;
     padding: 18px 22px; font-size: 13.6px; color: #6B5A15; display: flex; gap: 12px; align-items: flex-start;
@@ -278,12 +285,7 @@
         ที่ส่งผลกระทบต่อสุขภาพและคุณภาพอากาศในหลายพื้นที่ของไทยในช่วงต้นปีของทุกปี นอกจากนี้การเผายังทำลายโครงสร้างดินและ
         อินทรียวัตถุที่สะสมอยู่ในหน้าดิน ทำให้ดินเสื่อมสภาพเร็วขึ้นในระยะยาว
       </p>
-      <p data-i18n="biomass-economy_9">
-        AgroLink มองว่าเศษวัสดุเหล่านี้ไม่ใช่ขยะที่ต้องกำจัดทิ้ง แต่เป็นวัตถุดิบที่มีมูลค่าหากมีช่องทางนำไปใช้ประโยชน์ต่อ
-        แพลตฟอร์มจึงเชื่อมโยงเกษตรกรและสหกรณ์ที่เก็บรวบรวมฟางข้าวและเศษวัสดุเหลือใช้แทนการเผา เข้ากับสองเส้นทางหลัก
-        คือการขายเป็นวัตถุดิบให้ผู้รับซื้อเชื้อเพลิงชีวมวลภาคอุตสาหกรรม ผ่านบริการแปรรูปอัดก้อน/อัดเม็ดที่จองได้บนแพลตฟอร์ม
-        และการนำมาผลิตเป็นปุ๋ยหมักเพื่อหมุนกลับเข้าสู่กระบวนการปุ๋ยสั่งตัดและบำรุงดินของสหกรณ์เอง ตามแนวทาง 4 ขั้นตอนด้านล่าง
-      </p>
+      <p data-i18n="biomass-economy_9">AgroLink มองว่าเศษวัสดุเหล่านี้ไม่ใช่ขยะที่ต้องกำจัดทิ้ง แต่เป็นวัตถุดิบที่มีมูลค่าหากมีช่องทางนำไปใช้ประโยชน์ต่อ แพลตฟอร์มจึงเชื่อมโยงเกษตรกรและสหกรณ์ที่เก็บรวบรวมฟางข้าวและเศษวัสดุเหลือใช้แทนการเผา เข้ากับสามเส้นทางหลัก คือการนำมาเพาะเห็ดฟางโดยมีสหกรณ์เป็นศูนย์กลางผลิตกล่องเพาะ การขายเป็นวัตถุดิบให้ผู้รับซื้อเชื้อเพลิงชีวมวลภาคอุตสาหกรรม ผ่านบริการแปรรูปอัดก้อน/อัดเม็ดที่จองได้บนแพลตฟอร์ม และการนำมาผลิตเป็นปุ๋ยหมักเพื่อหมุนกลับเข้าสู่กระบวนการปุ๋ยสั่งตัดและบำรุงดินของสหกรณ์เอง ตามแนวทาง 5 ขั้นตอนด้านล่าง</p>
     </div>
   </div>
 </section>
@@ -336,8 +338,8 @@
   <div class="container">
     <div class="section-head reveal">
       <div class="eyebrow"><i class="fa-solid fa-route"></i><span data-i18n="biomass-economy_25"> แนวทางปฏิบัติ</span></div>
-      <h2 class="section-title" data-i18n="biomass-economy_26">จากเศษวัสดุเหลือใช้ สู่เชื้อเพลิงและปุ๋ยหมัก</h2>
-      <p class="section-sub" data-i18n="biomass-economy_27">4 แนวทางการพัฒนาเศรษฐกิจชีวมวลบนเครือข่ายเกษตรกรและสหกรณ์ของ AgroLink</p>
+      <h2 class="section-title" data-i18n="biomass-economy_26">จากเศษวัสดุชีวมวลสู่ผลผลิตเห็ด เชื้อเพลิงและปุ๋ยหมัก</h2>
+      <p class="section-sub" data-i18n="biomass-economy_27">5 แนวทางการพัฒนาเศรษฐกิจชีวมวลบนเครือข่ายเกษตรกรและสหกรณ์ของ AgroLink</p>
     </div>
     <div class="flow-wrap">
       <div class="flow-row reveal">
@@ -352,6 +354,14 @@
       </div>
       <div class="flow-row reveal">
         <div class="flow-num">2</div>
+        <div class="flow-body flow-mush">
+          <h4 data-i18n="biomass-economy_52">เพาะเห็ดฟางจากเศษวัสดุ: สหกรณ์ผลิตกล่องเพาะ สมาชิกเปิดดอก</h4>
+          <p data-i18n="biomass-economy_53">ก่อนส่งต่อเป็นเชื้อเพลิงหรือปุ๋ยหมัก เศษวัสดุอย่างฟางข้าว ทะลายปาล์ม ผักตบชวา กากมัน รำข้าว และกากฝ้าย นำมาเพาะเห็ดฟางได้ก่อน ตามการผลิตเห็ดฟางแบบใหม่ของ อ.อานนท์ สหกรณ์เป็นศูนย์กลางหมักวัสดุ อบฆ่าเชื้อ และผลิตกล่องเพาะ สมาชิกนำกล่องไปเปิดดอกแล้วส่งดอกเห็ดกลับมาให้สหกรณ์รวบรวมจำหน่าย วัสดุเพาะที่เหลือยังนำไปหมักเป็นปุ๋ยต่อได้</p>
+          <a class="doc-link" href="straw-mushroom-cooperative.html"><i class="fa-solid fa-book-open"></i><span data-i18n="biomass-economy_54">อ่านเอกสาร: การผลิตเห็ดฟางแบบใหม่ (แบบอานนท์ 2589)</span><i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="flow-row reveal">
+        <div class="flow-num">3</div>
         <div class="flow-body">
           <h4 data-i18n="biomass-economy_30">อัดก้อน / อัดเม็ด เพื่อแปรรูปเป็นเชื้อเพลิงชีวมวล</h4>
           <p><span data-i18n="biomass-economy_31">
@@ -365,7 +375,7 @@
         </div>
       </div>
       <div class="flow-row reveal">
-        <div class="flow-num">3</div>
+        <div class="flow-num">4</div>
         <div class="flow-body">
           <h4 data-i18n="biomass-economy_38">ผลิตปุ๋ยหมักจากเศษวัสดุบางส่วน</h4>
           <p data-i18n="biomass-economy_39">
@@ -376,7 +386,7 @@
         </div>
       </div>
       <div class="flow-row reveal">
-        <div class="flow-num">4</div>
+        <div class="flow-num">5</div>
         <div class="flow-body">
           <h4 data-i18n="biomass-economy_40">นำปุ๋ยหมักไปใช้ผสมในกระบวนการปุ๋ยสั่งตัด และบำรุงดิน</h4>
           <p><span data-i18n="biomass-economy_41">
@@ -390,11 +400,7 @@
 
     <div class="note-block reveal">
       <i class="fa-solid fa-circle-info"></i>
-      <div data-i18n="biomass-economy_44">
-        ความเป็นไปได้ของการอัดก้อน/อัดเม็ดและการผลิตปุ๋ยหมักในแต่ละพื้นที่ ขึ้นอยู่กับผู้ให้บริการเครื่องจักรกลและผู้รับซื้อ
-        ที่เข้าร่วมเครือข่ายจริงในพื้นที่นั้น ๆ AgroLink ทำหน้าที่เป็นผู้เชื่อมโยงข้อมูลและเครือข่าย ไม่ใช่ผู้ผลิตเชื้อเพลิง
-        หรือปุ๋ยหมักโดยตรง
-      </div>
+      <div data-i18n="biomass-economy_44">ความเป็นไปได้ของการเพาะเห็ด การอัดก้อน/อัดเม็ด และการผลิตปุ๋ยหมักในแต่ละพื้นที่ ขึ้นอยู่กับผู้ให้บริการเครื่องจักรกล ผู้เชี่ยวชาญ และผู้รับซื้อที่เข้าร่วมเครือข่ายจริงในพื้นที่นั้น ๆ AgroLink ทำหน้าที่เป็นผู้เชื่อมโยงข้อมูลและเครือข่าย ไม่ใช่ผู้ผลิตเห็ด เชื้อเพลิง หรือปุ๋ยหมักโดยตรง</div>
     </div>
   </div>
 </section>
