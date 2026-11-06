@@ -1,0 +1,61 @@
+/*
+ * AgroLink shared site footer (all public pages).
+ * Markup is generated into each page by the build script; mobile accordion behaviour lives in js/site-footer.js.
+ * Every selector is prefixed .sf- and the root also resets the plain `footer { ... }` rules older pages carry.
+ */
+footer.sf-footer {
+  --sf-forest: #123D30;
+  --sf-green: #245B45;
+  --sf-ivory: #F5F3EB;
+  --sf-muted: #64736C;
+  --sf-border: #DCE4DD;
+  display: block; margin: 0; padding: 0; background: var(--sf-ivory); color: var(--sf-muted);
+  border-top: 1px solid var(--sf-border); text-align: left;
+  font-family: 'Inter', 'IBM Plex Sans Thai', 'Leelawadee UI', 'Noto Sans Thai', Tahoma, sans-serif;
+  font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+:where(.sf-footer) *, :where(.sf-footer) *::before, :where(.sf-footer) *::after { box-sizing: border-box; }
+.sf-footer ul { list-style: none; margin: 0; padding: 0; }
+.sf-footer li { margin: 0; font-size: inherit; }
+.sf-footer a { text-decoration: none; }
+.sf-footer :focus-visible { outline: 3px solid #C9A45C; outline-offset: 2px; border-radius: 6px; }
+.sf-container { width: 100%; max-width: 1240px; margin: 0 auto; }
+.sf-top { display: grid; grid-template-columns: 1.3fr repeat(4, 1fr); gap: 36px; padding: 64px 24px 40px; }
+.sf-brand-logo { display: inline-flex; background: #fff; border: 1px solid var(--sf-border); border-radius: 14px; padding: 8px 14px; }
+.sf-brand-logo img { height: 64px; width: auto; max-width: none; display: block; }
+.sf-brand p { font-size: 14px; color: var(--sf-muted); margin: 16px 0 0; max-width: 300px; line-height: 1.6; }
+.sf-brand p.sf-slogan { margin-top: 18px; font-size: 18px; font-weight: 700; color: var(--sf-green); line-height: 1.4; }
+.sf-col summary {
+  list-style: none; font-size: 14px; font-weight: 700; color: var(--sf-forest); margin: 0 0 14px; cursor: default;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.sf-col summary::-webkit-details-marker { display: none; }
+.sf-col summary .sf-chev { display: none; font-size: 12px; }
+.sf-col ul { display: grid; gap: 9px; }
+.sf-col a { font-size: 14px; color: var(--sf-muted); }
+.sf-col a:hover, .sf-col a:focus-visible { color: var(--sf-green); text-decoration: underline; text-underline-offset: 3px; }
+.sf-bottom {
+  border-top: 1px solid var(--sf-border); padding: 20px 24px 28px; display: flex; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--sf-muted);
+}
+.sf-bottom nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.sf-bottom a { color: var(--sf-muted); }
+.sf-bottom a:hover { color: var(--sf-green); }
+
+@media (max-width: 1179px) {
+  .sf-top { grid-template-columns: 1fr 1fr 1fr; }
+  .sf-brand { grid-column: 1 / -1; }
+}
+@media (max-width: 767px) {
+  .sf-top { grid-template-columns: 1fr; gap: 0; padding: 48px 16px 24px; }
+  .sf-brand { margin-bottom: 24px; }
+  .sf-brand-logo img { height: 52px; }
+  .sf-col { border-top: 1px solid var(--sf-border); }
+  .sf-col summary { margin: 0; padding: 16px 0; cursor: pointer; min-height: 52px; }
+  .sf-col summary .sf-chev { display: inline-block; transition: transform .2s ease; }
+  .sf-col[open] summary .sf-chev { transform: rotate(180deg); }
+  .sf-col ul { padding-bottom: 16px; gap: 4px; }
+  .sf-col a { display: block; padding: 8px 0; }
+  .sf-bottom { padding: 20px 16px 28px; flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) { .sf-col summary .sf-chev { transition: none; } }
