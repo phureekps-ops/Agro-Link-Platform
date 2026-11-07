@@ -193,7 +193,28 @@ grant_web_traffic.sql
 grant_agrimap_water_climate_adapter.sql
 grant_productive_alliance.sql
 grant_biomass_producer_portal.sql
+grant_straw_mushroom.sql
 ```
+
+**เพิ่มเมื่อ 2026-11-07:** `grant_straw_mushroom.sql` — ตามคำขอ "สร้างโปรแกรม
+บริหารจัดการการผลิตเห็ดฟางครบวงจร" (ตามเอกสารแนวทางพัฒนาที่ยืนยันข้อตัดสินใจแล้ว)
+เพิ่มสคีมาใหม่ `mushroom` (ไม่มี RLS — ทุก query ใน route กรองด้วย coop_org_id /
+farmer_id / linked_org_id / device ของผู้เรียกเอง เหมือน produce.lot/warehouse.*)
+ครอบคลุม 9 โมดูล: สมาชิก/จุดเปิดดอก, วัตถุดิบชีวมวลและจัดซื้อ, ศูนย์ผลิตกล่องเพาะ
+(สูตร รุ่นการผลิต ต้นทุน), ทะเบียนกล่อง QR แบบฝากเลี้ยง, ราคาประกาศรายวันและ
+รับซื้อ/แปรรูป, ตลาดและคำสั่งซื้อผู้ซื้อ, บัญชีสมาชิกและรอบหักกลบรายสัปดาห์
+(ไฟล์โอน ธ.ก.ส.), ขนส่งไป-กลับ, IoT และรายงาน. ค่าบริการ AgroLink และราคากล่อง
+เริ่มต้นเป็น 0 — สหกรณ์ต้องตั้งเองในหน้า "ตั้งค่า" (บันทึกประวัติการแก้ไขทุกครั้ง)
+
+Route ใหม่ 4 ไฟล์: `src/routes/mushroom.js` (`/mushroom`, สหกรณ์/เจ้าหน้าที่),
+`mushroommember.js` (`/mushroom-member`, เกษตรกร), `mushroompartner.js`
+(`/mushroom-partner`, องค์กรคู่ค้าที่สหกรณ์ผูกไว้), `mushroomiot.js`
+(`/mushroom-iot`, อุปกรณ์ใช้ header `X-Device-Key` ไม่มี JWT). หน้าเว็บใหม่:
+`frontend/coop/mushroom.html`, `frontend/mushroom-member.html` (มือถือ),
+`frontend/mushroom-partner.html`. **ข้อควรทราบ:** ไฟล์โอน CSV เป็นรูปแบบกลาง
+(ลำดับ เลขบัญชี ชื่อบัญชี จำนวนเงิน อ้างอิง) ต้องยืนยันรูปแบบ Bulk Payment จริง
+กับ ธ.ก.ส. ก่อนใช้งานจริง. รันซ้ำได้ (idempotent) และ**ยังไม่ได้รันกับฐานข้อมูล
+จริงบน Render** — ต้องรันเองผ่าน psql ตามขั้นตอนข้อ 5-7 ก่อนใช้งาน
 
 **เพิ่มเมื่อ 2026-10-24:** `grant_biomass_producer_portal.sql` — ตามคำขอ
 "สร้างพอร์ทัลผู้ผลิตสินค้าจากชีวมวล ในพอร์ทัลให้เลือกได้ว่าสมาชิกผลิตอะไร

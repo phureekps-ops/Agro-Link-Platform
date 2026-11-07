@@ -91,6 +91,16 @@ const communityEnterpriseCarbonRouter = require('./routes/communityenterprisecar
 const villageFundCarbonRouter = require('./routes/villagefundcarbon');
 const buyerCarbonRouter = require('./routes/buyercarbon');
 
+// Straw Mushroom Hub — โปรแกรมบริหารจัดการการผลิตเห็ดฟางครบวงจร (see
+// backend/db/grant_straw_mushroom.sql). Four routers, one per caller type:
+// the cooperative hub (organization/staff JWT), its members (farmer JWT,
+// mobile page), linked external partners (organization JWT: biomass/spawn
+// sellers, buyers, transporters), and IoT devices (X-Device-Key, no JWT).
+const mushroomRouter = require('./routes/mushroom');
+const mushroomMemberRouter = require('./routes/mushroommember');
+const mushroomPartnerRouter = require('./routes/mushroompartner');
+const mushroomIotRouter = require('./routes/mushroomiot');
+
 const app = express();
 
 // `cors()` with no options reflects every origin but sends a literal
@@ -189,6 +199,10 @@ app.use('/coop-carbon', coopCarbonRouter);
 app.use('/communityenterprise-carbon', communityEnterpriseCarbonRouter);
 app.use('/villagefund-carbon', villageFundCarbonRouter);
 app.use('/buyer-carbon', buyerCarbonRouter);
+app.use('/mushroom', mushroomRouter);
+app.use('/mushroom-member', mushroomMemberRouter);
+app.use('/mushroom-partner', mushroomPartnerRouter);
+app.use('/mushroom-iot', mushroomIotRouter);
 app.use('/logistics', logisticsRouter);
 app.use('/aquaculture', aquacultureRouter);
 app.use('/support', supportRouter);
