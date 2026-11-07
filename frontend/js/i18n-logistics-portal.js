@@ -174,5 +174,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "logistics-portal_43": {
     "th": " ติดต่อทีมงาน",
     "en": " Contact Our Team"
+  },
+  "logistics-portal_44": {
+    "th": "อินโฟกราฟิก AgroLink ผู้ให้บริการด้านโลจิสติกส์ ขนส่งผลผลิต ชีวมวล และปุ๋ยแบบเทกองเต็มคันรถและรถพ่วง ไปยังโรงสีข้าว โรงงานอาหารสัตว์ โรงงานแปรรูปอาหาร และตลาดค้าส่ง",
+    "en": "AgroLink logistics infographic: bulk full-truckload and trailer transport of produce, biomass, and fertilizer to rice mills, feed mills, food processing plants, and wholesale markets"
+  },
+  "logistics-portal_45": {
+    "th": "โลจิสติกส์อัจฉริยะบน AgroLink — ติดตามแบบเรียลไทม์ ต่อรองราคาและเลือกผู้ให้บริการที่ดีที่สุด วางแผนตารางจัดส่ง ช่วยลดต้นทุนขนส่งและเพิ่มรายได้เกษตรกร",
+    "en": "Smart logistics on AgroLink — real-time tracking, price negotiation and choosing the best provider, and delivery scheduling to cut transport costs and raise farmer income"
   }
 });
