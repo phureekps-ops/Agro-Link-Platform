@@ -208,4 +208,6 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "sh_privacy": {"th": "นโยบายความเป็นส่วนตัว", "en": "Privacy Policy"},
   "sh_skip": {"th": "ข้ามไปยังเนื้อหาหลัก", "en": "Skip to main content"},
   "sh_terms": {"th": "ข้อกำหนดการใช้งาน", "en": "Terms of Use"},
+  "sh_m_mushroom": {"th": "เห็ดฟางครบวงจร", "en": "Integrated Straw Mushroom"},
+  "sh_md_mushroom": {"th": "การผลิตเห็ดฟางแบบใหม่ แบบอานนท์ 2589", "en": "New straw mushroom production, Anon 2589 method"},
 });
