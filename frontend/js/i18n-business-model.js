@@ -210,5 +210,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "business-model_52": {
     "th": "ทุกระยะใหม่ที่เปิดเพิ่มช่องทางรายได้ตามโมเดลธุรกิจที่แสดงไว้ด้านบน — ยิ่งขยายสินค้า ยิ่งเพิ่มพื้นที่การเติบโตของรายได้",
     "en": "Every new phase adds revenue channels under the business model shown above — the more products expand, the more room for revenue growth."
+  },
+  "business-model_53": {
+    "th": "อินโฟกราฟิกระบบนิเวศการเติบโตระยะยาวของ AgroLink แสดงแหล่งรายได้หลัก โครงสร้างพื้นฐานสนับสนุน และการเติบโตและการขยายตัว",
+    "en": "AgroLink long-term growth ecosystem infographic showing primary revenue sources, supporting infrastructure, and growth and expansion"
+  },
+  "business-model_54": {
+    "th": "ระบบนิเวศการเติบโตระยะยาวของ AgroLink — แหล่งรายได้หลักจากบริการสหกรณ์ ข้อมูล/AI การเงิน ปุ๋ย และค่าธรรมเนียมธุรกรรม เสริมด้วยกองทุนความร่วมมือ Academy และการขยายสู่ตลาดโลก",
+    "en": "AgroLink's long-term growth ecosystem — primary revenue from cooperative services, data/AI, finance, fertilizer, and transaction fees, reinforced by a synergy fund, an academy, and expansion into global markets"
   }
 });
