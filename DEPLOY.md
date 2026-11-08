@@ -194,7 +194,30 @@ grant_agrimap_water_climate_adapter.sql
 grant_productive_alliance.sql
 grant_biomass_producer_portal.sql
 grant_straw_mushroom.sql
+grant_cooperative_working_capital_topup.sql
+grant_field_survey.sql
+grant_cage_fish_farm_management.sql
+grant_rapt_commodity_codes.sql
+grant_rapt_stage_templates.sql
+grant_biomass_buyer_portal.sql
 ```
+
+**เพิ่มเมื่อ 2026-11-08 — ไฟล์ที่ตกหล่นจากรายการ + สคริปต์ตรวจ:** 6 ไฟล์สุดท้ายในรายการด้านบน
+(`grant_cooperative_working_capital_topup.sql` ถึง `grant_biomass_buyer_portal.sql`) มีอยู่ใน
+`backend/db/` และโค้ด backend ใช้งานจริง แต่ไม่เคยถูกใส่ไว้ในรายการนี้ ทำให้ฐานข้อมูลบน Render
+ไม่มีตาราง เช่น `fieldsurvey.visit_record` (หน้าแอดมินขึ้น error `42P01 relation ... does not exist`)
+— ตรวจสอบแล้วว่ารันตามลำดับนี้ต่อท้ายรายการเดิมได้โดยไม่มี error
+
+**ตรวจว่าฐานข้อมูลยังขาดไฟล์ไหน:** รัน `check_migrations.sql` (อ่านอย่างเดียว ไม่แก้ข้อมูล) แบบเดียวกับไฟล์อื่น
+ผลลัพธ์คือรายชื่อไฟล์ที่ยังขาด เรียงตามลำดับที่ต้องรัน — ขึ้น `(0 rows)` แปลว่าครบ
+**ให้รันเฉพาะไฟล์ที่สคริปต์บอกว่าขาด อย่ารันทั้งรายการซ้ำ** — ทดสอบแล้วพบว่าบางไฟล์ (เช่น
+`04_reference_data.sql`, `grant_cooperative_gov_gateway.sql`, `grant_cooperative_working_capital_topup.sql`)
+ขึ้น ERROR หรือเพิ่มแถวข้อมูลซ้ำเมื่อรันครั้งที่สอง ไฟล์ที่เพิ่มแค่สิทธิ์/ข้อมูลอ้างอิง/เงื่อนไข
+(สคริปต์ตรวจมองไม่เห็น) ที่ทดสอบแล้วว่ารันซ้ำได้ปลอดภัย: `grant_straw_processing_service.sql`,
+`grant_laser_land_leveling_service.sql`, `grant_machinery_rental_service.sql`,
+`grant_farmer_aid_fund_community_enterprise.sql`, `grant_about_content_add_farmer_section.sql`,
+`grant_awd_sensor_rental_service.sql`, `grant_cage_fish_farm_management.sql`,
+`grant_rapt_commodity_codes.sql`, `grant_rapt_stage_templates.sql`
 
 **เพิ่มเมื่อ 2026-11-07:** `grant_straw_mushroom.sql` — ตามคำขอ "สร้างโปรแกรม
 บริหารจัดการการผลิตเห็ดฟางครบวงจร" (ตามเอกสารแนวทางพัฒนาที่ยืนยันข้อตัดสินใจแล้ว)
