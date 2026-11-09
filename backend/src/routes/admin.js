@@ -1098,7 +1098,8 @@ router.post('/carbon/marketplace/orders/:orderId/complete', async (req, res, nex
 
 /**
  * GET /admin/provinces — reference list for the "create cooperative" form's
- * province dropdown. Read-only, no filtering needed yet (only 16 rows).
+ * province dropdown. Read-only, no filtering needed (77 rows, see
+ * db/seed_province_all_77.sql).
  */
 router.get('/provinces', async (req, res, next) => {
   const { subjectId } = req.subject;
