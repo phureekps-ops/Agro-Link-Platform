@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — Dashboard นโยบายโคนม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  .dg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .dg-stat { background: #fff; border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; }
+  .dg-stat small { display: block; color: var(--gray-500); font-size: 12.5px; }
+  .dg-stat b { font-size: 22px; color: var(--green-900); }
+  .dg-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px; }
+  .dg-card h3 { margin: 0 0 12px; font-size: 15.5px; color: var(--green-900); }
+  .dg-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .dg-table th { text-align: left; font-size: 12px; color: var(--gray-500); padding: 8px; border-bottom: 1px solid var(--gray-300); white-space: nowrap; }
+  .dg-table td { padding: 8px; border-bottom: 1px solid var(--gray-100); }
+  .dg-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .dg-scroll { overflow-x: auto; }
+  .dg-lvl { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  .dg-lvl.green { background: #2e9e5b; } .dg-lvl.yellow { background: #e8c21c; } .dg-lvl.orange { background: #ee8a22; } .dg-lvl.red { background: #d64040; }
+  .dg-note { font-size: 12.5px; color: var(--gray-500); }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span>🐄</span><span>Dashboard นโยบายโคนม</span></div>
+    <div class="who"><a href="dashboard.html" style="color:#fff;margin-right:12px">← พอร์ทัลภาครัฐ</a><span class="name" id="officerName">กำลังโหลด…</span><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+  </header>
+  <div class="container" id="content"><div class="loading-line">กำลังโหลด…</div></div>
+  <script src="js/api.js"></script>
+  <script src="js/dairy.js"></script>
+</body>
+</html>

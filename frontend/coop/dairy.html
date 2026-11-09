@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — โคนมครบวงจร (พอร์ทัลสหกรณ์โคนม)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .mh-shell { display: flex; min-height: 100vh; }
+  .mh-side { width: 248px; flex: 0 0 248px; background: var(--green-900); color: #fff; padding: 18px 12px; box-sizing: border-box; }
+  .mh-brand { display: flex; gap: 10px; align-items: center; padding: 0 8px 14px; border-bottom: 1px solid rgba(255,255,255,.15); margin-bottom: 12px; }
+  .mh-brand b { display: block; font-size: 15px; }
+  .mh-brand small { color: rgba(255,255,255,.7); font-size: 12px; }
+  .mh-nav button { display: flex; width: 100%; text-align: left; background: none; border: 0; color: rgba(255,255,255,.85); font: inherit; font-size: 13.5px; padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px; gap: 8px; align-items: center; justify-content: space-between; }
+  .mh-nav button:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .mh-nav button.active { background: rgba(255,255,255,.16); color: #fff; font-weight: 600; }
+  .mh-nav .cnt { background: var(--gold-500); color: var(--green-900); border-radius: 20px; font-size: 10.5px; font-weight: 700; padding: 1px 7px; }
+  .mh-group { font-size: 11px; color: rgba(255,255,255,.5); padding: 10px 10px 4px; }
+  .mh-back { display: block; color: rgba(255,255,255,.75); font-size: 12.5px; padding: 12px 10px 0; text-decoration: none; }
+  .mh-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .mh-main > .container { width: 100%; box-sizing: border-box; }
+  .mh-page { display: none; }
+  .mh-page.active { display: block; }
+  .mh-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px; }
+  .mh-card h3 { margin: 0 0 12px; font-size: 15.5px; color: var(--green-900); }
+  .mh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .mh-stat { background: #fff; border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; }
+  .mh-stat small { color: var(--gray-500); font-size: 12.5px; display: block; }
+  .mh-stat b { font-size: 22px; color: var(--green-900); }
+  .mh-stat.warn { background: var(--gold-100); }
+  .mh-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .mh-table th { text-align: left; font-size: 12px; color: var(--gray-500); font-weight: 600; padding: 8px 8px; border-bottom: 1px solid var(--gray-300); white-space: nowrap; }
+  .mh-table td { padding: 8px 8px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  .mh-table td.num, .mh-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mh-scroll { overflow-x: auto; }
+  .mh-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 12px; align-items: end; }
+  .mh-form label { font-size: 12.5px; font-weight: 600; color: var(--gray-700); display: block; margin-bottom: 4px; }
+  .mh-form input, .mh-form select, .mh-form textarea { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--gray-300); border-radius: 8px; font: inherit; font-size: 14px; background: var(--gray-50); }
+  .mh-form .full { grid-column: 1 / -1; }
+  .mh-btn { border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; background: var(--green-700); color: #fff; }
+  .mh-btn:hover { background: var(--green-900); }
+  .mh-btn.ghost { background: var(--gray-100); color: var(--gray-900); }
+  .mh-btn.ghost:hover { background: var(--gray-300); }
+  .mh-btn.warn { background: var(--gold-500); color: var(--green-900); }
+  .mh-btn.danger { background: var(--red-100); color: var(--red-600); }
+  .mh-btn.sm { padding: 5px 10px; font-size: 12.5px; }
+  .mh-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .mh-pill { display: inline-block; border-radius: 20px; padding: 2px 9px; font-size: 11.5px; font-weight: 700; background: var(--gray-100); color: var(--gray-700); white-space: nowrap; }
+  .mh-pill.ok { background: var(--green-100); color: var(--green-700); }
+  .mh-pill.warn { background: var(--gold-100); color: #8a5a00; }
+  .mh-pill.bad { background: var(--red-100); color: var(--red-600); }
+  .mh-note { font-size: 12.5px; color: var(--gray-500); margin: 6px 0 0; }
+  .mh-empty { color: var(--gray-500); font-size: 13.5px; padding: 8px 0; }
+  .mh-toast { position: fixed; right: 18px; bottom: 18px; background: var(--green-900); color: #fff; padding: 12px 16px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); max-width: 420px; z-index: 50; display: none; }
+  .mh-toast.err { background: var(--red-600); }
+  .mh-key { font-family: monospace; background: var(--gold-100); padding: 8px 10px; border-radius: 8px; word-break: break-all; }
+  .mh-spark { display: block; width: 100%; height: 80px; }
+  .mh-chart { display: block; width: 100%; height: auto; }
+  .mh-lvl { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+  .mh-lvl.green { background: #2e9e5b; } .mh-lvl.yellow { background: #e8c21c; } .mh-lvl.orange { background: #ee8a22; } .mh-lvl.red { background: #d64040; }
+  .mh-quick { display: grid; grid-template-columns: 1fr 140px auto; gap: 8px; align-items: end; }
+  .mh-quick input, .mh-quick select { padding: 12px; font-size: 18px; border: 1px solid var(--gray-300); border-radius: 8px; font-family: inherit; width: 100%; box-sizing: border-box; }
+  .mh-quick input[type=checkbox] { width: auto; padding: 0; margin: 0 6px 0 0; vertical-align: middle; }
+  .mh-quick .rej { grid-column: span 2; display: flex; gap: 10px; align-items: center; }
+  .mh-quick .rej select { font-size: 15px; padding: 9px; flex: 1; }
+  .mh-quick label { font-size: 12.5px; font-weight: 600; color: var(--gray-700); display: block; margin-bottom: 4px; }
+  .mh-quick .rej label { margin: 0; white-space: nowrap; font-size: 14px; }
+  @media (max-width: 560px) { .mh-quick { grid-template-columns: 1fr 1fr; } .mh-quick .rej { grid-column: 1 / -1; } }
+  .mh-lines { margin: 8px 0; }
+  .mh-lines .mh-form { margin-bottom: 6px; }
+  details.mh-card > summary { cursor: pointer; font-weight: 700; color: var(--green-900); }
+  @media (max-width: 860px) {
+    .mh-shell { flex-direction: column; }
+    .mh-side { width: 100%; flex: 0 0 auto; padding: 10px; }
+    .mh-nav { display: flex; flex-wrap: wrap; gap: 4px; }
+    .mh-nav button { width: auto; margin: 0; }
+    .mh-group, .mh-brand small { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="mh-shell">
+  <aside class="mh-side">
+    <div class="mh-brand"><span style="font-size:26px">🐄</span><div><b>โคนมครบวงจร</b><small>พอร์ทัลสหกรณ์โคนม</small></div></div>
+    <nav class="mh-nav" id="mhNav">
+      <button data-tab="overview" class="active">📊 ภาพรวมวันนี้</button>
+      <div class="mh-group">สมาชิกและฝูงโค</div>
+      <button data-tab="members">👥 สมาชิกและฟาร์ม <span class="cnt" id="cntMembers" hidden></span></button>
+      <button data-tab="herd">🐄 ฝูงโค สืบพันธุ์ สุขภาพ</button>
+      <button data-tab="services">🩺 คำขอสมาชิก <span class="cnt" id="cntRequests" hidden></span></button>
+      <div class="mh-group">น้ำนม</div>
+      <button data-tab="intake">🥛 รับน้ำนม <span class="cnt" id="cntRounds" hidden></span></button>
+      <button data-tab="quality">🧪 คุณภาพและราคา</button>
+      <button data-tab="factory">🏭 สัญญาและส่งโรงงาน <span class="cnt" id="cntShip" hidden></span></button>
+      <button data-tab="surplus">🔁 ตลาดนมส่วนเกิน <span class="cnt" id="cntSurplus" hidden></span></button>
+      <div class="mh-group">ธุรกิจสหกรณ์</div>
+      <button data-tab="feed">🌾 อาหารสัตว์และปัจจัย</button>
+      <button data-tab="processing">🧃 แปรรูปและสต็อก</button>
+      <button data-tab="school">🏫 นมโรงเรียน</button>
+      <button data-tab="biogas">♻️ ไบโอแก๊ส</button>
+      <div class="mh-group">การเงินและข้อมูล</div>
+      <button data-tab="finance">💰 บัญชีสมาชิกและรอบจ่าย</button>
+      <button data-tab="forecast">📈 พยากรณ์ 30/60/90 วัน</button>
+      <button data-tab="iot">📡 IoT <span class="cnt" id="cntAlerts" hidden></span></button>
+      <button data-tab="reports">📋 รายงาน</button>
+      <button data-tab="settings">⚙️ ตั้งค่า</button>
+    </nav>
+    <a class="mh-back" href="dashboard.html">← กลับพอร์ทัลสหกรณ์</a>
+  </aside>
+  <div class="mh-main">
+    <header class="app-header">
+      <div class="brand">🐄 <span id="mhTitle">ภาพรวมวันนี้</span></div>
+      <div class="who"><span class="name" id="orgName">กำลังโหลด…</span><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+    </header>
+    <div class="container" style="max-width:1180px">
+      <section class="mh-page active" data-page="overview"></section>
+      <section class="mh-page" data-page="members"></section>
+      <section class="mh-page" data-page="herd"></section>
+      <section class="mh-page" data-page="services"></section>
+      <section class="mh-page" data-page="intake"></section>
+      <section class="mh-page" data-page="quality"></section>
+      <section class="mh-page" data-page="factory"></section>
+      <section class="mh-page" data-page="surplus"></section>
+      <section class="mh-page" data-page="feed"></section>
+      <section class="mh-page" data-page="processing"></section>
+      <section class="mh-page" data-page="school"></section>
+      <section class="mh-page" data-page="biogas"></section>
+      <section class="mh-page" data-page="finance"></section>
+      <section class="mh-page" data-page="forecast"></section>
+      <section class="mh-page" data-page="iot"></section>
+      <section class="mh-page" data-page="reports"></section>
+      <section class="mh-page" data-page="settings"></section>
+    </div>
+  </div>
+</div>
+<div class="mh-toast" id="mhToast"></div>
+<script src="js/api.js"></script>
+<script src="js/dairy.js"></script>
+</body>
+</html>

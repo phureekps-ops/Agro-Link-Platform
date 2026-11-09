@@ -100,6 +100,16 @@ const mushroomRouter = require('./routes/mushroom');
 const mushroomMemberRouter = require('./routes/mushroommember');
 const mushroomPartnerRouter = require('./routes/mushroompartner');
 const mushroomIotRouter = require('./routes/mushroomiot');
+// พอร์ทัลสหกรณ์โคนม / โปรแกรมบริหารธุรกิจโคนมครบวงจร (ดู backend/db/
+// grant_dairy_cooperative.sql): สหกรณ์ /dairy, สมาชิก /dairy-member, คู่ค้า
+// (โรงงาน ผู้ขายอาหารสัตว์ สัตวแพทย์ ผู้ซื้อผลิตภัณฑ์) /dairy-partner,
+// อุปกรณ์ IoT /dairy-iot, Dashboard นโยบายภาครัฐ /dairy-gov และหน้ายืนยัน
+// รับนมโรงเรียนแบบไม่ต้อง login /dairy-public.
+const dairyRouter = require('./routes/dairy');
+const dairyMemberRouter = require('./routes/dairymember');
+const dairyPartnerRouter = require('./routes/dairypartner');
+const { iot: dairyIotRouter, pub: dairyPublicRouter } = require('./routes/dairyiot');
+const dairyGovRouter = require('./routes/dairygov');
 
 const app = express();
 
@@ -203,6 +213,12 @@ app.use('/mushroom', mushroomRouter);
 app.use('/mushroom-member', mushroomMemberRouter);
 app.use('/mushroom-partner', mushroomPartnerRouter);
 app.use('/mushroom-iot', mushroomIotRouter);
+app.use('/dairy', dairyRouter);
+app.use('/dairy-member', dairyMemberRouter);
+app.use('/dairy-partner', dairyPartnerRouter);
+app.use('/dairy-iot', dairyIotRouter);
+app.use('/dairy-gov', dairyGovRouter);
+app.use('/dairy-public', dairyPublicRouter);
 app.use('/logistics', logisticsRouter);
 app.use('/aquaculture', aquacultureRouter);
 app.use('/support', supportRouter);

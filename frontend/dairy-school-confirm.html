@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>ยืนยันรับนมโรงเรียน — AgroLink</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  body { background: var(--gray-50); font-size: 16px; }
+  .sc-wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+  .sc-card { background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
+  .sc-card h1 { font-size: 20px; margin: 0 0 6px; color: var(--green-900); }
+  .sc-list { list-style: none; padding: 0; margin: 0; }
+  .sc-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+  .sc-field { margin: 12px 0; }
+  .sc-field label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .sc-field input, .sc-field textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 18px; padding: 12px; border: 1px solid var(--gray-300); border-radius: 10px; }
+  .sc-btn { width: 100%; border: 0; border-radius: 12px; padding: 14px; font: inherit; font-size: 18px; font-weight: 700; background: var(--green-700); color: #fff; cursor: pointer; }
+  .sc-ok { background: var(--green-100); color: var(--green-700); padding: 12px; border-radius: 10px; }
+  .sc-err { background: var(--red-100); color: var(--red-600); padding: 12px; border-radius: 10px; }
+</style>
+</head>
+<body>
+  <main class="sc-wrap"><div id="box" class="sc-card">กำลังโหลด…</div></main>
+  <script>
+  (function () {
+    "use strict";
+    const API_BASE = ["localhost", "127.0.0.1"].includes(location.hostname) ? "http://localhost:4000" : "https://agrolink-backend-vhv6.onrender.com";
+    const box = document.getElementById("box");
+    const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const d = (v) => (v ? new Date(String(v).slice(0, 10) + "T00:00:00").toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "-");
+    const token = new URLSearchParams(location.search).get("t") || "";
+    const ST = { Planned: "ยังไม่ส่ง", Delivered: "รอโรงเรียนยืนยัน", Confirmed: "ยืนยันรับครบแล้ว", Issue: "แจ้งปัญหาแล้ว", Cancelled: "ยกเลิก" };
+    async function load() {
+      const res = await fetch(`${API_BASE}/dairy-public/school-delivery/${encodeURIComponent(token)}`);
+      if (!res.ok) { box.innerHTML = '<div class="sc-err">ไม่พบรายการส่งนมนี้ — ตรวจสอบ QR อีกครั้ง</div>'; return; }
+      const x = await res.json();
+      box.innerHTML = `<h1>🥛 ยืนยันรับนมโรงเรียน</h1>
+        <ul class="sc-list"><li><span>โรงเรียน</span><b>${esc(x.school_name)}</b></li><li><span>ผู้ส่ง</span><b>${esc(x.coop_name)}</b></li>
+          <li><span>วันที่ส่ง</span><b>${d(x.delivery_date)}</b></li><li><span>สินค้า</span><b>${esc(x.product_name || "")}</b></li>
+          <li><span>จำนวนที่ส่ง</span><b>${x.units} ${esc(x.unit || "")}</b></li>${x.lot_code ? `<li><span>ล็อต / หมดอายุ</span><b>${esc(x.lot_code)} / ${d(x.expires_on)}</b></li>` : ""}
+          <li><span>สถานะ</span><b>${ST[x.status] || x.status}</b></li></ul>
+        ${x.status === "Delivered" ? `<form id="f"><div class="sc-field"><label>จำนวนที่ได้รับจริง</label><input name="received_units" type="number" inputmode="numeric" min="0" value="${x.units}" required></div>
+          <div class="sc-field"><label>ปัญหา (ถ้ามี) เช่น ถุงรั่ว ไม่เย็น</label><textarea name="issue_note" rows="2"></textarea></div><button class="sc-btn">ยืนยันรับ</button></form>`
+    : x.received_units != null ? `<div class="sc-ok" style="margin-top:12px">บันทึกแล้ว: ได้รับ ${x.received_units} ${esc(x.unit || "")}</div>` : ""}`;
+      const f = document.getElementById("f");
+      if (f) f.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const r = await fetch(`${API_BASE}/dairy-public/school-delivery/${encodeURIComponent(token)}/confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ received_units: Number(f.received_units.value), issue_note: f.issue_note.value || undefined }) });
+        if (r.ok) load(); else box.insertAdjacentHTML("beforeend", '<div class="sc-err" style="margin-top:12px">บันทึกไม่สำเร็จ</div>');
+      });
+    }
+    if (!/^[0-9a-f]{32}$/.test(token)) box.innerHTML = '<div class="sc-err">ลิงก์ไม่ถูกต้อง</div>'; else load();
+  })();
+  </script>
+</body>
+</html>

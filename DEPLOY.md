@@ -200,7 +200,18 @@ grant_cage_fish_farm_management.sql
 grant_rapt_commodity_codes.sql
 grant_rapt_stage_templates.sql
 grant_biomass_buyer_portal.sql
+grant_dairy_cooperative.sql
 ```
+
+**เพิ่มเมื่อ 2026-11-09:** `grant_dairy_cooperative.sql` — พอร์ทัลสหกรณ์โคนม /
+โปรแกรมบริหารธุรกิจโคนมครบวงจร (schema `dairy`, 37 ตาราง: ฝูงโครายตัว รับนมรอบ
+เช้า/เย็น คุณภาพและราคา อาหารสัตว์ สัญญาและส่งโรงงาน ตลาดนมส่วนเกิน แปรรูป
+นมโรงเรียน ไบโอแก๊ส บัญชีสมาชิกรอบ 15 วัน IoT) รันซ้ำได้ ต้องรันหลังไฟล์ก่อนหน้า
+ทั้งหมด หน้าเว็บ: `coop/dairy.html` (สหกรณ์), `dairy-member.html` (สมาชิก),
+`dairy-partner.html` (โรงงาน/ผู้ขายอาหารสัตว์/สัตวแพทย์), `gov/dairy.html`
+(Dashboard นโยบาย), `dairy-school-confirm.html` (โรงเรียนยืนยันรับนมผ่าน QR)
+หลังรันแล้ว สหกรณ์ต้องตั้งราคาฐานน้ำนมในแท็บตั้งค่าก่อน จึงจะปิดรอบรับนมได้
+`check_migrations.sql` อัปเดตให้ตรวจไฟล์นี้ด้วยแล้ว
 
 **เพิ่มเมื่อ 2026-11-08 — ไฟล์ที่ตกหล่นจากรายการ + สคริปต์ตรวจ:** 6 ไฟล์สุดท้ายในรายการด้านบน
 (`grant_cooperative_working_capital_topup.sql` ถึง `grant_biomass_buyer_portal.sql`) มีอยู่ใน
