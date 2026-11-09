@@ -7,6 +7,7 @@
 (function () {
   "use strict";
   const API = AgroLinkCoopAPI;
+  if (!API.getSession()) { window.location.href = "index.html?next=dairy.html"; return; }
   if (!API.requireSessionOrRedirect()) return;
   const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname) ? "http://localhost:4000" : "https://agrolink-backend-vhv6.onrender.com";
 

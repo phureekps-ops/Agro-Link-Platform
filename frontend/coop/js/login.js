@@ -1,3 +1,12 @@
+/**
+ * ?next=dairy.html / ?next=mushroom.html — after login, go straight to that
+ * cooperative program (only these whitelisted pages, never an arbitrary URL).
+ */
+function nextPage() {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return ["dairy.html", "mushroom.html"].includes(next) ? next : "dashboard.html";
+}
+
 const errorBox = document.getElementById("errorBox");
 const loginForm = document.getElementById("loginForm");
 const claimInput = document.getElementById("claimInput");
@@ -16,7 +25,7 @@ async function doLogin(claim) {
   loginBtn.disabled = true;
   try {
     await AgroLinkCoopAPI.login(claim);
-    window.location.href = "dashboard.html";
+    window.location.href = nextPage();
   } catch (err) {
     const messages = {
       external_subject_claim_required: "กรุณากรอกรหัสยืนยันตัวตน",
@@ -44,5 +53,5 @@ if (params.get("reason") === "session_expired") {
 
 // If already logged in, skip straight to the dashboard.
 if (AgroLinkCoopAPI.getSession()) {
-  window.location.href = "dashboard.html";
+  window.location.href = nextPage();
 }
