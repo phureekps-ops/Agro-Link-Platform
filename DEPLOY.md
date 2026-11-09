@@ -207,6 +207,9 @@ seed_province_all_77.sql
 **เพิ่มเมื่อ 2026-11-09 (2):** `seed_province_all_77.sql` — เติมตาราง `registry.province`
 ให้ครบ 77 จังหวัด (เดิม seed ไว้แค่ 16 จังหวัด ทำให้ dropdown จังหวัดในฟอร์มจัดตั้งสหกรณ์
 ของแอดมินมีไม่ครบ) รันซ้ำได้ ไม่แก้ 16 แถวเดิม ผลลัพธ์สุดท้ายต้องแสดง `province_count = 77`
+ไฟล์นี้มีภาษาไทย บน cmd ของ Windows ต้องพิมพ์ `set PGCLIENTENCODING=UTF8` ก่อนรัน psql
+ไม่เช่นนั้นจะเจอ `ERROR: character with byte sequence ... in encoding "WIN874" has no equivalent in encoding "UTF8"`
+(รันบน Render แล้วเมื่อ 2026-11-09 ได้ 77 จังหวัด)
 
 **เพิ่มเมื่อ 2026-11-09:** `grant_dairy_cooperative.sql` — พอร์ทัลสหกรณ์โคนม /
 โปรแกรมบริหารธุรกิจโคนมครบวงจร (schema `dairy`, 37 ตาราง: ฝูงโครายตัว รับนมรอบ
