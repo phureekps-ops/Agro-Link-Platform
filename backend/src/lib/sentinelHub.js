@@ -231,7 +231,7 @@ function parseDailySeries(statisticsResponse, minClearRatio = MIN_CLEAR_RATIO) {
     const masked = Number(stats.noDataCount) || 0;
     const valid = total - masked;
     const mean = Number(stats.mean);
-    if (total < MIN_PIXELS || valid <= 0 || !Number.isFinite(mean)) continue;
+    if (total <= 0 || valid <= 0 || !Number.isFinite(mean)) continue;
     const clearRatio = valid / total;
     if (clearRatio < minClearRatio) continue;
     const from = (interval.interval && interval.interval.from) || '';
@@ -261,10 +261,20 @@ async function fetchNdviSeries(geoJsonPolygon, fromDate, toDate) {
   while (start <= end) {
     const chunkEnd = new Date(Math.min(start.getTime() + 89 * DAY_MS, end.getTime()));
     const res = await fetchNdviStatistics({ geoJsonPolygon, fromDate: isoDay(start), toDate: isoDay(chunkEnd), interval: 'P1D' });
-    series.push(...parseDailySeries(res));
+    series.push(...parseDailySeries(res, 0));
     start = new Date(chunkEnd.getTime() + DAY_MS);
   }
-  return series;
+  // sampleCount from the Statistical API counts every pixel of the plot's
+  // bounding box, and pixels outside the polygon come back as noData (found
+  // on 2026-11-14: an irregular 62-rai plot had a constant 60% "clear"
+  // share on cloud-free days). So the clear-sky share is measured against
+  // the plot's own pixel count, taken as the largest valid count seen in
+  // the window (a fully clear day), not against the bounding box.
+  const ref = series.reduce((m, p) => Math.max(m, p.sampleCount), 0);
+  if (ref < MIN_PIXELS) return [];
+  return series
+    .map(p => ({ ...p, totalCount: ref, clearRatio: Number((p.sampleCount / ref).toFixed(3)) }))
+    .filter(p => p.clearRatio >= MIN_CLEAR_RATIO);
 }
 
 /**
