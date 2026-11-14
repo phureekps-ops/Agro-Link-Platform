@@ -697,7 +697,14 @@
         ค้นหาภาพ Sentinel-2 ที่ปลอดเมฆล่าสุดในช่วง 60 วันที่ผ่านมา แล้วบันทึกเป็นข้อมูล NDVI จริง (source_provider = sentinel2_optical)
         — ถ้าช่วงนี้มีแต่เมฆปกคลุมทั้งหมดจะแจ้งว่าไม่พบภาพที่ใช้ได้ ไม่ใช่ error
       </p>
-      <button type="button" class="btn btn-ghost" id="sentinelSyncBtn" style="max-width:280px;">ดึงค่า NDVI ล่าสุดจาก Sentinel Hub</button>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <button type="button" class="btn btn-ghost" id="sentinelSyncBtn" style="max-width:280px;">ดึงค่า NDVI ล่าสุดจาก Sentinel Hub</button>
+        <button type="button" class="btn btn-ghost" id="sentinelSeriesBtn" style="max-width:320px;">ดึง NDVI ย้อนหลัง 12 เดือน (ทุกแปลง)</button>
+      </div>
+      <p style="font-size:12px; color:var(--gray-500); margin:8px 0 0;">
+        ใช้เฉพาะพิกเซลที่ไม่มีเมฆ/เงาเมฆ/น้ำ (Scene Classification ของ Sentinel-2) และนับเฉพาะวันที่แปลงปลอดเมฆอย่างน้อย 60% — วันที่ที่บันทึกคือวันที่ถ่ายภาพจริง
+        ปุ่มย้อนหลังจะดึงทีละแปลงจนครบทุกแปลง ใช้เวลาประมาณ 10–30 วินาทีต่อแปลง ห้ามปิดหน้านี้ระหว่างทำงาน
+      </p>
       <div id="sentinelSyncResult" class="detail-line" style="margin-top:10px;"></div>
     </div>
     <div class="panel" style="margin-bottom:24px;">

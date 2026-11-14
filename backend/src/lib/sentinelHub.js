@@ -57,10 +57,15 @@
 const TOKEN_URL = 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
 const STATISTICS_URL = 'https://sh.dataspace.copernicus.eu/statistics/v1';
 
-// NDVI from Sentinel-2 L2A B04 (red) / B08 (NIR), masking out nodata
-// pixels, pixels where NDVI is undefined (B04+B08 == 0), and water pixels
-// (Scene Classification Layer value 6) from the statistics — taken
-// verbatim from CDSE's own documented Statistical API NDVI example.
+// NDVI from Sentinel-2 L2A B04 (red) / B08 (NIR). Only pixels whose
+// Scene Classification Layer (SCL) is 4 (vegetation) or 5 (not vegetated /
+// bare soil) are kept: this drops clouds (8, 9), cirrus (10), cloud shadow
+// (3), water (6), snow (11), saturated/defective (1) and unclassified (7)
+// pixels. The first live test on 2026-11-14 used an evalscript that only
+// masked water, so a partly cloudy scene pulled the mean NDVI down; this
+// stricter mask fixes that. noDataCount in the response = masked pixels,
+// so (sampleCount - noDataCount) / sampleCount = the clear-sky share of
+// the plot on that date.
 const NDVI_EVALSCRIPT = `//VERSION=3
 function setup() {
   return {
@@ -76,22 +81,23 @@ function setup() {
 
 function evaluatePixel(samples) {
   let ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04);
-
-  var validNdviMask = 1;
+  var valid = 1;
   if (samples.B08 + samples.B04 === 0) {
-    validNdviMask = 0;
+    valid = 0;
   }
-
-  var noWaterMask = 1;
-  if (samples.SCL === 6) {
-    noWaterMask = 0;
+  if (samples.SCL !== 4 && samples.SCL !== 5) {
+    valid = 0;
   }
-
   return {
     data: [ndvi],
-    dataMask: [samples.dataMask * validNdviMask * noWaterMask],
+    dataMask: [samples.dataMask * valid],
   };
 }`;
+
+// A date counts only when at least this share of the plot's pixels is
+// clear sky — a mean over a few pixels between clouds is not a reliable
+// reading of the whole plot.
+const MIN_CLEAR_RATIO = 0.6;
 
 // In-process token cache — fine for a single Node process (if Render
 // restarts the service, this just re-fetches on next use). CDSE's own
@@ -151,13 +157,11 @@ async function getAccessToken() {
 /**
  * Calls the Statistical API for one GeoJSON Polygon (expected in
  * EPSG:4326 — straight from PostGIS's ST_AsGeoJSON(gps_boundary)) over
- * [fromDate, toDate] (YYYY-MM-DD strings), aggregated in 10-day buckets
- * (Sentinel-2's own revisit time is ~5 days, so a 10-day bucket gives
- * each one a real chance at a cloud-free pass without over-fetching).
- * Returns the raw parsed response body; see extractLatestMeanNdvi() for
- * how callers interpret it.
+ * [fromDate, toDate] (YYYY-MM-DD strings), aggregated per day by default
+ * (P1D), so each interval is one acquisition date (Sentinel-2 passes every
+ * ~5 days). Returns the raw parsed response body; see parseDailySeries().
  */
-async function fetchNdviStatistics({ geoJsonPolygon, fromDate, toDate }) {
+async function fetchNdviStatistics({ geoJsonPolygon, fromDate, toDate, interval = 'P1D' }) {
   const accessToken = await getAccessToken();
 
   const requestBody = {
@@ -171,13 +175,13 @@ async function fetchNdviStatistics({ geoJsonPolygon, fromDate, toDate }) {
       data: [
         {
           type: 'sentinel-2-l2a',
-          dataFilter: { mosaickingOrder: 'leastCC' },
+          dataFilter: { mosaickingOrder: 'leastCC', maxCloudCoverage: 80 },
         },
       ],
     },
     aggregation: {
       timeRange: { from: `${fromDate}T00:00:00Z`, to: `${toDate}T23:59:59Z` },
-      aggregationInterval: { of: 'P10D' },
+      aggregationInterval: { of: interval },
       evalscript: NDVI_EVALSCRIPT,
       resx: 10,
       resy: 10,
@@ -202,51 +206,71 @@ async function fetchNdviStatistics({ geoJsonPolygon, fromDate, toDate }) {
 }
 
 /**
- * Picks the most recent 10-day bucket in the response that actually has
- * valid (cloud-free, non-water) pixels, and returns its mean NDVI. Walks
- * backwards from the newest bucket so the result is always the latest
- * usable pass, not just the latest bucket regardless of cloud cover.
- * Returns null if every bucket in the requested window was fully
- * clouded/no-data — a real, expected outcome during Thailand's rainy
- * season, not an error.
+ * Turns a Statistical API response aggregated per day (P1D) into one
+ * entry per acquisition date that has enough clear-sky pixels. Each entry
+ * carries the real acquisition date (the interval's own start date, since
+ * one P1D interval = one calendar day), the mean NDVI of the clear pixels,
+ * and the clear-sky share, so later analysis can weigh or filter readings.
  */
-function extractLatestMeanNdvi(statisticsResponse) {
+function parseDailySeries(statisticsResponse, minClearRatio = MIN_CLEAR_RATIO) {
   const intervals = (statisticsResponse && statisticsResponse.data) || [];
-  for (let i = intervals.length - 1; i >= 0; i -= 1) {
-    const interval = intervals[i];
-    const stats = interval
-      && interval.outputs
-      && interval.outputs.data
-      && interval.outputs.data.bands
-      && interval.outputs.data.bands.B0
+  const out = [];
+  for (const interval of intervals) {
+    const stats = interval && interval.outputs && interval.outputs.data
+      && interval.outputs.data.bands && interval.outputs.data.bands.B0
       && interval.outputs.data.bands.B0.stats;
-    if (stats && stats.sampleCount > 0 && stats.mean !== null && stats.mean !== undefined) {
-      const isoDate = (interval.interval && (interval.interval.to || interval.interval.from)) || '';
-      return {
-        observationDate: isoDate.slice(0, 10),
-        valueNumeric: Number(Number(stats.mean).toFixed(4)),
-        sampleCount: stats.sampleCount,
-      };
-    }
+    if (!stats) continue;
+    const total = Number(stats.sampleCount) || 0;
+    const masked = Number(stats.noDataCount) || 0;
+    const valid = total - masked;
+    const mean = Number(stats.mean);
+    if (total <= 0 || valid <= 0 || !Number.isFinite(mean)) continue;
+    const clearRatio = valid / total;
+    if (clearRatio < minClearRatio) continue;
+    const from = (interval.interval && interval.interval.from) || '';
+    out.push({
+      observationDate: from.slice(0, 10),
+      valueNumeric: Number(mean.toFixed(4)),
+      sampleCount: valid,
+      totalCount: total,
+      clearRatio: Number(clearRatio.toFixed(3)),
+      stDev: Number.isFinite(Number(stats.stDev)) ? Number(Number(stats.stDev).toFixed(4)) : null,
+    });
   }
-  return null;
+  return out.sort((x, y) => x.observationDate.localeCompare(y.observationDate));
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const isoDay = d => d.toISOString().slice(0, 10);
+
+/**
+ * Daily clear-sky NDVI series for one plot between two dates. The range is
+ * fetched in chunks of at most 90 days so one long request cannot time out.
+ */
+async function fetchNdviSeries(geoJsonPolygon, fromDate, toDate) {
+  const series = [];
+  let start = new Date(`${fromDate}T00:00:00Z`);
+  const end = new Date(`${toDate}T00:00:00Z`);
+  while (start <= end) {
+    const chunkEnd = new Date(Math.min(start.getTime() + 89 * DAY_MS, end.getTime()));
+    const res = await fetchNdviStatistics({ geoJsonPolygon, fromDate: isoDay(start), toDate: isoDay(chunkEnd), interval: 'P1D' });
+    series.push(...parseDailySeries(res));
+    start = new Date(chunkEnd.getTime() + DAY_MS);
+  }
+  return series;
 }
 
 /**
- * High-level entry point used by the admin route: given a plot's GeoJSON
- * boundary, fetches the most recent cloud-free mean NDVI from the last 60
- * days. Returns null (not a thrown error) when no cloud-free pass was
- * found in that window — callers should surface this as a normal "no
- * imagery available" outcome, not a system error.
+ * High-level entry point used by the single-plot admin button: the most
+ * recent clear-sky acquisition in the last 60 days, with its real date.
+ * Returns null (not a thrown error) when no clear-sky pass was found — a
+ * normal outcome in Thailand's rainy season.
  */
 async function fetchLatestNdvi(geoJsonPolygon) {
   const toDate = new Date();
-  const fromDate = new Date(toDate.getTime() - 60 * 24 * 60 * 60 * 1000);
-  const toStr = toDate.toISOString().slice(0, 10);
-  const fromStr = fromDate.toISOString().slice(0, 10);
-
-  const statisticsResponse = await fetchNdviStatistics({ geoJsonPolygon, fromDate: fromStr, toDate: toStr });
-  return extractLatestMeanNdvi(statisticsResponse);
+  const fromDate = new Date(toDate.getTime() - 60 * DAY_MS);
+  const series = await fetchNdviSeries(geoJsonPolygon, isoDay(fromDate), isoDay(toDate));
+  return series.length ? series[series.length - 1] : null;
 }
 
-module.exports = { isConfigured, fetchLatestNdvi, SentinelHubError };
+module.exports = { isConfigured, fetchLatestNdvi, fetchNdviSeries, parseDailySeries, SentinelHubError, MIN_CLEAR_RATIO };

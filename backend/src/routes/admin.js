@@ -1769,7 +1769,7 @@ router.post('/satellite-observations/sync-sentinel', async (req, res, next) => {
          RETURNING *`,
         [
           unitId, ndvi.observationDate, ndvi.valueNumeric,
-          `ดึงอัตโนมัติจาก Copernicus Sentinel-2 L2A (Statistical API) — จำนวนพิกเซลที่ใช้คำนวณ: ${ndvi.sampleCount}`,
+          `ดึงอัตโนมัติจาก Copernicus Sentinel-2 L2A (Statistical API) — ภาพวันที่ ${ndvi.observationDate} พิกเซลปลอดเมฆ ${Math.round(ndvi.clearRatio * 100)}% (${ndvi.sampleCount}/${ndvi.totalCount})`,
           recordedBy || 'ระบบอัตโนมัติ (Sentinel Hub API)',
         ],
       );
@@ -1780,6 +1780,66 @@ router.post('/satellite-observations/sync-sentinel', async (req, res, next) => {
     if (result.unitNotFound) return res.status(404).json({ error: 'production_unit_not_found' });
     if (result.noImagery) return res.status(422).json({ error: 'no_cloud_free_imagery_found' });
     return res.status(201).json(result.observation);
+  } catch (err) {
+    if (err instanceof sentinelHub.SentinelHubError) {
+      return res.status(502).json({ error: 'sentinelhub_request_failed', detail: err.message, status: err.status });
+    }
+    return next(err);
+  }
+});
+
+/**
+ * POST /admin/satellite-observations/sync-sentinel-series
+ * Body: { unit_id, months? (1-24, default 12), recorded_by? }
+ * Pulls the daily clear-sky NDVI series of one plot for the past N months
+ * (see sentinelHub.fetchNdviSeries: SCL cloud mask, a date counts only if
+ * at least 60% of the plot is clear) and upserts one satellite.observation
+ * row per acquisition date. Built for the T69-10-239 preliminary AI test
+ * (NDVI curve vs. delivered yield); the admin page calls it plot by plot
+ * so no single HTTP request runs long.
+ */
+router.post('/satellite-observations/sync-sentinel-series', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { unit_id: unitId, recorded_by: recordedBy } = req.body || {};
+  const months = Math.min(Math.max(parseInt((req.body || {}).months, 10) || 12, 1), 24);
+  if (!unitId) return res.status(400).json({ error: 'missing_required_fields', required: ['unit_id'] });
+  if (!sentinelHub.isConfigured()) return res.status(503).json({ error: 'sentinelhub_not_configured' });
+
+  try {
+    const unit = await withSessionContext('platform', subjectId, client => client.query(
+      'SELECT ST_AsGeoJSON(gps_boundary)::json AS geometry FROM registry.production_unit WHERE unit_id = $1', [unitId]));
+    if (unit.rows.length === 0) return res.status(404).json({ error: 'production_unit_not_found' });
+
+    const to = new Date();
+    const from = new Date(to.getTime() - months * 30.44 * 24 * 60 * 60 * 1000);
+    const series = await sentinelHub.fetchNdviSeries(unit.rows[0].geometry, from.toISOString().slice(0, 10), to.toISOString().slice(0, 10));
+
+    const saved = await withSessionContext('platform', subjectId, async (client) => {
+      let n = 0;
+      for (const p of series) {
+        await client.query(
+          `INSERT INTO satellite.observation
+             (unit_id, observation_date, source_provider, observation_type, value_numeric, note, recorded_by)
+           VALUES ($1, $2, 'sentinel2_optical', 'ndvi', $3, $4, $5)
+           ON CONFLICT (unit_id, observation_date, source_provider, observation_type) DO UPDATE SET
+             value_numeric = EXCLUDED.value_numeric, note = EXCLUDED.note,
+             recorded_by = EXCLUDED.recorded_by, ingested_at = now()`,
+          [unitId, p.observationDate, p.valueNumeric,
+            `ชุดข้อมูลย้อนหลัง Sentinel-2 L2A — ภาพวันที่ ${p.observationDate} พิกเซลปลอดเมฆ ${Math.round(p.clearRatio * 100)}% (${p.sampleCount}/${p.totalCount})${p.stDev !== null ? ` SD ${p.stDev}` : ''}`,
+            recordedBy || 'ระบบอัตโนมัติ (Sentinel Hub API ย้อนหลัง)'],
+        );
+        n += 1;
+      }
+      if (n > 0) await logAccess(client, 'write', 'satellite.observation', unitId);
+      return n;
+    });
+
+    return res.status(201).json({
+      unit_id: unitId, months, saved,
+      first_date: series.length ? series[0].observationDate : null,
+      last_date: series.length ? series[series.length - 1].observationDate : null,
+      points: series,
+    });
   } catch (err) {
     if (err instanceof sentinelHub.SentinelHubError) {
       return res.status(502).json({ error: 'sentinelhub_request_failed', detail: err.message, status: err.status });

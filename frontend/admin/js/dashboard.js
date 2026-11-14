@@ -1710,7 +1710,7 @@ document.getElementById("observationSubmitBtn").addEventListener("click", async 
 const SENTINEL_SYNC_ERROR_TH = {
   sentinelhub_not_configured: "ยังไม่ได้ตั้งค่า SENTINELHUB_CLIENT_ID/SECRET บน Render — ดูขั้นตอนใน DEPLOY.md",
   production_unit_not_found: "ไม่พบแปลงนี้ในระบบ",
-  no_cloud_free_imagery_found: "ไม่พบภาพถ่ายดาวเทียมที่ปลอดเมฆในช่วง 60 วันที่ผ่านมาของแปลงนี้ (ไม่ใช่ข้อผิดพลาดของระบบ ลองใหม่ภายหลังได้)",
+  no_cloud_free_imagery_found: "ไม่พบภาพถ่ายดาวเทียมที่แปลงปลอดเมฆอย่างน้อย 60% ในช่วง 60 วันที่ผ่านมา (ไม่ใช่ข้อผิดพลาดของระบบ ลองใหม่ภายหลังได้)",
   sentinelhub_request_failed: "เชื่อมต่อ Sentinel Hub ไม่สำเร็จ (อาจเป็นปัญหาชั่วคราวของผู้ให้บริการ หรือ Client ID/Secret ไม่ถูกต้อง)",
 };
 
@@ -1737,6 +1737,36 @@ document.getElementById("sentinelSyncBtn").addEventListener("click", async () =>
   } finally {
     btn.disabled = false;
   }
+});
+
+// T69-10-239: ดึง NDVI ย้อนหลัง 12 เดือนของทุกแปลง ทีละแปลง (เรียก
+// POST /admin/satellite-observations/sync-sentinel-series ทีละครั้ง เพื่อไม่ให้
+// คำขอเดียวยาวเกินเวลาของ Render) แล้วสรุปผลให้ดู
+document.getElementById("sentinelSeriesBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("sentinelSeriesBtn");
+  const resultEl = document.getElementById("sentinelSyncResult");
+  if (!unitCache.length) { toast("ยังไม่มีแปลงในระบบ", true); return; }
+  if (!confirm(`ดึง NDVI ย้อนหลัง 12 เดือนของแปลงทั้งหมด ${unitCache.length} แปลง? ใช้เวลาประมาณ ${Math.ceil(unitCache.length * 20 / 60)} นาที`)) return;
+  btn.disabled = true;
+  let ok = 0, points = 0, failed = 0;
+  const failures = [];
+  for (let i = 0; i < unitCache.length; i += 1) {
+    const u = unitCache[i];
+    resultEl.textContent = `กำลังดึงแปลงที่ ${i + 1}/${unitCache.length} … (สำเร็จ ${ok} แปลง ได้ ${points} วันที่ภาพ)`;
+    try {
+      const r = await AgroLinkAdminAPI.post("/admin/satellite-observations/sync-sentinel-series", { unit_id: u.unit_id, months: 12 });
+      ok += 1; points += r.saved;
+    } catch (err) {
+      failed += 1;
+      const code = err.body && err.body.error;
+      failures.push(`${u.farmer_name || u.unit_id}: ${SENTINEL_SYNC_ERROR_TH[code] || code || err.message}`);
+    }
+  }
+  resultEl.textContent = `เสร็จแล้ว — สำเร็จ ${ok}/${unitCache.length} แปลง ได้ข้อมูล NDVI ปลอดเมฆรวม ${points} วันที่ภาพ` + (failed ? ` · ไม่สำเร็จ ${failed} แปลง: ${failures.slice(0, 3).join(" | ")}` : "");
+  toast("ดึง NDVI ย้อนหลังเสร็จแล้ว");
+  btn.disabled = false;
+  const sel = document.getElementById("unitSelect").value;
+  if (sel) await loadObservations(sel);
 });
 
 async function initSatelliteObservations() {
