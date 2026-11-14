@@ -3,6 +3,8 @@ const crypto = require('crypto');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireOrganization } = require('../middleware/auth');
+const sentinelHub = require('../lib/sentinelHub');
+const plotSatellite = require('../lib/plotSatellite');
 
 const router = express.Router();
 
@@ -396,6 +398,84 @@ router.get('/production-units', async (req, res, next) => {
 
     return res.json(rows);
   } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/satellite/units — active plots with a count of clear-sky NDVI
+ * readings and the latest one, for the cooperative's "ดาวเทียมแปลงสมาชิก"
+ * page. Same scope as GET /coop/production-units above (every active plot,
+ * because no farmer<->cooperative membership table exists yet — narrow
+ * this to members together with that route once M02 lands).
+ */
+router.get('/satellite/units', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('organization', subjectId, async (client) => {
+      const r = await client.query(
+        `SELECT pu.unit_id, pu.commodity_code, c.name_th AS commodity_name_th, pu.area_rai, pu.season_id,
+                f.full_name AS farmer_name,
+                count(o.observation_id)::int AS ndvi_points,
+                max(o.observation_date) AS last_date,
+                (array_agg(o.value_numeric ORDER BY o.observation_date DESC))[1] AS last_ndvi
+           FROM registry.production_unit pu
+           JOIN identity.farmer f ON f.farmer_id = pu.owner_farmer_id
+           LEFT JOIN registry.commodity_ref c ON c.commodity_code = pu.commodity_code
+           LEFT JOIN satellite.observation o ON o.unit_id = pu.unit_id
+                 AND o.source_provider = 'sentinel2_optical' AND o.observation_type = 'ndvi'
+          WHERE pu.status = 'active' AND pu.unit_type = 'Plot'
+          GROUP BY pu.unit_id, c.name_th, f.full_name
+          ORDER BY f.full_name`,
+      );
+      await logAccess(client, 'read', 'satellite.observation', null);
+      return r.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /coop/production-units/:id/satellite — the plot, its view box
+ * and its clear-sky Sentinel-2 NDVI series (for the NDVI chart).
+ * GET /coop/production-units/:id/satellite/image?date=YYYY-MM-DD&kind=truecolor|ndvi
+ * — PNG (base64) of the plot surroundings on that date from Copernicus
+ * (Process API, cached in memory). See lib/plotSatellite.js.
+ * Same plot scope as GET /coop/production-units.
+ */
+router.get('/production-units/:id/satellite', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  if (!plotSatellite.isUuid(req.params.id)) return res.status(400).json({ error: 'invalid_unit_id' });
+  try {
+    const data = await withSessionContext('organization', subjectId, async (client) => {
+      const r = await plotSatellite.getSeries(client, req.params.id);
+      if (r) await logAccess(client, 'read', 'satellite.observation', req.params.id);
+      return r;
+    });
+    if (!data) return res.status(404).json({ error: 'production_unit_not_found' });
+    return res.json(data);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/production-units/:id/satellite/image', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { date } = req.query;
+  const kind = req.query.kind === 'ndvi' ? 'ndvi' : 'truecolor';
+  if (!plotSatellite.isUuid(req.params.id)) return res.status(400).json({ error: 'invalid_unit_id' });
+  if (!plotSatellite.isDate(date)) return res.status(400).json({ error: 'invalid_date' });
+  if (!sentinelHub.isConfigured()) return res.status(503).json({ error: 'sentinelhub_not_configured' });
+  try {
+    const data = await withSessionContext('organization', subjectId, client => plotSatellite.getImage(client, req.params.id, date, kind));
+    if (!data) return res.status(404).json({ error: 'production_unit_not_found' });
+    return res.json(data);
+  } catch (err) {
+    if (err instanceof sentinelHub.SentinelHubError) {
+      return res.status(502).json({ error: 'sentinelhub_request_failed', detail: err.message, status: err.status });
+    }
     return next(err);
   }
 });

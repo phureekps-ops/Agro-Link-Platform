@@ -5,6 +5,7 @@ const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requirePlatform } = require('../middleware/auth');
 const carbonAggregation = require('../lib/carbonAggregation');
 const sentinelHub = require('../lib/sentinelHub');
+const plotSatellite = require('../lib/plotSatellite');
 
 const router = express.Router();
 
@@ -1612,6 +1613,48 @@ router.get('/production-units', async (req, res, next) => {
     });
     return res.json(rows);
   } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /admin/production-units/:id/satellite — the plot, its view box
+ * and its clear-sky Sentinel-2 NDVI series (for the NDVI chart).
+ * GET /admin/production-units/:id/satellite/image?date=YYYY-MM-DD&kind=truecolor|ndvi
+ * — PNG (base64) of the plot surroundings on that date from Copernicus
+ * (Process API, cached in memory). See lib/plotSatellite.js.
+ */
+router.get('/production-units/:id/satellite', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  if (!plotSatellite.isUuid(req.params.id)) return res.status(400).json({ error: 'invalid_unit_id' });
+  try {
+    const data = await withSessionContext('platform', subjectId, async (client) => {
+      const r = await plotSatellite.getSeries(client, req.params.id);
+      if (r) await logAccess(client, 'read', 'satellite.observation', req.params.id);
+      return r;
+    });
+    if (!data) return res.status(404).json({ error: 'production_unit_not_found' });
+    return res.json(data);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/production-units/:id/satellite/image', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  const { date } = req.query;
+  const kind = req.query.kind === 'ndvi' ? 'ndvi' : 'truecolor';
+  if (!plotSatellite.isUuid(req.params.id)) return res.status(400).json({ error: 'invalid_unit_id' });
+  if (!plotSatellite.isDate(date)) return res.status(400).json({ error: 'invalid_date' });
+  if (!sentinelHub.isConfigured()) return res.status(503).json({ error: 'sentinelhub_not_configured' });
+  try {
+    const data = await withSessionContext('platform', subjectId, client => plotSatellite.getImage(client, req.params.id, date, kind));
+    if (!data) return res.status(404).json({ error: 'production_unit_not_found' });
+    return res.json(data);
+  } catch (err) {
+    if (err instanceof sentinelHub.SentinelHubError) {
+      return res.status(502).json({ error: 'sentinelhub_request_failed', detail: err.message, status: err.status });
+    }
     return next(err);
   }
 });

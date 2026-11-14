@@ -1636,7 +1636,20 @@ function observationCard(o) {
   `;
 }
 
+function mountSatViewer(unitId) {
+  const host = document.getElementById("satViewer");
+  if (!unitId) {
+    host.innerHTML = `<div class="loading-line">เลือกแปลงด้านบนเพื่อดูกราฟ NDVI และภาพดาวเทียม</div>`;
+    return;
+  }
+  AgroLinkSatViewer.mount(host, {
+    get: AgroLinkAdminAPI.get, base: "/admin", unitId,
+    emptyHint: "กดปุ่ม \"ดึง NDVI ย้อนหลัง 12 เดือน (ทุกแปลง)\" ด้านบนก่อน",
+  });
+}
+
 async function loadObservations(unitId) {
+  mountSatViewer(unitId);
   const el = document.getElementById("observationsSection");
   if (!unitId) {
     el.innerHTML = `<div class="loading-line">เลือกแปลงด้านบนเพื่อดูประวัติข้อมูล</div>`;

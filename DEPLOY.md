@@ -205,6 +205,11 @@ seed_province_all_77.sql
 grant_satellite_observation_delete.sql
 ```
 
+**เพิ่มเมื่อ 2026-11-14 (2): กราฟ NDVI และภาพดาวเทียมของแปลง** — ไม่มี migration ใหม่ ใช้ตัวแปร
+`SENTINELHUB_CLIENT_ID`/`SECRET` ชุดเดิม ภาพดึงจาก Process API ของ Copernicus ทุกครั้งที่เปิดดู
+(แคชในหน่วยความจำของ backend จนกว่า Render จะรีสตาร์ต) จึงใช้โควตาฟรีของบัญชี CDSE เพิ่มขึ้นตามการใช้งาน
+หน้าใช้งาน: แอดมิน › 🛰️ ข้อมูลดาวเทียม › เลือกแปลง และพอร์ทัลสหกรณ์ › 🛰️ ดาวเทียมแปลงสมาชิก (`coop/satellite.html`)
+
 **เพิ่มเมื่อ 2026-11-14:** `grant_satellite_observation_delete.sql` — ให้สิทธิ์ DELETE บน
 `satellite.observation` แก่ agrolink_app เพื่อให้ปุ่ม "ดึง NDVI ย้อนหลัง 12 เดือน" สร้างชุดข้อมูลของแปลงใหม่
 ทั้งช่วงได้ (ลบค่ารอบก่อนแล้วบันทึกใหม่) รันซ้ำได้

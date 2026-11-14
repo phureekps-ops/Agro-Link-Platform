@@ -56,6 +56,7 @@
 
 const TOKEN_URL = 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
 const STATISTICS_URL = 'https://sh.dataspace.copernicus.eu/statistics/v1';
+const PROCESS_URL = 'https://sh.dataspace.copernicus.eu/api/v1/process';
 
 // NDVI from Sentinel-2 L2A B04 (red) / B08 (NIR). Only pixels whose
 // Scene Classification Layer (SCL) is 4 (vegetation) or 5 (not vegetated /
@@ -290,4 +291,71 @@ async function fetchLatestNdvi(geoJsonPolygon) {
   return series.length ? series[series.length - 1] : null;
 }
 
-module.exports = { isConfigured, fetchLatestNdvi, fetchNdviSeries, parseDailySeries, SentinelHubError, MIN_CLEAR_RATIO };
+
+// ---------------------------------------------------------------------------
+// Plot images (Process API) — a picture of the plot and its surroundings on
+// one acquisition date, for the NDVI viewer in the admin and cooperative
+// portals. Two looks: true colour (what the eye would see) and an NDVI
+// colour ramp (brown = bare soil, yellow = sparse, green = dense crop).
+// ---------------------------------------------------------------------------
+const TRUE_COLOR_EVALSCRIPT = `//VERSION=3
+function setup() {
+  return { input: ["B02", "B03", "B04", "dataMask"], output: { bands: 4 } };
+}
+function evaluatePixel(s) {
+  return [2.5 * s.B04, 2.5 * s.B03, 2.5 * s.B02, s.dataMask];
+}`;
+
+const NDVI_COLOR_EVALSCRIPT = `//VERSION=3
+function setup() {
+  return { input: ["B04", "B08", "dataMask"], output: { bands: 4 } };
+}
+function evaluatePixel(s) {
+  let v = (s.B08 - s.B04) / (s.B08 + s.B04);
+  let c = colorBlend(v,
+    [0.0, 0.2, 0.4, 0.6, 0.8],
+    [[0.62, 0.42, 0.25], [0.86, 0.78, 0.47], [0.70, 0.84, 0.43], [0.30, 0.65, 0.27], [0.06, 0.40, 0.16]]);
+  return [c[0], c[1], c[2], s.dataMask];
+}`;
+
+const imageCache = new Map(); // key -> { buffer, at }
+const IMAGE_CACHE_MAX = 120;
+
+/**
+ * PNG of bbox [minLon, minLat, maxLon, maxLat] on one date. kind is
+ * 'truecolor' or 'ndvi'. Cached in memory so re-opening the same plot/date
+ * does not spend Copernicus processing units again (the cache resets when
+ * Render restarts the service).
+ */
+async function fetchPlotImage({ bbox, date, kind, width, height }) {
+  const key = [bbox.map(v => v.toFixed(6)).join(','), date, kind, width, height].join('|');
+  if (imageCache.has(key)) return imageCache.get(key).buffer;
+
+  const accessToken = await getAccessToken();
+  const requestBody = {
+    input: {
+      bounds: { bbox, properties: { crs: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' } },
+      data: [{
+        type: 'sentinel-2-l2a',
+        dataFilter: { timeRange: { from: `${date}T00:00:00Z`, to: `${date}T23:59:59Z` }, mosaickingOrder: 'leastCC' },
+      }],
+    },
+    output: { width, height, responses: [{ identifier: 'default', format: { type: 'image/png' } }] },
+    evalscript: kind === 'ndvi' ? NDVI_COLOR_EVALSCRIPT : TRUE_COLOR_EVALSCRIPT,
+  };
+  const res = await fetch(PROCESS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'image/png', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(requestBody),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => null);
+    throw new SentinelHubError('sentinelhub_process_request_failed', { status: res.status, body });
+  }
+  const buffer = Buffer.from(await res.arrayBuffer());
+  if (imageCache.size >= IMAGE_CACHE_MAX) imageCache.delete(imageCache.keys().next().value);
+  imageCache.set(key, { buffer, at: Date.now() });
+  return buffer;
+}
+
+module.exports = { isConfigured, fetchLatestNdvi, fetchNdviSeries, parseDailySeries, fetchPlotImage, SentinelHubError, MIN_CLEAR_RATIO };
