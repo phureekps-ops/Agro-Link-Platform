@@ -1814,7 +1814,18 @@ router.post('/satellite-observations/sync-sentinel-series', async (req, res, nex
     const from = new Date(to.getTime() - months * 30.44 * 24 * 60 * 60 * 1000);
     const series = await sentinelHub.fetchNdviSeries(unit.rows[0].geometry, from.toISOString().slice(0, 10), to.toISOString().slice(0, 10));
 
+    const fromStr = from.toISOString().slice(0, 10);
+    const toStr = to.toISOString().slice(0, 10);
     const saved = await withSessionContext('platform', subjectId, async (client) => {
+      // Replace, not merge: rows from an earlier run (or the earlier single-
+      // date button) in this window may come from a run with a bug or a
+      // looser cloud filter, so the window is rebuilt from this run only.
+      await client.query(
+        `DELETE FROM satellite.observation
+          WHERE unit_id = $1 AND source_provider = 'sentinel2_optical' AND observation_type = 'ndvi'
+            AND observation_date BETWEEN $2 AND $3`,
+        [unitId, fromStr, toStr],
+      );
       let n = 0;
       for (const p of series) {
         await client.query(

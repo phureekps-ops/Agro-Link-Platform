@@ -98,6 +98,8 @@ function evaluatePixel(samples) {
 // clear sky — a mean over a few pixels between clouds is not a reliable
 // reading of the whole plot.
 const MIN_CLEAR_RATIO = 0.6;
+// A plot smaller than a few pixels cannot give a meaningful plot mean.
+const MIN_PIXELS = 4;
 
 // In-process token cache — fine for a single Node process (if Render
 // restarts the service, this just re-fetches on next use). CDSE's own
@@ -183,8 +185,13 @@ async function fetchNdviStatistics({ geoJsonPolygon, fromDate, toDate, interval 
       timeRange: { from: `${fromDate}T00:00:00Z`, to: `${toDate}T23:59:59Z` },
       aggregationInterval: { of: interval },
       evalscript: NDVI_EVALSCRIPT,
-      resx: 10,
-      resy: 10,
+      // resx/resy are in the units of the request CRS. The geometry is sent
+      // in CRS84 (degrees), so "10" meant 10 DEGREES per pixel: every plot
+      // collapsed into a single coarse pixel (sampleCount 1), found in the
+      // first live run on 2026-11-14. 0.0001 degree ≈ 11 m, close to
+      // Sentinel-2's native 10 m for B04/B08.
+      resx: 0.0001,
+      resy: 0.0001,
     },
   };
 
@@ -224,7 +231,7 @@ function parseDailySeries(statisticsResponse, minClearRatio = MIN_CLEAR_RATIO) {
     const masked = Number(stats.noDataCount) || 0;
     const valid = total - masked;
     const mean = Number(stats.mean);
-    if (total <= 0 || valid <= 0 || !Number.isFinite(mean)) continue;
+    if (total < MIN_PIXELS || valid <= 0 || !Number.isFinite(mean)) continue;
     const clearRatio = valid / total;
     if (clearRatio < minClearRatio) continue;
     const from = (interval.interval && interval.interval.from) || '';
