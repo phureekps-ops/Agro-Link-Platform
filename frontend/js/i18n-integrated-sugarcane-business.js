@@ -704,11 +704,11 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Back to Home"
   },
   "integrated-sugarcane-business_177": {
-    "th": "แผนที่ห่วงโซ่คุณค่าอ้อยและน้ำตาล ต้นน้ำ กลางน้ำ ปลายน้ำ และห่วงโซ่ชีวภาพคู่ขนาน เชื่อมผ่านโครงสร้างพื้นฐานดิจิทัล AgroLink",
-    "en": "Sugarcane and sugar value chain map from upstream to downstream and the parallel biomass value stream, connected through the AgroLink digital infrastructure"
+    "th": "แผนภาพห่วงโซ่อ้อยและน้ำตาลครบวงจร ต้นน้ำ กลางน้ำ แปรรูป ปลายน้ำ และผู้บริโภค พร้อมเศรษฐกิจหมุนเวียนจากชานอ้อย กากหม้อกรอง ใบและยอดอ้อย กากน้ำตาล และเถ้า เชื่อมทุกภาคส่วนผ่านแพลตฟอร์มดิจิทัล AgroLink",
+    "en": "Integrated sugarcane and sugar value chain: upstream, midstream, processing, downstream and consumers, with a circular economy from bagasse, filter cake, cane leaves and tops, molasses and ash, connecting every stakeholder through the AgroLink digital platform"
   },
   "integrated-sugarcane-business_178": {
-    "th": "แผนที่ห่วงโซ่คุณค่าอ้อยและน้ำตาล: ต้นน้ำ–กลางน้ำ–ปลายน้ำ และห่วงโซ่ชีวภาพคู่ขนาน เชื่อมโยงด้วยโครงสร้างพื้นฐานดิจิทัล AgroLink",
-    "en": "Sugarcane & sugar value chain map: upstream–midstream–downstream plus the parallel biomass chain, connected via the AgroLink digital infrastructure"
+    "th": "ห่วงโซ่อ้อยและน้ำตาลครบวงจร: ต้นน้ำ–กลางน้ำ–แปรรูป–ปลายน้ำ–ผู้บริโภค และเศรษฐกิจหมุนเวียนจากทุกส่วนของอ้อย เชื่อมโยงด้วยแพลตฟอร์มดิจิทัล AgroLink",
+    "en": "Integrated sugarcane & sugar value chain: upstream–midstream–processing–downstream–consumers and a circular economy using every part of the cane, connected by the AgroLink digital platform"
   }
 });
