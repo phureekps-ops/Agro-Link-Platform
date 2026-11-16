@@ -144,6 +144,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "sh_m_investor": {"th": "นักลงทุน", "en": "Investors"},
   "sh_m_livestock": {"th": "ปศุสัตว์", "en": "Livestock"},
   "sh_m_logistics": {"th": "ผู้ให้บริการขนส่ง", "en": "Logistics Providers"},
+  "sh_m_machinery": {"th": "ผู้ให้บริการเครื่องจักรกลการเกษตร", "en": "Farm Machinery Providers"},
   "sh_m_longan": {"th": "ลำไย", "en": "Longan"},
   "sh_m_market": {"th": "ตลาดกลาง / ผู้ซื้อ-โรงงาน", "en": "Marketplace / Buyers & Mills"},
   "sh_m_palm": {"th": "ปาล์มน้ำมัน", "en": "Oil Palm"},
