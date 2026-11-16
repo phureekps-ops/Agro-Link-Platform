@@ -250,5 +250,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "production-cycle-template_63": {
     "th": "สมัครใช้งาน",
     "en": "Sign Up"
-  }
+  },
+  "production-cycle-template_64": {"th": "แผนภาพแม่แบบวงจรการผลิตสากล 8 ขั้น: ข้อมูลและการวางแผน การผลิต การติดตามและเตือนภัย การเก็บเกี่ยวและรวบรวม การจำหน่ายและตลาด การเงินและสินเชื่อ บริการครบวงจร และการประเมินผลและปรับปรุง เชื่อมกันผ่านแพลตฟอร์มดิจิทัล AgroLink ใช้ได้กับสินค้าเกษตรทุกชนิด", "en": "Universal Production-Cycle Template in 8 stages: data and planning, production, monitoring and alerts, harvest and collection, sales and marketplace, finance and credit, value-added services, and evaluation and improvement, connected through the AgroLink digital platform for every commodity"},
+  "production-cycle-template_65": {"th": "แม่แบบวงจรการผลิตสากล 8 ขั้น ตั้งแต่วางแผนจนถึงประเมินผล เชื่อมทุกภาคส่วนผ่านแพลตฟอร์มดิจิทัล AgroLink และใช้ได้กับสินค้าเกษตรทุกชนิด", "en": "The 8-stage Universal Production-Cycle Template, from planning to evaluation, connecting every stakeholder through the AgroLink digital platform for every commodity"}
 });

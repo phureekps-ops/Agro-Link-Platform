@@ -184,6 +184,16 @@
 
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: translateY(0); }
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -233,6 +243,14 @@
       <a href="#auto-settlement" class="cycle-chip"><span class="num">06</span><span data-i18n="production-cycle-template_9"> หักบัญชีอัตโนมัติ</span></a>
       <span class="cycle-arrow">↻</span>
     </div>
+  </div>
+</section>
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/production-cycle-infographic.jpg" data-i18n="production-cycle-template_64" data-i18n-attr="alt" alt="แผนภาพแม่แบบวงจรการผลิตสากล 8 ขั้น: ข้อมูลและการวางแผน การผลิต การติดตามและเตือนภัย การเก็บเกี่ยวและรวบรวม การจำหน่ายและตลาด การเงินและสินเชื่อ บริการครบวงจร และการประเมินผลและปรับปรุง เชื่อมกันผ่านแพลตฟอร์มดิจิทัล AgroLink ใช้ได้กับสินค้าเกษตรทุกชนิด" width="1536" height="1024" loading="lazy">
+      <figcaption data-i18n="production-cycle-template_65">แม่แบบวงจรการผลิตสากล 8 ขั้น ตั้งแต่วางแผนจนถึงประเมินผล เชื่อมทุกภาคส่วนผ่านแพลตฟอร์มดิจิทัล AgroLink และใช้ได้กับสินค้าเกษตรทุกชนิด</figcaption>
+    </figure>
   </div>
 </section>
 
