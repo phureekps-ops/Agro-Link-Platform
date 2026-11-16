@@ -215,6 +215,16 @@
 
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: translateY(0); }
+  /* INFOGRAPHIC FIGURE */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(31,56,100,.12);
+  }
+  .infographic-figure figcaption {
+    margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted);
+  }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -248,6 +258,14 @@
     <div class="eyebrow"><i class="fa-solid fa-diagram-project"></i><span data-i18n="carbon-module-guide_1"> เอกสารทางเทคนิค · สำหรับทีมงาน</span></div>
     <h1 class="section-title" data-i18n="carbon-module-guide_2">กลไกการทำงานของ Carbon Module</h1>
     <p class="section-sub" data-i18n="carbon-module-guide_3">อธิบายว่าโมดูลคาร์บอนเครดิตของ AgroLink ทำงานจริงอย่างไร ตั้งแต่เกษตรกรบันทึกระดับน้ำในนา ไปจนถึงเงินที่ได้จากการขายคาร์บอนเครดิตถูกแบ่งกลับไปหาสมาชิกแต่ละคน — ครอบคลุมทั้ง 3 เฟสที่พัฒนาไว้แล้วในระบบจริง (ไม่ใช่แนวคิดการตลาด แต่เป็นกลไกจริงในโค้ด)</p>
+  </div>
+</section>
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <img src="assets/carbon-module-infographic.jpg" data-i18n="carbon-module-guide_194" data-i18n-attr="alt" alt="แผนภาพกลไกการทำงานของ AgroLink Carbon Module: ขอบเขต MVP 3 เฟส (Foundation, Digital Farm Registry, Carbon MRV) ขั้นตอนเก็บข้อมูลระดับน้ำและหลักฐาน MRV 5 ขั้น ขั้นตอนปลายทางกับผู้ตรวจประเมินอิสระและการขึ้นทะเบียนเครดิต และการจัดสรรรายได้ให้เกษตรกร สหกรณ์ และผู้ให้บริการ" width="1536" height="1024" loading="lazy">
+      <figcaption data-i18n="carbon-module-guide_195">กลไกการทำงานของ AgroLink Carbon Module: จากข้อมูลระดับน้ำในนา สู่ Digital MRV คาร์บอนเครดิต และการจัดสรรรายได้ (การรับรอง ขึ้นทะเบียน ซื้อขาย และแบ่งจ่าย ต้องดำเนินการร่วมกับหน่วยงานและคู่สัญญาภายนอก)</figcaption>
+    </figure>
   </div>
 </section>
 

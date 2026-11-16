@@ -774,5 +774,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "carbon-module-guide_193": {
     "th": "กลับหน้าแรก",
     "en": "Back to Home"
-  }
+  },
+  "carbon-module-guide_194": {"th": "แผนภาพกลไกการทำงานของ AgroLink Carbon Module: ขอบเขต MVP 3 เฟส (Foundation, Digital Farm Registry, Carbon MRV) ขั้นตอนเก็บข้อมูลระดับน้ำและหลักฐาน MRV 5 ขั้น ขั้นตอนปลายทางกับผู้ตรวจประเมินอิสระและการขึ้นทะเบียนเครดิต และการจัดสรรรายได้ให้เกษตรกร สหกรณ์ และผู้ให้บริการ", "en": "How the AgroLink Carbon Module works: a 3-phase MVP scope (Foundation, Digital Farm Registry, Carbon MRV), five steps to collect water-level and MRV evidence, downstream verification and credit registration with external partners, and revenue sharing among farmers, cooperatives and the service provider"},
+  "carbon-module-guide_195": {"th": "กลไกการทำงานของ AgroLink Carbon Module: จากข้อมูลระดับน้ำในนา สู่ Digital MRV คาร์บอนเครดิต และการจัดสรรรายได้ (การรับรอง ขึ้นทะเบียน ซื้อขาย และแบ่งจ่าย ต้องดำเนินการร่วมกับหน่วยงานและคู่สัญญาภายนอก)", "en": "How the AgroLink Carbon Module works: from paddy water-level data to digital MRV, carbon credits and revenue sharing (certification, registration, sale and payout are carried out with external agencies and counterparties)"}
 });
