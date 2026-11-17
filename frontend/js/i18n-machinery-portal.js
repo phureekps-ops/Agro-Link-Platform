@@ -4,12 +4,12 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": " Farm machinery"
   },
   "machinery-portal_2": {
-    "th": "ผู้ให้บริการเครื่องจักรกลการเกษตร: รถไถ โดรน รถเกี่ยวข้าว และรถเกี่ยวข้าวโพด",
-    "en": "Farm machinery providers: tractors, drones, rice harvesters and corn harvesters"
+    "th": "ผู้ให้บริการเครื่องจักรกลการเกษตร: รถไถ โดรน รถเกี่ยวข้าว/ข้าวโพด รถอัดฟางก้อน และรถตัดอ้อย",
+    "en": "Farm machinery providers: tractors, drones, rice/corn harvesters, straw balers and sugarcane harvesters"
   },
   "machinery-portal_3": {
-    "th": "พอร์ทัลสำหรับเจ้าของรถไถ โดรนการเกษตร รถเกี่ยวข้าว และรถเกี่ยวข้าวโพด ที่รับจ้างทำงานในแปลงของเกษตรกรและสมาชิกสหกรณ์ ตั้งราคาค่าบริการของตัวเอง ประกาศพื้นที่ที่รับงาน และรับคำขอจองจากเกษตรกรที่ค้นหาบริการบน AgroLink",
-    "en": "A portal for owners of tractors, agricultural drones, rice harvesters and corn harvesters who work on the fields of farmers and cooperative members: set your own rates, publish the areas you serve and receive booking requests from farmers searching for services on AgroLink."
+    "th": "พอร์ทัลสำหรับเจ้าของรถไถ โดรนการเกษตร รถเกี่ยวข้าว/ข้าวโพด รถอัดฟางก้อน และรถตัดอ้อย ที่รับจ้างทำงานในแปลงของเกษตรกรและสมาชิกสหกรณ์ ตั้งราคาค่าบริการของตัวเอง ประกาศพื้นที่ที่รับงาน และรับคำขอจองจากเกษตรกรที่ค้นหาบริการบน AgroLink",
+    "en": "A portal for owners of tractors, agricultural drones, rice/corn harvesters, straw balers and sugarcane harvesters who work on the fields of farmers and cooperative members: set your own rates, publish the areas you serve and receive booking requests from farmers searching for services on AgroLink."
   },
   "machinery-portal_4": {
     "th": " เข้าสู่ระบบผู้ให้บริการเครื่องจักรกล",
@@ -24,8 +24,8 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": " Machine types"
   },
   "machinery-portal_7": {
-    "th": "4 กลุ่มเครื่องจักรหลักที่รับงานผ่าน AgroLink",
-    "en": "Four main machine groups that take jobs through AgroLink"
+    "th": "5 กลุ่มเครื่องจักรหลักที่รับงานผ่าน AgroLink",
+    "en": "Five main machine groups that take jobs through AgroLink"
   },
   "machinery-portal_8": {
     "th": "ผู้ให้บริการรายเดียวตั้งราคาได้หลายรายการในบัญชีเดียว ไม่ต้องสมัครแยกตามประเภทเครื่องจักร",
@@ -48,24 +48,24 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Spraying crop-protection products and foliar nutrients by drone or sprayer, priced in baht per rai"
   },
   "machinery-portal_13": {
-    "th": "รถเกี่ยวข้าว",
-    "en": "Rice harvesters"
+    "th": "รถเกี่ยวข้าว/ข้าวโพด",
+    "en": "Rice/corn harvesters"
   },
   "machinery-portal_14": {
-    "th": "รับจ้างเกี่ยวข้าวตามรอบเก็บเกี่ยวของสมาชิก คิดราคาเป็นบาทต่อไร่ เกษตรกรเห็นราคาและพื้นที่ให้บริการก่อนจอง",
-    "en": "Contract rice harvesting timed to members’ harvest windows, priced in baht per rai; farmers see the price and service area before booking"
+    "th": "รับจ้างเกี่ยวข้าวและเก็บเกี่ยวข้าวโพดเลี้ยงสัตว์ตามรอบเก็บเกี่ยวของสมาชิก คิดราคาเป็นบาทต่อไร่ เกษตรกรเห็นราคาและพื้นที่ให้บริการก่อนจอง (รายการราคาเกี่ยวข้าวโพดกำลังเพิ่มในระบบ)",
+    "en": "Contract rice and feed-corn harvesting timed to members’ harvest windows, priced in baht per rai; farmers see the price and service area before booking (a corn-harvesting price item is being added)"
   },
   "machinery-portal_15": {
-    "th": "รถเกี่ยวข้าวโพด",
-    "en": "Corn harvesters"
+    "th": "รถอัดฟางก้อน",
+    "en": "Straw balers"
   },
   "machinery-portal_16": {
-    "th": "รับจ้างเก็บเกี่ยวข้าวโพดเลี้ยงสัตว์สำหรับเกษตรกรและสหกรณ์ผู้ปลูกข้าวโพด (รายการราคาเกี่ยวข้าวโพดกำลังเพิ่มในระบบ ระหว่างนี้ติดต่อทีมงานเพื่อลงทะเบียน)",
-    "en": "Harvesting feed corn for corn-growing farmers and cooperatives (a dedicated corn-harvesting price item is being added; in the meantime, contact our team to register)"
+    "th": "อัดฟางข้าวเป็นก้อนหลังเกี่ยว ลดการเผาตอซังและสร้างรายได้เพิ่มจากฟาง คิดราคาเป็นบาทต่อก้อนหรือบาทต่อไร่",
+    "en": "Baling rice straw after harvest, reducing stubble burning and earning extra income from straw, priced per bale or per rai"
   },
   "machinery-portal_17": {
-    "th": "บัญชีเดียวกันยังตั้งราคาบริการอื่นได้ เช่น ขนส่งด้วยรถบรรทุก ลานตากผลผลิต อัดก้อนและอัดเม็ดฟางข้าว ให้เช่าเครื่องจักรกลการเกษตร และให้เช่าเซนเซอร์วัดระดับน้ำสำหรับนาเปียกสลับแห้ง",
-    "en": "The same account can also price other services, such as truck transport, drying yards, straw baling and pelletising, farm machinery rental and AWD water-level sensor rental"
+    "th": "บัญชีเดียวกันยังตั้งราคาบริการอื่นได้ เช่น ขนส่งด้วยรถบรรทุก ลานตากผลผลิต อัดเม็ดฟางข้าว ให้เช่าเครื่องจักรกลการเกษตร และให้เช่าเซนเซอร์วัดระดับน้ำสำหรับนาเปียกสลับแห้ง",
+    "en": "The same account can also price other services, such as truck transport, drying yards, straw pelletising, farm machinery rental and AWD water-level sensor rental"
   },
   "machinery-portal_18": {
     "th": " ความสามารถของพอร์ทัล",
@@ -96,8 +96,8 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Machine photos"
   },
   "machinery-portal_25": {
-    "th": "อัปโหลดรูปรถไถ โดรน และรถเกี่ยว ให้เกษตรกรเห็นสภาพเครื่องจักรก่อนตัดสินใจจอง",
-    "en": "Upload photos of your tractors, drones and harvesters so farmers can see the equipment before booking"
+    "th": "อัปโหลดรูปรถไถ โดรน รถเกี่ยว รถอัดฟาง และรถตัดอ้อย ให้เกษตรกรเห็นสภาพเครื่องจักรก่อนตัดสินใจจอง",
+    "en": "Upload photos of your tractors, drones, harvesters, balers and cane harvesters so farmers can see the equipment before booking"
   },
   "machinery-portal_26": {
     "th": "รับคำขอจอง",
@@ -152,8 +152,8 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "AgroLink matches machinery providers with farmers; it does not own or operate machinery itself. The system records booking requests and their status, while payment for the service is agreed directly between the farmer and the provider"
   },
   "machinery-portal_39": {
-    "th": "พร้อมรับงานรถไถ โดรน และรถเกี่ยวผ่าน AgroLink แล้วหรือยัง?",
-    "en": "Ready to take tractor, drone and harvester jobs through AgroLink?"
+    "th": "พร้อมรับงานรถไถ โดรน รถเกี่ยว รถอัดฟาง และรถตัดอ้อยผ่าน AgroLink แล้วหรือยัง?",
+    "en": "Ready to take tractor, drone, harvester, baler and cane-harvester jobs through AgroLink?"
   },
   "machinery-portal_40": {
     "th": "เข้าสู่ระบบเพื่อตั้งราคาและพื้นที่ให้บริการ หรือสมัครเป็นผู้ให้บริการได้ทันที เกษตรกรที่ต้องการจองบริการไปที่หน้าเช่า/จองบริการเครื่องจักรกล",
@@ -171,6 +171,8 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "th": " เกษตรกร: จองบริการเครื่องจักรกล",
     "en": " Farmers: book machinery"
   },
-  "machinery-portal_44": {"th": "ภาพผู้ให้บริการเครื่องจักรกลการเกษตรบน AgroLink: รถเกี่ยวข้าว รถไถ โดรนฉีดพ่น รถเกี่ยวข้าวโพด และเครื่องอัดฟาง ทำงานในแปลง โดยเกษตรกรเรียกใช้บริการผ่านแอปบนมือถือ", "en": "Farm machinery providers on AgroLink: a rice harvester, tractor, spraying drone, corn harvester and baler working in the fields, booked by a farmer through the mobile app"},
-  "machinery-portal_45": {"th": "เกษตรกรเรียกรถไถ โดรน รถเกี่ยวข้าว และรถเกี่ยวข้าวโพดได้จากมือถือ ผู้ให้บริการรับงานในพื้นที่ของตนผ่าน AgroLink", "en": "Farmers call tractors, drones, rice harvesters and corn harvesters from their phone, and providers take jobs in their own area through AgroLink"}
+  "machinery-portal_44": {"th": "ภาพผู้ให้บริการเครื่องจักรกลการเกษตรบน AgroLink: รถเกี่ยวข้าว รถไถ โดรนฉีดพ่น รถตัดอ้อย รถเกี่ยวข้าวโพด และรถอัดฟางก้อน ทำงานในแปลง โดยเกษตรกรเรียกใช้บริการผ่านแอปบนมือถือ", "en": "Farm machinery providers on AgroLink: a rice harvester, tractor, spraying drone, sugarcane harvester, corn harvester and straw baler working in the fields, booked by a farmer through the mobile app"},
+  "machinery-portal_45": {"th": "เกษตรกรเรียกรถไถ โดรน รถเกี่ยวข้าว/ข้าวโพด รถอัดฟางก้อน และรถตัดอ้อยได้จากมือถือ ผู้ให้บริการรับงานในพื้นที่ของตนผ่าน AgroLink", "en": "Farmers call tractors, drones, rice/corn harvesters, straw balers and sugarcane harvesters from their phone, and providers take jobs in their own area through AgroLink"},
+  "machinery-portal_46": {"th": "รถตัดอ้อย", "en": "Sugarcane harvesters"},
+  "machinery-portal_47": {"th": "รับจ้างตัดอ้อยสดส่งโรงงานน้ำตาล ลดการเผาอ้อยก่อนตัด สำหรับเกษตรกรและสหกรณ์ชาวไร่อ้อย (รายการราคาตัดอ้อยกำลังเพิ่มในระบบ ระหว่างนี้ติดต่อทีมงานเพื่อลงทะเบียน)", "en": "Green-cane harvesting for delivery to sugar mills without pre-harvest burning, for cane-growing farmers and cooperatives (a sugarcane-harvesting price item is being added; in the meantime, contact our team to register)"}
 });

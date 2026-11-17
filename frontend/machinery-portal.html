@@ -141,6 +141,11 @@
   .benefit-grid.four { grid-template-columns: repeat(4, 1fr); }
   @media (max-width: 1100px) { .benefit-grid.four { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 600px) { .benefit-grid.four { grid-template-columns: 1fr; } }
+  .benefit-grid.five { grid-template-columns: repeat(6, 1fr); }
+  .benefit-grid.five > * { grid-column: span 2; }
+  .benefit-grid.five > :nth-child(4) { grid-column: 2 / span 2; }
+  @media (max-width: 900px) { .benefit-grid.five { grid-template-columns: repeat(2, 1fr); } .benefit-grid.five > *, .benefit-grid.five > :nth-child(4) { grid-column: auto; } }
+  @media (max-width: 600px) { .benefit-grid.five { grid-template-columns: 1fr; } }
   .benefit-card {
     background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
     padding: 28px; transition: transform .18s ease, box-shadow .18s ease;
@@ -238,8 +243,8 @@
 <section class="page-header">
   <div class="container reveal in">
     <div class="eyebrow"><i class="fa-solid fa-tractor"></i><span data-i18n="machinery-portal_1"> เครื่องจักรกลการเกษตร</span></div>
-    <h1 class="section-title" data-i18n="machinery-portal_2">ผู้ให้บริการเครื่องจักรกลการเกษตร: รถไถ โดรน รถเกี่ยวข้าว และรถเกี่ยวข้าวโพด</h1>
-    <p class="section-sub" data-i18n="machinery-portal_3">พอร์ทัลสำหรับเจ้าของรถไถ โดรนการเกษตร รถเกี่ยวข้าว และรถเกี่ยวข้าวโพด ที่รับจ้างทำงานในแปลงของเกษตรกรและสมาชิกสหกรณ์ ตั้งราคาค่าบริการของตัวเอง ประกาศพื้นที่ที่รับงาน และรับคำขอจองจากเกษตรกรที่ค้นหาบริการบน AgroLink</p>
+    <h1 class="section-title" data-i18n="machinery-portal_2">ผู้ให้บริการเครื่องจักรกลการเกษตร: รถไถ โดรน รถเกี่ยวข้าว/ข้าวโพด รถอัดฟางก้อน และรถตัดอ้อย</h1>
+    <p class="section-sub" data-i18n="machinery-portal_3">พอร์ทัลสำหรับเจ้าของรถไถ โดรนการเกษตร รถเกี่ยวข้าว/ข้าวโพด รถอัดฟางก้อน และรถตัดอ้อย ที่รับจ้างทำงานในแปลงของเกษตรกรและสมาชิกสหกรณ์ ตั้งราคาค่าบริการของตัวเอง ประกาศพื้นที่ที่รับงาน และรับคำขอจองจากเกษตรกรที่ค้นหาบริการบน AgroLink</p>
     <div class="hero-cta">
       <a href="machinery/index.html" class="btn btn-gold"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="machinery-portal_4"> เข้าสู่ระบบผู้ให้บริการเครื่องจักรกล</span></a>
       <a href="register-provider.html" class="btn btn-outline" style="border-color:rgba(255,255,255,.35); color:#fff;"><i class="fa-solid fa-file-signature"></i><span data-i18n="machinery-portal_5"> สมัครเป็นผู้ให้บริการ</span></a>
@@ -249,8 +254,8 @@
 <section class="infographic-wrap">
   <div class="container">
     <figure class="infographic-figure reveal in">
-      <img src="assets/machinery-service-infographic.jpg" width="1024" height="559" data-i18n="machinery-portal_44" data-i18n-attr="alt" alt="ภาพผู้ให้บริการเครื่องจักรกลการเกษตรบน AgroLink: รถเกี่ยวข้าว รถไถ โดรนฉีดพ่น รถเกี่ยวข้าวโพด และเครื่องอัดฟาง ทำงานในแปลง โดยเกษตรกรเรียกใช้บริการผ่านแอปบนมือถือ" loading="lazy">
-      <figcaption data-i18n="machinery-portal_45">เกษตรกรเรียกรถไถ โดรน รถเกี่ยวข้าว และรถเกี่ยวข้าวโพดได้จากมือถือ ผู้ให้บริการรับงานในพื้นที่ของตนผ่าน AgroLink</figcaption>
+      <img src="assets/machinery-service-infographic.jpg" width="1024" height="559" data-i18n="machinery-portal_44" data-i18n-attr="alt" alt="ภาพผู้ให้บริการเครื่องจักรกลการเกษตรบน AgroLink: รถเกี่ยวข้าว รถไถ โดรนฉีดพ่น รถตัดอ้อย รถเกี่ยวข้าวโพด และรถอัดฟางก้อน ทำงานในแปลง โดยเกษตรกรเรียกใช้บริการผ่านแอปบนมือถือ" loading="lazy">
+      <figcaption data-i18n="machinery-portal_45">เกษตรกรเรียกรถไถ โดรน รถเกี่ยวข้าว/ข้าวโพด รถอัดฟางก้อน และรถตัดอ้อยได้จากมือถือ ผู้ให้บริการรับงานในพื้นที่ของตนผ่าน AgroLink</figcaption>
     </figure>
   </div>
 </section>
@@ -260,10 +265,10 @@
   <div class="container">
     <div class="section-head reveal">
       <div class="eyebrow"><i class="fa-solid fa-gears"></i><span data-i18n="machinery-portal_6"> ประเภทเครื่องจักร</span></div>
-      <h2 class="section-title" data-i18n="machinery-portal_7">4 กลุ่มเครื่องจักรหลักที่รับงานผ่าน AgroLink</h2>
+      <h2 class="section-title" data-i18n="machinery-portal_7">5 กลุ่มเครื่องจักรหลักที่รับงานผ่าน AgroLink</h2>
       <p class="section-sub" data-i18n="machinery-portal_8">ผู้ให้บริการรายเดียวตั้งราคาได้หลายรายการในบัญชีเดียว ไม่ต้องสมัครแยกตามประเภทเครื่องจักร</p>
     </div>
-    <div class="benefit-grid four">
+    <div class="benefit-grid five">
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-tractor"></i></div>
         <h4 data-i18n="machinery-portal_9">รถไถ</h4>
@@ -276,18 +281,23 @@
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-wheat-awn"></i></div>
-        <h4 data-i18n="machinery-portal_13">รถเกี่ยวข้าว</h4>
-        <p data-i18n="machinery-portal_14">รับจ้างเกี่ยวข้าวตามรอบเก็บเกี่ยวของสมาชิก คิดราคาเป็นบาทต่อไร่ เกษตรกรเห็นราคาและพื้นที่ให้บริการก่อนจอง</p>
+        <h4 data-i18n="machinery-portal_13">รถเกี่ยวข้าว/ข้าวโพด</h4>
+        <p data-i18n="machinery-portal_14">รับจ้างเกี่ยวข้าวและเก็บเกี่ยวข้าวโพดเลี้ยงสัตว์ตามรอบเก็บเกี่ยวของสมาชิก คิดราคาเป็นบาทต่อไร่ เกษตรกรเห็นราคาและพื้นที่ให้บริการก่อนจอง (รายการราคาเกี่ยวข้าวโพดกำลังเพิ่มในระบบ)</p>
       </div>
       <div class="benefit-card reveal">
-        <div class="icn"><i class="fa-solid fa-seedling"></i></div>
-        <h4 data-i18n="machinery-portal_15">รถเกี่ยวข้าวโพด</h4>
-        <p data-i18n="machinery-portal_16">รับจ้างเก็บเกี่ยวข้าวโพดเลี้ยงสัตว์สำหรับเกษตรกรและสหกรณ์ผู้ปลูกข้าวโพด (รายการราคาเกี่ยวข้าวโพดกำลังเพิ่มในระบบ ระหว่างนี้ติดต่อทีมงานเพื่อลงทะเบียน)</p>
+        <div class="icn"><i class="fa-solid fa-cubes-stacked"></i></div>
+        <h4 data-i18n="machinery-portal_15">รถอัดฟางก้อน</h4>
+        <p data-i18n="machinery-portal_16">อัดฟางข้าวเป็นก้อนหลังเกี่ยว ลดการเผาตอซังและสร้างรายได้เพิ่มจากฟาง คิดราคาเป็นบาทต่อก้อนหรือบาทต่อไร่</p>
+      </div>
+      <div class="benefit-card reveal">
+        <div class="icn"><i class="fa-solid fa-plant-wheat"></i></div>
+        <h4 data-i18n="machinery-portal_46">รถตัดอ้อย</h4>
+        <p data-i18n="machinery-portal_47">รับจ้างตัดอ้อยสดส่งโรงงานน้ำตาล ลดการเผาอ้อยก่อนตัด สำหรับเกษตรกรและสหกรณ์ชาวไร่อ้อย (รายการราคาตัดอ้อยกำลังเพิ่มในระบบ ระหว่างนี้ติดต่อทีมงานเพื่อลงทะเบียน)</p>
       </div>
     </div>
     <div class="note-block reveal">
       <i class="fa-solid fa-circle-info"></i>
-      <div data-i18n="machinery-portal_17">บัญชีเดียวกันยังตั้งราคาบริการอื่นได้ เช่น ขนส่งด้วยรถบรรทุก ลานตากผลผลิต อัดก้อนและอัดเม็ดฟางข้าว ให้เช่าเครื่องจักรกลการเกษตร และให้เช่าเซนเซอร์วัดระดับน้ำสำหรับนาเปียกสลับแห้ง</div>
+      <div data-i18n="machinery-portal_17">บัญชีเดียวกันยังตั้งราคาบริการอื่นได้ เช่น ขนส่งด้วยรถบรรทุก ลานตากผลผลิต อัดเม็ดฟางข้าว ให้เช่าเครื่องจักรกลการเกษตร และให้เช่าเซนเซอร์วัดระดับน้ำสำหรับนาเปียกสลับแห้ง</div>
     </div>
   </div>
 </section>
@@ -313,7 +323,7 @@
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-camera"></i></div>
         <h4 data-i18n="machinery-portal_24">รูปเครื่องจักร</h4>
-        <p data-i18n="machinery-portal_25">อัปโหลดรูปรถไถ โดรน และรถเกี่ยว ให้เกษตรกรเห็นสภาพเครื่องจักรก่อนตัดสินใจจอง</p>
+        <p data-i18n="machinery-portal_25">อัปโหลดรูปรถไถ โดรน รถเกี่ยว รถอัดฟาง และรถตัดอ้อย ให้เกษตรกรเห็นสภาพเครื่องจักรก่อนตัดสินใจจอง</p>
       </div>
       <div class="benefit-card reveal">
         <div class="icn"><i class="fa-solid fa-calendar-check"></i></div>
@@ -370,7 +380,7 @@
 
 <section class="cta-final reveal">
   <div class="container">
-    <h2 data-i18n="machinery-portal_39">พร้อมรับงานรถไถ โดรน และรถเกี่ยวผ่าน AgroLink แล้วหรือยัง?</h2>
+    <h2 data-i18n="machinery-portal_39">พร้อมรับงานรถไถ โดรน รถเกี่ยว รถอัดฟาง และรถตัดอ้อยผ่าน AgroLink แล้วหรือยัง?</h2>
     <p data-i18n="machinery-portal_40">เข้าสู่ระบบเพื่อตั้งราคาและพื้นที่ให้บริการ หรือสมัครเป็นผู้ให้บริการได้ทันที เกษตรกรที่ต้องการจองบริการไปที่หน้าเช่า/จองบริการเครื่องจักรกล</p>
     <div class="cta-btns">
       <a href="machinery/index.html" class="btn btn-gold"><i class="fa-solid fa-right-to-bracket"></i><span data-i18n="machinery-portal_41"> เข้าสู่ระบบผู้ให้บริการเครื่องจักรกล</span></a>
