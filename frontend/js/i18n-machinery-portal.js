@@ -170,5 +170,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "machinery-portal_43": {
     "th": " เกษตรกร: จองบริการเครื่องจักรกล",
     "en": " Farmers: book machinery"
-  }
+  },
+  "machinery-portal_44": {"th": "ภาพผู้ให้บริการเครื่องจักรกลการเกษตรบน AgroLink: รถเกี่ยวข้าว รถไถ โดรนฉีดพ่น รถเกี่ยวข้าวโพด และเครื่องอัดฟาง ทำงานในแปลง โดยเกษตรกรเรียกใช้บริการผ่านแอปบนมือถือ", "en": "Farm machinery providers on AgroLink: a rice harvester, tractor, spraying drone, corn harvester and baler working in the fields, booked by a farmer through the mobile app"},
+  "machinery-portal_45": {"th": "เกษตรกรเรียกรถไถ โดรน รถเกี่ยวข้าว และรถเกี่ยวข้าวโพดได้จากมือถือ ผู้ให้บริการรับงานในพื้นที่ของตนผ่าน AgroLink", "en": "Farmers call tractors, drones, rice harvesters and corn harvesters from their phone, and providers take jobs in their own area through AgroLink"}
 });
