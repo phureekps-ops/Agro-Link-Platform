@@ -91,6 +91,7 @@
           <div class="admin-nav-group-title">ข้อมูลภาคสนาม</div>
           <button type="button" class="admin-nav-item" data-page="field-survey">📋 แบบสำรวจภาคสนาม (RAP-T)</button>
           <button type="button" class="admin-nav-item" data-page="satellite">🛰️ ข้อมูลดาวเทียม</button>
+          <button type="button" class="admin-nav-item" data-page="plot-ai">🤖 AI วิเคราะห์แปลง</button>
           <button type="button" class="admin-nav-item" data-page="agrimap">🌊 น้ำ/ความเสี่ยงภูมิอากาศ (Agri-Map)</button>
         </div>
         <div class="admin-nav-group">
@@ -681,6 +682,16 @@
     </div>
       </div>
 
+      <div class="admin-page" data-page-content="plot-ai" style="display:none;">
+    <div class="section-title">🤖 AI วิเคราะห์แปลง (AgroLink SatAI)</div>
+    <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
+      ชนิดพืช วันปลูก/เก็บเกี่ยว ผลผลิตคาดการณ์ และความผิดปกติของข้อมูลแปลง จากค่า NDVI ที่ดึงไว้ในหน้า 🛰️ ข้อมูลดาวเทียม
+      (ต้องดึง NDVI ย้อนหลังก่อน) — ตารางในฐานข้อมูลมาจาก backend/db/grant_plot_ai.sql
+    </p>
+    <div id="plotAiHost"></div>
+    <div class="panel" id="plotAiViewer" style="display:none; margin-bottom:24px;"></div>
+      </div>
+
       <div class="admin-page" data-page-content="satellite" style="display:none;">
     <div class="section-title">🛰️ บันทึกข้อมูลดาวเทียม/Remote Sensing</div>
     <p style="font-size:13px; color:var(--gray-500); margin:-10px 0 16px;">
@@ -1053,6 +1064,7 @@
   <script src="../js/districts.js"></script>
   <script src="js/api.js"></script>
   <script src="../js/satellite-viewer.js"></script>
+  <script src="../js/plot-ai-panel.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

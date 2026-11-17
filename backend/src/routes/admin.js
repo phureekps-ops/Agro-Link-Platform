@@ -3236,7 +3236,11 @@ router.patch('/productive-alliances/:id/commitments/:commitmentId', async (req, 
 // successfully) untouched.
 const MIN_TRAINING_SAMPLES = 20;
 const MIN_PER_CLASS = 5;
-const CREDIT_MODEL_FEATURE_KEYS = ['production', 'contract', 'repayment', 'delivery'];
+// 'plot_health' (grant_plot_ai.sql): share of the farmer's plots the
+// satellite AI found nothing wrong with. risk.compute_credit_score() reads
+// its weight only if the active model has one, so models trained before
+// this key existed keep scoring exactly as before.
+const CREDIT_MODEL_FEATURE_KEYS = ['production', 'contract', 'repayment', 'delivery', 'plot_health'];
 
 /**
  * Computes the mean of an array of numbers, or `fallback` if the array is
@@ -3414,7 +3418,25 @@ router.post('/credit-model/retrain', async (req, res, next) => {
          WHERE COALESCE(contract_total, 0) > 0 OR COALESCE(repayment_total, 0) > 0
       `);
 
+      // AI 4 (grant_plot_ai.sql): satellite plot-health factor per farmer.
+      // Read separately so retraining still works on a database where that
+      // migration has not been run yet (the factor is then simply absent).
+      const plotHealth = new Map();
+      try {
+        const ph = await client.query(`
+          SELECT pu.owner_farmer_id AS farmer_id,
+                 100.0 * count(*) FILTER (WHERE a.risk_level = 'low')
+                       / NULLIF(count(*) FILTER (WHERE a.risk_level IN ('low','medium','high')), 0) AS factor
+            FROM ai.v_latest_assessment a
+            JOIN registry.production_unit pu ON pu.unit_id = a.unit_id
+           GROUP BY pu.owner_farmer_id`);
+        ph.rows.forEach((r) => { if (r.factor !== null) plotHealth.set(r.farmer_id, Number(r.factor)); });
+      } catch (phErr) {
+        if (phErr.code !== '42P01') throw phErr; // this route runs in autocommit, so nothing to roll back
+      }
+
       const trainingRows = rows.map((r) => ({
+        plot_health: plotHealth.has(r.farmer_id) ? plotHealth.get(r.farmer_id) : null,
         production: r.production_factor === null ? null : Number(r.production_factor),
         contract: r.contract_factor === null ? null : Number(r.contract_factor),
         repayment: r.repayment_factor === null ? null : Number(r.repayment_factor),

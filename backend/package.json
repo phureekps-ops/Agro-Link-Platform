@@ -4,7 +4,8 @@
   "description": "AgroLink Platform — Backend API Gateway (Farmer Portal slice), implementing the G-1..G-19 OpenAPI contracts on top of the existing PostgreSQL schema.",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test test/plotAI.test.js"
   },
   "keywords": [],
   "author": "",

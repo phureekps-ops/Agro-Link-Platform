@@ -30,6 +30,7 @@ const carbonRouter = require('./routes/carbon');
 const farmerMachineryRouter = require('./routes/farmermachinery');
 const farmerVenueRouter = require('./routes/farmervenue');
 const coopCollectionRouter = require('./routes/coopcollection');
+const plotAiRouters = require('./routes/plotai');
 const governmentRouter = require('./routes/government');
 // oae.js — สศก. (Office of Agricultural Economics) Data Portal, the
 // officer-facing half of grant_oae_data_portal.sql's oae.* schema. A
@@ -181,6 +182,13 @@ app.use('/farmer', farmerMachineryRouter);
 app.use('/farmer', farmerVenueRouter);
 app.use('/lender', lenderRouter);
 app.use('/buyer', buyerRouter);
+// plotai.js — AgroLink SatAI กลุ่มที่ 1 (crop / planting & harvest dates /
+// yield forecast / anomaly checks per plot, see lib/plotAI.js and
+// db/grant_plot_ai.sql). Mounted BEFORE '/coop' and '/admin' so these
+// paths are answered here instead of first passing through those routers'
+// own middleware.
+app.use('/coop/plot-ai', plotAiRouters.coop);
+app.use('/admin/plot-ai', plotAiRouters.admin);
 // coopcollection.js — M09 Collection & Quality station for cooperatives
 // (identity.organization_role.role_type = 'Cooperative'). Mounted at its
 // own '/coop' prefix rather than sharing '/buyer' — a cooperative's

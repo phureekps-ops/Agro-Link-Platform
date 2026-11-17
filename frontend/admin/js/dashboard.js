@@ -19,6 +19,7 @@ const ADMIN_PAGE_BREADCRUMB_TH = {
   "productive-alliance": "พันธมิตรเพื่อการผลิต",
   "field-survey": "แบบสำรวจภาคสนาม (RAP-T)",
   satellite: "ข้อมูลดาวเทียม",
+  "plot-ai": "AI วิเคราะห์แปลง",
   "featured-listings": "รายการแนะนำ",
   "group-buys": "รวมออเดอร์ประมูลร่วม",
   "capital-topup": "เติมทุนหมุนเวียนสหกรณ์",
@@ -3141,3 +3142,25 @@ initGroupBuys();
 initCapitalTopup();
 initSupport();
 initProductiveAlliance();
+
+// ============================================================
+// 🤖 AI วิเคราะห์แปลง — AgroLink SatAI กลุ่มที่ 1 (../js/plot-ai-panel.js,
+// backend/src/routes/plotai.js) — โหลดครั้งแรกเมื่อเปิดหน้านี้
+// ============================================================
+let plotAiMounted = false;
+document.querySelectorAll('[data-page="plot-ai"]').forEach((btn) => btn.addEventListener("click", () => {
+  if (plotAiMounted) return;
+  plotAiMounted = true;
+  AgroLinkPlotAI.mount(document.getElementById("plotAiHost"), {
+    api: AgroLinkAdminAPI, base: "/admin/plot-ai", admin: true,
+    onOpenPlot: (unitId) => {
+      const v = document.getElementById("plotAiViewer");
+      v.style.display = "block";
+      AgroLinkSatViewer.mount(v, {
+        get: AgroLinkAdminAPI.get, base: "/admin", unitId,
+        emptyHint: "กดปุ่ม \"ดึง NDVI ย้อนหลัง 12 เดือน (ทุกแปลง)\" ในหน้า 🛰️ ข้อมูลดาวเทียมก่อน",
+      });
+      v.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+  });
+}));
