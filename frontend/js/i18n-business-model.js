@@ -212,11 +212,11 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
     "en": "Every new phase adds revenue channels under the business model shown above — the more products expand, the more room for revenue growth."
   },
   "business-model_53": {
-    "th": "อินโฟกราฟิกระบบนิเวศการเติบโตระยะยาวของ AgroLink แสดงแหล่งรายได้หลัก โครงสร้างพื้นฐานสนับสนุน และการเติบโตและการขยายตัว",
-    "en": "AgroLink long-term growth ecosystem infographic showing primary revenue sources, supporting infrastructure, and growth and expansion"
+    "th": "อินโฟกราฟิก AgroLink แพลตฟอร์มที่สร้างคุณค่าให้ทุกฝ่าย: สหกรณ์การเกษตรใช้แพลตฟอร์มสร้างมูลค่าเพิ่ม นักลงทุนและพันธมิตรสนับสนุนการพัฒนา แหล่งรายได้ 8 ทาง และการขยายสู่สินค้าเกษตรอื่นและตลาดโลก",
+    "en": "AgroLink infographic, a platform that creates value for every party: cooperatives use the platform to add value, investors and partners support development, eight revenue streams, and expansion into other commodities and global markets"
   },
   "business-model_54": {
-    "th": "ระบบนิเวศการเติบโตระยะยาวของ AgroLink — แหล่งรายได้หลักจากบริการสหกรณ์ ข้อมูล/AI การเงิน ปุ๋ย และค่าธรรมเนียมธุรกรรม เสริมด้วยกองทุนความร่วมมือ Academy และการขยายสู่ตลาดโลก",
-    "en": "AgroLink's long-term growth ecosystem — primary revenue from cooperative services, data/AI, finance, fertilizer, and transaction fees, reinforced by a synergy fund, an academy, and expansion into global markets"
+    "th": "AgroLink เติบโตไปด้วยกันอย่างยั่งยืน — สหกรณ์ใช้แพลตฟอร์มและสร้างมูลค่าเพิ่ม นักลงทุนและพันธมิตรสนับสนุนการพัฒนาและการขยายตัว รายได้มาจาก 8 ทาง ตั้งแต่ค่าธรรมเนียมธุรกรรม สมาชิก SaaS ข้อมูล/AI คาร์บอนเครดิต ไปจนถึงบริการต่างประเทศ",
+    "en": "AgroLink grows together, sustainably — cooperatives use the platform and add value, investors and partners support development and expansion, and revenue comes from eight streams, from transaction fees, membership, SaaS and data/AI to carbon credits and international services"
   }
 });
