@@ -222,5 +222,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "biomass-portal_55": {
     "th": " ดูตลาดกลางทั้งหมด",
     "en": " View All Marketplaces"
+  },
+  "biomass-portal_56": {
+    "th": "อินโฟกราฟิก AgroLink เชื่อมผู้รับซื้อชีวมวล โรงไฟฟ้าชีวมวล โรงงานผลิตไบโอชาร์ โรงงานปุ๋ยหมัก โรงเพาะเห็ด และฟาร์มโคนมโคเนื้อ บนแพลตฟอร์มเดียว สู่เศรษฐกิจหมุนเวียน",
+    "en": "AgroLink infographic connecting biomass buyers, biomass power plants, biochar factories, compost fertilizer factories, mushroom farms and dairy and beef cattle farms on one platform for a circular economy"
+  },
+  "biomass-portal_57": {
+    "th": "ผู้รับซื้อชีวมวลบน AgroLink รับซื้อและติดตามปริมาณผ่านระบบ โดยเชื่อมกับโรงไฟฟ้าชีวมวล โรงงานไบโอชาร์ โรงงานปุ๋ยหมัก โรงเพาะเห็ด และฟาร์มปศุสัตว์ในระบบเศรษฐกิจหมุนเวียนเดียวกัน",
+    "en": "Biomass buyers on AgroLink buy and track volumes through the platform, linked with biomass power plants, biochar factories, compost factories, mushroom farms and livestock farms in one circular economy"
   }
 });
