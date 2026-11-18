@@ -210,5 +210,13 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "auction-intro_52": {
     "th": "กลับหน้าแรก",
     "en": "Back to Home"
+  },
+  "auction-intro_53": {
+    "th": "อินโฟกราฟิกการประมูลสินค้าเกษตรออนไลน์ผ่าน AgroLink: เกษตรกรและสหกรณ์ลงประกาศสินค้า ผู้ซื้อจากทั่วประเทศร่วมประมูลแบบเรียลไทม์ ยืนยันผู้ชนะ และจัดการขนส่งถึงปลายทาง",
+    "en": "Infographic of online agricultural auctions on AgroLink: farmers and cooperatives list products, buyers nationwide bid in real time, the winner is confirmed and delivery is arranged"
+  },
+  "auction-intro_54": {
+    "th": "ลงประกาศสินค้า ประมูลออนไลน์แบบเรียลไทม์ ยืนยันผู้ชนะ และจัดการขนส่ง — ขั้นตอนการประมูลบน AgroLink ที่โปร่งใสและตรวจสอบได้",
+    "en": "List the product, bid online in real time, confirm the winner and arrange delivery — the auction flow on AgroLink, transparent and traceable"
   }
 });
