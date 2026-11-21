@@ -27,7 +27,7 @@ const PORTALS = {
   logistics: { name_th: 'ผู้ให้บริการขนส่ง', desc_th: 'ขนส่งผลผลิต ปุ๋ย และชีวมวล', icon: '🚚', url: 'logistics/dashboard.html', storage_key: 'agrolink_logistics_session' },
   dryingyard: { name_th: 'ลานตาก/โกดังและไซโล', desc_th: 'บริการลานตากและเก็บผลผลิต', icon: '🌞', url: 'dryingyard/dashboard.html', storage_key: 'agrolink_dryingyard_session' },
   inputsupplier: { name_th: 'ผู้จำหน่ายปัจจัยการผลิต', desc_th: 'เมล็ดพันธุ์ ปุ๋ย และปัจจัยการผลิต', icon: '🌱', url: 'inputsupplier/dashboard.html', storage_key: 'agrolink_inputsupplier_session' },
-  marketvenue: { name_th: 'ผู้ให้บริการพื้นที่ขายสินค้าเกษตร', desc_th: 'พื้นที่ซื้อขายและกระจายสินค้า', icon: '🏪', url: 'marketvenue/dashboard.html', storage_key: 'agrolink_marketvenue_session' },
+  marketvenue: { name_th: 'ตลาดค้าส่งพืชผัก', desc_th: 'พื้นที่ซื้อขายและกระจายสินค้า', icon: '🏪', url: 'marketvenue/dashboard.html', storage_key: 'agrolink_marketvenue_session' },
   fertilizermixing: { name_th: 'ผสมปุ๋ยสั่งตัด', desc_th: 'บริการผสมปุ๋ยตามค่าวิเคราะห์ดิน', icon: '🧪', url: 'fertilizermixing/dashboard.html', storage_key: 'agrolink_fertilizermixing_session' },
   farmeraidfund: { name_th: 'กองทุนสงเคราะห์เกษตรกร', desc_th: 'สินเชื่อ เครื่องจักรกล ปัจจัยการผลิต รับซื้อผลผลิต', icon: '🤲', url: 'farmeraidfund/dashboard.html', storage_key: 'agrolink_farmeraidfund_session' },
   communityenterprise: { name_th: 'วิสาหกิจชุมชนด้านการเกษตร', desc_th: 'สินเชื่อ เครื่องจักรกล ปัจจัยการผลิต รับซื้อผลผลิต', icon: '🏘️', url: 'communityenterprise/dashboard.html', storage_key: 'agrolink_communityenterprise_session' },
