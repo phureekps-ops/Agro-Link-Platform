@@ -96,4 +96,26 @@ admin.post('/sync', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /admin/ldd/import { province_code?, rows: [...], append? }
+ * Fallback when the server cannot reach osd101.ldd.go.th: the admin opens the
+ * API URL in a browser, saves the JSON, and uploads it from Admin › ข้อมูลดิน กพด.
+ * (the page sends it per province in chunks; append=true for later chunks).
+ */
+admin.post('/import', async (req, res, next) => {
+  const b = req.body || {};
+  const rows = ldd.extractRows(b.rows);
+  if (!rows || !rows.length) return res.status(400).json({ error: 'rows_required' });
+  if (rows.length > 50000) return res.status(400).json({ error: 'too_many_rows', max: 50000 });
+  const prov = b.province_code ? provinceName(b.province_code) : (b.province ? ldd.normProvince(b.province) : null);
+  if ((b.province_code || b.province) && !prov) return res.status(400).json({ error: 'invalid_province' });
+  try {
+    const out = await withSessionContext('platform', req.subject.subjectId, (c) => ldd.importRows(c, rows, { province: prov, append: !!b.append }));
+    return res.json({ provinces: out });
+  } catch (err) {
+    if (err.code === NOT_INSTALLED) return res.status(503).json({ error: 'ldd_not_installed' });
+    return next(err);
+  }
+});
+
 module.exports = { farmer, admin };

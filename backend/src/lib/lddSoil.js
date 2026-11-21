@@ -195,10 +195,18 @@ function buildUrl(province) {
 
 async function fetchRows(province, { timeoutMs = 30000 } = {}) {
   const url = buildUrl(province);
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json', 'User-Agent': 'AgroLink/1.0 (+soil fertilizer advisory)' },
-    signal: AbortSignal.timeout(timeoutMs),
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': 'AgroLink/1.0 (+soil fertilizer advisory)' },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (err) {
+    // undici hides the real reason in err.cause (DNS, refused, TLS chain, timeout …)
+    if (err.name === 'TimeoutError') throw new Error(`ldd_timeout (${Math.round(timeoutMs / 1000)}s)`);
+    const c = err.cause || {};
+    throw new Error(`ldd_fetch_failed: ${[c.code, c.message].filter(Boolean).join(' — ') || err.message}`.slice(0, 280));
+  }
   if (!res.ok) {
     const err = new Error(`ldd_http_${res.status}`);
     err.status = res.status;
@@ -221,23 +229,24 @@ async function fetchRows(province, { timeoutMs = 30000 } = {}) {
 // ---------------------------------------------------------------------------
 const MAX_AGE_DAYS = 7;
 
-async function syncProvince(c, province) {
-  const prov = normProvince(province);
-  let fetched;
-  try {
-    fetched = await fetchRows(prov);
-  } catch (err) {
-    await c.query(
-      `INSERT INTO production.ldd_soil_sync (province, fetched_at, status, error) VALUES ($1, now(), 'error', $2)
-       ON CONFLICT (province) DO UPDATE SET fetched_at=now(), status='error', error=EXCLUDED.error`,
-      [prov, String(err.message).slice(0, 300)],
-    );
-    return { province: prov, status: 'error', error: err.message };
-  }
-  const { samples, unmapped, used } = groupSamples(fetched.rows, prov);
+async function markError(c, prov, message) {
+  await c.query(
+    `INSERT INTO production.ldd_soil_sync (province, fetched_at, status, error) VALUES ($1, now(), 'error', $2)
+     ON CONFLICT (province) DO UPDATE SET fetched_at=now(), status='error', error=EXCLUDED.error`,
+    [prov, String(message).slice(0, 300)],
+  );
+}
+
+/**
+ * Writes one province's rows. append=false replaces the province's cached
+ * samples; append=true adds to them (used by chunked admin imports).
+ * Runs in its own transaction.
+ */
+async function storeRows(c, prov, rows, { append = false } = {}) {
+  const { samples, unmapped, used } = groupSamples(rows, prov);
   await c.query('BEGIN');
   try {
-    await c.query('DELETE FROM production.ldd_soil_sample WHERE province=$1', [prov]);
+    if (!append) await c.query('DELETE FROM production.ldd_soil_sample WHERE province=$1', [prov]);
     for (let i = 0; i < samples.length; i += 500) {
       const chunk = samples.slice(i, i + 500);
       const params = [];
@@ -251,25 +260,68 @@ async function syncProvince(c, province) {
       await c.query(
         `INSERT INTO production.ldd_soil_sample
            (sample_key, province, amphur, district, village, latitude, longitude, sampled_on, ph, om_pct, n_pct, p_ppm, k_ppm, extra)
-         VALUES ${vals.join(',')} ON CONFLICT (sample_key) DO NOTHING`, params,
+         VALUES ${vals.join(',')}
+         ON CONFLICT (sample_key) DO UPDATE SET -- same point split across import chunks: merge the values
+           ph=COALESCE(EXCLUDED.ph, ldd_soil_sample.ph), om_pct=COALESCE(EXCLUDED.om_pct, ldd_soil_sample.om_pct),
+           n_pct=COALESCE(EXCLUDED.n_pct, ldd_soil_sample.n_pct), p_ppm=COALESCE(EXCLUDED.p_ppm, ldd_soil_sample.p_ppm),
+           k_ppm=COALESCE(EXCLUDED.k_ppm, ldd_soil_sample.k_ppm),
+           extra=jsonb_build_object('ec', COALESCE(EXCLUDED.extra->'ec', ldd_soil_sample.extra->'ec'),
+             'text_levels', COALESCE(ldd_soil_sample.extra->'text_levels', '{}'::jsonb) || COALESCE(EXCLUDED.extra->'text_levels', '{}'::jsonb),
+             'raw', COALESCE(ldd_soil_sample.extra->'raw', '{}'::jsonb) || COALESCE(EXCLUDED.extra->'raw', '{}'::jsonb)),
+           fetched_at=now()`, params,
       );
     }
-    const top = Object.entries(unmapped).sort((a, b) => b[1] - a[1]).slice(0, 30);
+    const prev = append ? (await c.query('SELECT rows_received, rows_used, unmapped FROM production.ldd_soil_sync WHERE province=$1', [prov])).rows[0] : null;
+    const merged = { ...((prev && prev.unmapped) || {}) };
+    Object.entries(unmapped).forEach(([k, v]) => { merged[k] = (merged[k] || 0) + v; });
+    const top = Object.entries(merged).sort((x, y) => y[1] - x[1]).slice(0, 30);
+    const total = (await c.query('SELECT COUNT(*)::int AS n FROM production.ldd_soil_sample WHERE province=$1', [prov])).rows[0].n;
     await c.query(
       `INSERT INTO production.ldd_soil_sync (province, fetched_at, status, rows_received, rows_used, samples, unmapped, error)
        VALUES ($1, now(), 'ok', $2, $3, $4, $5::jsonb, NULL)
        ON CONFLICT (province) DO UPDATE SET fetched_at=now(), status='ok', rows_received=EXCLUDED.rows_received,
          rows_used=EXCLUDED.rows_used, samples=EXCLUDED.samples, unmapped=EXCLUDED.unmapped, error=NULL`,
-      [prov, fetched.rows.length, used, samples.length, JSON.stringify(Object.fromEntries(top))],
+      [prov, rows.length + ((prev && prev.rows_received) || 0), used + ((prev && prev.rows_used) || 0), total, JSON.stringify(Object.fromEntries(top))],
     );
     await c.query('COMMIT');
+    return { rows_received: rows.length, rows_used: used, samples: total, unmapped };
   } catch (err) {
     await c.query('ROLLBACK').catch(() => {});
     throw err;
   }
-  return {
-    province: prov, status: 'ok', rows_received: fetched.rows.length, rows_used: used, samples: samples.length, unmapped,
-  };
+}
+
+async function syncProvince(c, province, { timeoutMs = 30000 } = {}) {
+  const prov = normProvince(province);
+  let fetched;
+  try {
+    fetched = await fetchRows(prov, { timeoutMs });
+  } catch (err) {
+    await markError(c, prov, err.message);
+    return { province: prov, status: 'error', error: err.message };
+  }
+  const r = await storeRows(c, prov, fetched.rows);
+  return { province: prov, status: 'ok', ...r };
+}
+
+/**
+ * Admin upload of the API's JSON (saved from a browser) when the server
+ * cannot reach osd101 itself. Rows without a province use `province`.
+ */
+async function importRows(c, rows, { province = null, append = false } = {}) {
+  const byProv = new Map();
+  const fallback = province ? normProvince(province) : null;
+  for (const r of rows) {
+    if (!r || typeof r !== 'object') continue;
+    const p = normProvince(pick(r, 'province', 'province_name', 'changwat') || '') || fallback;
+    if (!p) continue;
+    if (fallback && p !== fallback) continue;
+    if (!byProv.has(p)) byProv.set(p, []);
+    byProv.get(p).push(fallback && !pick(r, 'province', 'province_name', 'changwat') ? { ...r, province: fallback } : r);
+  }
+  const out = [];
+  for (const [p, list] of byProv) out.push({ province: p, ...(await storeRows(c, p, list, { append })) });
+  return out;
 }
 
 /** Syncs the province if it was never fetched or the copy is older than MAX_AGE_DAYS (errors retried after 1 h). */
@@ -277,8 +329,10 @@ async function ensureProvince(c, province) {
   const prov = normProvince(province);
   const s = (await c.query('SELECT status, fetched_at FROM production.ldd_soil_sync WHERE province=$1', [prov])).rows[0];
   const ageH = s ? (Date.now() - new Date(s.fetched_at).getTime()) / 3600e3 : Infinity;
+  // LDD_SOIL_AUTO_FETCH=0: never call LDD from a farmer request (use admin imports only)
+  if (process.env.LDD_SOIL_AUTO_FETCH === '0') return { province: prov, status: s ? s.status : 'none', cached: true };
   if (!s || (s.status === 'ok' && ageH > MAX_AGE_DAYS * 24) || (s.status === 'error' && ageH > 1)) {
-    return syncProvince(c, prov);
+    return syncProvince(c, prov, { timeoutMs: 15000 });
   }
   return { province: prov, status: s.status, cached: true };
 }
@@ -319,7 +373,7 @@ async function nearest(c, lat, lng, province, { limit = 5, radiusKm = 50 } = {})
 
 module.exports = {
   stripHtml, classifyParameter, parseNumber, parseDate, parseLevelText, extractRows, groupSamples,
-  levelOf, levelsOf, haversineKm, buildUrl, fetchRows, syncProvince, ensureProvince, nearest, normProvince, CRITERIA,
+  levelOf, levelsOf, haversineKm, buildUrl, fetchRows, syncProvince, importRows, storeRows, ensureProvince, nearest, normProvince, CRITERIA,
   LINKS: {
     eservice: 'https://osd101.ldd.go.th',
     soil_card: 'http://iddindee.ldd.go.th',
