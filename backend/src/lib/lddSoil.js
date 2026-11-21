@@ -25,6 +25,8 @@
  * names seen, so a mapping gap is visible instead of silent.
  */
 
+const crypto = require('crypto');
+
 const DEFAULT_URL = 'https://osd101.ldd.go.th/api/data.php?province={province}';
 const MAX_BYTES = 40 * 1024 * 1024;
 
@@ -72,15 +74,27 @@ function parseLevelText(v) {
   return null;
 }
 
-/** '2025-08-01', '2025-08-01 10:00', '01/08/2568', '1/8/2025' → 'YYYY-MM-DD' | null */
+const TH_MONTHS = [
+  ['มกราคม', 'ม.ค.'], ['กุมภาพันธ์', 'ก.พ.'], ['มีนาคม', 'มี.ค.'], ['เมษายน', 'เม.ย.'], ['พฤษภาคม', 'พ.ค.'], ['มิถุนายน', 'มิ.ย.'],
+  ['กรกฎาคม', 'ก.ค.'], ['สิงหาคม', 'ส.ค.'], ['กันยายน', 'ก.ย.'], ['ตุลาคม', 'ต.ค.'], ['พฤศจิกายน', 'พ.ย.'], ['ธันวาคม', 'ธ.ค.'],
+];
+/**
+ * '2025-08-01', '2025-08-01 10:00', '01/08/2568', '1/8/2025',
+ * '13 พฤศจิกายน พ.ศ. 2569' (the osd101 API format), '13 พ.ย. 69' → 'YYYY-MM-DD' | null
+ */
 function parseDate(v) {
   const s = String(v == null ? '' : v).trim();
   let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   let y; let mo; let d;
-  if (m) { [, y, mo, d] = m.map(Number); } else {
-    m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/);
-    if (!m) return null;
+  if (m) { [, y, mo, d] = m.map(Number); } else if ((m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/))) {
     [, d, mo, y] = m.map(Number);
+  } else {
+    const idx = TH_MONTHS.findIndex(([full, abbr]) => s.includes(full) || s.includes(abbr));
+    const dm = s.match(/^(\d{1,2})\s/);
+    const ym = s.match(/(\d{4}|\d{2})\s*$/);
+    if (idx === -1 || !dm || !ym) return null;
+    d = Number(dm[1]); mo = idx + 1; y = Number(ym[1]);
+    if (y < 100) y += 2500; // '69' = พ.ศ. 2569
   }
   if (y > 2400) y -= 543; // Buddhist year
   if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && y > 1990 && y < 2100)) return null;
@@ -108,9 +122,22 @@ const normProvince = (s) => stripHtml(s).replace(/^จังหวัด|^จ\.\
  * Per-item rows → samples. A sample = one location + date (+ address).
  * Returns { samples, unmapped: {parameterName: count}, rows }.
  */
+const shortHash = (s) => crypto.createHash('sha1').update(s).digest('hex').slice(0, 12);
+
+/**
+ * The API returns one row per analysis item, and the same point + date +
+ * address can hold SEVERAL samples (e.g. 5 soil samples from one farm the same
+ * day, each with its own pH/OM/P/K/EC rows). Sample n at a location = the n-th
+ * time each parameter appears there, so a sample's key is
+ * location#occurrence. `_occ` on a row (set by the admin import page before it
+ * splits a big file into chunks) overrides the local count so keys stay the
+ * same across chunks. The house-number address is only hashed into the key,
+ * never stored.
+ */
 function groupSamples(rows, province) {
   const want = province ? normProvince(province) : null;
   const samples = new Map();
+  const occ = new Map();
   const unmapped = {};
   let used = 0;
   for (const r of rows) {
@@ -124,8 +151,16 @@ function groupSamples(rows, province) {
     const param = pick(r, 'parameter', 'param', 'name');
     const kind = classifyParameter(param);
     if (!kind) { const n = stripHtml(param) || '(ว่าง)'; unmapped[n] = (unmapped[n] || 0) + 1; continue; }
-    const address = [pick(r, 'address'), pick(r, 'village'), pick(r, 'district'), pick(r, 'amphur')].filter(Boolean).map(stripHtml);
-    const key = `${lat.toFixed(5)},${lng.toFixed(5)},${date || ''},${address.join('|')}`;
+    const address = [pick(r, 'address'), pick(r, 'village'), pick(r, 'district'), pick(r, 'amphur')].map((x) => stripHtml(x || ''));
+    const base = `${lat.toFixed(5)},${lng.toFixed(5)},${date || ''},${shortHash(address.join('|'))}`;
+    let n;
+    if (Number.isInteger(r._occ) && r._occ >= 0) n = r._occ;
+    else {
+      const ok = `${base}|${stripHtml(param)}`;
+      n = occ.get(ok) || 0;
+      occ.set(ok, n + 1);
+    }
+    const key = `${base}#${n}`;
     let s = samples.get(key);
     if (!s) {
       s = {
@@ -300,8 +335,14 @@ async function syncProvince(c, province, { timeoutMs = 30000 } = {}) {
     await markError(c, prov, err.message);
     return { province: prov, status: 'error', error: err.message };
   }
-  const r = await storeRows(c, prov, fetched.rows);
-  return { province: prov, status: 'ok', ...r };
+  // the API ignores ?province= (it returns rows of every province), so keep them all
+  const all = await importRows(c, fetched.rows);
+  const mine = all.find((x) => x.province === prov);
+  if (!mine) {
+    await markError(c, prov, `ไม่มีข้อมูลของจังหวัดนี้ในผลที่ได้ (${fetched.rows.length} แถว จาก ${all.length} จังหวัด)`);
+    return { province: prov, status: 'error', error: 'no_rows_for_province', rows_received: fetched.rows.length, other_provinces: all.map((x) => x.province) };
+  }
+  return { province: prov, status: 'ok', ...mine, rows_received_total: fetched.rows.length, provinces_updated: all.length };
 }
 
 /**

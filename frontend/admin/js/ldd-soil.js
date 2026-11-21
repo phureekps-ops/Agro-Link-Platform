@@ -69,6 +69,13 @@
         try { json = JSON.parse((await file.text()).replace(/^\uFEFF/, "")); } catch (e) { throw new Error("ไฟล์ไม่ใช่ JSON"); }
         const rows = Array.isArray(json) ? json : (["data", "result", "results", "records", "items", "rows"].map((k) => json && json[k]).find(Array.isArray));
         if (!rows || !rows.length) throw new Error("ไม่พบรายการข้อมูลในไฟล์");
+        // number repeated samples at the same point before splitting into chunks (see groupSamples in lddSoil.js)
+        const seen = new Map();
+        rows.forEach((r) => {
+          if (!r || typeof r !== "object") return;
+          const k = [r.latitude, r.longitude, r.date, r.address, r.village, r.district, r.amphur, r.parameter].join("|");
+          const c = seen.get(k) || 0; seen.set(k, c + 1); r._occ = c;
+        });
         const fallback = nameOf($("#lddProv").value);
         const groups = new Map();
         rows.forEach((r) => { const p = normProv(r && (r.province || r.province_name || r.changwat)) || fallback; if (!groups.has(p)) groups.set(p, []); groups.get(p).push(r); });
@@ -93,7 +100,9 @@
         const r = await api.post("/admin/ldd/sync", { province_code: $("#lddProv").value });
         out.innerHTML = r.status === "ok"
           ? `✅ ${esc(r.province)}: ได้ ${n(r.rows_received)} แถว ใช้ได้ ${n(r.rows_used)} แถว รวมเป็น ${n(r.samples)} จุดเก็บตัวอย่าง`
-          : `❌ ${esc(r.province)}: ${esc(r.error)} — URL ${esc(r.url)}`;
+          : r.error === "no_rows_for_province"
+            ? `⚠️ เชื่อม กพด. ได้ (${n(r.rows_received)} แถว) แต่ไม่มีข้อมูลของ${esc(r.province)} — บันทึกข้อมูลจังหวัดที่มีไว้แล้ว: ${esc((r.other_provinces || []).join(", "))}`
+            : `❌ ${esc(r.province)}: ${esc(r.error)} — URL ${esc(r.url)}`;
       } catch (e) { out.textContent = `❌ ${e.body && e.body.error ? e.body.error : e.message}`; }
       btn.disabled = false;
       load();

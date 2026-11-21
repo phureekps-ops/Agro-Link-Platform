@@ -77,6 +77,39 @@ test('groupSamples: rows → samples, province filter, unmapped names counted', 
   assert.deepEqual(unmapped, { แคลเซียม: 1 });
 });
 
+// Exact shape returned by https://osd101.ldd.go.th/api/data.php (seen 21 Nov 2026):
+// one row per item, HTML <sup> in the name, unit after a line break, Thai long date,
+// and two soil samples taken at the same point on the same day.
+const API_ROWS = [];
+const P = (name, value, extra = {}) => API_ROWS.push({
+  parameter: name, province: 'สุราษฎร์ธานี', value, latitude: '8.878', longitude: '98.806',
+  date: '13 พฤศจิกายน พ.ศ. 2569', address: '22', village: '', district: 'พังกาญจน์', amphur: 'พนม', ...extra,
+});
+[['1.77', '1.72', '70', '4.93', '0.021'], ['1.94', '1.26', '50', '4.83', '0.010']].forEach(([om, p, k, ph, ec]) => {
+  P('อินทรียวัตถุ<sup>1</sup> (OM)\n%', om);
+  P('ฟอสฟอรัส<sup>2</sup> (P)\nmg/kg', p);
+  P('โพแทสเซียม<sup>3</sup> (K)\nmg/kg', k);
+  P('ความเป็นกรด-ด่าง<sup>4*</sup> (pH)\n', ph);
+  P('ค่าการนำไฟฟ้า<sup>5*</sup> (EC)\ndS/m', ec);
+});
+P('อินทรียวัตถุ<sup>1</sup> (OM)\n%', '0.03', { province: 'กาญจนบุรี', latitude: '14.70343', longitude: '99.33972', address: '98/3' });
+
+test('groupSamples: real osd101 rows — two samples at one point stay separate, Thai date, other province dropped', () => {
+  const { samples, unmapped } = ldd.groupSamples(API_ROWS, 'สุราษฎร์ธานี');
+  assert.deepEqual(unmapped, {});
+  assert.equal(samples.length, 2);
+  assert.deepEqual(samples.map((s) => s.values), [
+    { om: 1.77, p: 1.72, k: 70, ph: 4.93, ec: 0.021 },
+    { om: 1.94, p: 1.26, k: 50, ph: 4.83, ec: 0.01 },
+  ]);
+  assert.equal(samples[0].sampled_on, '2026-11-13');
+  assert.equal(samples[0].amphur, 'พนม');
+  assert.ok(!samples[0].sample_key.includes('22'), 'house number must not be stored in the key');
+  // the import page numbers rows before splitting a file; _occ keeps the keys stable
+  const chunk2 = ldd.groupSamples(API_ROWS.slice(5, 10).map((r) => ({ ...r, _occ: 1 })), 'สุราษฎร์ธานี').samples;
+  assert.equal(chunk2[0].sample_key, samples[1].sample_key);
+});
+
 test('levelsOf: OM drives N, P/K by mg/kg cut-offs, text levels as fallback', () => {
   assert.deepEqual(ldd.levelsOf({ values: { om: 0.9, p: 8, k: 95 } }), { n_level: 'low', p_level: 'low', k_level: 'high' });
   assert.deepEqual(ldd.levelsOf({ values: { om: 2.0, p: 15, k: 70 } }), { n_level: 'medium', p_level: 'medium', k_level: 'medium' });
