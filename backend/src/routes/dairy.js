@@ -5,9 +5,10 @@ const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireOrganizationOrStaff, resolveEffectiveOrgSubject } = require('../middleware/auth');
 const {
   h, tx, bad, notFound, conflict, round2, feeOf, bkkToday, isDate, num, needPos, needNonNeg, needUuid, isUuid,
-  addDays, ds, priceFor, PARTNER_TYPES, ANIMAL_STATUS, EVENT_TYPES, DAIRY_PRODUCT_TYPES, REJECT_REASONS, DEBIT_TYPES,
+  addDays, ds, priceFor, allocateSettlement, PARTNER_TYPES, ANIMAL_STATUS, EVENT_TYPES, DAIRY_PRODUCT_TYPES, REJECT_REASONS, DEBIT_TYPES,
 } = require('../lib/dairy');
 const core = require('../lib/dairyCore');
+const notify = require('../lib/dairyNotify');
 
 /**
  * /dairy — พอร์ทัลสหกรณ์โคนม (โปรแกรมบริหารธุรกิจโคนมครบวงจร) ฝั่งสหกรณ์.
@@ -335,10 +336,12 @@ router.post('/members/:id/status', h(async (req) => db(req, async (c, coop) => {
   const status = (req.body || {}).status;
   if (!['Approved', 'Suspended', 'Pending'].includes(status)) throw bad('invalid_status');
   if (status === 'Approved' && !m.center_id) throw bad('member_needs_center');
-  return (await c.query(
+  const out = (await c.query(
     `UPDATE dairy.member SET status=$2, approved_at = CASE WHEN $2='Approved' THEN now() ELSE approved_at END WHERE member_id=$1 RETURNING *`,
     [m.member_id, status],
   )).rows[0];
+  if (status !== m.status) await notify.notifyMembership(c, out, status, req.org.org_name);
+  return out;
 })));
 
 // ===========================================================================
@@ -593,6 +596,7 @@ router.post('/rounds/:id/close', h(async (req) => db(req, async (c, coop) => tx(
     `UPDATE dairy.milk_round SET status='Closed', closed_at=now(), tank_temp_c=$2, accepted_kg=$3, rejected_kg=$4, amount=$5 WHERE round_id=$1 RETURNING *`,
     [r.round_id, temp, res.accepted_kg, res.rejected_kg, res.amount],
   )).rows[0];
+  await notify.notifyRoundRejections(c, row);
   await logAccess(c, 'write', 'dairy.milk_round', r.round_id);
   return { ...row, warning: temp !== null && temp > Number(s.tank_temp_max) ? 'tank_temp_high' : null };
 }))));
@@ -628,6 +632,21 @@ router.post('/quality-tests', h(async (req) => db(req, async (c, coop) => tx(c, 
     const v = pick(t, TEST_SPEC);
     if (['fat_pct', 'snf_pct', 'scc_k', 'tbc_k'].every((k) => v[k] === null || v[k] === undefined)) throw bad('empty_test');
     out.push(await insertRow(c, 'dairy.quality_test', { coop_org_id: coop, member_id: m.member_id, sample_date: date, ...v }));
+  }
+  // tell each member their newest result (one message per member, not per row)
+  const s = await core.settings(c, coop);
+  const rules = (await c.query('SELECT * FROM dairy.quality_rule WHERE coop_org_id=$1 AND active', [coop])).rows;
+  const newest = new Map();
+  out.forEach((t) => { const p = newest.get(t.member_id); if (!p || ds(t.sample_date) >= ds(p.sample_date)) newest.set(t.member_id, t); });
+  for (const t of newest.values()) {
+    const latest = (await c.query(
+      'SELECT test_id FROM dairy.quality_test WHERE member_id=$1 ORDER BY sample_date DESC, created_at DESC LIMIT 1', [t.member_id],
+    )).rows[0];
+    if (latest && latest.test_id === t.test_id) { // a back-dated result does not change today's price
+      const m = (await c.query('SELECT member_id, farmer_id, coop_org_id FROM dairy.member WHERE member_id=$1', [t.member_id])).rows[0];
+      const test = { ...t, sample_date: ds(t.sample_date) };
+      await notify.notifyQualityTest(c, test, m, priceFor(s.base_price_per_kg, test, rules));
+    }
   }
   return { saved: out.length, tests: out };
 }))));
@@ -795,7 +814,9 @@ router.post('/requests/:id/assign', h(async (req) => db(req, async (c, coop) => 
   if (!['vet', 'ai'].includes(r.request_type)) throw bad('only_vet_or_ai');
   if (!['Open', 'Assigned'].includes(r.status)) throw conflict('invalid_request_status');
   const p = await ownPartner(c, coop, (req.body || {}).partner_id, 'vet');
-  return updateRow(c, 'dairy.service_request', 'request_id', r.request_id, { status: 'Assigned', assigned_partner_id: p.partner_id });
+  const out = await updateRow(c, 'dairy.service_request', 'request_id', r.request_id, { status: 'Assigned', assigned_partner_id: p.partner_id });
+  await notify.notifyRequest(c, out, 'Assigned', { partner_name: p.name });
+  return out;
 })));
 router.post('/requests/:id/fulfil', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
   const r = await own(c, coop, 'request', req.params.id, { lock: true });
@@ -804,12 +825,15 @@ router.post('/requests/:id/fulfil', h(async (req) => db(req, async (c, coop) => 
   const b = req.body || {};
   const iss = await issueToMember(c, coop, { member_id: r.member_id, item_id: b.item_id || r.item_id, qty: b.qty || r.qty, unit_price: b.unit_price, request_id: r.request_id }, actor(req));
   await updateRow(c, 'dairy.service_request', 'request_id', r.request_id, { status: 'Done', done_at: new Date(), result_ref_id: iss.issue_id });
+  await notify.notifyRequest(c, r, 'Done', { amount: iss.amount });
   return iss;
 }))));
 router.post('/requests/:id/cancel', h(async (req) => db(req, async (c, coop) => {
   const r = await own(c, coop, 'request', req.params.id);
   if (!['Open', 'Assigned'].includes(r.status)) throw conflict('invalid_request_status');
-  return updateRow(c, 'dairy.service_request', 'request_id', r.request_id, { status: 'Cancelled', done_at: new Date() });
+  const out = await updateRow(c, 'dairy.service_request', 'request_id', r.request_id, { status: 'Cancelled', done_at: new Date() });
+  await notify.notifyRequest(c, out, 'Cancelled', { reason: txt((req.body || {}).reason) });
+  return out;
 })));
 
 // ===========================================================================
@@ -1225,25 +1249,15 @@ router.post('/settlements', h(async (req) => db(req, async (c, coop) => tx(c, as
       `SELECT entry_id, entry_type, amount FROM dairy.member_ledger WHERE member_id=$1 AND run_id IS NULL AND entry_date <= $2 ORDER BY entry_date, created_at`,
       [m.member_id, periodEnd],
     )).rows;
-    const credits = entries.filter((e) => Number(e.amount) > 0);
-    const debits = entries.filter((e) => Number(e.amount) < 0)
-      .sort((a, b2) => order.indexOf(a.entry_type) - order.indexOf(b2.entry_type));
-    let avail = credits.reduce((a, e) => a + Number(e.amount), 0);
-    const take = credits.map((e) => e.entry_id);
-    // ลำดับเคร่งครัด: เมื่อรายการใดหักไม่พอ รายการนั้นและรายการลำดับถัดไปทั้งหมดยกไปรอบหน้า
-    let debit = 0; let carry = 0; let stopped = false;
-    debits.forEach((e) => {
-      const amt = -Number(e.amount);
-      if (!stopped && amt <= avail + 1e-9) { avail -= amt; debit += amt; take.push(e.entry_id); } else { stopped = true; carry += amt; }
-    });
-    const credit = credits.reduce((a, e) => a + Number(e.amount), 0);
+    const {
+      credit, debit, net, carry, take,
+    } = allocateSettlement(entries, order);
     if (!take.length) { carried += 1; continue; }
-    const net = round2(credit - debit);
     await c.query('UPDATE dairy.member_ledger SET run_id=$1 WHERE entry_id = ANY($2::uuid[])', [run.run_id, take]);
     await c.query(
       `INSERT INTO dairy.settlement_line (run_id, member_id, total_credit, total_debit, net_amount, carried_debit, baac_account_no, baac_account_name)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [run.run_id, m.member_id, round2(credit), round2(debit), net, round2(carry), m.baac_account_no, m.baac_account_name || m.full_name],
+      [run.run_id, m.member_id, credit, debit, net, carry, m.baac_account_no, m.baac_account_name || m.full_name],
     );
     total += net;
     if (net > 0) paid += 1;
@@ -1299,11 +1313,13 @@ router.get('/settlements/:id/baac-export', h(async (req, res) => db(req, async (
   res.send(`﻿${rows.join('\r\n')}\r\n`);
   return undefined;
 })));
-router.post('/settlements/:id/paid', h(async (req) => db(req, async (c, coop) => {
-  const run = await own(c, coop, 'run', req.params.id);
+router.post('/settlements/:id/paid', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+  const run = await own(c, coop, 'run', req.params.id, { lock: true });
   if (run.status !== 'Submitted') throw conflict('invalid_run_status', { status: run.status });
-  return updateRow(c, 'dairy.settlement_run', 'run_id', run.run_id, { status: 'Paid', paid_at: new Date() });
-})));
+  const out = await updateRow(c, 'dairy.settlement_run', 'run_id', run.run_id, { status: 'Paid', paid_at: new Date() });
+  await notify.notifySettlementPaid(c, out);
+  return out;
+}))));
 router.post('/settlements/:id/cancel', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
   const run = await own(c, coop, 'run', req.params.id, { lock: true });
   if (!['Draft', 'Submitted'].includes(run.status)) throw conflict('invalid_run_status', { status: run.status });

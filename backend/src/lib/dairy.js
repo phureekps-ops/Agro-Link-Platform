@@ -57,6 +57,40 @@ function priceFor(base, test, rules) {
   return { price, detail };
 }
 
+/**
+ * Settles one member's open ledger entries for a run (pure; no DB).
+ * Credits (amount > 0) are all taken. Debits (amount < 0) are taken in the
+ * coop's deduction_order (same type: original order, i.e. by date) while the
+ * remaining credit covers them in full. Strict order: the first debit that
+ * does not fit, and every debit after it, is carried to the next run — a
+ * member is never paid a negative amount and a later, smaller debit never
+ * jumps ahead of an earlier-ranked one. Types missing from the order go last.
+ */
+function allocateSettlement(entries, order) {
+  const rank = (t) => { const i = order.indexOf(t); return i === -1 ? order.length : i; };
+  const credits = entries.filter((e) => Number(e.amount) > 0);
+  const debits = entries.filter((e) => Number(e.amount) < 0)
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => rank(a.e.entry_type) - rank(b.e.entry_type) || a.i - b.i)
+    .map((x) => x.e);
+  const credit = credits.reduce((a, e) => a + Number(e.amount), 0);
+  let avail = credit;
+  const take = credits.map((e) => e.entry_id);
+  const carried = [];
+  let debit = 0; let carry = 0; let stopped = false;
+  debits.forEach((e) => {
+    const amt = -Number(e.amount);
+    if (!stopped && amt <= avail + 1e-9) {
+      avail -= amt; debit += amt; take.push(e.entry_id);
+    } else {
+      stopped = true; carry += amt; carried.push(e.entry_id);
+    }
+  });
+  return {
+    credit: round2(credit), debit: round2(debit), net: round2(credit - debit), carry: round2(carry), take, carried,
+  };
+}
+
 /** Surplus-alert colour from forecast vs committed (contracts + school milk). */
 function alertLevel(forecastKg, committedKg, s) {
   if (!(forecastKg > 0)) return { level: 'green', surplus_pct: 0 };
@@ -81,6 +115,6 @@ const REJECT_REASONS = ['antibiotic', 'temperature', 'smell', 'clot', 'other'];
 module.exports = {
   ...M,
   DAY, addDays, daysBetween, ds, shiftOf, priceFor, alertLevel, QUALITY_PARAMS,
-  LEDGER_TYPES, DEBIT_TYPES, PARTNER_TYPES, ANIMAL_STATUS, EVENT_TYPES, MEMBER_EVENT_TYPES, PRODUCT_TYPES, REJECT_REASONS,
+  LEDGER_TYPES, DEBIT_TYPES, PARTNER_TYPES, allocateSettlement, ANIMAL_STATUS, EVENT_TYPES, MEMBER_EVENT_TYPES, PRODUCT_TYPES, REJECT_REASONS,
   DAIRY_PRODUCT_TYPES: PRODUCT_TYPES,
 };

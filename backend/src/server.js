@@ -135,6 +135,11 @@ const app = express();
 // Authorization: Bearer <jwt>), so there is nothing new exposed by also
 // allowing credentials.
 app.use(cors({ origin: true, credentials: true }));
+// LINE webhook verifies an HMAC over the RAW body, so it is mounted before
+// express.json() and parses its own body (src/routes/line.js).
+const lineRouter = require('./routes/line');
+
+app.use('/line', lineRouter.router);
 // Default express.json() body limit is 100kb — too small for
 // POST /machinery/photos, which posts a base64 data: URL (no object
 // storage/CDN exists in this sandbox, see grant_machinery_marketplace.sql).
@@ -262,6 +267,9 @@ app.use((err, req, res, next) => {
   const status = err.status || 500;
   res.status(status).json({ error: err.publicMessage || 'internal_error' });
 });
+
+// Retry sweep for dairy LINE notifications (no-op without LINE_CHANNEL_ACCESS_TOKEN).
+require('./lib/dairyNotify').start();
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

@@ -206,7 +206,36 @@ grant_satellite_observation_delete.sql
 grant_plot_ai.sql
 grant_dairy_market_directory.sql
 seed_dairy_market_directory_v0_1.sql
+grant_dairy_line_notify.sql
 ```
+
+**เพิ่มเมื่อ 2026-11-21 (2): แจ้งเตือนสมาชิกโคนม (กล่องแจ้งเตือนในเว็บ + LINE) และชุดทดสอบการคิดราคา/หักกลบ**
+
+1. รัน `grant_dairy_line_notify.sql` หนึ่งครั้ง (`set PGCLIENTENCODING=UTF8` ก่อน รันซ้ำได้) — สร้าง `dairy.notification`
+   (กล่องแจ้งเตือน + คิวส่ง LINE), `dairy.line_link`, `dairy.line_link_code`
+   แค่รันไฟล์นี้ กล่องแจ้งเตือน 🔔 ในหน้า `dairy-member.html` ก็ใช้ได้ทันที แม้ยังไม่ได้ตั้งค่า LINE
+2. (ถ้าจะส่งทาง LINE) ที่ [LINE Developers](https://developers.line.biz/console/) สร้าง Provider › ช่อง **Messaging API**
+   (ผูกกับ LINE Official Account ของ AgroLink) แล้วตั้งตัวแปรบน Render › agrolink-backend › Environment:
+   - `LINE_CHANNEL_SECRET` — แท็บ Basic settings › Channel secret
+   - `LINE_CHANNEL_ACCESS_TOKEN` — แท็บ Messaging API › Channel access token (long-lived) › Issue
+   - `LINE_OA_ID` — Basic ID ของ OA เช่น `@123abcde` (ใช้ทำปุ่ม "เพิ่มเพื่อนใน LINE")
+   - `APP_PUBLIC_URL` (ไม่บังคับ) — URL หน้าเว็บ frontend เช่น `https://agrolink-frontend.onrender.com` (แนบลิงก์ท้ายข้อความ)
+   ทั้งสองค่าแรกเป็นความลับ — ใส่ใน Render เท่านั้น ห้ามใส่ในไฟล์ใน repo ห้ามส่งในแชท และห้ามแคปหน้าจอที่มีค่าเหล่านี้
+3. แท็บ Messaging API › Webhook URL = `https://<backend>.onrender.com/line/webhook` › กด Verify › เปิด **Use webhook**
+   และใน LINE Official Account Manager › ตั้งค่าการตอบกลับ ปิด "ข้อความตอบกลับอัตโนมัติ" (ไม่งั้น OA จะตอบซ้อนกับระบบ)
+4. ทดสอบ: เข้า `dairy-member.html` ด้วยบัญชีเกษตรกรที่เป็นสมาชิกโคนม › 🔔 › เพิ่มเพื่อน › ขอรหัส › พิมพ์รหัส 6 หลักในแชท LINE ›
+   กด "ส่งข้อความทดสอบ"
+
+เรื่องที่แจ้ง: สหกรณ์โอนเงินค่านม (กด "โอนแล้ว"), น้ำนมไม่ผ่านการรับ (ตอนปิดรอบ), ผลตรวจคุณภาพใหม่พร้อมราคาที่ได้,
+คำขอบริการเปลี่ยนสถานะ, อนุมัติ/ระงับสมาชิก สมาชิกเลือกปิดบางเรื่องทาง LINE ได้ ข้อความแบบ push นับรวมในโควตาข้อความ
+ของแพ็กเกจ LINE OA — ตรวจโควตาใน LINE Official Account Manager ก่อนเปิดใช้กับสมาชิกจำนวนมาก
+ถ้าส่งไม่สำเร็จระบบลองใหม่ทุก 60 วินาทีสูงสุด 5 ครั้ง (ขณะ backend ไม่หลับ) แจ้งเตือนที่ค้างเกิน 24 ชั่วโมงจะไม่ถูกส่งทาง LINE แล้ว
+(แต่ยังอยู่ในกล่องแจ้งเตือน) ดูสถานะได้จากคอลัมน์ `line_status` ในตาราง `dairy.notification`
+
+ชุดทดสอบ (โฟลเดอร์ backend): `npm test` — ทดสอบสูตรคิดราคาตามคุณภาพ การหักกลบตามลำดับ และการยกยอดไปรอบหน้า (ไม่ต้องใช้ฐานข้อมูล)
+`npm run test:db` — ทดสอบทั้งเส้นทางผ่าน API จริง (รับนม → ปิดรอบ → รอบจ่าย → ไฟล์ ธ.ก.ส. → ยกเลิก/ทำใหม่ → โอนแล้ว → แจ้งเตือน LINE
+กับเซิร์ฟเวอร์ LINE จำลอง) ใช้กับฐานข้อมูลทดสอบในเครื่องเท่านั้น ต้องตั้ง `DAIRY_DB_TEST=1` และ `PGHOST=localhost` —
+ห้ามชี้ไปที่ฐานข้อมูล Render (ชุดทดสอบปฏิเสธเองถ้ามี `DATABASE_URL` หรือ host ไม่ใช่เครื่องตัวเอง)
 
 **เพิ่มเมื่อ 2026-11-21: ทะเบียนตลาดน้ำนมดิบระดับประเทศ (AgroLink National Dairy โมดูล 04)** — รัน 2 ไฟล์ตามลำดับ
 (`set PGCLIENTENCODING=UTF8` ก่อน รันซ้ำได้): `grant_dairy_market_directory.sql` (ตาราง) แล้ว `seed_dairy_market_directory_v0_1.sql`

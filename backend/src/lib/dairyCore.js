@@ -151,11 +151,13 @@ async function applyEvent(c, coopId, animal, eventType, eventDate, details, opts
     charged = cost;
   }
   if (opts.request_id) {
-    await c.query(
+    const done = await c.query(
       `UPDATE dairy.service_request SET status='Done', done_at=now(), result_ref_id=$2
-        WHERE request_id=$1 AND coop_org_id=$3 AND status IN ('Open','Assigned')`,
+        WHERE request_id=$1 AND coop_org_id=$3 AND status IN ('Open','Assigned') RETURNING *`,
       [opts.request_id, ev.event_id, coopId],
     );
+    // eslint-disable-next-line global-require
+    if (done.rows[0]) await require('./dairyNotify').notifyRequest(c, done.rows[0], 'Done', { amount: charged });
   }
   await logAccess(c, 'write', 'dairy.animal_event', ev.event_id);
   return { event: ev, calf, charged };

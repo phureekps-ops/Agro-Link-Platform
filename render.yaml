@@ -62,6 +62,17 @@ services:
         sync: false
       - key: SENTINELHUB_CLIENT_SECRET
         sync: false
+      # Dairy member notifications over LINE (backend/src/lib/dairyNotify.js,
+      # routes/line.js). From the user's own LINE Messaging API channel — see
+      # DEPLOY.md "แจ้งเตือนสมาชิกโคนม". Unset = in-app inbox only.
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_OA_ID
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
 
   - type: web
     runtime: static

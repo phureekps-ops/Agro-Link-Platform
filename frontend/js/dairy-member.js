@@ -19,7 +19,9 @@
   const COW = { Calf: "ลูกโค", Heifer: "โคสาว", Milking: "รีดนม", Dry: "หยุดรีด/พักท้อง", Bull: "โคตัวผู้" };
   const EVENT = { heat: "เป็นสัด", insemination: "ผสมเทียม", pregnancy_check: "ตรวจท้อง", calving: "คลอด", dry_off: "หยุดรีด", treatment: "รักษา", vaccination: "วัคซีน", note: "บันทึก" };
   const REJ = { antibiotic: "พบยาตกค้าง", temperature: "อุณหภูมิไม่ผ่าน", smell: "กลิ่นผิดปกติ", clot: "นมจับตัว", other: "อื่น ๆ" };
-  const ERR = { member_not_approved: "สหกรณ์ยังไม่อนุมัติการเป็นสมาชิก", already_member: "เป็นสมาชิกสหกรณ์นี้แล้ว", photo_too_large: "รูปใหญ่เกินไป", ear_tag_exists: "เบอร์หูนี้มีในระบบแล้ว", female_only: "ใช้ได้กับโคเพศเมีย", animal_not_active: "โคตัวนี้ไม่อยู่ในฝูงแล้ว" };
+  const NOTIF = { milk_rejected: "🚫", quality: "🧪", settlement: "💰", request: "🩺", membership: "🪪", test: "🔔" };
+  const PREF = { settlement: "โอนเงินค่านม", milk_rejected: "น้ำนมไม่ผ่านการรับ", quality: "ผลตรวจคุณภาพน้ำนม", request: "คำขอบริการ (อาหาร/สัตวแพทย์)", membership: "สถานะสมาชิก" };
+  const ERR = { line_not_configured: "ระบบ LINE ยังไม่เปิดใช้งาน", line_not_linked: "ยังไม่ได้ผูก LINE", member_not_approved: "สหกรณ์ยังไม่อนุมัติการเป็นสมาชิก", already_member: "เป็นสมาชิกสหกรณ์นี้แล้ว", photo_too_large: "รูปใหญ่เกินไป", ear_tag_exists: "เบอร์หูนี้มีในระบบแล้ว", female_only: "ใช้ได้กับโคเพศเมีย", animal_not_active: "โคตัวนี้ไม่อยู่ในฝูงแล้ว" };
 
   let memberId = null;
   let memberships = [];
@@ -43,6 +45,16 @@
     show(b.dataset.tab);
   }));
   $("#logoutBtn").addEventListener("click", () => API.logout());
+  $("#bellBtn").addEventListener("click", () => show("alerts"));
+
+  async function refreshBell() {
+    try {
+      const n = await API.get("/dairy-member/notifications?limit=1");
+      const b = $("#bellN");
+      b.hidden = !n.unread;
+      b.textContent = n.unread > 99 ? "99+" : String(n.unread);
+    } catch (e) { /* the bell is optional */ }
+  }
 
   const PAGES = {};
 
@@ -181,6 +193,61 @@
           <span class="mm-chip ${r.status === "Paid" ? "ok" : "warn"}">${STATUS[r.status]}</span></span><b>${baht(r.net_amount)}</b></li>`).join("") || '<li class="mm-muted">ยังไม่มีรอบจ่าย</li>'}</ul></div>`;
   };
 
+  let linePoll = null;
+  PAGES.alerts = async (sec) => {
+    clearInterval(linePoll);
+    const [line, inbox] = await Promise.all([API.get("/dairy-member/line"), API.get("/dairy-member/notifications?limit=50")]);
+    let lineHtml;
+    if (!line.configured) {
+      lineHtml = '<p class="mm-muted">AgroLink ยังไม่เปิดการแจ้งเตือนทาง LINE — ดูแจ้งเตือนได้ที่หน้านี้</p>';
+    } else if (line.linked) {
+      lineHtml = `<p><span class="mm-chip ok">✅ รับแจ้งเตือนทาง LINE แล้ว</span></p>
+        <p class="mm-muted" style="margin:0 0 6px">เลือกเรื่องที่ต้องการให้ส่งทาง LINE (ทุกเรื่องยังแสดงในหน้านี้เสมอ)</p>
+        ${Object.entries(PREF).map(([k, label]) => `<label class="mm-toggle"><span>${NOTIF[k]} ${label}</span><input type="checkbox" data-pref="${k}" ${line.prefs[k] !== false ? "checked" : ""}></label>`).join("")}
+        <button class="mm-btn ghost" id="lineTest">ส่งข้อความทดสอบ</button>
+        <button class="mm-btn ghost" id="lineOff">เลิกรับทาง LINE</button>`;
+    } else {
+      lineHtml = `<p class="mm-muted" style="margin-top:0">รับแจ้งเมื่อสหกรณ์โอนเงิน น้ำนมไม่ผ่านการรับ และผลตรวจคุณภาพออก</p>
+        <p><b>1.</b> เพิ่มเพื่อน LINE ของ AgroLink${line.oa_id ? ` (${esc(line.oa_id)})` : ""}</p>
+        ${line.add_friend_url ? `<a class="mm-btn mm-line-btn" href="${esc(line.add_friend_url)}" target="_blank" rel="noopener">เพิ่มเพื่อนใน LINE</a>` : ""}
+        <p style="margin-top:14px"><b>2.</b> ขอรหัส แล้วพิมพ์รหัสนี้ในแชท LINE</p>
+        <div id="lineCode"></div>
+        <button class="mm-btn" id="lineCodeBtn">ขอรหัสผูก LINE</button>`;
+    }
+    sec.innerHTML = `
+      <div class="mm-card"><h2>แจ้งเตือนทาง LINE</h2>${lineHtml}</div>
+      <div class="mm-card"><h2>แจ้งเตือนทั้งหมด</h2>
+        ${inbox.items.map((n) => `<div class="mm-notif ${n.read_at ? "" : "unread"}"><b>${NOTIF[n.kind] || "🔔"} ${esc(n.title)}</b>
+          <span class="mm-muted"> · ${esc(n.coop_name || "")} ${new Date(n.created_at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+          <p>${esc(n.body)}</p></div>`).join("") || '<div class="mm-muted">ยังไม่มีแจ้งเตือน</div>'}</div>`;
+    if (inbox.unread) API.post("/dairy-member/notifications/read", {}).then(refreshBell).catch(() => {});
+
+    sec.querySelectorAll("[data-pref]").forEach((cb) => cb.addEventListener("change", async () => {
+      try { await API.put("/dairy-member/line/prefs", { prefs: { [cb.dataset.pref]: cb.checked } }); } catch (err) { cb.checked = !cb.checked; msg(errText(err), true); }
+    }));
+    const t = $("#lineTest");
+    if (t) t.addEventListener("click", async () => { try { await API.post("/dairy-member/line/test", {}); msg("ส่งข้อความทดสอบแล้ว ดูในแชท LINE"); } catch (err) { msg(errText(err), true); } });
+    const off = $("#lineOff");
+    if (off) off.addEventListener("click", async () => {
+      if (!confirm("เลิกรับแจ้งเตือนทาง LINE?")) return;
+      try { await API.post("/dairy-member/line/unlink", {}); show("alerts"); } catch (err) { msg(errText(err), true); }
+    });
+    const cbtn = $("#lineCodeBtn");
+    if (cbtn) cbtn.addEventListener("click", async () => {
+      try {
+        const r = await API.post("/dairy-member/line/code", {});
+        $("#lineCode").innerHTML = `<div class="mm-code">${esc(r.code)}</div><p class="mm-muted" style="text-align:center">ใช้ได้ภายใน 10 นาที · พิมพ์ในแชท LINE แล้วรอสักครู่</p>`;
+        cbtn.textContent = "ขอรหัสใหม่";
+        const until = Date.now() + 10 * 60e3;
+        clearInterval(linePoll);
+        linePoll = setInterval(async () => {
+          if (Date.now() > until || !document.body.contains(cbtn)) { clearInterval(linePoll); return; }
+          try { const s = await API.get("/dairy-member/line"); if (s.linked) { clearInterval(linePoll); msg("ผูก LINE สำเร็จ"); show("alerts"); } } catch (e) { /* keep polling */ }
+        }, 4000);
+      } catch (err) { msg(errText(err), true); }
+    });
+  };
+
   PAGES.join = async (sec) => {
     const coops = await API.get("/dairy-member/coops");
     const mine = new Set(memberships.map((m) => m.coop_org_id));
@@ -209,6 +276,7 @@
     memberId = memberId && memberships.some((m) => m.member_id === memberId) ? memberId : memberships[0].member_id;
     sel.value = memberId;
     show("home");
+    refreshBell();
   }
   $("#memberSel").addEventListener("change", (e) => {
     if (e.target.value === "__join") { e.target.value = memberId; show("join"); return; }

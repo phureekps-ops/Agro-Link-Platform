@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 
 const { withSessionContext, logAccess } = require('../db/pool');
@@ -6,6 +7,8 @@ const {
   h, tx, bad, notFound, conflict, bkkToday, isDate, needPos, isUuid, addDays, priceFor, MEMBER_EVENT_TYPES,
 } = require('../lib/dairy');
 const core = require('../lib/dairyCore');
+const notify = require('../lib/dairyNotify');
+const { hashCode } = require('./line');
 
 /**
  * /dairy-member — หน้ามือถือสำหรับสมาชิกผู้เลี้ยงโคนม (JWT เกษตรกร).
@@ -197,6 +200,89 @@ router.get('/statement', h(async (req) => db(req, async (c, farmer) => {
       ORDER BY r.period_end DESC LIMIT 24`, [m.member_id],
   )).rows;
   return { open, open_total: open.reduce((a, x) => a + Number(x.amount), 0), runs, baac_account_no: m.baac_account_no ? `****${m.baac_account_no.slice(-4)}` : null };
+})));
+
+// ===========================================================================
+// แจ้งเตือน: กล่องแจ้งเตือนในเว็บ + LINE (grant_dairy_line_notify.sql)
+// แจ้งเตือนเป็นของเกษตรกร (ทุกสหกรณ์ที่เป็นสมาชิก) ไม่ใช่ของสมาชิกรายสหกรณ์
+// ===========================================================================
+const NOTIF_COLS = `n.notif_id, n.kind, n.title, n.body, n.created_at, n.read_at, n.member_id, o.org_name AS coop_name`;
+
+router.get('/notifications', h(async (req) => db(req, async (c, farmer) => {
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
+  const rows = (await c.query(
+    `SELECT ${NOTIF_COLS} FROM dairy.notification n LEFT JOIN identity.organization o ON o.org_id=n.coop_org_id
+      WHERE n.farmer_id=$1 ORDER BY n.created_at DESC LIMIT $2`, [farmer, limit],
+  )).rows;
+  const unread = (await c.query('SELECT COUNT(*)::int AS n FROM dairy.notification WHERE farmer_id=$1 AND read_at IS NULL', [farmer])).rows[0].n;
+  return { unread, items: rows };
+})));
+
+router.post('/notifications/read', h(async (req) => db(req, async (c, farmer) => {
+  const r = await c.query('UPDATE dairy.notification SET read_at=now() WHERE farmer_id=$1 AND read_at IS NULL', [farmer]);
+  return { marked: r.rowCount };
+})));
+
+function lineView(link) {
+  const oa = process.env.LINE_OA_ID || null;
+  return {
+    configured: notify.lineConfigured() && notify.webhookConfigured(),
+    oa_id: oa,
+    add_friend_url: oa ? `https://line.me/R/ti/p/${encodeURIComponent(oa)}` : null,
+    linked: !!(link && link.active),
+    linked_at: link && link.active ? link.linked_at : null,
+    prefs: link ? link.prefs : null,
+  };
+}
+
+router.get('/line', h(async (req) => db(req, async (c, farmer) => lineView(
+  (await c.query('SELECT active, linked_at, prefs FROM dairy.line_link WHERE farmer_id=$1', [farmer])).rows[0],
+))));
+
+/** รหัส 6 หลัก (ใช้ครั้งเดียว 10 นาที) ให้สมาชิกพิมพ์ในแชท LINE OA */
+router.post('/line/code', h(async (req) => db(req, async (c, farmer) => tx(c, async () => {
+  if (!notify.lineConfigured() || !notify.webhookConfigured()) throw conflict('line_not_configured');
+  await c.query('DELETE FROM dairy.line_link_code WHERE farmer_id=$1 OR expires_at < now() - interval \'1 day\'', [farmer]);
+  for (let i = 0; i < 5; i += 1) {
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    const r = await c.query(
+      `INSERT INTO dairy.line_link_code (code_hash, farmer_id, expires_at) VALUES ($1,$2, now() + interval '10 minutes')
+       ON CONFLICT DO NOTHING RETURNING expires_at`, [hashCode(code), farmer],
+    );
+    if (r.rows.length) {
+      const v = lineView(null);
+      return {
+        code, expires_at: r.rows[0].expires_at, oa_id: v.oa_id, add_friend_url: v.add_friend_url,
+      };
+    }
+  }
+  throw conflict('code_generation_failed');
+}))));
+
+router.put('/line/prefs', h(async (req) => db(req, async (c, farmer) => {
+  const b = (req.body || {}).prefs || {};
+  const prefs = {};
+  notify.PREF_KINDS.forEach((k) => { if (k in b) prefs[k] = !!b[k]; });
+  const r = await c.query(
+    'UPDATE dairy.line_link SET prefs = prefs || $2::jsonb, updated_at=now() WHERE farmer_id=$1 RETURNING active, linked_at, prefs',
+    [farmer, JSON.stringify(prefs)],
+  );
+  if (!r.rows.length) throw notFound('line_not_linked');
+  return lineView(r.rows[0]);
+})));
+
+router.post('/line/unlink', h(async (req) => db(req, async (c, farmer) => {
+  await c.query('DELETE FROM dairy.line_link WHERE farmer_id=$1', [farmer]);
+  return lineView(null);
+})));
+
+router.post('/line/test', h(async (req) => db(req, async (c, farmer) => {
+  const link = (await c.query('SELECT active FROM dairy.line_link WHERE farmer_id=$1', [farmer])).rows[0];
+  if (!link || !link.active) throw conflict('line_not_linked');
+  await notify.add(c, {
+    farmerId: farmer, kind: 'test', title: 'ทดสอบการแจ้งเตือน', body: 'ถ้าเห็นข้อความนี้ แปลว่า LINE รับแจ้งเตือนจาก AgroLink ได้แล้ว',
+  });
+  return { queued: true };
 })));
 
 module.exports = router;
