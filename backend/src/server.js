@@ -31,6 +31,7 @@ const farmerMachineryRouter = require('./routes/farmermachinery');
 const farmerVenueRouter = require('./routes/farmervenue');
 const coopCollectionRouter = require('./routes/coopcollection');
 const plotAiRouters = require('./routes/plotai');
+const dairyDirectoryRouters = require('./routes/dairydirectory');
 const governmentRouter = require('./routes/government');
 // oae.js — สศก. (Office of Agricultural Economics) Data Portal, the
 // officer-facing half of grant_oae_data_portal.sql's oae.* schema. A
@@ -189,6 +190,10 @@ app.use('/buyer', buyerRouter);
 // own middleware.
 app.use('/coop/plot-ai', plotAiRouters.coop);
 app.use('/admin/plot-ai', plotAiRouters.admin);
+// dairydirectory.js — ทะเบียนตลาดน้ำนมดิบระดับประเทศ (grant_dairy_market_directory.sql).
+// Also mounted before '/admin' and '/dairy' for the same reason as plotai.js.
+app.use('/admin/dairy-directory', dairyDirectoryRouters.admin);
+app.use('/dairy/market-directory', dairyDirectoryRouters.coop);
 // coopcollection.js — M09 Collection & Quality station for cooperatives
 // (identity.organization_role.role_type = 'Cooperative'). Mounted at its
 // own '/coop' prefix rather than sharing '/buyer' — a cooperative's

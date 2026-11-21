@@ -204,7 +204,14 @@ grant_dairy_cooperative.sql
 seed_province_all_77.sql
 grant_satellite_observation_delete.sql
 grant_plot_ai.sql
+grant_dairy_market_directory.sql
+seed_dairy_market_directory_v0_1.sql
 ```
+
+**เพิ่มเมื่อ 2026-11-21: ทะเบียนตลาดน้ำนมดิบระดับประเทศ (AgroLink National Dairy โมดูล 04)** — รัน 2 ไฟล์ตามลำดับ
+(`set PGCLIENTENCODING=UTF8` ก่อน รันซ้ำได้): `grant_dairy_market_directory.sql` (ตาราง) แล้ว `seed_dairy_market_directory_v0_1.sql`
+(93 รายการตั้งต้นจากไฟล์ AgroLink_National_Dairy_Buyer_Master_Database_v0.1.xlsx — สถานะทุกรายการ "ยังไม่ติดต่อ")
+หน้าใช้งาน: แอดมิน › 🥛 ทะเบียนตลาดน้ำนม และพอร์ทัลโคนมของสหกรณ์ › 📇 ทำเนียบผู้รับซื้อ (เห็นเฉพาะรายที่ยืนยันข้อมูลแล้ว)
 
 **เพิ่มเมื่อ 2026-11-17: AI วิเคราะห์แปลง (AgroLink SatAI กลุ่มที่ 1)** — รันไฟล์ใหม่ `grant_plot_ai.sql` หนึ่งครั้ง
 (ไฟล์มีภาษาไทย ต้อง `set PGCLIENTENCODING=UTF8` ก่อน รันซ้ำได้) ไฟล์นี้:

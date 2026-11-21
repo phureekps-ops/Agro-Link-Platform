@@ -20,6 +20,7 @@ const ADMIN_PAGE_BREADCRUMB_TH = {
   "field-survey": "แบบสำรวจภาคสนาม (RAP-T)",
   satellite: "ข้อมูลดาวเทียม",
   "plot-ai": "AI วิเคราะห์แปลง",
+  "dairy-directory": "ทะเบียนตลาดน้ำนม",
   "featured-listings": "รายการแนะนำ",
   "group-buys": "รวมออเดอร์ประมูลร่วม",
   "capital-topup": "เติมทุนหมุนเวียนสหกรณ์",
@@ -3163,4 +3164,15 @@ document.querySelectorAll('[data-page="plot-ai"]').forEach((btn) => btn.addEvent
       v.scrollIntoView({ behavior: "smooth", block: "start" });
     },
   });
+}));
+
+// ============================================================
+// 🥛 ทะเบียนตลาดน้ำนม — AgroLink National Dairy โมดูล 04 (js/dairy-directory.js,
+// backend/src/routes/dairydirectory.js) — โหลดครั้งแรกเมื่อเปิดหน้านี้
+// ============================================================
+let dairyDirectoryMounted = false;
+document.querySelectorAll('[data-page="dairy-directory"]').forEach((btn) => btn.addEventListener("click", () => {
+  if (dairyDirectoryMounted) return;
+  dairyDirectoryMounted = true;
+  AgroLinkDairyDirectory.mount(document.getElementById("dairyDirectoryHost"), { api: AgroLinkAdminAPI });
 }));

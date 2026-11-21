@@ -453,6 +453,23 @@
           <td>${open.length ? `<form data-form="proposeCap" data-cap="${k.capacity_id}" class="mh-row"><select name="offer_id">${opt(open, "offer_id", (o) => `${d(o.start_date)} ${n2(o.kg_per_day)} กก.`)}</select><button class="mh-btn sm">เสนอ</button></form>` : '<small>ประกาศส่วนเกินก่อน</small>'}</td></tr>`))}</div>`;
   };
 
+  // ---- ทำเนียบผู้รับซื้อ (GET /dairy/market-directory, backend/src/routes/dairydirectory.js) ----
+  PAGES.buyers = async (sec) => {
+    const KIND = { dpo: "อ.ส.ค.", processor: "โรงงาน/ผู้รับซื้อเอกชน", school_milk_operator: "ผู้ประกอบการนมโรงเรียน", other: "อื่น ๆ" };
+    const BUY = { yes: pill("รับซื้อน้ำนมดิบ", "ok"), no: "ไม่รับซื้อน้ำนมดิบ", unknown: "ยังไม่ทราบ" };
+    const rows = await API.get("/dairy/market-directory");
+    sec.innerHTML = `
+      <div class="mh-card"><h3>ผู้รับซื้อที่ทีม AgroLink ยืนยันข้อมูลแล้ว</h3>
+        <p class="mh-note">รายชื่อจากทะเบียนตลาดน้ำนมดิบระดับประเทศของ AgroLink เฉพาะรายที่ทีมติดต่อและยืนยันข้อมูลแล้ว ใช้หาตลาดเพิ่มหรือเสนอขายนมส่วนเกิน
+          รายที่ใช้ AgroLink แล้วจะเห็นประกาศใน 🔁 ตลาดนมส่วนเกินของสหกรณ์โดยตรง</p>
+        ${rows.length ? table(["ชื่อ", "ประเภท", "จังหวัด", "รับซื้อ", "ติดต่อ", "มาตรฐาน", "ยืนยันเมื่อ"], rows.map((r) => `<tr>
+          <td>${esc(r.name)}${r.on_agrolink ? " " + pill("ใช้ AgroLink", "ok") : ""}</td><td>${KIND[r.entry_kind] || esc(r.entry_kind)}</td><td>${esc(r.province_name_th || "-")}</td>
+          <td>${BUY[r.buys_raw_milk] || "-"}</td>
+          <td><small>${[r.phone, r.email].filter(Boolean).map(esc).join("<br>") || "-"}${r.website ? `<br><a href="${esc(r.website)}" target="_blank" rel="noopener">เว็บไซต์</a>` : ""}</small></td>
+          <td><small>${esc(r.quality_standard || "-")}</small></td><td>${d(r.last_verified_on)}</td></tr>`))
+        : '<div class="mh-empty">ยังไม่มีผู้รับซื้อที่ยืนยันข้อมูลแล้ว — ทีม AgroLink กำลังติดต่อและจะเพิ่มรายชื่อให้เรื่อย ๆ</div>'}</div>`;
+  };
+
   // ---- อาหารสัตว์ ----
   PAGES.feed = async (sec) => {
     const [items, pos, issues, sups, ms] = await Promise.all([API.get("/dairy/items"), API.get("/dairy/purchase-orders"), API.get("/dairy/issues"), partners("feed_supplier"), members()]);
