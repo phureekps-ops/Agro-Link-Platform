@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AgroLink — เลือกพอร์ทัลเข้าสู่ระบบ</title>
+<title>AgroLink — เข้าสู่ระบบ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
@@ -42,16 +42,52 @@
     margin: 22px 0 8px;
   }
   .portal-section-label:first-of-type { margin-top: 6px; }
+  .portal-page .login-card { max-width: 560px; }
+  .portal-page .login-card.wide { max-width: 900px; }
+  .portal-card.pending { opacity: .6; cursor: default; }
+  .portal-card.pending:hover { transform: none; border-color: var(--gray-300); background: var(--gray-50); }
+  .portal-card .tag { display: inline-block; margin-left: 6px; font-size: 11.5px; font-weight: 600; color: #b54708; background: #fef0c7; border-radius: 999px; padding: 1px 8px; }
+  .who-line { font-size: 13.5px; color: var(--gray-500); margin: 4px 0 10px; }
+  .who-line b { color: var(--green-900); }
+  .manual-link { display: block; text-align: center; font-size: 12.5px; color: var(--gray-500); margin-top: 14px; }
+  #allPortals { display: none; }
+  #allPortals.show { display: block; }
 </style>
 </head>
 <body class="login-page portal-page">
-  <div class="login-card">
+  <div class="login-card" id="card">
     <div class="login-brand">
       <span class="leaf">🌾</span>
       <h1>AgroLink Platform</h1>
     </div>
-    <p class="login-sub">เลือกพอร์ทัลที่ต้องการเข้าสู่ระบบ — แต่ละบทบาทมีหน้าเข้าสู่ระบบและแดชบอร์ดของตัวเอง</p>
+    <p class="login-sub">เข้าสู่ระบบด้วยบัญชีเดียว ระบบจะพาท่านไปยังพอร์ทัลของบทบาทท่านโดยอัตโนมัติ</p>
 
+    <div id="errorBox" class="error-box"></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="claimInput">รหัสยืนยันตัวตน (จากระบบยืนยันตัวตนกลาง)</label>
+        <input type="text" id="claimInput" placeholder="เช่น oidc|farmer-001" autocomplete="off" required />
+        <div class="hint">
+          หมายเหตุ: ระบบยืนยันตัวตน (OIDC) จริงยังไม่ได้เชื่อมต่อในสภาพแวดล้อมนี้ —
+          ช่องนี้จำลองค่า <code>sub claim</code> ที่ปกติจะมาจากโทเค็นที่ยืนยันตัวตนแล้วจากผู้ให้บริการภายนอก
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ</button>
+    </form>
+
+    <div id="myPortals" style="display:none">
+      <div class="who-line" id="whoLine"></div>
+      <div class="portal-grid" id="myPortalGrid"></div>
+      <a href="login.html" class="manual-link" id="switchAccount">เข้าสู่ระบบด้วยบัญชีอื่น</a>
+    </div>
+
+    <div class="divider">ยังไม่มีบัญชี?</div>
+    <a href="register.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">สมัครสมาชิกเกษตรกร</a>
+    <a href="register-provider.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">สมัครเป็นผู้ให้บริการ</a>
+
+    <a href="login.html?all=1" class="manual-link" id="showAll">เลือกพอร์ทัลเอง (สำหรับทีมงานและผู้ทดสอบ)</a>
+    <div id="allPortals">
     <div class="portal-section-label">เกษตรกร</div>
     <div class="portal-grid">
       <a href="farmer-login.html" class="portal-card featured">
@@ -151,10 +187,79 @@
       </a>
     </div>
 
-    <div class="divider">ยังไม่มีบัญชี?</div>
-    <a href="register.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">สมัครสมาชิกเกษตรกร</a>
-    <a href="register-provider.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">สมัครเป็นผู้ให้บริการ</a>
+    </div>
   </div>
+<script>
+/**
+ * เข้าสู่ระบบช่องเดียว: POST /auth/login แล้ว GET /auth/my-portals
+ * (backend/src/routes/portals.js) เพื่อรู้ว่าบัญชีนี้ใช้พอร์ทัลไหนได้บ้าง
+ * แล้วเก็บ session ไว้ใน localStorage key ของแต่ละพอร์ทัลนั้น — ทุกพอร์ทัล
+ * เก็บผลจาก /auth/login แบบเดียวกันอยู่แล้ว จึงเปิดพอร์ทัลได้ทันทีโดยไม่ต้อง
+ * เข้าสู่ระบบซ้ำ หน้าเข้าสู่ระบบของแต่ละพอร์ทัลยังใช้ได้ตามเดิม
+ */
+(function () {
+  "use strict";
+  var API_BASE = (["localhost", "127.0.0.1"].indexOf(window.location.hostname) >= 0)
+    ? "http://localhost:4000"
+    : "https://agrolink-backend-vhv6.onrender.com";
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  function showError(msg) { $("errorBox").textContent = msg; $("errorBox").classList.add("show"); }
+
+  if (new URLSearchParams(window.location.search).get("all") === "1") {
+    $("allPortals").classList.add("show"); $("card").classList.add("wide"); $("showAll").style.display = "none";
+  }
+
+  async function login(claim) {
+    $("errorBox").classList.remove("show");
+    $("loginBtn").disabled = true;
+    try {
+      var res = await fetch(API_BASE + "/auth/login", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ external_subject_claim: claim }),
+      });
+      var session = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        showError(session.error === "unrecognized_subject_claim" ? "ไม่พบบัญชีที่ตรงกับรหัสยืนยันตัวตนนี้ในระบบ" : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        return;
+      }
+      var r2 = await fetch(API_BASE + "/auth/my-portals", { headers: { Authorization: "Bearer " + session.access_token } });
+      var mine = await r2.json().catch(function () { return {}; });
+      if (!r2.ok) { showError("เข้าสู่ระบบแล้ว แต่ดึงรายการพอร์ทัลไม่สำเร็จ — ใช้ \"เลือกพอร์ทัลเอง\" ด้านล่าง"); return; }
+      var ready = mine.portals.filter(function (p) { return p.status === "ready"; });
+      ready.forEach(function (p) { localStorage.setItem(p.storage_key, JSON.stringify(session)); });
+      if (ready.length === 1 && mine.portals.length === 1) { window.location.href = ready[0].url; return; }
+      render(mine);
+    } catch (e) {
+      showError("เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      $("loginBtn").disabled = false;
+    }
+  }
+
+  function render(mine) {
+    $("loginForm").style.display = "none";
+    $("myPortals").style.display = "block";
+    var who = mine.display_name ? "<b>" + esc(mine.display_name) + "</b>" : "บัญชีนี้";
+    if (mine.org_name) who += " · " + esc(mine.org_name);
+    if (!mine.portals.length) {
+      $("whoLine").innerHTML = who + " — ยังไม่มีพอร์ทัลที่เปิดใช้งานได้ ถ้าเพิ่งสมัคร บทบาทของท่านอาจยังรอทีม AgroLink อนุมัติ";
+      return;
+    }
+    $("whoLine").innerHTML = who + " — เลือกพอร์ทัลที่ต้องการ";
+    $("myPortalGrid").innerHTML = mine.portals.map(function (p) {
+      var inner = '<span class="icon">' + esc(p.icon) + '</span><span><span class="label">' + esc(p.name_th) +
+        (p.status === "pending" ? '<span class="tag">รออนุมัติ</span>' : "") + '</span><span class="desc">' + esc(p.desc_th) + "</span></span>";
+      return p.status === "ready" ? '<a class="portal-card" href="' + esc(p.url) + '">' + inner + "</a>" : '<div class="portal-card pending">' + inner + "</div>";
+    }).join("");
+  }
+
+  $("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var claim = $("claimInput").value.trim();
+    if (claim) login(claim);
+  });
+})();
+</script>
 <script src="js/track.js"></script>
 </body>
 </html>

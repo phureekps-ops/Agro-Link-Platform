@@ -32,6 +32,7 @@ const farmerVenueRouter = require('./routes/farmervenue');
 const coopCollectionRouter = require('./routes/coopcollection');
 const plotAiRouters = require('./routes/plotai');
 const dairyDirectoryRouters = require('./routes/dairydirectory');
+const portalsRouter = require('./routes/portals');
 const governmentRouter = require('./routes/government');
 // oae.js — สศก. (Office of Agricultural Economics) Data Portal, the
 // officer-facing half of grant_oae_data_portal.sql's oae.* schema. A
@@ -151,6 +152,8 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'agrolink-farmer-portal-api' });
 });
 
+// portals.js — GET /auth/my-portals for the single login box on login.html
+app.use('/auth/my-portals', portalsRouter.router);
 app.use('/auth', authRouter);
 app.use('/farmer', farmerRouter);
 // stagecalendar.js (crop-cycle/stage endpoints) and fertilizer.js (soil

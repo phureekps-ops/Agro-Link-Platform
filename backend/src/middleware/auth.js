@@ -241,4 +241,7 @@ module.exports = {
   requireAuth, requireFarmer, requireOrganization, requirePlatform,
   requireGovernmentOfficer, requireOrganizationMember,
   requireOrganizationOrStaff, resolveEffectiveOrgSubject,
+  // read by routes/portals.js (GET /auth/my-portals) so it lists the same
+  // modules a staff login will actually be let into
+  STAFF_ROLE_TO_BUSINESS_ROLES,
 };
