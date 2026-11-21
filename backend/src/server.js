@@ -160,6 +160,13 @@ app.get('/health', (_req, res) => {
 // portals.js — GET /auth/my-portals for the single login box on login.html
 app.use('/auth/my-portals', portalsRouter.router);
 app.use('/auth', authRouter);
+// ldd.js — ข้อมูลดินกรมพัฒนาที่ดินสำหรับปุ๋ยสั่งตัด (grant_fertilizer_ldd.sql).
+// Mounted before '/farmer' and '/admin' for the same reason as plotai.js.
+const lddRouters = require('./routes/ldd');
+
+app.use('/farmer/ldd', lddRouters.farmer);
+app.use('/admin/ldd', lddRouters.admin);
+
 app.use('/farmer', farmerRouter);
 // stagecalendar.js (crop-cycle/stage endpoints) and fertilizer.js (soil
 // test, fertilizer-formula calculator, and fertilizer-mixing-order

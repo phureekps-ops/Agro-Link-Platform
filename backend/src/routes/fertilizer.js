@@ -19,7 +19,7 @@ router.use(requireAuth, requireFarmer);
 // placeholder-data caveat on production.crop_nutrient_requirement.
 // ---------------------------------------------------------------------
 const SOIL_LEVELS = ['low', 'medium', 'high'];
-const SOIL_SOURCES = ['manual', 'ldd_baseline'];
+const SOIL_SOURCES = ['manual', 'ldd_baseline', 'ldd_lab', 'ldd_testkit', 'ldd_nearby'];
 
 // Soil-test-level adjustment for P and K: a "low" reading means the soil
 // already has little of that nutrient, so the crop needs MORE than the
@@ -106,7 +106,7 @@ router.get('/soil-tests', async (req, res, next) => {
 
       const { rows } = await client.query(
         `SELECT soil_test_id, unit_id, tested_at, n_level, p_level, k_level,
-                ph_value, organic_matter_pct, n_ppm, p_ppm, k_ppm, source, notes, created_at
+                ph_value, organic_matter_pct, n_ppm, p_ppm, k_ppm, source, source_detail, notes, created_at
            FROM production.soil_test
           WHERE unit_id = $1
           ORDER BY tested_at DESC`,
@@ -141,7 +141,7 @@ router.post('/soil-tests', async (req, res, next) => {
     unit_id: unitId, n_level: nLevel, p_level: pLevel, k_level: kLevel,
     ph_value: phValue, organic_matter_pct: organicMatterPct,
     n_ppm: nPpm, p_ppm: pPpm, k_ppm: kPpm,
-    source, notes,
+    source, notes, source_detail: sourceDetail,
   } = req.body || {};
 
   if (!unitId || !nLevel || !pLevel || !kLevel) {
@@ -156,6 +156,11 @@ router.post('/soil-tests', async (req, res, next) => {
   if (source !== undefined && source !== null && !SOIL_SOURCES.includes(source)) {
     return res.status(400).json({ error: 'invalid_source', valid: SOIL_SOURCES });
   }
+  // where the numbers came from (LDD report no., nearby LDD point …) — small plain object only
+  if (sourceDetail !== undefined && sourceDetail !== null
+    && (typeof sourceDetail !== 'object' || Array.isArray(sourceDetail) || JSON.stringify(sourceDetail).length > 2000)) {
+    return res.status(400).json({ error: 'invalid_source_detail' });
+  }
 
   try {
     const result = await withSessionContext('farmer', subjectId, async (client) => {
@@ -167,15 +172,16 @@ router.post('/soil-tests', async (req, res, next) => {
 
       const { rows } = await client.query(
         `INSERT INTO production.soil_test
-           (unit_id, n_level, p_level, k_level, ph_value, organic_matter_pct, n_ppm, p_ppm, k_ppm, source, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, 'manual'), $11)
+           (unit_id, n_level, p_level, k_level, ph_value, organic_matter_pct, n_ppm, p_ppm, k_ppm, source, notes, source_detail)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, 'manual'), $11, $12::jsonb)
          RETURNING soil_test_id, unit_id, tested_at, n_level, p_level, k_level,
-                   ph_value, organic_matter_pct, n_ppm, p_ppm, k_ppm, source, notes, created_at`,
+                   ph_value, organic_matter_pct, n_ppm, p_ppm, k_ppm, source, source_detail, notes, created_at`,
         [
           unitId, nLevel, pLevel, kLevel,
           phValue ?? null, organicMatterPct ?? null,
           nPpm ?? null, pPpm ?? null, kPpm ?? null,
           source || null, notes || null,
+          sourceDetail ? JSON.stringify(sourceDetail) : null,
         ],
       );
       await logAccess(client, 'write', 'production.soil_test', rows[0].soil_test_id);

@@ -14,6 +14,7 @@ const FARMER_PAGE_BREADCRUMB_TH = {
   notifications: "แจ้งเตือนที่ยังไม่อ่าน",
   "group-order": "รวมออเดอร์ซื้อสินค้าเกษตร",
   oae: "ข้อมูลเศรษฐกิจการเกษตร (สศก.)",
+  fertilizer: "ปุ๋ยสั่งตัด (ข้อมูลดิน กพด.)",
 };
 
 function showFarmerPage(pageKey) {
@@ -31,6 +32,14 @@ function showFarmerPage(pageKey) {
 document.querySelectorAll("[data-page]").forEach((btn) => {
   btn.addEventListener("click", () => showFarmerPage(btn.dataset.page));
 });
+
+// 🧪 ปุ๋ยสั่งตัด (ข้อมูลดิน กพด.) — js/farmer-fertilizer.js, mounted on first open
+let farmerFertilizerMounted = false;
+document.querySelectorAll('[data-page="fertilizer"]').forEach((btn) => btn.addEventListener("click", () => {
+  if (farmerFertilizerMounted || !window.AgroLinkFarmerFertilizer) return;
+  farmerFertilizerMounted = true;
+  window.AgroLinkFarmerFertilizer.mount(document.getElementById("farmerFertilizerHost"));
+}));
 
 const toastEl = document.getElementById("toast");
 function toast(message, isError = false) {

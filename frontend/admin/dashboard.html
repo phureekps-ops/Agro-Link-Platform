@@ -93,6 +93,7 @@
           <button type="button" class="admin-nav-item" data-page="field-survey">📋 แบบสำรวจภาคสนาม (RAP-T)</button>
           <button type="button" class="admin-nav-item" data-page="satellite">🛰️ ข้อมูลดาวเทียม</button>
           <button type="button" class="admin-nav-item" data-page="plot-ai">🤖 AI วิเคราะห์แปลง</button>
+          <button type="button" class="admin-nav-item" data-page="ldd-soil">🧪 ข้อมูลดิน กพด. (ปุ๋ยสั่งตัด)</button>
           <button type="button" class="admin-nav-item" data-page="agrimap">🌊 น้ำ/ความเสี่ยงภูมิอากาศ (Agri-Map)</button>
         </div>
         <div class="admin-nav-group">
@@ -683,6 +684,11 @@
     </div>
       </div>
 
+      <div class="admin-page" data-page-content="ldd-soil" style="display:none;">
+    <div class="section-title">🧪 ข้อมูลดินกรมพัฒนาที่ดิน (ปุ๋ยสั่งตัด)</div>
+    <div id="lddSoilHost"></div>
+      </div>
+
       <div class="admin-page" data-page-content="dairy-directory" style="display:none;">
     <div class="section-title">🥛 ทะเบียนตลาดน้ำนมดิบ (AgroLink National Dairy)</div>
     <div id="dairyDirectoryHost"></div>
@@ -1072,6 +1078,7 @@
   <script src="../js/satellite-viewer.js"></script>
   <script src="../js/plot-ai-panel.js"></script>
   <script src="js/dairy-directory.js"></script>
+  <script src="js/ldd-soil.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

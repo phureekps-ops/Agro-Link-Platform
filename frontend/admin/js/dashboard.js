@@ -21,6 +21,7 @@ const ADMIN_PAGE_BREADCRUMB_TH = {
   satellite: "ข้อมูลดาวเทียม",
   "plot-ai": "AI วิเคราะห์แปลง",
   "dairy-directory": "ทะเบียนตลาดน้ำนม",
+  "ldd-soil": "ข้อมูลดิน กพด. (ปุ๋ยสั่งตัด)",
   "featured-listings": "รายการแนะนำ",
   "group-buys": "รวมออเดอร์ประมูลร่วม",
   "capital-topup": "เติมทุนหมุนเวียนสหกรณ์",
@@ -3175,4 +3176,14 @@ document.querySelectorAll('[data-page="dairy-directory"]').forEach((btn) => btn.
   if (dairyDirectoryMounted) return;
   dairyDirectoryMounted = true;
   AgroLinkDairyDirectory.mount(document.getElementById("dairyDirectoryHost"), { api: AgroLinkAdminAPI });
+}));
+
+// ============================================================
+// 🧪 ข้อมูลดิน กพด. (js/ldd-soil.js, backend/src/routes/ldd.js) — โหลดครั้งแรกเมื่อเปิดหน้านี้
+// ============================================================
+let lddSoilMounted = false;
+document.querySelectorAll('[data-page="ldd-soil"]').forEach((btn) => btn.addEventListener("click", () => {
+  if (lddSoilMounted) return;
+  lddSoilMounted = true;
+  AgroLinkLddSoil.mount(document.getElementById("lddSoilHost"), { api: AgroLinkAdminAPI });
 }));

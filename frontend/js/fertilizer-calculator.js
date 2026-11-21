@@ -102,7 +102,7 @@ document.getElementById("calcUnitSelect").addEventListener("change", onUnitChang
 function soilTestCard(t) {
   return `
     <div class="item-card">
-      <div class="row"><span class="title">ตรวจเมื่อ ${thaiDate(t.tested_at)}</span><span class="badge status-active">${t.source === "ldd_baseline" ? "ข้อมูล LDD" : "บันทึกเอง"}</span></div>
+      <div class="row"><span class="title">ตรวจเมื่อ ${thaiDate(t.tested_at)}</span><span class="badge status-active">${({ ldd_baseline: "ข้อมูล LDD", ldd_lab: "ใบรายงานแล็บ กพด.", ldd_testkit: "LDD Test Kit", ldd_nearby: "ค่าดิน กพด. ใกล้แปลง" })[t.source] || "บันทึกเอง"}</span></div>
       <div class="detail-line">N: ${escapeHtml(SOIL_LEVEL_LABEL[t.n_level] || t.n_level)} · P: ${escapeHtml(SOIL_LEVEL_LABEL[t.p_level] || t.p_level)} · K: ${escapeHtml(SOIL_LEVEL_LABEL[t.k_level] || t.k_level)}</div>
       ${t.organic_matter_pct !== null && t.organic_matter_pct !== undefined ? `<div class="detail-line">อินทรียวัตถุ: ${Number(t.organic_matter_pct).toLocaleString("th-TH")}%</div>` : ""}
       ${t.ph_value !== null && t.ph_value !== undefined ? `<div class="detail-line">pH: ${Number(t.ph_value).toLocaleString("th-TH")}</div>` : ""}

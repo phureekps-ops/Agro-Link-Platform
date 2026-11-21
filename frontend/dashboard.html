@@ -89,6 +89,10 @@
           <button type="button" class="farmer-nav-item" data-page="contracts">📄 สัญญา</button>
         </div>
         <div class="farmer-nav-group">
+          <div class="farmer-nav-group-title">ดินและปุ๋ย</div>
+          <button type="button" class="farmer-nav-item" data-page="fertilizer">🧪 ปุ๋ยสั่งตัด (ข้อมูลดิน กพด.)</button>
+        </div>
+        <div class="farmer-nav-group">
           <div class="farmer-nav-group-title">การเงิน</div>
           <button type="button" class="farmer-nav-item" data-page="loans">🏦 คำขอสินเชื่อ</button>
         </div>
@@ -219,6 +223,10 @@
     </div>
       </div>
 
+      <div class="farmer-page" data-page-content="fertilizer" style="display:none;">
+        <div id="farmerFertilizerHost"><div class="loading-line">กำลังโหลด…</div></div>
+      </div>
+
       <div class="farmer-page" data-page-content="group-order" style="display:none;">
         <div id="groupOrderWidget"></div>
       </div>
@@ -262,6 +270,7 @@
   <script src="js/districts.js"></script>
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/farmer-fertilizer.js"></script>
   <script src="js/support-widget.js"></script>
   <script src="js/group-order-widget.js"></script>
 <script src="js/track.js"></script>

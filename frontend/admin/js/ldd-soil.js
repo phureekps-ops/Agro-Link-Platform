@@ -1,0 +1,61 @@
+/**
+ * แอดมิน › 🧪 ข้อมูลดิน กพด. — สถานะการดึงผลวิเคราะห์ดินสาธารณะของกรมพัฒนาที่ดิน
+ * API: /admin/ldd/status, /admin/ldd/sync (backend/src/routes/ldd.js)
+ * ใช้ตรวจว่าเชื่อม osd101.ldd.go.th ได้จริง และชื่อรายการวิเคราะห์ใดที่ระบบยังแปลงเป็น pH/OM/N/P/K ไม่ได้
+ * AgroLinkLddSoil.mount(host, { api })
+ */
+(function () {
+  "use strict";
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const when = (v) => (v ? new Date(v).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "-");
+  const n = (v) => (v == null ? "-" : Number(v).toLocaleString("th-TH"));
+
+  function mount(host, { api }) {
+    const provinces = typeof TH_PROVINCES !== "undefined" ? TH_PROVINCES : []; // ../js/provinces.js
+    host.innerHTML = `
+      <p style="font-size:13px;color:#667085;margin:-6px 0 14px;line-height:1.6">ค่าดินใกล้แปลงในเมนู "ปุ๋ยสั่งตัด" ของเกษตรกรมาจากชุดข้อมูลเปิด
+        <a href="https://lddcatalog.ldd.go.th/en/dataset/osd01" target="_blank" rel="noopener">การตรวจวิเคราะห์ดิน (osd01)</a> ของกรมพัฒนาที่ดิน
+        ระบบดึงรายจังหวัดเมื่อมีเกษตรกรขอครั้งแรก และดึงใหม่เมื่อเก่ากว่า 7 วัน กด "ดึงข้อมูลตอนนี้" เพื่อทดสอบการเชื่อมต่อ</p>
+      <div style="background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:16px 18px;margin-bottom:16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <label style="display:flex;flex-direction:column;font-size:13px;font-weight:600;gap:4px">จังหวัด
+            <select id="lddProv" style="font:inherit;padding:8px;border-radius:8px;border:1px solid #d0d5dd">${provinces.map(([c, nm]) => `<option value="${esc(c)}">${esc(nm)}</option>`).join("")}</select></label>
+          <button type="button" id="lddSync" class="btn btn-primary" style="padding:9px 16px">ดึงข้อมูลตอนนี้</button>
+        </div>
+        <div id="lddSyncOut" style="margin-top:10px;font-size:13.5px"></div>
+      </div>
+      <div id="lddStatus"></div>`;
+    const $ = (s) => host.querySelector(s);
+
+    async function load() {
+      const el = $("#lddStatus");
+      try {
+        const d = await api.get("/admin/ldd/status");
+        el.innerHTML = `<p style="font-size:12.5px;color:#667085">URL ที่ใช้: <code>${esc(d.api_url_template)}</code> (เปลี่ยนได้ด้วยตัวแปร LDD_SOIL_API_URL บน Render)</p>
+          ${d.provinces.length ? `<div style="overflow-x:auto"><table class="data-table" style="width:100%;font-size:13px"><thead><tr><th>จังหวัด</th><th>ดึงล่าสุด</th><th>สถานะ</th><th>แถวที่ได้</th><th>ใช้ได้</th><th>จุดเก็บตัวอย่าง</th><th>ชื่อรายการที่ยังแปลงไม่ได้</th></tr></thead><tbody>
+          ${d.provinces.map((p) => `<tr><td>${esc(p.province)}</td><td>${when(p.fetched_at)}</td><td>${p.status === "ok" ? "✅ สำเร็จ" : `❌ ${esc(p.error)}`}</td>
+            <td>${n(p.rows_received)}</td><td>${n(p.rows_used)}</td><td>${n(p.cached_samples)}</td>
+            <td>${p.unmapped && Object.keys(p.unmapped).length ? Object.entries(p.unmapped).map(([k, v]) => `${esc(k)} (${n(v)})`).join(", ") : "-"}</td></tr>`).join("")}
+          </tbody></table></div>` : '<div class="empty-state">ยังไม่เคยดึงข้อมูลจังหวัดใด</div>'}`;
+      } catch (e) {
+        el.innerHTML = `<div class="empty-state">${e.body && e.body.error === "ldd_not_installed" ? "ยังไม่ได้รัน grant_fertilizer_ldd.sql บนฐานข้อมูล" : esc(e.message)}</div>`;
+      }
+    }
+
+    $("#lddSync").addEventListener("click", async (ev) => {
+      const btn = ev.currentTarget; const out = $("#lddSyncOut");
+      btn.disabled = true; out.textContent = "กำลังดึงข้อมูลจากกรมพัฒนาที่ดิน…";
+      try {
+        const r = await api.post("/admin/ldd/sync", { province_code: $("#lddProv").value });
+        out.innerHTML = r.status === "ok"
+          ? `✅ ${esc(r.province)}: ได้ ${n(r.rows_received)} แถว ใช้ได้ ${n(r.rows_used)} แถว รวมเป็น ${n(r.samples)} จุดเก็บตัวอย่าง`
+          : `❌ ${esc(r.province)}: ${esc(r.error)} — URL ${esc(r.url)}`;
+      } catch (e) { out.textContent = `❌ ${e.body && e.body.error ? e.body.error : e.message}`; }
+      btn.disabled = false;
+      load();
+    });
+    load();
+  }
+
+  window.AgroLinkLddSoil = { mount };
+})();
