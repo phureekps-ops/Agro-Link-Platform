@@ -166,7 +166,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "sh_md_farmos": {"th": "แม่แบบวงจรการผลิตและการวางแผน", "en": "Production-cycle template and planning"},
   "sh_md_finance": {"th": "เชื่อมข้อมูลการผลิตกับผู้ให้บริการทางการเงิน", "en": "Connecting production data with financial providers"},
   "sh_md_investor": {"th": "โมเดลธุรกิจและแผนการเติบโต", "en": "Business model and growth roadmap"},
-  "sh_md_portal": {"th": "เข้าสู่ระบบตามบทบาทของท่าน", "en": "Sign in by your role"},
+  "sh_md_portal": {"th": "พอร์ทัลของแต่ละกลุ่มและการเชื่อมโยง", "en": "Each group's portal and how they connect"},
   "sh_md_verify": {"th": "กลไก MRV และการทวนสอบ", "en": "MRV and verification mechanics"},
   "sh_menu_aria": {"th": "เปิดเมนู", "en": "Open menu"},
   "sh_menu_close_aria": {"th": "ปิดเมนู", "en": "Close menu"},

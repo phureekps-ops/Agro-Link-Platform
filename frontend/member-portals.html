@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>พอร์ทัลสมาชิก — ทุกกลุ่มมีพอร์ทัลของตนเองและเชื่อมถึงกัน | AgroLink Platform</title>
+<meta name="description" content="เกษตรกร สหกรณ์ ผู้ให้บริการ ผู้ซื้อ สถาบันการเงิน และภาครัฐ มีพอร์ทัลของตนเองบน AgroLink และเชื่อมโยงข้อมูลถึงกันเมื่อทำธุรกรรมร่วมกัน">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 40px; width: auto; max-width: none; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* INFOGRAPHIC */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img { display:block; width:100%; height:auto; border-radius:var(--radius); border:1px solid var(--border); box-shadow:0 10px 30px rgba(31,56,100,.12); }
+  .infographic-figure figcaption { margin-top:14px; text-align:center; font-size:13.5px; color:var(--muted); }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / auction-place.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* MEMBER PORTALS */
+  .hero-cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+  .page-header .btn-outline { color:#fff; border-color:rgba(255,255,255,.35); }
+  .page-header .btn-outline:hover { background:rgba(255,255,255,.08); border-color:#fff; }
+  .principle-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  @media (max-width: 900px) { .principle-grid { grid-template-columns:1fr; } }
+  .principle { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:26px; }
+  .principle .num { width:40px; height:40px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .principle h3 { font-size:18px; margin-bottom:8px; }
+  .principle p { font-size:14.5px; color:var(--text); }
+  .group-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  @media (max-width: 1000px) { .group-grid { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width: 640px) { .group-grid { grid-template-columns:1fr; } }
+  .group-card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:22px 22px 18px; display:flex; flex-direction:column; }
+  .group-card h3 { font-size:18px; margin-bottom:4px; display:flex; gap:10px; align-items:center; }
+  .group-card h3 .gi { width:38px; height:38px; border-radius:10px; background:var(--green-light); color:var(--green); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none; }
+  .group-card .gsub { font-size:13.5px; color:var(--muted); margin-bottom:12px; }
+  .portal-item { display:flex; gap:10px; padding:10px 0; border-top:1px solid var(--border); }
+  .portal-item .pi { font-size:20px; line-height:1.3; flex:none; width:26px; text-align:center; }
+  .portal-item b { display:block; font-size:14.5px; color:var(--navy); }
+  .portal-item span { font-size:13.5px; color:var(--text); }
+  .link-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
+  @media (max-width: 860px) { .link-grid { grid-template-columns:1fr; } }
+  .link-card { background:#fff; border:1px solid var(--border); border-left:4px solid var(--gold); border-radius:12px; padding:20px 22px; }
+  .link-card .flow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-bottom:10px; }
+  .link-card .chip { font-size:13px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--green-light); color:var(--green-dark); }
+  .link-card .arr { color:var(--gold); font-weight:800; }
+  .link-card h3 { font-size:16.5px; margin-bottom:6px; }
+  .link-card p { font-size:14.5px; }
+  .trust-list { max-width:860px; margin:0 auto; display:grid; gap:12px; }
+  .trust-list li { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 18px; display:flex; gap:12px; font-size:15px; }
+  .trust-list li i { color:var(--green); margin-top:4px; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/site-header.css">
+<link rel="stylesheet" href="css/site-footer.css">
+</head>
+<body>
+
+<!-- ===== AgroLink shared site header (same on every public page; styles css/site-header.css, behaviour js/site-header.js) ===== -->
+<a class="sh-skip" href="#sh-content" data-i18n="sh_skip">ข้ามไปยังเนื้อหาหลัก</a>
+<header class="sh-header" id="shHeader">
+  <div class="sh-container sh-row">
+    <a class="sh-brand" href="index.html"><img src="assets/agrolink-logo.png" width="284" height="220" alt="AgroLink" /></a>
+    <nav class="sh-nav" id="shNav" data-i18n="sh_nav_aria" data-i18n-attr="aria-label" aria-label="เมนูหลัก">
+      <ul class="sh-list"><li><a class="sh-link" href="index.html" data-sh-home><i class="fa-solid fa-house" aria-hidden="true"></i> <span data-i18n="sh_nav_home">หน้าแรก</span></a></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-eco"><span data-i18n="sh_nav_eco">ระบบนิเวศ</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-eco"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_eco_overview">ภาพรวม</h3><ul><li><a href="index.html#ecosystem"><span class="sh-mi"><i class="fa-solid fa-circle-nodes" aria-hidden="true"></i></span><span><b data-i18n="sh_m_eco">ภาพรวมระบบนิเวศ</b><span class="sh-d" data-i18n="sh_md_eco">AgroLink เชื่อมทุกฝ่ายด้วยข้อมูลเดียวกัน</span></span></a></li><li><a href="coop-portal.html"><span class="sh-mi"><i class="fa-solid fa-people-roof" aria-hidden="true"></i></span><span><b data-i18n="sh_m_coop">สำหรับสหกรณ์</b><span class="sh-d" data-i18n="sh_md_coop">Cooperative Digital Hub</span></span></a></li><li><a href="for-farmers.html"><span class="sh-mi"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span><span><b data-i18n="sh_m_farmer">สำหรับเกษตรกร</b><span class="sh-d" data-i18n="sh_md_farmer">ข้อมูลแปลง การเงิน ตลาด ในที่เดียว</span></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_eco_farmers">เกษตรกรแต่ละกลุ่ม</h3><ul><li><a href="for-farmers-crop.html"><span class="sh-mi"><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_crop">เกษตรกรผู้ปลูกพืช</b></span></a></li><li><a href="for-farmers-livestock.html"><span class="sh-mi"><i class="fa-solid fa-cow" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_live">เกษตรกรผู้เลี้ยงสัตว์บก</b></span></a></li><li><a href="for-farmers-aquaculture.html"><span class="sh-mi"><i class="fa-solid fa-fish" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_aqua">เกษตรกรผู้เลี้ยงสัตว์น้ำ</b></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_eco_partners">ผู้ให้บริการและผู้ซื้อ</h3><ul><li><a href="marketplace-partners.html"><span class="sh-mi"><i class="fa-solid fa-store" aria-hidden="true"></i></span><span><b data-i18n="sh_m_market">ตลาดกลาง / ผู้ซื้อ-โรงงาน</b></span></a></li><li><a href="logistics-portal.html"><span class="sh-mi"><i class="fa-solid fa-truck" aria-hidden="true"></i></span><span><b data-i18n="sh_m_logistics">ผู้ให้บริการขนส่ง</b></span></a></li><li><a href="machinery-portal.html"><span class="sh-mi"><i class="fa-solid fa-tractor" aria-hidden="true"></i></span><span><b data-i18n="sh_m_machinery">ผู้ให้บริการเครื่องจักรกลการเกษตร</b></span></a></li><li><a href="biomass-portal.html"><span class="sh-mi"><i class="fa-solid fa-recycle" aria-hidden="true"></i></span><span><b data-i18n="sh_m_biomass_buyer">ผู้รับซื้อชีวมวล</b></span></a></li><li><a href="technology-partners.html"><span class="sh-mi"><i class="fa-solid fa-microchip" aria-hidden="true"></i></span><span><b data-i18n="sh_m_tech_partner">พันธมิตรเทคโนโลยี</b></span></a></li><li><a href="auction-intro.html"><span class="sh-mi"><i class="fa-solid fa-gavel" aria-hidden="true"></i></span><span><b data-i18n="sh_m_auction">Auction Place ระบบประมูล</b></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_eco_t">เกษตรกรและสหกรณ์คือศูนย์กลาง</b><p data-i18n="sh_mf_eco_d">ทุกบริการทำงานบนโครงสร้างพื้นฐานข้อมูลเดียวกัน</p><a href="index.html#ecosystem"><span data-i18n="sh_mf_eco_l">สำรวจระบบนิเวศ</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-sol"><span data-i18n="sh_nav_sol">โซลูชันธุรกิจ</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-sol"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_sol_crops">พืชเศรษฐกิจครบวงจร</h3><ul><li><a class="sh-plain" href="integrated-rice-business.html"><span data-i18n="sh_m_rice">ธุรกิจข้าวครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-durian-business.html"><span data-i18n="sh_m_durian">ทุเรียนครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-cassava-business.html"><span data-i18n="sh_m_cassava">มันสำปะหลังครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-corn-business.html"><span data-i18n="sh_m_corn">ข้าวโพดครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-sugarcane-business.html"><span data-i18n="sh_m_sugarcane">อ้อยน้ำตาล</span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_sol_more">ไม้ผลและพืชยืนต้น</h3><ul><li><a class="sh-plain" href="integrated-palmoil-business.html"><span data-i18n="sh_m_palm">ปาล์มน้ำมัน</span></a></li><li><a class="sh-plain" href="integrated-longan-business.html"><span data-i18n="sh_m_longan">ลำไย</span></a></li><li><a class="sh-plain" href="integrated-coconut-business.html"><span data-i18n="sh_m_coconut">มะพร้าวน้ำหอมครบวงจร</span></a></li><li><a class="sh-plain" href="rap-t-coffee.html"><span data-i18n="sh_m_coffee">กาแฟ</span></a></li><li><a class="sh-plain" href="custom-fertilizer.html"><span data-i18n="sh_m_fert">ปุ๋ยสั่งตัด</span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_sol_animal">ปศุสัตว์และประมง</h3><ul><li><a class="sh-plain" href="for-farmers-livestock.html"><span data-i18n="sh_m_livestock">ปศุสัตว์</span></a></li><li><a class="sh-plain" href="for-farmers-aquaculture.html"><span data-i18n="sh_m_fishery">ประมง</span></a></li><li><a class="sh-plain" href="rap-t-shrimp.html"><span data-i18n="sh_m_shrimp">กุ้ง</span></a></li><li><a class="sh-plain" href="rap-t-tilapia.html"><span data-i18n="sh_m_tilapia">ปลานิล/ทับทิมกระชัง</span></a></li><li><a class="sh-plain" href="integrated-seabass-business.html"><span data-i18n="sh_m_seabass">ปลากระพง/เก๋ากระชัง</span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_sol_t">โครงการ RAP-T</b><p data-i18n="sh_mf_sol_d">ต่อยอดห่วงโซ่คุณค่าสินค้าเกษตรสำคัญของประเทศ</p><a href="rap-t-project.html"><span data-i18n="sh_mf_sol_l">ดูโครงการ RAP-T</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-tech"><span data-i18n="sh_nav_tech">เทคโนโลยี</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-tech"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_tech">เทคโนโลยีและข้อมูล</h3><ul><li><a href="ai-satellite-guide.html"><span class="sh-mi"><i class="fa-solid fa-satellite" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ai">AI และดาวเทียม</b><span class="sh-d" data-i18n="sh_md_ai">ข้อมูลดาวเทียมและ AI ภาคสนาม</span></span></a></li><li><a href="production-cycle-template.html"><span class="sh-mi"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><span><b data-i18n="sh_m_farmos">Farm OS</b><span class="sh-d" data-i18n="sh_md_farmos">แม่แบบวงจรการผลิตและการวางแผน</span></span></a></li><li><a href="carbon-module-guide.html"><span class="sh-mi"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span><span><b data-i18n="sh_m_verify">ข้อมูลการผลิตและการตรวจสอบ</b><span class="sh-d" data-i18n="sh_md_verify">กลไก MRV และการทวนสอบ</span></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_portal">พอร์ทัลและการใช้งาน</h3><ul><li><a href="member-portals.html"><span class="sh-mi"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i></span><span><b data-i18n="sh_m_portal">พอร์ทัลสมาชิก</b><span class="sh-d" data-i18n="sh_md_portal">พอร์ทัลของแต่ละกลุ่มและการเชื่อมโยง</span></span></a></li><li><a href="demo-preview.html"><span class="sh-mi"><i class="fa-solid fa-route" aria-hidden="true"></i></span><span><b data-i18n="sh_m_demo">ตัวอย่างการใช้งานทีละขั้นตอน</b><span class="sh-d" data-i18n="sh_md_demo">เดินเรื่องการใช้งานจริง 6 ขั้นตอน</span></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_tech_t">AI + Satellite + IoT</b><p data-i18n="sh_mf_tech_d">เปลี่ยนกิจกรรมในแปลงให้เป็นข้อมูลที่ใช้งานได้จริง</p><a href="ai-satellite-guide.html"><span data-i18n="sh_mf_tech_l">เรียนรู้เทคโนโลยี</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-fin"><span data-i18n="sh_nav_fin">การเงินและความยั่งยืน</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-fin"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_fin">การเงินและประกันภัย</h3><ul><li><a href="finance-partners.html"><span class="sh-mi"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span><span><b data-i18n="sh_m_finance">การเงิน</b><span class="sh-d" data-i18n="sh_md_finance">เชื่อมข้อมูลการผลิตกับผู้ให้บริการทางการเงิน</span></span></a></li><li><a href="agri-insurance-ecosystem.html"><span class="sh-mi"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_eco">ภาพรวมระบบนิเวศประกันภัย</b></span></a></li><li><a href="insurance-marketplace.html"><span class="sh-mi"><i class="fa-solid fa-umbrella" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_market">พอร์ทัลประกันภัยเกษตร</b></span></a></li><li><a href="insurance-portal.html"><span class="sh-mi"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_provider">พอร์ทัลผู้ให้บริการประกันภัย</b></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_green">ความยั่งยืน</h3><ul><li><a href="carbon-credit-article.html"><span class="sh-mi"><i class="fa-solid fa-leaf" aria-hidden="true"></i></span><span><b data-i18n="sh_m_carbon">คาร์บอนเครดิต</b><span class="sh-d" data-i18n="sh_md_carbon">นาเปียกสลับแห้ง (AWD) และการทวนสอบ</span></span></a></li><li><a href="biomass-economy.html"><span class="sh-mi"><i class="fa-solid fa-recycle" aria-hidden="true"></i></span><span><b data-i18n="sh_m_bio">เศรษฐกิจชีวมวล</b><span class="sh-d" data-i18n="sh_md_bio">เปลี่ยนวัสดุเหลือใช้เป็นรายได้</span></span></a></li><li><a href="straw-mushroom-cooperative.html"><span class="sh-mi"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span><span><b data-i18n="sh_m_mushroom">เห็ดฟางครบวงจร</b><span class="sh-d" data-i18n="sh_md_mushroom">การผลิตเห็ดฟางแบบใหม่ แบบอานนท์ 2589</span></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_fin_t">AgroLink ไม่ใช่ผู้ให้สินเชื่อ</b><p data-i18n="sh_mf_fin_d">การอนุมัติ วงเงิน และอัตราดอกเบี้ย เป็นการพิจารณาของผู้ให้บริการทางการเงินแต่ละราย</p><a href="finance-partners.html"><span data-i18n="sh_mf_fin_l">ดูพันธมิตรการเงิน</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-about"><span data-i18n="sh_nav_about">เกี่ยวกับเรา</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-about"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_about">บริษัท</h3><ul><li><a href="about-video.html"><span class="sh-mi"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span><span><b data-i18n="sh_m_about_video">เกี่ยวกับ AgroLink (วิดีโอ)</b></span></a></li><li><a href="about.html"><span class="sh-mi"><i class="fa-solid fa-building" aria-hidden="true"></i></span><span><b data-i18n="sh_m_about">ข้อมูลบริษัท</b></span></a></li><li><a href="business-model.html"><span class="sh-mi"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span><span><b data-i18n="sh_m_investor">นักลงทุน</b><span class="sh-d" data-i18n="sh_md_investor">โมเดลธุรกิจและแผนการเติบโต</span></span></a></li><li><a href="contact.html"><span class="sh-mi"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span><span><b data-i18n="sh_m_contact">ติดต่อเรา</b></span></a></li></ul></div></div></div></li></ul>
+      <div class="sh-mobile-cta"><a class="sh-btn sh-btn-ghost" href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a><a class="sh-btn sh-btn-gold" href="demo-preview.html"><span data-i18n="sh_demo">ขอชม Demo</span></a></div>
+    </nav>
+    <div class="sh-actions">
+      <button type="button" class="sh-lang" data-lang-toggle>EN</button>
+      <a class="sh-btn sh-btn-ghost" href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a>
+      <a class="sh-btn sh-btn-gold" href="demo-preview.html"><span data-i18n="sh_demo">ขอชม Demo</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+      <button type="button" class="sh-toggle" id="shToggle" aria-expanded="false" aria-controls="shNav" data-i18n="sh_menu_aria" data-i18n-attr="aria-label" aria-label="เปิดเมนู"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+    </div>
+  </div>
+</header>
+<!-- ===== /shared site header ===== -->
+
+<section class="page-header" id="sh-content">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-diagram-project"></i> <span data-i18n="member-portals_1">พอร์ทัลสมาชิก</span></div>
+    <h1 class="section-title" data-i18n="member-portals_2">ทุกกลุ่มมีพอร์ทัลของตนเอง และเชื่อมถึงกันบนแพลตฟอร์มเดียว</h1>
+    <p class="section-sub" data-i18n="member-portals_3">เกษตรกร สหกรณ์ ผู้ให้บริการ ผู้ซื้อ สถาบันการเงิน และภาครัฐ ต่างบริหารข้อมูลและกิจกรรมของตนเองในพอร์ทัลที่ออกแบบมาสำหรับงานนั้น เมื่อมีธุรกรรมร่วมกัน ข้อมูลจะส่งต่อถึงกันโดยอัตโนมัติ ไม่ต้องกรอกซ้ำ</p>
+    <div class="hero-cta">
+      <a href="login.html" class="btn btn-gold"><i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="member-portals_4">เข้าสู่ระบบพอร์ทัลของท่าน</span></a>
+      <a href="#portal-groups" class="btn btn-outline" data-i18n="member-portals_5">ดูพอร์ทัลทั้งหมด</a>
+    </div>
+  </div>
+</section>
+
+<section class="infographic-wrap">
+  <div class="container">
+    <figure class="infographic-figure reveal in">
+      <a href="assets/agrolink-platform-infographic.jpg" target="_blank" rel="noopener"><img src="assets/agrolink-platform-infographic.jpg" width="1535" height="1024" data-i18n="member-portals_6" data-i18n-attr="alt" alt="อินโฟกราฟิก AgroLink แพลตฟอร์มกลางเชื่อมเกษตรกร สหกรณ์ บริการเกษตร ตลาด การเงิน อุตสาหกรรม และข้อมูลเทคโนโลยี"></a>
+      <figcaption data-i18n="member-portals_7">AgroLink แพลตฟอร์มกลางที่เชื่อมทุกภาคส่วนของภาคเกษตร — แต่ละกลุ่มทำงานในพอร์ทัลของตนเอง บนข้อมูลชุดเดียวกัน</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:32px;">
+      <h2 class="section-title" data-i18n="member-portals_8">หลักการของพอร์ทัลสมาชิก</h2>
+    </div>
+    <div class="principle-grid">
+      <div class="principle reveal in"><div class="num">1</div>
+        <h3 data-i18n="member-portals_9">ข้อมูลของใคร ของคนนั้น</h3>
+        <p data-i18n="member-portals_10">แต่ละองค์กรบริหารข้อมูล กิจกรรม และเจ้าหน้าที่ของตนเองในพอร์ทัลเฉพาะ เช่น สหกรณ์โคนมดูแลรอบรับนมและรอบจ่ายเงิน ผู้ให้บริการเครื่องจักรกลดูแลตารางงาน</p>
+      </div>
+      <div class="principle reveal in"><div class="num">2</div>
+        <h3 data-i18n="member-portals_11">เข้าสู่ระบบช่องเดียว</h3>
+        <p data-i18n="member-portals_12">สมาชิกเข้าสู่ระบบครั้งเดียว ระบบจะแสดงเฉพาะพอร์ทัลที่บัญชีนั้นมีสิทธิ์ องค์กรที่ทำหลายธุรกิจ เช่น สหกรณ์ที่มีทั้งพืชและโคนม สลับพอร์ทัลได้ทันที</p>
+      </div>
+      <div class="principle reveal in"><div class="num">3</div>
+        <h3 data-i18n="member-portals_13">เชื่อมกันเมื่อทำธุรกรรมร่วมกัน</h3>
+        <p data-i18n="member-portals_14">คำสั่งซื้อ สัญญา การจองบริการ และการส่งมอบ ส่งต่อระหว่างพอร์ทัลของคู่ค้าโดยอัตโนมัติ ข้อมูลส่วนอื่นจะเปิดให้อีกฝ่ายเห็นเฉพาะเมื่อเจ้าของข้อมูลยินยอม</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="portal-groups" class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:32px;">
+      <div class="eyebrow"><i class="fa-solid fa-layer-group"></i> <span data-i18n="member-portals_15">19 พอร์ทัล 6 กลุ่ม</span></div>
+      <h2 class="section-title" data-i18n="member-portals_16">พอร์ทัลของสมาชิกแต่ละกลุ่ม</h2>
+      <p class="section-sub" data-i18n="member-portals_17">ทุกพอร์ทัลใช้ข้อมูลกลางชุดเดียวกัน ทั้งภาพดาวเทียม IoT และ AI วิเคราะห์แปลง จึงไม่มีใครต้องสร้างข้อมูลพื้นฐานขึ้นใหม่</p>
+    </div>
+    <div class="group-grid">
+      <div class="group-card reveal in">
+        <h3><span class="gi"><i class="fa-solid fa-people-group"></i></span><span data-i18n="member-portals_18">เกษตรกรและสหกรณ์</span></h3>
+        <div class="gsub" data-i18n="member-portals_19">ผู้ผลิตและองค์กรของผู้ผลิต เจ้าของข้อมูลการผลิตจริง</div>
+        <div class="portal-item"><div class="pi">🌾</div><div><b data-i18n="member-portals_20">เกษตรกร</b><span data-i18n="member-portals_21">แปลงปลูก บันทึกกิจกรรม คะแนนเครดิต สัญญา และคำขอสินเชื่อ</span></div></div>
+        <div class="portal-item"><div class="pi">🤝</div><div><b data-i18n="member-portals_22">สหกรณ์การเกษตร</b><span data-i18n="member-portals_23">ทะเบียนสมาชิก ติดตามแปลงด้วยดาวเทียม รวมคำสั่งซื้อปัจจัย และสินเชื่อสมาชิก</span></div></div>
+        <div class="portal-item"><div class="pi">🐄</div><div><b data-i18n="member-portals_24">สหกรณ์โคนม</b><span data-i18n="member-portals_25">รับน้ำนม คุณภาพและราคา ฝูงโค ส่งโรงงาน และรอบจ่ายเงินสมาชิกผ่าน ธ.ก.ส.</span></div></div>
+        <div class="portal-item"><div class="pi">🏘️</div><div><b data-i18n="member-portals_26">วิสาหกิจชุมชนด้านการเกษตร</b><span data-i18n="member-portals_27">สินเชื่อ เครื่องจักรกล ปัจจัยการผลิต และรับซื้อผลผลิตของชุมชน</span></div></div>
+      </div>
+      <div class="group-card reveal in">
+        <h3><span class="gi"><i class="fa-solid fa-tractor"></i></span><span data-i18n="member-portals_28">บริการเกษตรครบวงจร</span></h3>
+        <div class="gsub" data-i18n="member-portals_29">ผู้ให้บริการที่เกษตรกรและสหกรณ์จองหรือสั่งซื้อได้โดยตรง</div>
+        <div class="portal-item"><div class="pi">🚜</div><div><b data-i18n="member-portals_30">เครื่องจักรกล</b><span data-i18n="member-portals_31">รถไถ โดรน รถเกี่ยวข้าว/ข้าวโพด รถอัดฟางก้อน รถตัดอ้อย — รับจองงานและตารางงาน</span></div></div>
+        <div class="portal-item"><div class="pi">🌱</div><div><b data-i18n="member-portals_32">ผู้จำหน่ายปัจจัยการผลิต</b><span data-i18n="member-portals_33">เมล็ดพันธุ์ ปุ๋ย ยา ประกาศราคา และเข้าร่วมประมูลซื้อของสหกรณ์</span></div></div>
+        <div class="portal-item"><div class="pi">🧪</div><div><b data-i18n="member-portals_34">ผสมปุ๋ยสั่งตัด</b><span data-i18n="member-portals_35">ผสมปุ๋ยตามค่าวิเคราะห์ดินของแต่ละแปลง</span></div></div>
+        <div class="portal-item"><div class="pi">🌞</div><div><b data-i18n="member-portals_36">ลานตาก/โกดังและไซโล</b><span data-i18n="member-portals_37">บริการลานตาก เก็บรักษา และรับฝากผลผลิต</span></div></div>
+      </div>
+      <div class="group-card reveal in">
+        <h3><span class="gi"><i class="fa-solid fa-store"></i></span><span data-i18n="member-portals_38">ตลาดและการซื้อขาย</span></h3>
+        <div class="gsub" data-i18n="member-portals_39">ผู้ซื้อที่เชื่อมกับผลผลิตจริงจากทั่วประเทศ</div>
+        <div class="portal-item"><div class="pi">📦</div><div><b data-i18n="member-portals_40">ผู้รับซื้อผลผลิตการเกษตร</b><span data-i18n="member-portals_41">ประกาศราคารับซื้อ ทำสัญญา ประมูล และรับมอบสินค้า</span></div></div>
+        <div class="portal-item"><div class="pi">🏪</div><div><b data-i18n="member-portals_42">ตลาดค้าส่งพืชผัก</b><span data-i18n="member-portals_43">พื้นที่ซื้อขายและกระจายสินค้าพืชผัก</span></div></div>
+        <div class="portal-item"><div class="pi">🥛</div><div><b data-i18n="member-portals_44">คู่ค้าโคนม</b><span data-i18n="member-portals_45">โรงงานแปรรูปนม ตลาดนมส่วนเกิน ผู้ขายอาหารสัตว์ และสัตวแพทย์</span></div></div>
+      </div>
+      <div class="group-card reveal in">
+        <h3><span class="gi"><i class="fa-solid fa-building-columns"></i></span><span data-i18n="member-portals_46">การเงินและสินเชื่อ</span></h3>
+        <div class="gsub" data-i18n="member-portals_47">แหล่งเงินที่พิจารณาสินเชื่อจากข้อมูลการผลิตจริง</div>
+        <div class="portal-item"><div class="pi">🏦</div><div><b data-i18n="member-portals_48">ผู้ปล่อยกู้</b><span data-i18n="member-portals_49">พิจารณาคำขอ ดูคะแนนเครดิต และติดตามการชำระคืน</span></div></div>
+        <div class="portal-item"><div class="pi">💰</div><div><b data-i18n="member-portals_50">กองทุนหมู่บ้าน</b><span data-i18n="member-portals_51">บริหารเงินกู้และการชำระคืนของสมาชิกกองทุน</span></div></div>
+        <div class="portal-item"><div class="pi">🤲</div><div><b data-i18n="member-portals_52">กองทุนสงเคราะห์เกษตรกร</b><span data-i18n="member-portals_53">สินเชื่อ เครื่องจักรกล ปัจจัยการผลิต และรับซื้อผลผลิต</span></div></div>
+      </div>
+      <div class="group-card reveal in">
+        <h3><span class="gi"><i class="fa-solid fa-industry"></i></span><span data-i18n="member-portals_54">อุตสาหกรรมและห่วงโซ่อุปทาน</span></h3>
+        <div class="gsub" data-i18n="member-portals_55">การขนส่งและการเปลี่ยนวัสดุเหลือใช้ให้เป็นรายได้</div>
+        <div class="portal-item"><div class="pi">🚚</div><div><b data-i18n="member-portals_56">ผู้ให้บริการขนส่ง</b><span data-i18n="member-portals_57">ขนส่งผลผลิต ปุ๋ย และชีวมวล พร้อมเที่ยวรถว่างขากลับ</span></div></div>
+        <div class="portal-item"><div class="pi">♻️</div><div><b data-i18n="member-portals_58">ผู้ผลิตสินค้าจากชีวมวล</b><span data-i18n="member-portals_59">ฟางอัดก้อน/อัดเม็ด ยอดอ้อยอัดก้อน และไบโอชาร์</span></div></div>
+        <div class="portal-item"><div class="pi">🏭</div><div><b data-i18n="member-portals_60">ผู้รับซื้อชีวมวล</b><span data-i18n="member-portals_61">ระบุชนิดและสเปคชีวมวลที่ต้องการ แล้วรับข้อเสนอจากผู้ผลิต</span></div></div>
+      </div>
+      <div class="group-card reveal in">
+        <h3><span class="gi"><i class="fa-solid fa-landmark"></i></span><span data-i18n="member-portals_62">ภาครัฐและนโยบาย</span></h3>
+        <div class="gsub" data-i18n="member-portals_63">ดูภาพรวมเพื่อวางนโยบาย โดยไม่เห็นข้อมูลรายบุคคล</div>
+        <div class="portal-item"><div class="pi">🏛️</div><div><b data-i18n="member-portals_64">เจ้าหน้าที่ภาครัฐ</b><span data-i18n="member-portals_65">ติดตามข้อมูลระดับพื้นที่ เช่น Dashboard โคนมรายจังหวัดและสัญญาณนมล้นตลาด</span></div></div>
+        <div class="portal-item"><div class="pi">📊</div><div><b data-i18n="member-portals_66">สำนักงานเศรษฐกิจการเกษตร (สศก.)</b><span data-i18n="member-portals_67">ข้อมูลเศรษฐกิจการเกษตรและราคาสินค้า</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:32px;">
+      <div class="eyebrow"><i class="fa-solid fa-link"></i> <span data-i18n="member-portals_68">การเชื่อมโยง</span></div>
+      <h2 class="section-title" data-i18n="member-portals_69">ตัวอย่างการเชื่อมโยงระหว่างพอร์ทัล</h2>
+      <p class="section-sub" data-i18n="member-portals_70">แต่ละฝ่ายทำงานในพอร์ทัลของตนเอง แต่ผลลัพธ์ส่งต่อถึงกันเป็นห่วงโซ่เดียว</p>
+    </div>
+    <div class="link-grid">
+      <div class="link-card reveal in">
+        <div class="flow"><span class="chip" data-i18n="member-portals_71">เกษตรกร</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_72">สหกรณ์</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_73">ผู้ปล่อยกู้</span></div>
+        <h3 data-i18n="member-portals_74">ข้อมูลการผลิตจริงกลายเป็นสินเชื่อ</h3>
+        <p data-i18n="member-portals_75">เกษตรกรบันทึกแปลงและกิจกรรม สหกรณ์ยืนยันข้อมูลและติดตามแปลงด้วยภาพดาวเทียม ระบบคำนวณคะแนนเครดิต แล้วผู้ปล่อยกู้พิจารณาคำขอโดยเห็นเฉพาะข้อมูลที่เกษตรกรยินยอม</p>
+      </div>
+      <div class="link-card reveal in">
+        <div class="flow"><span class="chip" data-i18n="member-portals_76">สมาชิกโคนม</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_77">สหกรณ์โคนม</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_78">โรงงานนม</span></div>
+        <h3 data-i18n="member-portals_79">น้ำนมหนึ่งลิตรเดินทางพร้อมข้อมูล</h3>
+        <p data-i18n="member-portals_80">สหกรณ์ชั่งรับนมและตรวจคุณภาพ ราคาคำนวณตามคุณภาพ โรงงานยืนยันการรับนมในพอร์ทัลของตน เงินค่านมหักกลบตามลำดับแล้วโอนผ่าน ธ.ก.ส. สมาชิกเห็นยอดและได้รับแจ้งเตือนในมือถือ</p>
+      </div>
+      <div class="link-card reveal in">
+        <div class="flow"><span class="chip" data-i18n="member-portals_81">สหกรณ์</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_82">ผู้จำหน่ายปัจจัย</span></div>
+        <h3 data-i18n="member-portals_83">รวมกันซื้อ ได้ราคาที่ดีกว่า</h3>
+        <p data-i18n="member-portals_84">สหกรณ์รวมความต้องการปุ๋ยของสมาชิก (Group Buy) แล้วเปิดประมูลซื้อ ผู้จำหน่ายเสนอราคาในพอร์ทัลของตน ผู้เสนอต่ำสุดได้สัญญาและส่งของตามคำสั่งซื้อ</p>
+      </div>
+      <div class="link-card reveal in">
+        <div class="flow"><span class="chip" data-i18n="member-portals_85">เกษตรกร</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_86">เครื่องจักรกล</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_87">ขนส่ง</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_88">ลานตาก</span></div>
+        <h3 data-i18n="member-portals_89">จองบริการตลอดฤดูกาลจากที่เดียว</h3>
+        <p data-i18n="member-portals_90">ตั้งแต่ไถ ฉีดพ่นด้วยโดรน เกี่ยว ขนส่ง จนถึงตากและเก็บผลผลิต ผู้ให้บริการแต่ละรายรับงานและจัดตารางในพอร์ทัลของตนเอง</p>
+      </div>
+      <div class="link-card reveal in">
+        <div class="flow"><span class="chip" data-i18n="member-portals_91">ผู้ผลิตชีวมวล</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_92">ผู้รับซื้อชีวมวล</span></div>
+        <h3 data-i18n="member-portals_93">ฟางและยอดอ้อยกลายเป็นรายได้แทนการเผา</h3>
+        <p data-i18n="member-portals_94">ผู้รับซื้อระบุสเปคชีวมวลที่ต้องการ ผู้ผลิตเสนอขายจากพอร์ทัลของตน ลดการเผาในแปลงและเพิ่มรายได้ให้ชุมชน</p>
+      </div>
+      <div class="link-card reveal in">
+        <div class="flow"><span class="chip" data-i18n="member-portals_95">ทุกพอร์ทัล</span> <span class="arr">→</span> <span class="chip" data-i18n="member-portals_96">ภาครัฐ</span></div>
+        <h3 data-i18n="member-portals_97">ภาพรวมสำหรับนโยบาย โดยไม่เปิดข้อมูลรายบุคคล</h3>
+        <p data-i18n="member-portals_98">หน่วยงานรัฐเห็นตัวเลขรวมรายพื้นที่ และเห็นรายองค์กรเฉพาะที่องค์กรนั้นยินยอม เช่น สัญญาณนมล้นตลาดล่วงหน้า 30–90 วัน</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section alt">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:28px;">
+      <h2 class="section-title" data-i18n="member-portals_99">ความเป็นส่วนตัวและสิทธิ์การเข้าถึง</h2>
+    </div>
+    <ul class="trust-list">
+      <li class="reveal in"><i class="fa-solid fa-user-lock"></i><span data-i18n="member-portals_100">พอร์ทัลแต่ละแห่งเห็นเฉพาะข้อมูลขององค์กรตนเอง สหกรณ์หนึ่งไม่เห็นข้อมูลของอีกสหกรณ์</span></li>
+      <li class="reveal in"><i class="fa-solid fa-handshake"></i><span data-i18n="member-portals_101">ข้อมูลข้ามพอร์ทัลส่งต่อเฉพาะเท่าที่ธุรกรรมนั้นต้องใช้ เช่น โรงงานเห็นใบส่งนมของตน แต่ไม่เห็นบัญชีสมาชิกของสหกรณ์</span></li>
+      <li class="reveal in"><i class="fa-solid fa-file-signature"></i><span data-i18n="member-portals_102">ข้อมูลสำหรับสินเชื่อหรือภาครัฐเปิดให้เห็นเมื่อเจ้าของข้อมูลยินยอม ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562</span></li>
+      <li class="reveal in"><i class="fa-solid fa-id-badge"></i><span data-i18n="member-portals_103">เจ้าหน้าที่ขององค์กรมีบัญชีแยกตามบทบาท เช่น ฝ่ายบัญชี ฝ่ายสินเชื่อ และทุกการเข้าถึงข้อมูลสำคัญถูกบันทึกไว้ตรวจสอบ</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="prose-section">
+  <div class="container section-head reveal">
+    <h2 class="section-title" data-i18n="member-portals_104">เริ่มใช้พอร์ทัลของท่าน</h2>
+    <p class="section-sub" data-i18n="member-portals_105">เข้าสู่ระบบด้วยบัญชีเดียว ระบบจะพาไปยังพอร์ทัลที่ท่านมีสิทธิ์ องค์กรที่ยังไม่มีบัญชี ติดต่อทีม AgroLink เพื่อลงทะเบียนและยืนยันตัวตนองค์กร</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="login.html" class="btn btn-primary" data-i18n="member-portals_106">เข้าสู่ระบบ</a>
+      <a href="demo-preview.html" class="btn btn-gold" data-i18n="member-portals_107">ดูตัวอย่างการใช้งาน</a>
+      <a href="contact.html" class="btn btn-outline" data-i18n="member-portals_108">ติดต่อลงทะเบียนองค์กร</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== AgroLink shared site footer (same on every public page; styles css/site-footer.css, behaviour js/site-footer.js) ===== -->
+<footer class="sf-footer">
+  <div class="sf-container sf-top">
+    <div class="sf-brand">
+      <a class="sf-brand-logo" href="index.html"><img src="assets/agrolink-logo.png" width="284" height="220" alt="AgroLink" loading="lazy" /></a>
+      <p data-i18n="sh_footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      <p class="sf-slogan" data-i18n="sh_footer_slogan">เกษตรไทยก้าวไกล ไปด้วยกัน</p>
+    </div>
+    <details class="sf-col" open><summary><span data-i18n="sh_fc1">แพลตฟอร์มและบริการ</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="coop-portal.html"><span data-i18n="sh_m_coop">สำหรับสหกรณ์</span></a></li><li><a href="for-farmers.html"><span data-i18n="sh_m_farmer">สำหรับเกษตรกร</span></a></li><li><a href="finance-partners.html"><span data-i18n="sh_m_finance">การเงิน</span></a></li><li><a href="marketplace-partners.html"><span data-i18n="sh_fl_market">ตลาดกลาง</span></a></li><li><a href="custom-fertilizer.html"><span data-i18n="sh_m_fert">ปุ๋ยสั่งตัด</span></a></li><li><a href="ai-satellite-guide.html"><span data-i18n="sh_m_ai">AI และดาวเทียม</span></a></li><li><a href="insurance-marketplace.html"><span data-i18n="sh_fl_ins">ประกันภัยเกษตร</span></a></li><li><a href="carbon-credit-article.html"><span data-i18n="sh_m_carbon">คาร์บอนเครดิต</span></a></li><li><a href="biomass-economy.html"><span data-i18n="sh_m_bio">เศรษฐกิจชีวมวล</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc2">โซลูชันธุรกิจ</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="integrated-rice-business.html"><span data-i18n="sh_m_rice">ธุรกิจข้าวครบวงจร</span></a></li><li><a href="integrated-durian-business.html"><span data-i18n="sh_m_durian">ทุเรียนครบวงจร</span></a></li><li><a href="integrated-cassava-business.html"><span data-i18n="sh_m_cassava">มันสำปะหลังครบวงจร</span></a></li><li><a href="integrated-corn-business.html"><span data-i18n="sh_m_corn">ข้าวโพดครบวงจร</span></a></li><li><a href="integrated-coconut-business.html"><span data-i18n="sh_m_coconut">มะพร้าวน้ำหอมครบวงจร</span></a></li><li><a href="index.html#roadmap"><span data-i18n="sh_fl_roadmap">แผนขยายสินค้า</span></a></li><li><a href="for-farmers-crop.html"><span data-i18n="sh_m_f_crop">เกษตรกรผู้ปลูกพืช</span></a></li><li><a href="for-farmers-livestock.html"><span data-i18n="sh_m_f_live">เกษตรกรผู้เลี้ยงสัตว์บก</span></a></li><li><a href="for-farmers-aquaculture.html"><span data-i18n="sh_m_f_aqua">เกษตรกรผู้เลี้ยงสัตว์น้ำ</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc3">พันธมิตร</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="index.html#partners"><span data-i18n="sh_pc1">สหกรณ์/กลุ่มเกษตรกร</span></a></li><li><a href="finance-partners.html"><span data-i18n="sh_pc2">สถาบันการเงิน</span></a></li><li><a href="marketplace-partners.html"><span data-i18n="sh_fl_buyer">ผู้ซื้อ</span></a></li><li><a href="index.html#partners"><span data-i18n="sh_fl_provider">ผู้ให้บริการ</span></a></li><li><a href="technology-partners.html"><span data-i18n="sh_pc5">พันธมิตรเทคโนโลยี</span></a></li><li><a href="biomass-portal.html"><span data-i18n="sh_pc6">ผู้รับซื้อชีวมวล</span></a></li><li><a href="logistics-portal.html"><span data-i18n="sh_pc4">ผู้ให้บริการขนส่ง</span></a></li><li><a href="insurance-portal.html"><span data-i18n="sh_pc7">ผู้ให้บริการประกันภัย</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc4">บริษัท</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="about.html"><span data-i18n="sh_nav_about">เกี่ยวกับเรา</span></a></li><li><a href="about-video.html"><span data-i18n="sh_m_about_video">เกี่ยวกับ AgroLink (วิดีโอ)</span></a></li><li><a href="business-model.html"><span data-i18n="sh_m_investor">นักลงทุน</span></a></li><li><a href="demo-preview.html"><span data-i18n="sh_m_demo">ตัวอย่างการใช้งานทีละขั้นตอน</span></a></li><li><a href="contact.html"><span data-i18n="sh_m_contact">ติดต่อเรา</span></a></li><li><a href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a></li></ul></details>
+  </div>
+  <div class="sf-container sf-bottom">
+    <span data-i18n="sh_copyright">© 2026 Pakdee Corporation Co.,Ltd. — สงวนลิขสิทธิ์</span>
+    <nav data-i18n="sh_legal_aria" data-i18n-attr="aria-label" aria-label="ข้อกฎหมาย">
+      <a href="privacy-policy.html"><span data-i18n="sh_privacy">นโยบายความเป็นส่วนตัว</span></a>
+      <a href="terms-of-use.html"><span data-i18n="sh_terms">ข้อกำหนดการใช้งาน</span></a>
+      <a href="contact.html"><span data-i18n="sh_m_contact">ติดต่อเรา</span></a>
+    </nav>
+  </div>
+</footer>
+<!-- ===== /shared site footer ===== -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-member-portals.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/site-header.js"></script>
+<script src="js/site-footer.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+<script src="js/track.js"></script>
+</body>
+</html>
