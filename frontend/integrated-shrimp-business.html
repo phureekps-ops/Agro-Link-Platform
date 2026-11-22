@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ธุรกิจกุ้งครบวงจร — AgroLink Smart Shrimp Ecosystem | AgroLink Platform</title>
-<meta name="description" content="AgroLink Smart Shrimp Ecosystem เชื่อมโยงทุกภาคส่วนของอุตสาหกรรมกุ้งไทย ด้วยดาวเทียม AI IoT ระบบฟาร์มกุ้งยั่งยืน ลดพลังงานและก๊าซเรือนกระจก Green Credit Scoring ประมูลกุ้งปากบ่อออนไลน์ และตรวจคุณภาพกุ้งด้วย AI">
+<meta name="description" content="Concept Note โครงการ AgroLink Smart Shrimp Ecosystem: พัฒนาระบบนิเวศเศรษฐกิจอุตสาหกรรมกุ้งไทยครบวงจร คาร์บอนต่ำและเป็นมิตรต่อสิ่งแวดล้อม ด้วยเทคโนโลยีดิจิทัล">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <style>
@@ -206,6 +206,43 @@
   .chain .arr { color:var(--gold); font-weight:800; }
   .pillars { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:0 auto 26px; }
   .pillars span { font-weight:800; font-size:18px; color:var(--green-dark); background:var(--gold-light); border:1px solid #EBD9A0; border-radius:999px; padding:8px 20px; }
+
+  /* CONCEPT NOTE */
+  .page-header .meta { color:#9BB5A9; font-size:13.5px; margin:-24px 0 26px; }
+  .keyfind { max-width:1040px; margin:36px auto 0; background:var(--gold-light); border:1px solid #EBD9A0; border-left:5px solid var(--gold); border-radius:12px; padding:20px 24px; font-size:16px; font-weight:600; color:var(--green-dark); line-height:1.7; }
+  .quick { max-width:1040px; margin:22px auto 0; display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  @media (max-width: 860px) { .quick { grid-template-columns:repeat(2,1fr); } }
+  .quick a { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; display:block; }
+  .quick a:hover { border-color:var(--green); }
+  .quick b { display:block; color:var(--navy); font-size:15px; margin-bottom:4px; }
+  .quick span { font-size:13.5px; color:var(--muted); }
+  .report-wrap { padding:44px 0 70px; }
+  .report-grid { display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; align-items:start; }
+  @media (max-width: 980px) { .report-grid { grid-template-columns:1fr; } .toc { position:static !important; } }
+  .toc { position:sticky; top:96px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; max-height:calc(100vh - 120px); overflow:auto; }
+  .toc h3 { font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .toc a { display:block; font-size:13.5px; padding:6px 0; border-top:1px solid var(--border); color:var(--text); }
+  .toc a:first-of-type { border-top:none; }
+  .toc a:hover { color:var(--green); }
+  .report { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:36px 40px; }
+  @media (max-width: 640px) { .report { padding:24px 18px; } }
+  .report h2 { font-size:24px; margin:36px 0 14px; padding-top:18px; border-top:1px solid var(--border); scroll-margin-top:96px; }
+  .report h2:first-child { margin-top:0; padding-top:0; border-top:none; }
+  .report h3 { font-size:19px; margin:26px 0 10px; color:var(--green-dark); scroll-margin-top:96px; }
+  .report p { font-size:15.5px; margin-bottom:14px; }
+  .report ul, .report ol { margin:0 0 16px 22px; }
+  .report ul { list-style:disc; }
+  .report ol { list-style:decimal; }
+  .report li { font-size:15.2px; margin-bottom:8px; }
+  .report a { color:var(--green); text-decoration:underline; word-break:break-all; }
+  .report .tw { overflow-x:auto; margin:6px 0 20px; border:1px solid var(--border); border-radius:10px; }
+  .report table { border-collapse:collapse; width:100%; font-size:14px; }
+  .report th, .report td { padding:10px 12px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+  .report thead th { background:var(--green-light); color:var(--green-dark); font-weight:700; }
+  .report tbody tr:last-child td { border-bottom:none; }
+  .report figure { margin:10px 0 22px; }
+  .report figure img { width:100%; height:auto; border:1px solid var(--border); border-radius:10px; }
+  .report figcaption { font-size:13px; color:var(--muted); text-align:center; margin-top:8px; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -238,10 +275,11 @@
   <div class="container section-head reveal">
     <div class="eyebrow"><i class="fa-solid fa-shrimp"></i> <span data-i18n="shrimp_eyebrow">โซลูชันธุรกิจ · กุ้งครบวงจร</span></div>
     <h1 class="section-title" data-i18n="shrimp_title">ธุรกิจกุ้งครบวงจร — AgroLink Smart Shrimp Ecosystem</h1>
-    <p class="section-sub" data-i18n="shrimp_sub">เชื่อมโยงทุกภาคส่วน ขับเคลื่อนอุตสาหกรรมกุ้งไทยสู่ความยั่งยืน ด้วย Smart Technology · Green Production · Sustainable Future</p>
+    <p class="section-sub" data-i18n="shrimp_sub2">โครงการพัฒนาระบบนิเวศเศรษฐกิจอุตสาหกรรมกุ้งไทยครบวงจร คาร์บอนต่ำและเป็นมิตรต่อสิ่งแวดล้อม ด้วยเทคโนโลยีดิจิทัล (AgroLink Green &amp; Low-Carbon Smart Shrimp Ecosystem)</p>
+    <p class="meta" data-i18n="shrimp_meta">Concept Note ระดับแนวคิด | 11 ตุลาคม 2569</p>
     <div class="hero-cta">
-      <a href="auction-intro.html" class="btn btn-gold"><i class="fa-solid fa-gavel"></i> <span data-i18n="shrimp_cta1">ระบบประมูลกุ้งปากบ่อออนไลน์</span></a>
-      <a href="for-farmers-aquaculture.html" class="btn btn-outline" data-i18n="shrimp_cta2">สำหรับเกษตรกรผู้เลี้ยงสัตว์น้ำ</a>
+      <a href="assets/docs/agrolink-smart-shrimp-ecosystem-concept-note.docx" class="btn btn-gold" download><i class="fa-solid fa-file-word"></i> <span data-i18n="shrimp_dl">ดาวน์โหลด Concept Note (Word)</span></a>
+      <a href="#concept-note" class="btn btn-outline" data-i18n="shrimp_read">อ่านเอกสารบนเว็บ</a>
     </div>
   </div>
 </section>
@@ -255,97 +293,364 @@
   </div>
 </section>
 
-<section class="prose-section">
+<section class="prose-section" style="padding:0 0 4px;">
   <div class="container">
-    <div class="prose-block reveal in" style="margin-bottom:34px;">
-      <h2>ภาพรวม</h2>
-      <p>AgroLink Smart Shrimp Ecosystem เป็นศูนย์กลางข้อมูลและการเชื่อมโยงตลอดห่วงโซ่อุปทานกุ้ง ตั้งแต่ฟาร์มและโรงฟัก ผู้ขายปัจจัยการผลิต ผู้รับซื้อกุ้งปากบ่อ โรงงานห้องเย็นและแปรรูป ผู้ส่งออก ตลาด ไปจนถึงกรมประมง ทุกฝ่ายใช้ข้อมูลชุดเดียวกันจากดาวเทียม AI และ IoT เพื่อผลิตกุ้งที่มีคุณภาพ ลดผลกระทบต่อสิ่งแวดล้อม และขายได้ราคาที่เป็นธรรม</p>
-    </div>
-    <div class="section-head reveal" style="margin-bottom:24px;"><h2 class="section-title">เทคโนโลยีพื้นฐาน</h2></div>
-    <div class="tech-grid">
-      <div class="tech reveal in"><h3><span class="gi"><i class="fa-solid fa-satellite"></i></span>ดาวเทียม</h3><ul><li>ติดตามพื้นที่ฟาร์ม</li><li>วิเคราะห์การใช้ที่ดิน</li><li>เฝ้าระวังภัยธรรมชาติ</li><li>ประเมินความเสี่ยงสภาพอากาศ</li></ul></div>
-      <div class="tech reveal in"><h3><span class="gi"><i class="fa-solid fa-brain"></i></span>AI</h3><ul><li>วิเคราะห์ข้อมูลแบบเรียลไทม์</li><li>คาดการณ์ความเสี่ยง</li><li>แนะนำการจัดการฟาร์ม</li><li>ประมวลผลและสร้างรายงาน</li></ul></div>
-      <div class="tech reveal in"><h3><span class="gi"><i class="fa-solid fa-tower-broadcast"></i></span>IoT</h3><ul><li>คุณภาพน้ำ</li><li>การใช้อาหาร</li><li>การใช้พลังงาน</li><li>สภาพแวดล้อม</li></ul></div>
-      <div class="tech reveal in"><h3><span class="gi"><i class="fa-solid fa-laptop"></i></span>AgroLink Platform</h3><ul><li>จัดการข้อมูลครบวงจร</li><li>เชื่อมโยงทุกภาคส่วน</li><li>ธุรกรรมดิจิทัล</li><li>Dashboard และรายงาน</li></ul></div>
+    <div class="keyfind reveal in"><i class="fa-solid fa-lightbulb"></i> “เชื่อมโยงธุรกิจกุ้งไทยตั้งแต่โรงฟักลูกกุ้งจนถึงตลาดส่งออกด้วยแพลตฟอร์มดิจิทัลเดียว เพิ่มการแข่งขันด้านราคารับซื้อ ลดต้นทุนและมลพิษ และยกระดับกุ้งไทยสู่มาตรฐานสีเขียวของตลาดโลก”</div>
+    <div class="quick">
+      <a href="auction-intro.html"><b data-i18n="shrimp_q1">ระบบประมูลกุ้งปากบ่อออนไลน์</b><span data-i18n="shrimp_q1d">ผู้ซื้อหลายรายแข่งกันเสนอราคาอย่างโปร่งใส</span></a>
+      <a href="for-farmers-aquaculture.html"><b data-i18n="shrimp_q2">สำหรับเกษตรกรผู้เลี้ยงสัตว์น้ำ</b><span data-i18n="shrimp_q2d">ข้อมูลฟาร์ม การเงิน และตลาดในที่เดียว</span></a>
+      <a href="finance-partners.html"><b data-i18n="shrimp_q3">พันธมิตรการเงิน</b><span data-i18n="shrimp_q3d">สินเชื่อการผลิตและสินเชื่อสีเขียวจากข้อมูลจริง</span></a>
+      <a href="rap-t-shrimp.html"><b data-i18n="shrimp_q4">กุ้งในโครงการ RAP-T</b><span data-i18n="shrimp_q4d">ความยืดหยุ่นต่อการเปลี่ยนแปลงสภาพภูมิอากาศ</span></a>
     </div>
   </div>
 </section>
 
-<section class="prose-section alt">
-  <div class="container">
-    <div class="section-head reveal" style="margin-bottom:28px;">
-      <h2 class="section-title">6 ระบบหลักของธุรกิจกุ้งครบวงจร</h2>
-      <p class="section-sub">แต่ละระบบทำงานบนแพลตฟอร์ม AgroLink และส่งข้อมูลต่อถึงกัน</p>
-    </div>
-    <div class="group-grid">
-      <div class="group-card reveal in">
-        <h3><span class="gi"><i class="fa-solid fa-leaf"></i></span>Green Shrimp Farming Management</h3>
-        <div class="gsub">การจัดการฟาร์มกุ้งอย่างยั่งยืน</div>
-        <ul><li>จัดการคุณภาพน้ำ (IoT)</li><li>ควบคุมการให้อาหารอัตโนมัติ</li><li>บริหารจัดการน้ำเสียและตะกอน</li><li>มาตรฐานฟาร์มและการขึ้นทะเบียน</li><li>ติดตามผลผลิตและประสิทธิภาพ</li></ul>
-        <div class="tagline">น้ำ · อาหาร · ของเสีย · มาตรฐาน</div>
-      </div>
-      <div class="group-card reveal in">
-        <h3><span class="gi"><i class="fa-solid fa-solar-panel"></i></span>ระบบลดการใช้พลังงานและก๊าซเรือนกระจก</h3>
-        <div class="gsub">Energy Efficiency &amp; GHG Reduction</div>
-        <ul><li>ตรวจวัดการใช้พลังงาน (IoT)</li><li>ควบคุมเครื่องตีน้ำอัจฉริยะ</li><li>พลังงานแสงอาทิตย์</li><li>ลดการปล่อยก๊าซเรือนกระจก</li><li>คำนวณ Carbon Footprint</li></ul>
-        <div class="tagline">ลดคาร์บอน เพื่อโลกที่ยั่งยืน</div>
-      </div>
-      <div class="group-card reveal in">
-        <h3><span class="gi"><i class="fa-solid fa-cloud-showers-heavy"></i></span>ระบบ Climate-Smart Shrimp Farming</h3>
-        <div class="gsub">ปรับตัวต่อการเปลี่ยนแปลงสภาพภูมิอากาศ</div>
-        <ul><li>พยากรณ์อากาศและแจ้งเตือน</li><li>บริหารความเสี่ยงน้ำท่วม/ภัยแล้ง</li><li>ควบคุมคุณภาพน้ำแบบเรียลไทม์</li><li>วางแผนการผลิตตามฤดูกาล</li><li>เพิ่มความยืดหยุ่นของฟาร์ม</li></ul>
-        <div class="tagline">พร้อมรับมือภัยพิบัติ สู่ความมั่นคงทางอาหาร</div>
-      </div>
-      <div class="group-card reveal in">
-        <h3><span class="gi"><i class="fa-solid fa-gauge-high"></i></span>ระบบ Green Credit Scoring</h3>
-        <div class="gsub">ประเมินเครดิตและผลการดำเนินงานด้านสิ่งแวดล้อม</div>
-        <ul><li>คะแนนด้านสิ่งแวดล้อม</li><li>ประวัติการผลิตและการเงิน</li><li>ความเสี่ยงของแต่ละฟาร์ม</li><li>เชื่อมต่อสินเชื่อสีเขียว</li></ul>
-        <div class="tagline">Green Finance สนับสนุนการลงทุนสีเขียว — <a href="finance-partners.html">พันธมิตรการเงิน</a></div>
-      </div>
-      <div class="group-card reveal in">
-        <h3><span class="gi"><i class="fa-solid fa-gavel"></i></span>ระบบประมูลกุ้งปากบ่อออนไลน์</h3>
-        <div class="gsub">โปร่งใส รวดเร็ว ได้ราคาที่ดีที่สุด</div>
-        <ul><li>ประมูลแบบเรียลไทม์</li><li>ผู้ซื้อทั่วประเทศและต่างประเทศ</li><li>ระบบชำระเงินปลอดภัย</li><li>ตรวจสอบย้อนกลับได้</li></ul>
-        <div class="tagline">เพิ่มโอกาสทางการตลาด — <a href="auction-intro.html">ดูระบบประมูล</a></div>
-      </div>
-      <div class="group-card reveal in">
-        <h3><span class="gi"><i class="fa-solid fa-microscope"></i></span>การตรวจคุณภาพกุ้งสดที่ปากบ่อด้วย AI</h3>
-        <div class="gsub">คัดคุณภาพ มาตรฐานระดับสากล</div>
-        <ul><li>วิเคราะห์ขนาดและน้ำหนัก</li><li>ประเมินความสด</li><li>ตรวจจับความผิดปกติ</li><li>จัดเกรดอัตโนมัติ</li></ul>
-        <div class="tagline">คุณภาพดี เพิ่มมูลค่า สร้างความเชื่อมั่น</div>
-      </div>
-    </div>
-  </div>
-</section>
+<section class="report-wrap" id="concept-note">
+  <div class="container report-grid">
+    <nav class="toc" aria-label="สารบัญ">
+      <h3 data-i18n="shrimp_toc">สารบัญ</h3>
+      <a href="#cn-1">1. ข้อมูลโครงการโดยสรุป</a>
+      <a href="#cn-2">2. หลักการและเหตุผล</a>
+      <a href="#cn-3">3. แนวคิดโครงการและวัตถุประสงค์</a>
+      <a href="#cn-4">4. องค์ประกอบหลัก: 5 แผนงาน</a>
+      <a href="#cn-6">5. รูปแบบความร่วมมือ</a>
+      <a href="#cn-7">6. ผลลัพธ์ที่คาดหวังและผู้ได้รับประโยชน์</a>
+      <a href="#cn-8">7. หลักการกำกับดูแลและขั้นตอนต่อไป</a>
+    </nav>
+    <article class="report">
+<h2 id="cn-1">1. ข้อมูลโครงการโดยสรุป</h2>
+<p>AgroLink
+เสนอพัฒนาโครงสร้างพื้นฐานดิจิทัลกลางที่เชื่อมอุตสาหกรรมกุ้งไทยตั้งแต่โรงฟักถึงตลาดส่งออก
+เพื่อเพิ่มรายได้เกษตรกร ลดต้นทุน และนำอุตสาหกรรมสู่การผลิตคาร์บอนต่ำที่วัดผลได้จริง
+เอกสารนี้เป็น Concept Note ระดับแนวคิด ยังไม่รวมงบประมาณ ตัวเลขเป้าหมาย
+และรายละเอียดพื้นที่นำร่อง</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>หัวข้อ</th>
+<th>รายละเอียด</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ชื่อโครงการ (ไทย)</td>
+<td>โครงการพัฒนาระบบนิเวศเศรษฐกิจอุตสาหกรรมกุ้งไทยครบวงจร
+คาร์บอนต่ำและเป็นมิตรต่อสิ่งแวดล้อม ด้วยเทคโนโลยีดิจิทัล</td>
+</tr>
+<tr>
+<td>ชื่อโครงการ (อังกฤษ)</td>
+<td>AgroLink Green &amp; Low-Carbon Smart Shrimp Ecosystem</td>
+</tr>
+<tr>
+<td>หน่วยงานภาครัฐที่เสนอร่วม</td>
+<td>กรมประมง กระทรวงเกษตรและสหกรณ์</td>
+</tr>
+<tr>
+<td>ผู้พัฒนาและดำเนินงานแพลตฟอร์ม</td>
+<td>AgroLink Digital Agriculture Platform</td>
+</tr>
+<tr>
+<td>พันธมิตรหลัก</td>
+<td>ธ.ก.ส. และสถาบันการเงิน, ผู้ผลิตและผู้ให้บริการ IoT,
+มหาวิทยาลัยและผู้เชี่ยวชาญอิสระ</td>
+</tr>
+<tr>
+<td>กลุ่มเป้าหมาย</td>
+<td>เกษตรกรผู้เลี้ยงกุ้ง ฟาร์มเอกชน และผู้ประกอบการตลอดห่วงโซ่อุตสาหกรรมกุ้ง</td>
+</tr>
+<tr>
+<td>เทคโนโลยีหลัก</td>
+<td>ดาวเทียม, IoT, ปัญญาประดิษฐ์ (AI), การเงินดิจิทัล, ตลาดประมูลออนไลน์,
+ระบบตรวจสอบย้อนกลับ</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>แนวคิดสำคัญ:</strong>
+“เชื่อมโยงธุรกิจกุ้งไทยตั้งแต่โรงฟักลูกกุ้งจนถึงตลาดส่งออกด้วยแพลตฟอร์มดิจิทัลเดียว
+เพิ่มการแข่งขันด้านราคารับซื้อ ลดต้นทุนและมลพิษ
+และยกระดับกุ้งไทยสู่มาตรฐานสีเขียวของตลาดโลก”</p>
+<h2 id="cn-2">2. หลักการและเหตุผล</h2>
+<p>อุตสาหกรรมกุ้งเป็นหนึ่งในภาคธุรกิจเกษตรที่สำคัญต่อเศรษฐกิจไทย ตั้งแต่การเพาะเลี้ยง
+อาหารสัตว์น้ำ การแปรรูป จนถึงการส่งออก แต่ห่วงโซ่ยังมีปัญหาสี่ด้านที่ส่งผลต่อกัน
+และไม่มีระบบกลางที่แก้ได้พร้อมกัน</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>ด้าน</th>
+<th>ปัญหาสำคัญ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>การผลิตและบริหารฟาร์ม</td>
+<td>ต้นทุนอาหารและปัจจัยการผลิตสูง, คุณภาพลูกกุ้งไม่สม่ำเสมอ,
+ความเสี่ยงด้านคุณภาพน้ำและโรค, ขาดข้อมูลต้นทุนรายบ่อ</td>
+</tr>
+<tr>
+<td>การตลาดและการจำหน่าย</td>
+<td>เกษตรกรเข้าถึงผู้ซื้อจำกัด, ราคาปากบ่อต่างกันตามพื้นที่และช่วงเวลา,
+ไม่มีระบบเสนอราคาแข่งขันที่โปร่งใส, ขาดข้อมูลความต้องการของโรงงานและผู้ส่งออก</td>
+</tr>
+<tr>
+<td>การเชื่อมโยงข้อมูลและการเงิน</td>
+<td>ข้อมูลระหว่างฟาร์ม โรงฟัก โรงงานอาหาร แพกุ้ง ห้องเย็น และกรมประมงไม่เชื่อมโยงกัน,
+สถาบันการเงินขาดข้อมูลการผลิตจริง จึงพึ่งหลักประกันเป็นหลัก</td>
+</tr>
+<tr>
+<td>สิ่งแวดล้อมและสภาพภูมิอากาศ</td>
+<td>น้ำทิ้งที่มีสารอินทรีย์และธาตุอาหาร, การใช้พลังงานสูงจากเครื่องตีน้ำและปั๊ม,
+อาหารสูญเสีย, ตะกอนเลน, การใช้น้ำมาก, การบุกรุกพื้นที่อ่อนไหวชายฝั่ง
+และความเสี่ยงจากอุณหภูมิ น้ำท่วม และภัยแล้ง</td>
+</tr>
+</tbody>
+</table></div>
+<p>ปัญหาเหล่านี้มีรากเดียวกันคือ การขาดข้อมูลการผลิตที่เชื่อถือได้และต่อเนื่อง
+หากมีแพลตฟอร์มกลางที่เก็บข้อมูลชุดเดียวจากฟาร์มถึงตลาด
+ข้อมูลนั้นจะใช้ได้พร้อมกันทั้งเพิ่มประสิทธิภาพการผลิต สนับสนุนสินเชื่อ เปิดตลาดแข่งขัน
+และวัดผลด้านสิ่งแวดล้อมได้จริง</p>
+<h2 id="cn-3">3. แนวคิดโครงการและวัตถุประสงค์</h2>
+<p>โครงการนี้ไม่ใช่เพียง “แพลตฟอร์มซื้อขายกุ้งออนไลน์” แต่เป็น
+<strong>การเปลี่ยนผ่านอุตสาหกรรมกุ้งไทยสู่การผลิตคาร์บอนต่ำและเป็นมิตรต่อสิ่งแวดล้อมด้วยเทคโนโลยีดิจิทัล</strong>
+โดยใช้ข้อมูล 3 แหล่งร่วมกัน คือ ดาวเทียม + IoT + ธุรกรรมการผลิตและการซื้อขาย
+เพื่อสร้างคุณค่าใน 4 ด้านพร้อมกัน ได้แก่ เศรษฐกิจ สิ่งแวดล้อม สภาพภูมิอากาศ
+และการเงิน</p>
+<p>วงจรธุรกิจหลักที่แพลตฟอร์มรองรับ: ขึ้นทะเบียนฟาร์ม → ติดตามการเลี้ยง →
+สนับสนุนสินเชื่อเป็นงวด → ประมูลขายปากบ่อ → รับชำระเงิน → ปรับปรุงคะแนนความน่าเชื่อถือ →
+เริ่มรอบใหม่ โดยทุกขั้นตอนบันทึกข้อมูลสิ่งแวดล้อมควบคู่ไปด้วย</p>
+<p><strong>วัตถุประสงค์</strong></p>
+<ol type="1">
+<li><p>พัฒนาแพลตฟอร์มดิจิทัลกลางที่เชื่อมโยงผู้เกี่ยวข้องตลอดห่วงโซ่อุตสาหกรรมกุ้ง</p></li>
+<li><p>สร้างตลาดประมูลกุ้งปากบ่อออนไลน์ที่ผู้ซื้อหลายรายแข่งขันเสนอราคาอย่างโปร่งใส</p></li>
+<li><p>ลดต้นทุนการผลิตด้วยระบบบริหารฟาร์ม IoT
+และการจัดซื้อปัจจัยการผลิตร่วมกัน</p></li>
+<li><p>ลดมลพิษทางน้ำ การใช้พลังงาน และการปล่อยก๊าซเรือนกระจก พร้อมระบบตรวจวัด
+รายงาน และทวนสอบ (MRV)</p></li>
+<li><p>เพิ่มความสามารถในการปรับตัวต่อความเสี่ยงจากสภาพภูมิอากาศของฟาร์ม</p></li>
+<li><p>เพิ่มการเข้าถึงสินเชื่อการผลิตและสินเชื่อสีเขียว ด้วยข้อมูลการผลิตจริง</p></li>
+<li><p>พัฒนาระบบตรวจสอบย้อนกลับจากโรงฟักถึงผู้ซื้อปลายทาง รองรับข้อกำหนดตลาดส่งออก
+พร้อมระบบตรวจและคัดเกรดคุณภาพกุ้งด้วย AI</p></li>
+<li><p>สร้างฐานข้อมูลอุตสาหกรรมกุ้งเพื่อสนับสนุนการวางแผนของภาครัฐและเอกชน</p></li>
+</ol>
+<h2 id="cn-4">4. องค์ประกอบหลัก: 5 แผนงาน</h2>
+<p>โครงการแบ่งเป็น 5 แผนงานที่ใช้ฐานข้อมูลกลางเดียวกัน
+ข้อมูลที่ฟาร์มบันทึกครั้งเดียวจึงใช้ได้ทั้งการบริหารฟาร์ม การรายงานสิ่งแวดล้อม การขอสินเชื่อ
+และการขาย</p>
+<figure><img src="assets/shrimp-concept-5-workstreams.png" width="1344" height="742" alt="โครงสร้างโครงการ AgroLink Smart Shrimp Ecosystem: 5 แผนงานบนฐานข้อมูลกลางเดียวกัน" loading="lazy"><figcaption>โครงสร้างโครงการ · 5 แผนงาน</figcaption></figure>
+<ol type="1">
+<li><p><strong>Digital Shrimp Ecosystem</strong> —
+ทะเบียนฟาร์มดิจิทัลพร้อมรหัสฟาร์มที่เชื่อมทุกระบบ, ตลาดกลางลูกพันธุ์กุ้ง
+และตลาดอาหารกุ้งและปัจจัยการผลิตที่รองรับการจัดซื้อรวม</p></li>
+<li><p><strong>Smart Farming &amp; IoT</strong> — แพลตฟอร์มเปิดที่รองรับอุปกรณ์
+IoT หลายผู้ผลิต (Open Integration) ติดตามรอบการเลี้ยงด้วยดาวเทียมและข้อมูลภาคพื้นดิน
+และใช้ AI ช่วยแจ้งเตือนคุณภาพน้ำ วิเคราะห์ FCR และคาดการณ์ผลผลิต</p></li>
+<li><p><strong>Green &amp; Low-Carbon Farming</strong> — ระบบ Green
+Shrimp Management: จัดการน้ำและน้ำทิ้ง
+ลดพลังงานด้วยเครื่องตีน้ำอัจฉริยะและพลังงานแสงอาทิตย์ ลดอาหารสูญเสีย
+จัดการตะกอนเลนแบบเศรษฐกิจหมุนเวียน ระบบ Carbon MRV
+และระบบเตือนภัยสภาพภูมิอากาศ</p></li>
+<li><p><strong>Green Finance &amp; Credit Scoring</strong> —
+สินเชื่อการผลิตแบบเบิกจ่ายตามกิจกรรมจริง คะแนนความน่าเชื่อถือของสมาชิกทุกฝ่าย (ฟาร์ม ผู้ซื้อ
+โรงฟัก ผู้ขายปัจจัย) และ Green Farm Performance Score
+สำหรับสินเชื่อสีเขียว</p></li>
+<li><p><strong>Online Auction &amp; Traceability</strong> —
+ตลาดประมูลกุ้งปากบ่อที่เปรียบเทียบข้อเสนอด้วยราคาสุทธิ เงื่อนไขชำระเงิน
+และความน่าเชื่อถือของผู้ซื้อ, เชื่อมความต้องการของห้องเย็นและผู้ส่งออก
+และตรวจสอบย้อนกลับด้วย QR Code จากโรงฟักถึงผู้ซื้อปลายทาง</p></li>
+</ol>
+<p>แนวทางเริ่มต้นที่เสนอคือ Auction-First:
+เปิดตลาดประมูลก่อนเพื่อดึงทั้งผู้ซื้อและผู้ขายเข้าระบบ แล้วต่อยอดสู่ข้อมูลการเลี้ยง การเงิน
+และสิ่งแวดล้อม</p>
+<h3 id="cn-5">4.1
+ระบบตรวจและคัดเกรดคุณภาพกุ้งด้วย AI (AI Shrimp Quality Grading)</h3>
+<p>ระบบนี้เชื่อมแผนงานที่ 2 กับแผนงานที่ 5 โดยตรง
+ผลตรวจคุณภาพก่อนจับและที่จุดรับซื้อถูกแนบไปกับประกาศประมูลและรหัสล็อตตรวจสอบย้อนกลับ
+ทำให้ผู้ซื้อเสนอราคาตามคุณภาพจริง และลดข้อพิพาทเรื่องการตัดเกรดหน้าบ่อ</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>เทคโนโลยี</th>
+<th>หลักการทำงาน</th>
+<th>สิ่งที่ตรวจพบได้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AI Computer Vision &amp; Image Processing</td>
+<td>กล้องความละเอียดสูงถ่ายภาพกุ้งบนสายพานหรือในถาด วิเคราะห์ด้วย Deep Learning
+ร่วมกับ Optical Sensor วัดการสะท้อนแสงบนเปลือก</td>
+<td>เปลือกนิ่ม/เปลือกบาง, หางกุด หนวดขาด อวัยวะแหว่ง (ตรวจ Morphology ของแพนหาง
+Uropod/Telson หนวด และขา), ตะไคร่เกาะ คราบตะกอน และจุดดำ (Melanosis) ด้วย
+Color Segmentation</td>
+</tr>
+<tr>
+<td>Texture Analyzer / Firmness Tester</td>
+<td>หัวกดแรงต่ำกดบนเปลือกเพื่อวัดความแข็งและความยืดหยุ่น (Shell Hardness / Shell
+Integrity)</td>
+<td>กุ้งเปลือกนิ่มหรือเพิ่งลอกคราบ ก่อนเข้ากระบวนการแช่แข็งหรือแปรรูป</td>
+</tr>
+<tr>
+<td>NIRS / Hyperspectral Imaging</td>
+<td>ยิงแสงอินฟราเรดย่านใกล้หรือถ่ายภาพหลายย่านความถี่ผ่านตัวกุ้ง
+โดยไม่ต้องเจาะหรือปอกเปลือก</td>
+<td>ความสด ปริมาณน้ำ และองค์ประกอบเคมีในเนื้อ, เนื้อขุ่น (Muscle Necrosis)
+และเนื้อหลวม</td>
+</tr>
+</tbody>
+</table></div>
+<p>ลำดับการทำงานบนสายพานคัดเกรดอัตโนมัติ:</p>
+<ol type="1">
+<li><p><strong>Camera &amp; AI Vision System</strong> — ตรวจหางกุด
+หนวดขาด ตะไคร่เกาะ และจุดดำ</p></li>
+<li><p><strong>Light / Optical Sensor</strong> —
+ตรวจความมันวาวและโครงสร้างเปลือก (เปลือกนิ่ม)</p></li>
+<li><p><strong>Speed Diverter / Air Jet</strong> —
+คัดแยกกุ้งสมบูรณ์ออกจากกุ้งตกเกรดหรือมีตำหนิอัตโนมัติ</p></li>
+<li><p><strong>บันทึกผลเข้า AgroLink</strong> —
+สัดส่วนเกรดและตำหนิผูกกับรหัสฟาร์มและล็อต ใช้ประกอบการประมูล การตรวจสอบย้อนกลับ
+และการประเมินสุขภาพกุ้งของฟาร์ม</p></li>
+</ol>
+<p>ประโยชน์: ลดแรงงานคัดเกรด คัดกุ้งมีตำหนิได้เร็วระดับหลายพันตัวต่อนาที
+ลดความเสี่ยงส่งออกกุ้งไม่ได้คุณภาพ และช่วยเกษตรกรประเมินสุขภาพกุ้งก่อนจับขาย
+ความแม่นยำของแต่ละเทคโนโลยีจะทดสอบกับกุ้งจริงในระยะนำร่อง</p>
+<h2 id="cn-6">5. รูปแบบความร่วมมือ</h2>
+<p>โครงการใช้โมเดลความร่วมมือสามฝ่ายเป็นแกน คือ กรมประมง (มาตรฐานและข้อมูลภาครัฐ)
+ธ.ก.ส. (เงินทุน) และ AgroLink (โครงสร้างพื้นฐานดิจิทัล) โดยภาคเอกชนเป็นผู้ซื้อ ผู้ขาย
+และผู้ใช้บริการจริง</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>หน่วยงาน</th>
+<th>บทบาทที่เสนอ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>กรมประมง</td>
+<td>เชื่อมโยงทะเบียนฟาร์มและมาตรฐาน GAP,
+มาตรฐานการเพาะเลี้ยงและการจัดการสิ่งแวดล้อมฟาร์ม, องค์ความรู้ด้านสุขภาพสัตว์น้ำ,
+การตรวจสอบย้อนกลับเพื่อการส่งออก</td>
+</tr>
+<tr>
+<td>ธ.ก.ส. และสถาบันการเงิน</td>
+<td>พิจารณาสินเชื่อการผลิตแบบเบิกจ่ายเป็นงวดและสินเชื่อสีเขียว
+ใช้ข้อมูลการเลี้ยงประกอบการประเมินความเสี่ยง</td>
+</tr>
+<tr>
+<td>AgroLink</td>
+<td>พัฒนาและบริหารแพลตฟอร์ม, เชื่อมโยงดาวเทียมและ IoT, จัดตลาดประมูล, ระบบ MRV
+และคะแนนความน่าเชื่อถือ</td>
+</tr>
+<tr>
+<td>ผู้ผลิตและผู้ให้บริการ IoT</td>
+<td>อุปกรณ์ตรวจวัด การติดตั้ง สอบเทียบ และบำรุงรักษา (รวมถึงรูปแบบ
+IoT-as-a-Service)</td>
+</tr>
+<tr>
+<td>โรงงานอาหารกุ้งและโรงงานห้องเย็น</td>
+<td>ข้อมูลและแนวทางเพิ่มประสิทธิภาพอาหาร ความต้องการซื้อวัตถุดิบ
+และการตรวจสอบย้อนกลับ</td>
+</tr>
+<tr>
+<td>มหาวิทยาลัยและผู้เชี่ยวชาญอิสระ</td>
+<td>วิจัย ออกแบบระบบบำบัดน้ำ ประเมิน Carbon Footprint
+และทวนสอบผลลัพธ์ด้านสิ่งแวดล้อมอย่างอิสระ</td>
+</tr>
+<tr>
+<td>เกษตรกรและผู้ประกอบการในห่วงโซ่</td>
+<td>ผู้ใช้งานจริง: ฟาร์ม โรงฟัก ผู้จำหน่ายปัจจัยการผลิต แพกุ้ง โรงงานแปรรูป
+และผู้ส่งออก</td>
+</tr>
+</tbody>
+</table></div>
+<p>บทบาทของหน่วยงานภาครัฐเป็นไปตามภารกิจ อำนาจหน้าที่
+และข้อตกลงความร่วมมือที่ได้รับอนุมัติ</p>
+<h2 id="cn-7">6. ผลลัพธ์ที่คาดหวังและผู้ได้รับประโยชน์</h2>
+<p>โครงการสร้างผลลัพธ์ 4 ด้านที่ตรวจวัดได้ ตัวชี้วัดและค่าเป้าหมายจะกำหนดหลังเก็บข้อมูลฐาน
+(Baseline) ในข้อเสนอฉบับเต็ม</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>ด้าน</th>
+<th>ผลลัพธ์ที่คาดหวัง</th>
+<th>ตัวอย่างตัวชี้วัด</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>เศรษฐกิจ</td>
+<td>ลดต้นทุน เพิ่มประสิทธิภาพการผลิต เพิ่มช่องทางตลาดผ่านการประมูล</td>
+<td>ต้นทุนต่อ กก., FCR, จำนวนผู้ซื้อต่อประกาศขาย</td>
+</tr>
+<tr>
+<td>สิ่งแวดล้อม</td>
+<td>ลดภาระมลพิษในน้ำทิ้ง ลดอาหารสูญเสีย จัดการตะกอนอย่างเหมาะสม</td>
+<td>น้ำใช้ต่อ กก. กุ้ง, ภาระมลพิษรวม BOD/COD/ไนโตรเจน/ฟอสฟอรัส,
+สัดส่วนน้ำที่นำกลับมาใช้</td>
+</tr>
+<tr>
+<td>สภาพภูมิอากาศ</td>
+<td>ลดการใช้พลังงานและก๊าซเรือนกระจก เพิ่มความสามารถในการปรับตัว</td>
+<td>kWh ต่อ กก. กุ้ง, kgCO₂e ต่อ กก. กุ้ง, ฟาร์มที่มีแผนรับมือความเสี่ยง</td>
+</tr>
+<tr>
+<td>การเงิน</td>
+<td>เกษตรกรเข้าถึงสินเชื่อการผลิตและการลงทุนเทคโนโลยีสีเขียวได้มากขึ้น</td>
+<td>จำนวนฟาร์มที่ได้รับสินเชื่อผ่านระบบ, อัตราชำระคืนตามกำหนด</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>ผู้ได้รับประโยชน์</strong></p>
+<ul>
+<li><p><strong>เกษตรกรและฟาร์มเอกชน</strong> — เข้าถึงผู้ซื้อหลายราย
+เปรียบเทียบข้อเสนอได้ มีข้อมูลต้นทุน และใช้ประวัติธุรกรรมประกอบการขอสินเชื่อ</p></li>
+<li><p><strong>โรงฟักและผู้ผลิตอาหารกุ้ง</strong> — ช่องทางจำหน่าย B2B โดยตรง
+และวางแผนการผลิตตามความต้องการจริง</p></li>
+<li><p><strong>แพกุ้ง โรงงานแปรรูป และผู้ส่งออก</strong> —
+เห็นผลผลิตที่กำลังจะเข้าสู่ตลาดล่วงหน้า
+ตรวจสอบย้อนกลับและตอบข้อกำหนดด้านความยั่งยืนของตลาดต่างประเทศได้</p></li>
+<li><p><strong>สถาบันการเงิน</strong> —
+มีข้อมูลการผลิตจริงประกอบการพิจารณาและติดตามสินเชื่อมากกว่าหลักประกัน</p></li>
+<li><p><strong>กรมประมงและภาครัฐ</strong> —
+ได้ภาพรวมอุตสาหกรรมแบบใกล้เวลาจริง
+และข้อมูลผลลัพธ์ด้านสิ่งแวดล้อมที่ตรวจสอบได้สนับสนุนนโยบายเศรษฐกิจสีเขียวและสีน้ำเงิน</p></li>
+</ul>
+<h2 id="cn-8">7. หลักการกำกับดูแลและขั้นตอนต่อไป</h2>
+<p>โครงการยึดหลักว่า AgroLink เป็นผู้ให้บริการเทคโนโลยีและเชื่อมโยงข้อมูล
+ไม่ใช่ผู้กำกับดูแลหรือผู้ปล่อยสินเชื่อ</p>
+<p><strong>หลักการสำคัญ</strong></p>
+<ul>
+<li><p>AgroLink ไม่ออกใบรับรองหรือใช้อำนาจแทนกรมประมง และการลงทะเบียนกับ
+AgroLink ไม่ถือเป็นการขึ้นทะเบียนกับกรมประมงโดยอัตโนมัติ</p></li>
+<li><p>การอนุมัติ เบิกจ่าย
+และหักชำระสินเชื่อเป็นหน้าที่ของสถาบันการเงินที่ได้รับอนุญาต</p></li>
+<li><p>ดาวเทียมและ IoT เป็นหลักฐานประกอบการตรวจสอบกิจกรรม
+ไม่ใช่หลักฐานยืนยันผลผลิตหรือความสามารถชำระหนี้โดยลำพัง</p></li>
+<li><p>AI เป็นเครื่องมือช่วยตัดสินใจ ไม่ใช้วินิจฉัยโรคแทนผู้เชี่ยวชาญด้านสุขภาพสัตว์น้ำ
+และระบบควบคุมเครื่องตีน้ำต้องทำงานได้แม้อินเทอร์เน็ตขัดข้อง ผลคัดเกรดด้วย AI
+เป็นข้อมูลประกอบการซื้อขาย
+ไม่แทนผลตรวจความปลอดภัยอาหารและใบรับรองตามกฎหมาย</p></li>
+<li><p>กำกับดูแลข้อมูลตาม PDPA: กำหนดสิทธิเจ้าของข้อมูล จัดการความยินยอม
+จำกัดสิทธิตามบทบาท (RBAC) และให้สมาชิกตรวจสอบ แก้ไข
+และโต้แย้งผลประเมินได้</p></li>
+<li><p>คะแนนด้านสิ่งแวดล้อมแยกจากคะแนนเครดิตทางการเงิน
+และต้องตรวจสอบข้อกำหนดกฎหมายด้านข้อมูลเครดิตก่อนใช้จริง</p></li>
+<li><p>การลดคาร์บอนไม่เท่ากับการออก Carbon Credit ได้ทันที
+จะศึกษาความเป็นไปได้ภายใต้ T-VER แยกต่างหาก
+และไม่นับเป็นรายได้หลักของโครงการ</p></li>
+<li><p>ผลลัพธ์ด้านสิ่งแวดล้อมวัดเทียบกับข้อมูลฐาน
+และทวนสอบโดยมหาวิทยาลัยหรือผู้เชี่ยวชาญอิสระ</p></li>
+</ul>
+<p><strong>ขั้นตอนต่อไป</strong></p>
+<ol type="1">
+<li><p>นำเสนอ Concept Note ต่อกรมประมงและ ธ.ก.ส.
+เพื่อรับฟังความเห็นและยืนยันบทบาท</p></li>
+<li><p>ยืนยันหน่วยงานผู้ให้ทุน เพื่อปรับวัตถุประสงค์และตัวชี้วัดให้ตรงเกณฑ์</p></li>
+<li><p>คัดเลือกพื้นที่นำร่องร่วมกับกรมประมงและผู้ประกอบการ</p></li>
+<li><p>จัดทำข้อเสนอฉบับเต็ม: แผนนำร่อง ตัวชี้วัดเชิงตัวเลข งบประมาณ
+และกรอบการประเมินผล</p></li>
+</ol>
 
-<section class="prose-section">
-  <div class="container">
-    <div class="section-head reveal" style="margin-bottom:24px;"><h2 class="section-title">ผู้เกี่ยวข้องในระบบนิเวศ</h2></div>
-    <div class="chain reveal in"><span class="chip">เกษตรกร</span> <span class="arr">→</span> <span class="chip">ฟาร์มเอกชน</span> <span class="arr">→</span> <span class="chip">โรงฟักลูกพันธุ์กุ้ง</span> <span class="arr">→</span> <span class="chip">ผู้ขายอาหารและปัจจัยการผลิต</span> <span class="arr">→</span> <span class="chip">โรงงานผลิตอาหารกุ้ง</span> <span class="arr">→</span> <span class="chip">แพปลา/ผู้รับซื้อกุ้งปากบ่อ</span> <span class="arr">→</span> <span class="chip">โรงงานห้องเย็น/แปรรูปกุ้ง</span> <span class="arr">→</span> <span class="chip">ตัวแทนผู้ส่งออกกุ้ง</span> <span class="arr">→</span> <span class="chip">ตลาดกลางกุ้ง</span> <span class="arr">→</span> <span class="chip">แผงขายส่งกุ้งตามตลาด</span> <span class="arr">→</span> <span class="chip">กรมประมง</span> <span class="arr">→</span> <span class="chip hl">AgroLink</span> <span class="arr">→</span> <span class="chip">การประมูลกุ้งปากบ่อ (ออนไลน์)</span></div>
-  </div>
-</section>
-
-<section class="prose-section alt">
-  <div class="container">
-    <div class="section-head reveal" style="margin-bottom:20px;"><h2 class="section-title">ผลลัพธ์ที่มุ่งหวัง</h2></div>
-    <div class="pillars"><span>Green</span><span>Smart</span><span>Profitable</span><span>Sustainable</span></div>
-    <ul class="trust-list">
-      <li><i class="fa-solid fa-leaf"></i><span>ลดมลภาวะ รักษาระบบนิเวศ</span></li>
-      <li><i class="fa-solid fa-earth-asia"></i><span>ลดการปล่อยก๊าซเรือนกระจก สู่อนาคตที่ยั่งยืน</span></li>
-      <li><i class="fa-solid fa-hand-holding-dollar"></i><span>เพิ่มโอกาสทางการตลาดและสร้างมูลค่าให้เกษตรกร</span></li>
-      <li><i class="fa-solid fa-shield-halved"></i><span>พร้อมรับมือภัยพิบัติ สู่ความมั่นคงทางอาหาร</span></li>
-    </ul>
-  </div>
-</section>
-
-<section class="prose-section">
-  <div class="container section-head reveal">
-    <h2 class="section-title" style="font-size:24px;">ข้อมูลที่เกี่ยวข้อง</h2>
-    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-      <a href="rap-t-shrimp.html" class="btn btn-gold">กุ้งในโครงการ RAP-T</a>
-      <a href="auction-intro.html" class="btn btn-outline">Auction Place ระบบประมูล</a>
-      <a href="contact.html" class="btn btn-outline">ติดต่อทีมงาน AgroLink</a>
-    </div>
+    </article>
   </div>
 </section>
 
