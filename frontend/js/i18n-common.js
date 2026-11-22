@@ -199,6 +199,8 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "sh_nav_fin": {"th": "การเงินและความยั่งยืน", "en": "Finance & Green"},
   "sh_nav_home": {"th": "หน้าแรก", "en": "Home"},
   "sh_nav_sol": {"th": "โซลูชันธุรกิจ", "en": "Solutions"},
+  "sh_m_dairy": {"th": "โคนม", "en": "Dairy"},
+  "sh_m_dairy_full": {"th": "โคนมครบวงจร", "en": "Integrated dairy"},
   "sh_nav_tech": {"th": "เทคโนโลยี", "en": "Technology"},
   "sh_pc1": {"th": "สหกรณ์/กลุ่มเกษตรกร", "en": "Cooperatives / Farmer Groups"},
   "sh_pc2": {"th": "สถาบันการเงิน", "en": "Financial Institutions"},

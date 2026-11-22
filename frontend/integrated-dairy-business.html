@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โคนมครบวงจร — รายงานธุรกิจโคนมของประเทศไทยและข้อเสนอ AgroLink Dairy Intelligence | AgroLink Platform</title>
+<meta name="description" content="รายงานธุรกิจโคนมครบวงจรของประเทศไทย: การแก้ปัญหาน้ำนมดิบส่วนเกิน การบริหารการนำเข้า การคาดการณ์อุปสงค์และอุปทาน และข้อเสนอ AgroLink Dairy Intelligence">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root {
+    --navy: #1F3864;
+    --green: #1B6B4A;
+    --green-dark: #123D2B;
+    --green-light: #E8F3ED;
+    --gold: #C9A227;
+    --gold-light: #FBF3DA;
+    --cream: #FAF8F3;
+    --text: #22262B;
+    --muted: #6B7280;
+    --border: #E7E2D6;
+    --white: #FFFFFF;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.6;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--green); background: var(--green-light); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1, h2, h3, h4 { font-weight: 800; color: var(--navy); line-height: 1.3; }
+  .section-title { font-size: 32px; margin-bottom: 12px; }
+  .section-sub { color: var(--muted); font-size: 16.5px; max-width: 720px; margin-bottom: 40px; }
+  .section-head { text-align: center; margin: 0 auto; }
+  .section-head .section-sub { margin-left: auto; margin-right: auto; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15.5px;
+    cursor: pointer; border: none; transition: all .18s ease; white-space: nowrap;
+  }
+  .btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(27,107,74,.28); }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); background: #fff; }
+  .btn-gold { background: var(--gold); color: var(--green-dark); }
+
+  /* NAV — identical across the whole site */
+  header.nav {
+    position: sticky; top: 0; z-index: 100; background: rgba(250,248,243,.94);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .nav-top { display: flex; align-items: center; justify-content: space-between; height: 78px; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--navy); }
+  .logo-img { height: 40px; width: auto; max-width: none; display: block; }
+  .nav-links {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .nav-links a { white-space: nowrap; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  .nav-toggle { display: none; font-size: 22px; background: none; border: none; cursor: pointer; color: var(--navy); }
+    .lang-toggle-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; }
+  @media (max-width: 480px) { .btn { white-space: normal; text-align: center; } }
+  @media (max-width: 1180px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch;
+      background: #fff; padding: 10px 24px 18px; border-bottom: 1px solid var(--border);
+      box-shadow: 0 12px 24px rgba(0,0,0,.08); gap: 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-toggle { display: block; }
+  }
+  .nav-item-dropdown { position: relative; }
+  .nav-item-dropdown > a { display: inline-flex; align-items: center; gap: 5px; }
+  .nav-item-dropdown > a .fa-chevron-down { font-size: 9px; transition: transform .15s ease; }
+  .nav-item-dropdown:hover > a .fa-chevron-down,
+  .nav-item-dropdown:focus-within > a .fa-chevron-down { transform: rotate(180deg); }
+  .nav-dropdown-menu {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.1); padding: 8px; min-width: 210px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 50;
+  }
+  .nav-item-dropdown:hover .nav-dropdown-menu,
+  .nav-item-dropdown:focus-within .nav-dropdown-menu {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown-menu a {
+    padding: 9px 12px !important; border-radius: 8px; border-bottom: none !important;
+    white-space: nowrap; color: var(--text);
+  }
+  .nav-dropdown-menu a:hover { background: var(--green-light); color: var(--green-dark); }
+  @media (max-width: 1180px) {
+    .nav-item-dropdown { position: static; }
+    .nav-dropdown-menu {
+      position: static; display: flex; opacity: 1; visibility: visible; pointer-events: auto;
+      transform: none; box-shadow: none; border: none; padding: 0 0 6px 16px; margin-top: 0; min-width: 0;
+    }
+    .nav-dropdown-menu a { padding: 10px 0 !important; border-bottom: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 480px) {
+    .nav-top { flex-wrap: wrap; height: auto; row-gap: 10px; padding: 12px 0; }
+    .nav-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 8px; }
+    .lang-toggle-btn { padding: 8px 10px; font-size: 12px; }
+  }
+
+  /* INFOGRAPHIC */
+  .infographic-wrap { padding: 44px 0 4px; }
+  .infographic-figure { max-width: 1040px; margin: 0 auto; }
+  .infographic-figure img { display:block; width:100%; height:auto; border-radius:var(--radius); border:1px solid var(--border); box-shadow:0 10px 30px rgba(31,56,100,.12); }
+  .infographic-figure figcaption { margin-top:14px; text-align:center; font-size:13.5px; color:var(--muted); }
+
+  /* PAGE HEADER (dark, matches .template-section in index.html) */
+  .page-header { background: var(--green-dark); color: #fff; padding: 64px 0 44px; text-align: center; }
+  .page-header .section-title, .page-header h1 { color: #fff; }
+  .page-header .section-sub { color: #C8DBD1; margin-left: auto; margin-right: auto; }
+  .page-header .eyebrow { background: rgba(255,255,255,.12); color: var(--gold); }
+
+  /* INTRO / CLOSING BLOCKS */
+  .prose-section { padding: 60px 0; }
+  .prose-section.alt { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .prose-block { max-width: 860px; margin: 0 auto; }
+  .prose-block p { font-size: 15.5px; color: var(--text); margin-bottom: 16px; }
+  .prose-block p:last-child { margin-bottom: 0; }
+  .prose-block h2 { font-size: 26px; margin-bottom: 18px; }
+
+  /* FOOTER — identical to index.html / coop-portal.html / auction-place.html */
+  footer { background: var(--green-dark); color: #C8DBD1; padding: 60px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  footer h5 { color: #fff; font-size: 14.5px; margin-bottom: 16px; }
+  footer ul li { margin-bottom: 10px; font-size: 13.8px; }
+  footer ul li a:hover { color: #fff; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: #fff; margin-bottom: 14px; }
+  .footer-logo .mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--gold), #fff); display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-size:16px;}
+  footer .desc { font-size: 13.5px; max-width: 320px; margin-bottom: 18px; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #9BB5A9; }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* MEMBER PORTALS */
+  .hero-cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+  .page-header .btn-outline { color:#fff; border-color:rgba(255,255,255,.35); }
+  .page-header .btn-outline:hover { background:rgba(255,255,255,.08); border-color:#fff; }
+  .principle-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  @media (max-width: 900px) { .principle-grid { grid-template-columns:1fr; } }
+  .principle { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:26px; }
+  .principle .num { width:40px; height:40px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .principle h3 { font-size:18px; margin-bottom:8px; }
+  .principle p { font-size:14.5px; color:var(--text); }
+  .group-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  @media (max-width: 1000px) { .group-grid { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width: 640px) { .group-grid { grid-template-columns:1fr; } }
+  .group-card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:22px 22px 18px; display:flex; flex-direction:column; }
+  .group-card h3 { font-size:18px; margin-bottom:4px; display:flex; gap:10px; align-items:center; }
+  .group-card h3 .gi { width:38px; height:38px; border-radius:10px; background:var(--green-light); color:var(--green); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none; }
+  .group-card .gsub { font-size:13.5px; color:var(--muted); margin-bottom:12px; }
+  .portal-item { display:flex; gap:10px; padding:10px 0; border-top:1px solid var(--border); }
+  .portal-item .pi { font-size:20px; line-height:1.3; flex:none; width:26px; text-align:center; }
+  .portal-item b { display:block; font-size:14.5px; color:var(--navy); }
+  .portal-item span { font-size:13.5px; color:var(--text); }
+  .link-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
+  @media (max-width: 860px) { .link-grid { grid-template-columns:1fr; } }
+  .link-card { background:#fff; border:1px solid var(--border); border-left:4px solid var(--gold); border-radius:12px; padding:20px 22px; }
+  .link-card .flow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-bottom:10px; }
+  .link-card .chip { font-size:13px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--green-light); color:var(--green-dark); }
+  .link-card .arr { color:var(--gold); font-weight:800; }
+  .link-card h3 { font-size:16.5px; margin-bottom:6px; }
+  .link-card p { font-size:14.5px; }
+  .trust-list { max-width:860px; margin:0 auto; display:grid; gap:12px; }
+  .trust-list li { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 18px; display:flex; gap:12px; font-size:15px; }
+  .trust-list li i { color:var(--green); margin-top:4px; }
+
+  /* DAIRY REPORT */
+  .hero-cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+  .page-header .btn-outline { color:#fff; border-color:rgba(255,255,255,.35); }
+  .page-header .btn-outline:hover { background:rgba(255,255,255,.08); border-color:#fff; }
+  .page-header .meta { color:#9BB5A9; font-size:13.5px; margin:-24px 0 26px; }
+  .keyfind { max-width:1040px; margin:36px auto 0; background:var(--gold-light); border:1px solid #EBD9A0; border-left:5px solid var(--gold); border-radius:12px; padding:20px 24px; font-size:16px; font-weight:600; color:var(--green-dark); line-height:1.7; }
+  .keyfind i { color:var(--gold); margin-right:8px; }
+  .quick { max-width:1040px; margin:22px auto 0; display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  @media (max-width: 860px) { .quick { grid-template-columns:repeat(2,1fr); } }
+  .quick a { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; display:block; }
+  .quick a:hover { border-color:var(--green); }
+  .quick b { display:block; color:var(--navy); font-size:15px; margin-bottom:4px; }
+  .quick span { font-size:13.5px; color:var(--muted); }
+  .quick i { color:var(--green); margin-right:6px; }
+  .report-wrap { padding:44px 0 70px; }
+  .report-grid { display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; align-items:start; }
+  @media (max-width: 980px) { .report-grid { grid-template-columns:1fr; } .toc { position:static !important; } }
+  .toc { position:sticky; top:96px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; max-height:calc(100vh - 120px); overflow:auto; }
+  .toc h3 { font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .toc a { display:block; font-size:13.5px; padding:6px 0; border-top:1px solid var(--border); color:var(--text); }
+  .toc a:first-of-type { border-top:none; }
+  .toc a:hover { color:var(--green); }
+  .report { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:36px 40px; }
+  @media (max-width: 640px) { .report { padding:24px 18px; } }
+  .report h1 { font-size:24px; margin:36px 0 14px; padding-top:18px; border-top:1px solid var(--border); scroll-margin-top:96px; }
+  .report h1:first-child { margin-top:0; padding-top:0; border-top:none; }
+  .report h2 { font-size:19px; margin:26px 0 10px; color:var(--green-dark); scroll-margin-top:96px; }
+  .report p { font-size:15.5px; margin-bottom:14px; }
+  .report ul, .report ol { margin:0 0 16px 22px; }
+  .report ul { list-style:disc; }
+  .report ol { list-style:decimal; }
+  .report li { font-size:15.2px; margin-bottom:8px; }
+  .report a { color:var(--green); text-decoration:underline; word-break:break-all; }
+  .report .tw { overflow-x:auto; margin:6px 0 20px; border:1px solid var(--border); border-radius:10px; }
+  .report table { border-collapse:collapse; width:100%; font-size:14px; }
+  .report th, .report td { padding:10px 12px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+  .report thead th { background:var(--green-light); color:var(--green-dark); font-weight:700; }
+  .report tbody tr:last-child td { border-bottom:none; }
+  .report .src-note { font-size:13px; color:var(--muted); }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/site-header.css">
+<link rel="stylesheet" href="css/site-footer.css">
+</head>
+<body>
+
+<!-- ===== AgroLink shared site header (same on every public page; styles css/site-header.css, behaviour js/site-header.js) ===== -->
+<a class="sh-skip" href="#sh-content" data-i18n="sh_skip">ข้ามไปยังเนื้อหาหลัก</a>
+<header class="sh-header" id="shHeader">
+  <div class="sh-container sh-row">
+    <a class="sh-brand" href="index.html"><img src="assets/agrolink-logo.png" width="284" height="220" alt="AgroLink" /></a>
+    <nav class="sh-nav" id="shNav" data-i18n="sh_nav_aria" data-i18n-attr="aria-label" aria-label="เมนูหลัก">
+      <ul class="sh-list"><li><a class="sh-link" href="index.html" data-sh-home><i class="fa-solid fa-house" aria-hidden="true"></i> <span data-i18n="sh_nav_home">หน้าแรก</span></a></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-eco"><span data-i18n="sh_nav_eco">ระบบนิเวศ</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-eco"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_eco_overview">ภาพรวม</h3><ul><li><a href="index.html#ecosystem"><span class="sh-mi"><i class="fa-solid fa-circle-nodes" aria-hidden="true"></i></span><span><b data-i18n="sh_m_eco">ภาพรวมระบบนิเวศ</b><span class="sh-d" data-i18n="sh_md_eco">AgroLink เชื่อมทุกฝ่ายด้วยข้อมูลเดียวกัน</span></span></a></li><li><a href="coop-portal.html"><span class="sh-mi"><i class="fa-solid fa-people-roof" aria-hidden="true"></i></span><span><b data-i18n="sh_m_coop">สำหรับสหกรณ์</b><span class="sh-d" data-i18n="sh_md_coop">Cooperative Digital Hub</span></span></a></li><li><a href="for-farmers.html"><span class="sh-mi"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span><span><b data-i18n="sh_m_farmer">สำหรับเกษตรกร</b><span class="sh-d" data-i18n="sh_md_farmer">ข้อมูลแปลง การเงิน ตลาด ในที่เดียว</span></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_eco_farmers">เกษตรกรแต่ละกลุ่ม</h3><ul><li><a href="for-farmers-crop.html"><span class="sh-mi"><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_crop">เกษตรกรผู้ปลูกพืช</b></span></a></li><li><a href="for-farmers-livestock.html"><span class="sh-mi"><i class="fa-solid fa-cow" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_live">เกษตรกรผู้เลี้ยงสัตว์บก</b></span></a></li><li><a href="for-farmers-aquaculture.html"><span class="sh-mi"><i class="fa-solid fa-fish" aria-hidden="true"></i></span><span><b data-i18n="sh_m_f_aqua">เกษตรกรผู้เลี้ยงสัตว์น้ำ</b></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_eco_partners">ผู้ให้บริการและผู้ซื้อ</h3><ul><li><a href="marketplace-partners.html"><span class="sh-mi"><i class="fa-solid fa-store" aria-hidden="true"></i></span><span><b data-i18n="sh_m_market">ตลาดกลาง / ผู้ซื้อ-โรงงาน</b></span></a></li><li><a href="logistics-portal.html"><span class="sh-mi"><i class="fa-solid fa-truck" aria-hidden="true"></i></span><span><b data-i18n="sh_m_logistics">ผู้ให้บริการขนส่ง</b></span></a></li><li><a href="machinery-portal.html"><span class="sh-mi"><i class="fa-solid fa-tractor" aria-hidden="true"></i></span><span><b data-i18n="sh_m_machinery">ผู้ให้บริการเครื่องจักรกลการเกษตร</b></span></a></li><li><a href="biomass-portal.html"><span class="sh-mi"><i class="fa-solid fa-recycle" aria-hidden="true"></i></span><span><b data-i18n="sh_m_biomass_buyer">ผู้รับซื้อชีวมวล</b></span></a></li><li><a href="technology-partners.html"><span class="sh-mi"><i class="fa-solid fa-microchip" aria-hidden="true"></i></span><span><b data-i18n="sh_m_tech_partner">พันธมิตรเทคโนโลยี</b></span></a></li><li><a href="auction-intro.html"><span class="sh-mi"><i class="fa-solid fa-gavel" aria-hidden="true"></i></span><span><b data-i18n="sh_m_auction">Auction Place ระบบประมูล</b></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_eco_t">เกษตรกรและสหกรณ์คือศูนย์กลาง</b><p data-i18n="sh_mf_eco_d">ทุกบริการทำงานบนโครงสร้างพื้นฐานข้อมูลเดียวกัน</p><a href="index.html#ecosystem"><span data-i18n="sh_mf_eco_l">สำรวจระบบนิเวศ</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-sol"><span data-i18n="sh_nav_sol">โซลูชันธุรกิจ</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-sol"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_sol_crops">พืชเศรษฐกิจครบวงจร</h3><ul><li><a class="sh-plain" href="integrated-rice-business.html"><span data-i18n="sh_m_rice">ธุรกิจข้าวครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-durian-business.html"><span data-i18n="sh_m_durian">ทุเรียนครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-cassava-business.html"><span data-i18n="sh_m_cassava">มันสำปะหลังครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-corn-business.html"><span data-i18n="sh_m_corn">ข้าวโพดครบวงจร</span></a></li><li><a class="sh-plain" href="integrated-sugarcane-business.html"><span data-i18n="sh_m_sugarcane">อ้อยน้ำตาล</span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_sol_more">ไม้ผลและพืชยืนต้น</h3><ul><li><a class="sh-plain" href="integrated-palmoil-business.html"><span data-i18n="sh_m_palm">ปาล์มน้ำมัน</span></a></li><li><a class="sh-plain" href="integrated-longan-business.html"><span data-i18n="sh_m_longan">ลำไย</span></a></li><li><a class="sh-plain" href="integrated-coconut-business.html"><span data-i18n="sh_m_coconut">มะพร้าวน้ำหอมครบวงจร</span></a></li><li><a class="sh-plain" href="rap-t-coffee.html"><span data-i18n="sh_m_coffee">กาแฟ</span></a></li><li><a class="sh-plain" href="custom-fertilizer.html"><span data-i18n="sh_m_fert">ปุ๋ยสั่งตัด</span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_sol_animal">ปศุสัตว์และประมง</h3><ul><li><a class="sh-plain" href="for-farmers-livestock.html"><span data-i18n="sh_m_livestock">ปศุสัตว์</span></a></li><li><a class="sh-plain" href="integrated-dairy-business.html"><span data-i18n="sh_m_dairy">โคนม</span></a></li><li><a class="sh-plain" href="for-farmers-aquaculture.html"><span data-i18n="sh_m_fishery">ประมง</span></a></li><li><a class="sh-plain" href="rap-t-shrimp.html"><span data-i18n="sh_m_shrimp">กุ้ง</span></a></li><li><a class="sh-plain" href="rap-t-tilapia.html"><span data-i18n="sh_m_tilapia">ปลานิล/ทับทิมกระชัง</span></a></li><li><a class="sh-plain" href="integrated-seabass-business.html"><span data-i18n="sh_m_seabass">ปลากระพง/เก๋ากระชัง</span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_sol_t">โครงการ RAP-T</b><p data-i18n="sh_mf_sol_d">ต่อยอดห่วงโซ่คุณค่าสินค้าเกษตรสำคัญของประเทศ</p><a href="rap-t-project.html"><span data-i18n="sh_mf_sol_l">ดูโครงการ RAP-T</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-tech"><span data-i18n="sh_nav_tech">เทคโนโลยี</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-tech"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_tech">เทคโนโลยีและข้อมูล</h3><ul><li><a href="ai-satellite-guide.html"><span class="sh-mi"><i class="fa-solid fa-satellite" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ai">AI และดาวเทียม</b><span class="sh-d" data-i18n="sh_md_ai">ข้อมูลดาวเทียมและ AI ภาคสนาม</span></span></a></li><li><a href="production-cycle-template.html"><span class="sh-mi"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><span><b data-i18n="sh_m_farmos">Farm OS</b><span class="sh-d" data-i18n="sh_md_farmos">แม่แบบวงจรการผลิตและการวางแผน</span></span></a></li><li><a href="carbon-module-guide.html"><span class="sh-mi"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span><span><b data-i18n="sh_m_verify">ข้อมูลการผลิตและการตรวจสอบ</b><span class="sh-d" data-i18n="sh_md_verify">กลไก MRV และการทวนสอบ</span></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_portal">พอร์ทัลและการใช้งาน</h3><ul><li><a href="member-portals.html"><span class="sh-mi"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i></span><span><b data-i18n="sh_m_portal">พอร์ทัลสมาชิก</b><span class="sh-d" data-i18n="sh_md_portal">พอร์ทัลของแต่ละกลุ่มและการเชื่อมโยง</span></span></a></li><li><a href="demo-preview.html"><span class="sh-mi"><i class="fa-solid fa-route" aria-hidden="true"></i></span><span><b data-i18n="sh_m_demo">ตัวอย่างการใช้งานทีละขั้นตอน</b><span class="sh-d" data-i18n="sh_md_demo">เดินเรื่องการใช้งานจริง 6 ขั้นตอน</span></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_tech_t">AI + Satellite + IoT</b><p data-i18n="sh_mf_tech_d">เปลี่ยนกิจกรรมในแปลงให้เป็นข้อมูลที่ใช้งานได้จริง</p><a href="ai-satellite-guide.html"><span data-i18n="sh_mf_tech_l">เรียนรู้เทคโนโลยี</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-fin"><span data-i18n="sh_nav_fin">การเงินและความยั่งยืน</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-fin"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_fin">การเงินและประกันภัย</h3><ul><li><a href="finance-partners.html"><span class="sh-mi"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span><span><b data-i18n="sh_m_finance">การเงิน</b><span class="sh-d" data-i18n="sh_md_finance">เชื่อมข้อมูลการผลิตกับผู้ให้บริการทางการเงิน</span></span></a></li><li><a href="agri-insurance-ecosystem.html"><span class="sh-mi"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_eco">ภาพรวมระบบนิเวศประกันภัย</b></span></a></li><li><a href="insurance-marketplace.html"><span class="sh-mi"><i class="fa-solid fa-umbrella" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_market">พอร์ทัลประกันภัยเกษตร</b></span></a></li><li><a href="insurance-portal.html"><span class="sh-mi"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></span><span><b data-i18n="sh_m_ins_provider">พอร์ทัลผู้ให้บริการประกันภัย</b></span></a></li></ul></div><div class="sh-col"><h3 data-i18n="sh_mh_green">ความยั่งยืน</h3><ul><li><a href="carbon-credit-article.html"><span class="sh-mi"><i class="fa-solid fa-leaf" aria-hidden="true"></i></span><span><b data-i18n="sh_m_carbon">คาร์บอนเครดิต</b><span class="sh-d" data-i18n="sh_md_carbon">นาเปียกสลับแห้ง (AWD) และการทวนสอบ</span></span></a></li><li><a href="biomass-economy.html"><span class="sh-mi"><i class="fa-solid fa-recycle" aria-hidden="true"></i></span><span><b data-i18n="sh_m_bio">เศรษฐกิจชีวมวล</b><span class="sh-d" data-i18n="sh_md_bio">เปลี่ยนวัสดุเหลือใช้เป็นรายได้</span></span></a></li><li><a href="straw-mushroom-cooperative.html"><span class="sh-mi"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span><span><b data-i18n="sh_m_mushroom">เห็ดฟางครบวงจร</b><span class="sh-d" data-i18n="sh_md_mushroom">การผลิตเห็ดฟางแบบใหม่ แบบอานนท์ 2589</span></span></a></li></ul></div><div class="sh-feature"><small>AgroLink</small><b data-i18n="sh_mf_fin_t">AgroLink ไม่ใช่ผู้ให้สินเชื่อ</b><p data-i18n="sh_mf_fin_d">การอนุมัติ วงเงิน และอัตราดอกเบี้ย เป็นการพิจารณาของผู้ให้บริการทางการเงินแต่ละราย</p><a href="finance-partners.html"><span data-i18n="sh_mf_fin_l">ดูพันธมิตรการเงิน</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div></div></div></li><li class="sh-has-mega"><button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-about"><span data-i18n="sh_nav_about">เกี่ยวกับเรา</span> <i class="fa-solid fa-chevron-down sh-chev" aria-hidden="true"></i></button><div class="sh-mega" id="sh-mega-about"><div class="sh-container sh-mega-inner"><div class="sh-col"><h3 data-i18n="sh_mh_about">บริษัท</h3><ul><li><a href="about-video.html"><span class="sh-mi"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span><span><b data-i18n="sh_m_about_video">เกี่ยวกับ AgroLink (วิดีโอ)</b></span></a></li><li><a href="about.html"><span class="sh-mi"><i class="fa-solid fa-building" aria-hidden="true"></i></span><span><b data-i18n="sh_m_about">ข้อมูลบริษัท</b></span></a></li><li><a href="business-model.html"><span class="sh-mi"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span><span><b data-i18n="sh_m_investor">นักลงทุน</b><span class="sh-d" data-i18n="sh_md_investor">โมเดลธุรกิจและแผนการเติบโต</span></span></a></li><li><a href="contact.html"><span class="sh-mi"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span><span><b data-i18n="sh_m_contact">ติดต่อเรา</b></span></a></li></ul></div></div></div></li></ul>
+      <div class="sh-mobile-cta"><a class="sh-btn sh-btn-ghost" href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a><a class="sh-btn sh-btn-gold" href="demo-preview.html"><span data-i18n="sh_demo">ขอชม Demo</span></a></div>
+    </nav>
+    <div class="sh-actions">
+      <button type="button" class="sh-lang" data-lang-toggle>EN</button>
+      <a class="sh-btn sh-btn-ghost" href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a>
+      <a class="sh-btn sh-btn-gold" href="demo-preview.html"><span data-i18n="sh_demo">ขอชม Demo</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+      <button type="button" class="sh-toggle" id="shToggle" aria-expanded="false" aria-controls="shNav" data-i18n="sh_menu_aria" data-i18n-attr="aria-label" aria-label="เปิดเมนู"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+    </div>
+  </div>
+</header>
+<!-- ===== /shared site header ===== -->
+
+<section class="page-header" id="sh-content">
+  <div class="container section-head reveal">
+    <div class="eyebrow"><i class="fa-solid fa-cow"></i> <span data-i18n="dairy_eyebrow">โซลูชันธุรกิจ · โคนมครบวงจร</span></div>
+    <h1 class="section-title" data-i18n="dairy_title">รายงานธุรกิจโคนมครบวงจรของประเทศไทย</h1>
+    <p class="section-sub" data-i18n="dairy_sub">การแก้ปัญหาน้ำนมดิบส่วนเกิน • การบริหารการนำเข้า • การคาดการณ์อุปสงค์และอุปทาน • ข้อเสนอ AgroLink Dairy Intelligence</p>
+    <p class="meta" data-i18n="dairy_meta">ฉบับวิเคราะห์ข้อมูลสาธารณะและข้อเสนอเชิงปฏิบัติการ | 9 พฤศจิกายน 2569</p>
+    <div class="hero-cta">
+      <a href="assets/docs/agrolink-dairy-integrated-report-2569.docx" class="btn btn-gold" download><i class="fa-solid fa-file-word"></i> <span data-i18n="dairy_dl">ดาวน์โหลดรายงาน (Word)</span></a>
+      <a href="#report" class="btn btn-outline" data-i18n="dairy_read">อ่านรายงานบนเว็บ</a>
+    </div>
+  </div>
+</section>
+
+<section class="prose-section" style="padding:0 0 4px;">
+  <div class="container">
+    <div class="keyfind reveal in"><i class="fa-solid fa-lightbulb"></i>ข้อค้นพบสำคัญ: ปัญหานมล้นไม่ใช่เพียงปัญหาผลผลิตเกินความต้องการ แต่เป็นปัญหาการประสานข้อมูลและจังหวะเวลาระหว่างการผลิตน้ำนมดิบ การรับซื้อ การแปรรูป สต็อกผลิตภัณฑ์ การจัดซื้อโครงการนมโรงเรียน และการนำเข้าวัตถุดิบทดแทน จึงควรมีระบบข้อมูลกลางที่เห็นภาพล่วงหน้าและเชื่อมโยงการตัดสินใจของรัฐ สหกรณ์ และโรงงานเอกชน</div>
+    <div class="quick">
+      <a href="login.html"><b><i class="fa-solid fa-people-roof"></i><span data-i18n="dairy_q1">พอร์ทัลสหกรณ์โคนม</span></b><span data-i18n="dairy_q1d">รอบรับนม คุณภาพ ค่านม หักกลบ และ LINE แจ้งสมาชิก</span></a>
+      <a href="dairy-partner.html"><b><i class="fa-solid fa-industry"></i><span data-i18n="dairy_q2">พอร์ทัลผู้รับซื้อ/โรงงาน</span></b><span data-i18n="dairy_q2d">ประกาศกำลังรับว่าง และรับซื้อนมส่วนเกิน</span></a>
+      <a href="dairy-member.html"><b><i class="fa-solid fa-user"></i><span data-i18n="dairy_q3">พอร์ทัลสมาชิกผู้เลี้ยงโคนม</span></b><span data-i18n="dairy_q3d">ดูน้ำนม ค่านม และคำขอบริการของตนเอง</span></a>
+      <a href="member-portals.html"><b><i class="fa-solid fa-diagram-project"></i><span data-i18n="dairy_q4">พอร์ทัลสมาชิกทั้งหมด</span></b><span data-i18n="dairy_q4d">แต่ละกลุ่มมีพอร์ทัลของตนเองและเชื่อมถึงกัน</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="report-wrap" id="report">
+  <div class="container report-grid">
+    <nav class="toc" aria-label="สารบัญ">
+      <h3 data-i18n="dairy_toc">สารบัญ</h3>
+      <a href="#sec-1">บทสรุปผู้บริหาร</a>
+      <a href="#sec-2">1. ภาพรวมอุตสาหกรรมโคนมไทยและตัวเลขฐาน</a>
+      <a href="#sec-3">2. วิเคราะห์ปัญหาน้ำนมล้นและสาเหตุเชิงโครงสร้าง</a>
+      <a href="#sec-4">3. การบริหารการนำเข้าผลิตภัณฑ์นมและนมผง</a>
+      <a href="#sec-7">4. กลไกให้ผู้ผลิตรายใหญ่ร่วมระบายน้ำนมส่วนเกิน</a>
+      <a href="#sec-8">5. ระบบคาดการณ์น้ำนมดิบล่วงหน้า 30/60/90 วัน</a>
+      <a href="#sec-10">6. รวบรวมความต้องการนมโรงเรียนและตลาดจริง</a>
+      <a href="#sec-13">7. สถิติการรับซื้อน้ำนมจากสหกรณ์เข้าโรงงานเอกชน: ข้อมูลที่มีและช่องว่าง</a>
+      <a href="#sec-15">8. สัดส่วนการนำเข้านมผง: วิธีคำนวณที่ถูกต้อง</a>
+      <a href="#sec-16">9. ข้อเสนอ AgroLink Dairy Intelligence &amp; Market Integration</a>
+      <a href="#sec-17">10. Dashboard ระดับนโยบายที่ควรมี</a>
+      <a href="#sec-18">11. แผนดำเนินงานเสนอ 12 เดือน</a>
+      <a href="#sec-19">12. ข้อเสนอเชิงนโยบายเร่งด่วน</a>
+      <a href="#sec-20">13. ข้อมูลที่ต้องขอจากหน่วยงานเพื่อปิดช่องว่างสถิติ</a>
+      <a href="#sec-21">14. สรุป</a>
+      <a href="#sec-22">เอกสารอ้างอิงและแหล่งข้อมูลออนไลน์</a>
+      <a href="#sec-23">ข้อจำกัดของรายงาน</a>
+    </nav>
+    <article class="report">
+
+<h1 id="sec-1">บทสรุปผู้บริหาร</h1>
+<p>ประเทศไทยมีห่วงโซ่อุตสาหกรรมนมที่เชื่อมโยงเกษตรกรผู้เลี้ยงโคนม ศูนย์รวบรวมน้ำนมดิบ
+สหกรณ์ โรงงานแปรรูป ผู้ผลิตอาหารและเครื่องดื่ม โรงเรียน ผู้ค้าปลีก และผู้นำเข้า
+แต่การบริหารจัดการยังแยกส่วน ข้อมูลปริมาณน้ำนมที่ผลิตได้จริง ปริมาณที่มีสัญญารับซื้อ
+กำลังการผลิต สต็อกผลิตภัณฑ์ และคำสั่งซื้อจากตลาดไม่ได้ถูกรวมเป็นภาพเดียวกันแบบรายวัน</p>
+<p>ข้อมูลภาครัฐปี 2569 ระบุว่าคาดการณ์ผลผลิตน้ำนมดิบเฉลี่ย 3,039.12 ตัน/วัน เพิ่มขึ้น
+1.05% จากปีก่อน ขณะที่ข้อมูล ณ 20 พฤษภาคม 2569 ระบุว่ามีน้ำนมที่จัดการได้แล้ว 56.851
+ตัน/วัน และยังต้องเร่งบริหารจัดการยอดคงเหลือ 154.485 ตัน/วัน
+สะท้อนความจำเป็นของระบบคาดการณ์และระบบจับคู่ปริมาณน้ำนมกับผู้รับซื้อที่ทำงานก่อนเกิดปัญหา</p>
+<p>ข้อเสนอหลักคือจัดตั้ง “AgroLink Dairy Intelligence &amp; Market Integration
+Platform” เป็นโครงสร้างพื้นฐานข้อมูลกลางที่ไม่เข้าไปแทนบทบาทหน่วยงานกำกับ
+แต่ทำหน้าที่เชื่อมข้อมูลฟาร์ม สหกรณ์ โรงงาน ผู้ผลิตรายใหญ่ โรงเรียน ตลาด
+และข้อมูลการนำเข้า พร้อมระบบแจ้งเตือนภาวะนมล้นล่วงหน้า 30/60/90 วัน
+และกลไกบริหารนมส่วนเกินที่ตกลงร่วมกันล่วงหน้า</p>
+<h1 id="sec-2">1.
+ภาพรวมอุตสาหกรรมโคนมไทยและตัวเลขฐาน</h1>
+<p>ตัวเลขจากเอกสารภาครัฐและรายงานอุตสาหกรรมมีปีฐานและขอบเขตต่างกัน
+จึงไม่ควรนำมารวมเป็นอนุกรมเดียวโดยไม่ปรับนิยาม เช่น จำนวนโคนมทั้งหมดกับจำนวนแม่โครีดนม
+หรือผลผลิตทั้งปีจากฐานข้อมูลคนละหน่วยงาน</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><strong>ตัวชี้วัด</strong></th>
+<th><strong>ข้อมูลที่เผยแพร่</strong></th>
+<th><strong>ข้อสังเกต</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>เกษตรกรผู้เลี้ยงโคนม</td>
+<td>14,997 ราย (ปี 2567)</td>
+<td>ลดจาก 15,724 รายในปี 2566</td>
+</tr>
+<tr>
+<td>ผลผลิตน้ำนมดิบ</td>
+<td>1.011 ล้านตัน/ปี (ปี 2567)</td>
+<td>ลดจาก 1.026 ล้านตันในปี 2566 ตามข้อมูลชุดที่ ครม. ใช้ประกอบการพิจารณา</td>
+</tr>
+<tr>
+<td>แม่โครีดนม</td>
+<td>233,501 ตัว (ปี 2567)</td>
+<td>ลดจาก 244,292 ตัวในปี 2566</td>
+</tr>
+<tr>
+<td>คาดการณ์น้ำนมดิบ</td>
+<td>3,039.12 ตัน/วัน (ปี 2569)</td>
+<td>เพิ่มขึ้น 1.05% จากปี 2568</td>
+</tr>
+<tr>
+<td>แม่โครีดนมเฉลี่ย</td>
+<td>248,975 ตัว (ปี 2569)</td>
+<td>อัตราให้นมเฉลี่ย 12.29 กก./ตัว/วัน</td>
+</tr>
+<tr>
+<td>นักเรียนในโครงการนมโรงเรียน</td>
+<td>6,525,110 คน (ปี 2567)</td>
+<td>ลดจาก 7,036,845 คนในปี 2563</td>
+</tr>
+<tr>
+<td>ยอดน้ำนมส่วนที่ยังต้องจัดการ</td>
+<td>154.485 ตัน/วัน (ข้อมูล 20 พ.ค. 2569)</td>
+<td>หลังจากบริหารจัดการได้แล้ว 56.851 ตัน/วัน</td>
+</tr>
+</tbody>
+</table></div>
+<p class="src-note">แหล่งข้อมูล: กระทรวงศึกษาธิการ/มติ ครม. เรื่องระบบบริหารจัดการนมโรงเรียน;
+กระทรวงเกษตรและสหกรณ์ ข่าวการพยากรณ์ผลผลิตน้ำนมปี 2569;
+ข่าวหน่วยงานรัฐเรื่องการบริหารน้ำนมส่วนเกิน [1][2][3]</p>
+<h1 id="sec-3">2.
+วิเคราะห์ปัญหาน้ำนมล้นและสาเหตุเชิงโครงสร้าง</h1>
+<ul>
+<li><p>ผลผลิตน้ำนมดิบเกิดขึ้นทุกวันและมีข้อจำกัดด้านอายุการเก็บรักษา
+ขณะที่ความต้องการของโรงงานและตลาดมีความผันผวนตามฤดูกาล วันหยุด ภาคเรียน
+และกำลังการผลิต</p></li>
+<li><p>ปริมาณน้ำนมที่สหกรณ์รวบรวมได้จริงอาจสูงกว่าปริมาณที่มี MOU หรือสัญญารับซื้อรองรับ
+โดยเฉพาะช่วงที่ผลผลิตเพิ่มขึ้นหรือโรงงานมีสต็อกผลิตภัณฑ์ค้าง</p></li>
+<li><p>โครงการนมโรงเรียนเป็นตลาดสำคัญ
+แต่จำนวนนักเรียนลดลงและการจัดสรรสิทธิ/การส่งมอบมีความซับซ้อน
+อีกทั้งช่วงปิดภาคเรียนทำให้การระบายผลิตภัณฑ์ชะลอตัว</p></li>
+<li><p>โรงงานอาจมีข้อจำกัดด้านถังพักน้ำนมดิบ กำลังพาสเจอร์ไรซ์/UHT กำลังบรรจุ คลังสินค้า
+เงินทุนหมุนเวียน และคำสั่งซื้อของคู่ค้า</p></li>
+<li><p>การนำเข้านมผงและผลิตภัณฑ์นมเป็นวัตถุดิบของอุตสาหกรรมหลายประเภท
+ไม่ใช่ทุกส่วนทดแทนน้ำนมดิบได้โดยตรง
+แต่การนำเข้าในบางช่วงอาจแข่งขันกับการใช้น้ำนมดิบในประเทศในผลิตภัณฑ์บางกลุ่ม</p></li>
+<li><p>ข้อมูลการผลิต การรับซื้อ การแปรรูป สต็อก และการนำเข้าอยู่คนละหน่วยงาน/บริษัท
+จึงมักทราบปัญหาเมื่อเกิดน้ำนมไม่มีแหล่งจำหน่ายแล้ว</p></li>
+</ul>
+<h1 id="sec-4">3.
+การบริหารการนำเข้าผลิตภัณฑ์นมและนมผง</h1>
+<p>แนวทางควบคุมการนำเข้าควรตั้งอยู่บนข้อผูกพันทางการค้าระหว่างประเทศและหลักฐานความต้องการใช้จริง
+ไม่ควรเสนอการห้ามนำเข้าแบบเหมารวม
+เพราะนมผงและส่วนประกอบนมมีการใช้งานหลายประเภท รวมถึงผลิตภัณฑ์ที่ไทยผลิตได้ไม่เพียงพอ
+และการนำเข้าเพื่อแปรรูปส่งออก</p>
+<h2 id="sec-5">3.1
+ข้อมูลการนำเข้าที่ตรวจสอบได้จากแหล่งสาธารณะ</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><strong>รายการ</strong></th>
+<th><strong>ปริมาณ</strong></th>
+<th><strong>มูลค่า</strong></th>
+<th><strong>หมายเหตุ</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ผลิตภัณฑ์นมและนมรวม ปี 2566</td>
+<td>270,860 ตัน</td>
+<td>29,865 ล้านบาท</td>
+<td>รายงาน อ.ส.ค. ระบุว่าปริมาณลดจากปี 2565 แต่มีมูลค่าเพิ่ม</td>
+</tr>
+<tr>
+<td>นมผงขาดมันเนย (SMP) ปี 2566</td>
+<td>70,030 ตัน</td>
+<td>8,410 ล้านบาท</td>
+<td>เพิ่มจาก 63,442 ตันในปี 2565</td>
+</tr>
+<tr>
+<td>การบริโภค SMP ปี 2567</td>
+<td>69,200 ตัน</td>
+<td>—</td>
+<td>รายงานอุตสาหกรรมเอกชนประเมินเพิ่มขึ้น 9.1%</td>
+</tr>
+<tr>
+<td>การบริโภคนมผงเต็มมันเนย (WMP) ปี 2567</td>
+<td>85,100 ตัน</td>
+<td>—</td>
+<td>รายงานอุตสาหกรรมเอกชนประเมินเพิ่มขึ้น 15.4%</td>
+</tr>
+</tbody>
+</table></div>
+<p>หมายเหตุ: ตัวเลขปี 2566 เป็นสถิติการนำเข้ารวมและ SMP จากรายงานประจำปี อ.ส.ค.
+ส่วนตัวเลขปี 2567 เป็นประมาณการ/ข้อมูลการบริโภคจากรายงานอุตสาหกรรม
+ไม่ใช่ตัวเลขนำเข้าศุลกากรโดยตรง
+จึงไม่ควรนำมาคำนวณเป็นสัดส่วนการนำเข้าต่อผลผลิตน้ำนมดิบโดยตรง [4][5]</p>
+<h2 id="sec-6">3.2 ข้อเสนอเชิงนโยบายการนำเข้า</h2>
+<ul>
+<li><p>จัดทำทะเบียนผู้ใช้วัตถุดิบนมผงรายโรงงาน ระบุประเภทสินค้า ปริมาณใช้จริง
+สต็อกคงเหลือ แหล่งนำเข้า และสัดส่วนใช้ผลิตเพื่อจำหน่ายในประเทศ/ส่งออก</p></li>
+<li><p>เปิดเผยข้อมูลการจัดสรรโควตาและการนำเข้าตาม HS Code แยก SMP, WMP, whey,
+milk/cream และผลิตภัณฑ์ที่เกี่ยวข้อง โดยรายงานรายเดือน</p></li>
+<li><p>ใช้กลไก “Import Monitoring &amp; Domestic Milk Balance”
+เพื่อแจ้งเตือนเมื่อสต็อกนำเข้าและกำหนดส่งมอบสูงกว่าความต้องการใช้ที่พิสูจน์ได้</p></li>
+<li><p>หารือผู้ประกอบการรายใหญ่ให้จัดทำแผนรับซื้อน้ำนมดิบในประเทศควบคู่กับแผนจัดหานมผง
+โดยกำหนดเงื่อนไขตามผลิตภัณฑ์ที่สามารถใช้วัตถุดิบในประเทศทดแทนได้จริง</p></li>
+<li><p>ทบทวนมาตรการภาษี/โควตา/ใบอนุญาตให้สอดคล้อง WTO และ FTA
+โดยเฉพาะข้อผูกพันที่มีผลตั้งแต่ 1 มกราคม 2568 สำหรับนมผงขาดมันเนยและนม/ครีมภายใต้
+TAFTA และ TNZCEP</p></li>
+<li><p>ป้องกันการสำแดงพิกัดหรือแหล่งกำเนิดสินค้าไม่ถูกต้อง
+และตรวจสอบการใช้สิทธิพิเศษทางภาษีอย่างโปร่งใส</p></li>
+</ul>
+<h1 id="sec-7">4.
+กลไกให้ผู้ผลิตรายใหญ่ร่วมระบายน้ำนมส่วนเกิน</h1>
+<p>ภาครัฐควรทำหน้าที่เป็นผู้ประสานและกำหนดกติกาที่เป็นธรรม
+ขณะที่ผู้ผลิตรายใหญ่ควรมีบทบาทเป็น “Market Stabilizer Partner”
+ผ่านข้อตกลงสมัครใจที่วัดผลได้ ไม่ใช่การบังคับรับซื้อโดยไม่มีต้นทุนหรือแผนตลาดรองรับ</p>
+<ul>
+<li><p>ทำ MOU รับซื้อน้ำนมส่วนเกินแบบแบ่งสัดส่วนตามกำลังผลิตจริงและประเภทผลิตภัณฑ์
+โดยกำหนดปริมาณขั้นต่ำ/สูงสุด ช่วงเวลา คุณภาพ ราคา และระยะเวลาชำระเงิน</p></li>
+<li><p>จัดทำ “Milk Balancing Pool”
+ให้โรงงานที่มีคำสั่งซื้อเพิ่มหรือมีเครื่องจักรว่างรับน้ำนมจากสหกรณ์ที่ไม่มีตลาด
+โดยระบบจับคู่ตามระยะทาง คุณภาพ และต้นทุนขนส่ง</p></li>
+<li><p>สนับสนุนการแปรรูปเป็น UHT, นมพาสเจอร์ไรซ์, โยเกิร์ต, นมเปรี้ยว, ชีส, เนย,
+นมผง หรือวัตถุดิบอาหาร โดยเลือกตามความคุ้มค่าและกำลังการผลิตที่มีจริง</p></li>
+<li><p>กำหนดระบบแบ่งเบาต้นทุนส่วนเพิ่ม เช่น ค่าขนส่ง ค่าบรรจุ ค่าคลังสินค้า
+และต้นทุนเงินทุนหมุนเวียน ผ่านกองทุน/สัญญาร่วมลงทุน/ส่วนลดค่าบริการ
+ไม่ใช่การผลักภาระฝ่ายเดียว</p></li>
+<li><p>บริษัทผู้นำเข้าผลิตภัณฑ์นมที่มีเครือข่ายจำหน่าย
+สามารถร่วมรับซื้อหรือช่วยระบายสินค้านมไทยในช่องทางค้าปลีก โรงแรม ร้านอาหาร
+และตลาดส่งออก โดยต้องแยกบทบาทผู้ค้าและผู้แปรรูปให้ชัดเจน</p></li>
+<li><p>จัดทำระบบติดตามการรับซื้อจริงและการชำระเงินจริง
+ป้องกันการรายงานยอดรับซื้อซ้ำหรือการทำ MOU ที่ไม่มีการส่งมอบจริง</p></li>
+</ul>
+<h1 id="sec-8">5. ระบบคาดการณ์น้ำนมดิบล่วงหน้า
+30/60/90 วัน</h1>
+<p>ควรพยากรณ์ทั้งระดับฟาร์ม สหกรณ์ เขตพื้นที่ และประเทศ โดยใช้ข้อมูลจำนวนแม่โครีดนม
+วันให้นม ผลผลิตเฉลี่ยรายตัว ประวัติการคลอด/ผสมพันธุ์ อาหารสัตว์ อากาศ สุขภาพสัตว์
+และรูปแบบฤดูกาล จากนั้นนำไปเทียบกับคำสั่งซื้อ MOU กำลังการผลิต และสต็อกของโรงงาน</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><strong>ข้อมูลนำเข้า</strong></th>
+<th><strong>วิธีวิเคราะห์</strong></th>
+<th><strong>ผลลัพธ์ที่ต้องแสดง</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>จำนวนแม่โครีดนม/ผลผลิตรายตัว</td>
+<td>แบบจำลองผลผลิตรายฟาร์มและรายวัน</td>
+<td>ปริมาณน้ำนมคาดการณ์รายวัน 30/60/90 วัน</td>
+</tr>
+<tr>
+<td>ประวัติคลอด ผสมพันธุ์ ระยะให้นม</td>
+<td>ปฏิทินการเปลี่ยนแปลงฝูงโค</td>
+<td>ช่วงที่ผลผลิตเพิ่ม/ลดตามชีววิทยาฝูง</td>
+</tr>
+<tr>
+<td>สัญญารับซื้อ/MOU/คำสั่งซื้อ</td>
+<td>Demand-Supply Matching</td>
+<td>ปริมาณที่มีตลาดรองรับและส่วนเกิน</td>
+</tr>
+<tr>
+<td>กำลังผลิตและสต็อกโรงงาน</td>
+<td>Capacity &amp; Inventory Forecast</td>
+<td>กำลังรองรับว่าง/คอขวด/สต็อกเสี่ยง</td>
+</tr>
+<tr>
+<td>ปฏิทินโรงเรียน วันหยุด และการบริโภค</td>
+<td>Seasonality &amp; Demand Forecast</td>
+<td>ความต้องการนมโรงเรียนและตลาดพาณิชย์</td>
+</tr>
+<tr>
+<td>แผนการนำเข้าและสต็อกวัตถุดิบ</td>
+<td>Import &amp; Raw Material Balance</td>
+<td>ความเสี่ยงการแข่งขันกับน้ำนมดิบไทย</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="sec-9">5.1 ตัวอย่างระบบแจ้งเตือน</h2>
+<ul>
+<li><p>เขียว: ปริมาณคาดการณ์ต่ำกว่าความต้องการและกำลังรับซื้อรวม
+มีสัญญารองรับเพียงพอ</p></li>
+<li><p>เหลือง: คาดว่าจะมีส่วนเกิน 1–3% ใน 30 วัน
+ให้เริ่มจับคู่โรงงานและเพิ่มคำสั่งซื้อ</p></li>
+<li><p>ส้ม: คาดว่าจะมีส่วนเกิน 3–5% หรือสต็อกผลิตภัณฑ์สูงกว่าระดับเตือน
+ให้เปิดแผนแปรรูป/ระบายสินค้า</p></li>
+<li><p>แดง: คาดว่าจะมีน้ำนมไม่มีแหล่งรับซื้อ
+ให้คณะทำงานกลางสั่งการตามแผนสำรองและติดตามรายวัน</p></li>
+</ul>
+<p>ตัวเลขเกณฑ์สีข้างต้นเป็นข้อเสนอเพื่อออกแบบระบบ
+ต้องปรับเทียบจากข้อมูลจริงและความสามารถรองรับของแต่ละพื้นที่
+ไม่ใช่เกณฑ์ทางราชการที่มีผลใช้อยู่</p>
+<h1 id="sec-10">6.
+รวบรวมความต้องการนมโรงเรียนและตลาดจริง</h1>
+<h2 id="sec-11">6.1 ฐานข้อมูลนมโรงเรียน</h2>
+<ul>
+<li><p>จำนวนนักเรียนจริงรายโรงเรียน แยกระดับชั้น ภาคเรียน การเข้าเรียน
+และจำนวนวันที่จัดส่งได้</p></li>
+<li><p>ปริมาณสิทธิที่ได้รับ ปริมาณที่สั่งซื้อ ปริมาณส่งมอบจริง ปริมาณบริโภคจริง
+และสินค้าคงเหลือ</p></li>
+<li><p>รูปแบบผลิตภัณฑ์ ขนาดบรรจุ อายุสินค้า ตารางส่งมอบ
+และข้อจำกัดห้องเก็บ/ตู้เย็น</p></li>
+<li><p>ปฏิทินเปิด-ปิดภาคเรียน วันหยุด และเหตุการณ์ที่กระทบการบริโภค</p></li>
+<li><p>ระบบยืนยันรับสินค้าด้วย QR/ลายเซ็นดิจิทัลและรายงานความผิดปกติ</p></li>
+</ul>
+<h2 id="sec-12">6.2 ฐานข้อมูลตลาดพาณิชย์</h2>
+<ul>
+<li><p>คำสั่งซื้อจริงจากโมเดิร์นเทรด ร้านค้าปลีก ร้านสะดวกซื้อ โรงแรม ร้านอาหาร
+โรงพยาบาล และหน่วยงานรัฐ</p></li>
+<li><p>ยอดขายหน้าร้าน (POS) และสต็อกคงเหลือราย SKU
+เพื่อแยกยอดขายจริงออกจากยอดส่งเข้าคลัง</p></li>
+<li><p>แผนการผลิตและความต้องการวัตถุดิบของโรงงานอาหาร เครื่องดื่ม เบเกอรี่ ไอศกรีม
+และผู้ผลิตผลิตภัณฑ์นม</p></li>
+<li><p>ตลาดส่งออก คำสั่งซื้อที่ยืนยันแล้ว และความเสี่ยงจากตลาดปลายทาง</p></li>
+<li><p>การสำรวจผู้บริโภคด้านราคา รสชาติ ขนาดบรรจุ ช่องทาง
+และความถี่ในการซื้อ</p></li>
+</ul>
+<p>หลักการสำคัญ: ใช้ยอดขาย/การบริโภคจริงเป็นฐาน ไม่ใช้เพียงยอดจัดสรรหรือยอดส่งเข้าคลัง
+เพราะอาจทำให้ประเมินความต้องการสูงเกินจริงและเกิดสต็อกค้าง</p>
+<h1 id="sec-13">7.
+สถิติการรับซื้อน้ำนมจากสหกรณ์เข้าโรงงานเอกชน: ข้อมูลที่มีและช่องว่าง</h1>
+<p>จากการค้นข้อมูลสาธารณะที่เข้าถึงได้ ยังไม่พบฐานข้อมูลกลางที่เปิดเผยรายเดือนในรูปแบบ
+“ชื่อสหกรณ์ → โรงงานผู้รับซื้อ → ปริมาณตัน/วัน → ราคา/คุณภาพ → ปริมาณส่งมอบจริง”
+ครบทุกคู่สัญญา จึงไม่ควรสร้างตัวเลขรายบริษัทหรือรายสหกรณ์ขึ้นเอง</p>
+<p>อย่างไรก็ดี มีข้อมูลอ้างอิงระดับประเทศที่ระบุว่าในช่วงมีนาคม–พฤษภาคม 2568
+น้ำนมดิบเฉลี่ยอยู่ที่ประมาณ 3,000 ตัน/วัน สูงกว่าตัวเลขที่นำไปจัดทำ MOU ปี 2567/2568
+ซึ่งอยู่ที่ 2,843 ตัน/วัน
+และมีการขอความร่วมมือผู้ประกอบการอุตสาหกรรมนมรับซื้อน้ำนมดิบส่วนเกิน [6]</p>
+<p>ต่อมาในปี 2569 มีรายงานภาครัฐเกี่ยวกับปริมาณน้ำนมส่วนเกินราว 200–211 ตัน/วัน
+และข้อเสนอให้ผู้ประกอบการรับซื้อน้ำนมส่วนที่เกินจาก MOU พร้อมเร่งระบายผลิตภัณฑ์ค้างสต็อก
+[7][8]</p>
+<h2 id="sec-14">7.1
+แบบรายงานมาตรฐานที่ควรบังคับใช้/ตกลงร่วมกัน</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><strong>วันที่</strong></th>
+<th><strong>สหกรณ์/ศูนย์รวบรวม</strong></th>
+<th><strong>โรงงานผู้รับซื้อ</strong></th>
+<th><strong>ตัน/วัน</strong></th>
+<th><strong>ราคา/คุณภาพ/สถานะ</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>รายวัน</td>
+<td>รหัสสหกรณ์</td>
+<td>รหัสโรงงาน</td>
+<td>ปริมาณชั่งจริง</td>
+<td>Fat/SNF/SCC • รับ/ปฏิเสธ • ชำระเงิน</td>
+</tr>
+<tr>
+<td>รายวัน</td>
+<td>รหัสสหกรณ์</td>
+<td>รหัสโรงงาน</td>
+<td>ปริมาณชั่งจริง</td>
+<td>Fat/SNF/SCC • รับ/ปฏิเสธ • ชำระเงิน</td>
+</tr>
+<tr>
+<td>รายวัน</td>
+<td>รหัสสหกรณ์</td>
+<td>รหัสโรงงาน</td>
+<td>ปริมาณชั่งจริง</td>
+<td>Fat/SNF/SCC • รับ/ปฏิเสธ • ชำระเงิน</td>
+</tr>
+<tr>
+<td>รายวัน</td>
+<td>รหัสสหกรณ์</td>
+<td>รหัสโรงงาน</td>
+<td>ปริมาณชั่งจริง</td>
+<td>Fat/SNF/SCC • รับ/ปฏิเสธ • ชำระเงิน</td>
+</tr>
+</tbody>
+</table></div>
+<p>ควรเปิดเผยข้อมูลสรุปแบบไม่เปิดเผยความลับทางการค้า เช่น
+ปริมาณรับซื้อรายพื้นที่/กลุ่มโรงงาน สัดส่วนตามประเภทผู้รับซื้อ และปริมาณที่ไม่มีตลาดรองรับ
+ส่วนข้อมูลคู่สัญญารายบริษัทให้หน่วยงานกำกับและผู้มีสิทธิใช้ข้อมูลเข้าถึงตามกฎหมาย/ข้อตกลง</p>
+<h1 id="sec-15">8. สัดส่วนการนำเข้านมผง:
+วิธีคำนวณที่ถูกต้อง</h1>
+<p>การพูดถึง “สัดส่วนการนำเข้านมผง” ต้องระบุฐานเปรียบเทียบให้ชัดเจน
+เพราะการนำเข้านมผงมีทั้ง SMP และ WMP และนมผงหนึ่งตันไม่เท่ากับน้ำนมดิบหนึ่งตัน
+อีกทั้งบางส่วนถูกนำไปใช้ในผลิตภัณฑ์ส่งออกหรืออาหารประเภทอื่น</p>
+<ul>
+<li><p>สัดส่วน SMP ต่อนำเข้าผลิตภัณฑ์นมทั้งหมด = ปริมาณนำเข้า SMP ÷
+ปริมาณนำเข้าผลิตภัณฑ์นมทั้งหมด × 100</p></li>
+<li><p>สัดส่วนการพึ่งพาการนำเข้า SMP = ปริมาณนำเข้า SMP ÷ ปริมาณการใช้ SMP
+ในประเทศ × 100</p></li>
+<li><p>สัดส่วนการใช้นมผงในผลิตภัณฑ์นมพร้อมดื่ม = ปริมาณนมผงที่ใช้ในผลิตภัณฑ์พร้อมดื่ม ÷
+ปริมาณวัตถุดิบรวมของผลิตภัณฑ์กลุ่มนั้น × 100</p></li>
+<li><p>การแปลงเป็นน้ำนมดิบเทียบเท่า (milk equivalent) ต้องใช้ค่า conversion
+factor ตามองค์ประกอบไขมัน/โปรตีนและวิธีมาตรฐานที่หน่วยงานกำหนด
+ไม่ควรใช้ตัวคูณเดียวกับนมผงทุกประเภท</p></li>
+</ul>
+<p>จากข้อมูลปี 2566: SMP นำเข้า 70,030 ตัน จากผลิตภัณฑ์นมและนมรวมที่นำเข้า 270,860
+ตัน คิดเป็นประมาณ 25.8% ของปริมาณนำเข้ารวมตามขอบเขตของรายงาน อ.ส.ค. เท่านั้น
+ไม่ใช่สัดส่วน SMP ต่อน้ำนมดิบที่ผลิตในประเทศ
+และไม่ใช่สัดส่วนการพึ่งพานำเข้าของตลาดนมทั้งหมด [4]</p>
+<h1 id="sec-16">9. ข้อเสนอ
+AgroLink Dairy Intelligence &amp; Market Integration</h1>
+<p>AgroLink ควรทำหน้าที่เป็น Digital Infrastructure เชื่อมผู้เกี่ยวข้อง
+ไม่ใช่ผู้กำหนดโควตาหรือผู้กำกับการนำเข้า โดยออกแบบเป็นโมดูลดังนี้</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><strong>โมดูล</strong></th>
+<th><strong>ความสามารถหลัก</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Farm &amp; Herd Registry</strong></td>
+<td>ทะเบียนฟาร์ม โคนมรายตัว สายพันธุ์ สุขภาพ การคลอด ผลผลิตรายวัน และอาหาร</td>
+</tr>
+<tr>
+<td><strong>Cooperative Milk Collection</strong></td>
+<td>ชั่งน้ำนม คุณภาพ ปริมาณรับเข้า/ส่งออก จุดรวบรวม รถขนส่ง และการชำระเงิน</td>
+</tr>
+<tr>
+<td><strong>Processor Capacity &amp; Intake</strong></td>
+<td>กำลังการผลิตรายโรงงาน ตารางรับนม แผนการผลิต สต็อก และกำลังการผลิตว่าง</td>
+</tr>
+<tr>
+<td><strong>School Milk Demand</strong></td>
+<td>จำนวนนักเรียน สิทธิ ปริมาณสั่งซื้อ ส่งมอบ บริโภค และสต็อกโรงเรียน</td>
+</tr>
+<tr>
+<td><strong>Commercial Demand &amp; Sales</strong></td>
+<td>คำสั่งซื้อ ยอดขายจริง POS สต็อก และแผนตลาดในประเทศ/ส่งออก</td>
+</tr>
+<tr>
+<td><strong>Import &amp; Ingredient Monitor</strong></td>
+<td>ข้อมูลนำเข้า HS Code ผู้ใช้วัตถุดิบ ปริมาณ สต็อก และแผนการใช้</td>
+</tr>
+<tr>
+<td><strong>AI Milk Forecast</strong></td>
+<td>พยากรณ์ผลผลิต อุปสงค์ ส่วนเกิน และความเสี่ยง 30/60/90 วัน</td>
+</tr>
+<tr>
+<td><strong>Surplus Exchange</strong></td>
+<td>จับคู่สหกรณ์ที่มีน้ำนมส่วนเกินกับโรงงานที่มีศักยภาพรับซื้อ/แปรรูป</td>
+</tr>
+<tr>
+<td><strong>Policy Dashboard</strong></td>
+<td>ภาพรวมประเทศ พื้นที่เสี่ยง โรงงาน/สหกรณ์ที่ได้รับผลกระทบ และฉากทัศน์นโยบาย</td>
+</tr>
+</tbody>
+</table></div>
+<h1 id="sec-17">10. Dashboard ระดับนโยบายที่ควรมี</h1>
+<ul>
+<li><p>ปริมาณน้ำนมดิบจริง/คาดการณ์รายวัน แยกจังหวัด สหกรณ์ และศูนย์รวบรวม</p></li>
+<li><p>ปริมาณรับซื้อจริงเทียบ MOU/สัญญา และปริมาณที่ยังไม่มีผู้รับซื้อ</p></li>
+<li><p>กำลังการผลิตและอัตราการใช้กำลังการผลิตของโรงงาน
+รวมถึงคอขวดการแปรรูป</p></li>
+<li><p>สต็อกนม UHT พาสเจอร์ไรซ์ นมผง และผลิตภัณฑ์อื่น
+แยกอายุสินค้าและความเสี่ยงหมดอายุ</p></li>
+<li><p>ความต้องการนมโรงเรียนรายโรงเรียน/เขตพื้นที่
+เทียบสิทธิและการส่งมอบจริง</p></li>
+<li><p>ยอดขายเชิงพาณิชย์และคำสั่งซื้อที่ยืนยันแล้ว แยกช่องทาง/ผลิตภัณฑ์</p></li>
+<li><p>การนำเข้านมผงและผลิตภัณฑ์นมตาม HS Code ปริมาณ มูลค่า ประเทศต้นทาง
+และผู้ใช้วัตถุดิบ</p></li>
+<li><p>การแจ้งเตือนล่วงหน้า 30/60/90 วัน
+พร้อมข้อเสนอการจับคู่รับซื้อและแปรรูป</p></li>
+</ul>
+<h1 id="sec-18">11. แผนดำเนินงานเสนอ 12 เดือน</h1>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><strong>ช่วงเวลา</strong></th>
+<th><strong>งานหลัก</strong></th>
+<th><strong>ผลส่งมอบ</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>เดือน 1–2</td>
+<td>ตั้งคณะทำงานข้อมูลและกำหนด Data Governance</td>
+<td>ตกลงนิยามข้อมูล แบบรายงาน และสิทธิการเข้าถึง</td>
+</tr>
+<tr>
+<td>เดือน 2–4</td>
+<td>นำร่องข้อมูลสหกรณ์และโรงงาน</td>
+<td>เลือกพื้นที่/สหกรณ์/โรงงานที่สมัครใจ พร้อมข้อมูลรับซื้อจริง</td>
+</tr>
+<tr>
+<td>เดือน 4–6</td>
+<td>เชื่อมข้อมูลโรงเรียนและตลาด</td>
+<td>เชื่อมปฏิทินโรงเรียน คำสั่งซื้อ และสต็อกผลิตภัณฑ์</td>
+</tr>
+<tr>
+<td>เดือน 6–8</td>
+<td>พัฒนา AI Forecast และ Alert</td>
+<td>พยากรณ์ 30/60/90 วัน ทดสอบความแม่นยำย้อนหลัง</td>
+</tr>
+<tr>
+<td>เดือน 8–10</td>
+<td>เปิด Surplus Exchange</td>
+<td>จับคู่สหกรณ์กับโรงงานรับซื้อ/แปรรูปและติดตามการส่งมอบ</td>
+</tr>
+<tr>
+<td>เดือน 10–12</td>
+<td>Policy Dashboard และขยายผล</td>
+<td>รายงานระดับประเทศและข้อเสนอเชิงนโยบายจากข้อมูลจริง</td>
+</tr>
+</tbody>
+</table></div>
+<h1 id="sec-19">12. ข้อเสนอเชิงนโยบายเร่งด่วน</h1>
+<ol type="1">
+<li><p>ให้มีคณะทำงาน Dairy Market Integrator
+ที่ประชุมข้อมูลผลผลิตและตลาดเป็นรายสัปดาห์ในช่วงเสี่ยงนมล้น
+และรายเดือนในภาวะปกติ</p></li>
+<li><p>กำหนดให้มีรายงานปริมาณน้ำนมดิบจริงและรับซื้อจริงจากสหกรณ์/โรงงานในรูปแบบมาตรฐาน
+พร้อมระบบตรวจสอบย้อนกลับ</p></li>
+<li><p>จัดทำแผนรับซื้อน้ำนมส่วนเกินล่วงหน้าร่วมกับผู้ผลิตรายใหญ่ โดยกำหนดผู้รับผิดชอบ ปริมาณ
+และงบประมาณส่วนเพิ่ม</p></li>
+<li><p>ใช้ข้อมูลคำสั่งซื้อและการบริโภคจริงของโรงเรียน
+ไม่ใช้จำนวนสิทธิอย่างเดียวในการคาดการณ์ความต้องการ</p></li>
+<li><p>จัดทำทะเบียนผู้ใช้และสต็อกนมผง พร้อมเผยแพร่สถิติรวมรายเดือน
+เพื่อประกอบการพิจารณาการนำเข้าโดยไม่ละเมิดความลับทางการค้า</p></li>
+<li><p>สร้างตลาดผลิตภัณฑ์มูลค่าเพิ่มและตลาดใหม่ เช่น ชีส โยเกิร์ต
+เวย์โปรตีน/ส่วนผสมอาหาร และการส่งออก โดยพิจารณามาตรฐานและความคุ้มทุน</p></li>
+<li><p>สนับสนุนพลังงานชีวภาพและปุ๋ยชีวภาพจากมูลโคนม/ของเสียในฟาร์ม
+เพื่อเพิ่มรายได้และลดต้นทุนในระบบโคนมแบบ Circular Economy</p></li>
+</ol>
+<h1 id="sec-20">13.
+ข้อมูลที่ต้องขอจากหน่วยงานเพื่อปิดช่องว่างสถิติ</h1>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><strong>หน่วยงาน/ภาคส่วน</strong></th>
+<th><strong>ข้อมูลที่ควรขอ</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>กรมส่งเสริมสหกรณ์</strong></td>
+<td>รายชื่อสหกรณ์/ศูนย์รวบรวมน้ำนม ปริมาณรวบรวมรายวัน รายชื่อคู่สัญญา ปริมาณส่งมอบจริง
+ราคาและคุณภาพ</td>
+</tr>
+<tr>
+<td><strong>กรมปศุสัตว์</strong></td>
+<td>ทะเบียนฟาร์ม จำนวนแม่โครีดนม รายฟาร์ม ผลผลิตรายตัว การคลอด/ผสมพันธุ์
+และประมาณการรายเดือน</td>
+</tr>
+<tr>
+<td><strong>อ.ส.ค. และโรงงานเอกชน</strong></td>
+<td>ปริมาณรับซื้อน้ำนมดิบแยกสหกรณ์/วัน กำลังการผลิต แผนผลิต สต็อก และยอดขาย</td>
+</tr>
+<tr>
+<td><strong>กรมการค้าต่างประเทศ/กรมศุลกากร</strong></td>
+<td>ปริมาณและมูลค่านำเข้าราย HS Code รายเดือน ประเทศต้นทาง สิทธิภาษี
+และผู้ใช้สิทธิในระดับที่เปิดเผยได้</td>
+</tr>
+<tr>
+<td><strong>หน่วยงานนมโรงเรียน/กระทรวงศึกษาธิการ</strong></td>
+<td>จำนวนนักเรียนรายโรงเรียน สิทธิ ปริมาณสั่งซื้อ ส่งมอบจริง การบริโภค และสต็อก</td>
+</tr>
+<tr>
+<td><strong>กรมการค้าภายใน/ผู้ค้าปลีก</strong></td>
+<td>ยอดขายจริง สต็อก ราคา และคำสั่งซื้อผลิตภัณฑ์นมรายประเภท</td>
+</tr>
+</tbody>
+</table></div>
+<h1 id="sec-21">14. สรุป</h1>
+<p>การแก้ปัญหานมล้นอย่างยั่งยืนต้องเปลี่ยนจากการแก้ปัญหาเฉพาะหน้าเป็นการบริหารสมดุลทั้งระบบ
+โดยต้องรู้ล่วงหน้าว่าจะมีน้ำนมเกิดขึ้นเท่าใด โรงงานใดรับได้ ตลาดใดต้องการ
+โรงเรียนใช้จริงเท่าใด มีสต็อกค้างเท่าใด และการนำเข้าวัตถุดิบอยู่ในระดับใด</p>
+<p>AgroLink สามารถเสนอเป็นแพลตฟอร์มกลางด้านข้อมูลและการประสานตลาด
+ช่วยให้รัฐเห็นภาพรวม สหกรณ์วางแผนส่งนม โรงงานวางแผนกำลังผลิต
+ผู้ผลิตรายใหญ่ร่วมรับมือส่วนเกิน และภาคเอกชนวางแผนนำเข้าอย่างสอดคล้องกับความต้องการจริง
+ทั้งนี้ต้องมีข้อตกลงแบ่งปันข้อมูล การคุ้มครองความลับทางการค้า
+และการกำกับดูแลโดยหน่วยงานรัฐที่เกี่ยวข้อง</p>
+<h1 id="sec-22">เอกสารอ้างอิงและแหล่งข้อมูลออนไลน์</h1>
+<ol start="8" type="1">
+<li><p>[1] กระทรวงศึกษาธิการ/ข่าวมติ ครม. เรื่องระบบบริหารจัดการนมโรงเรียน:
+<a href="https://www.moe.go.th/" target="_blank" rel="noopener">https://www.moe.go.th/</a> (ข้อมูลเกษตรกร ผลผลิต แม่โครีดนม
+และจำนวนนักเรียน)</p></li>
+<li><p>[2] กระทรวงเกษตรและสหกรณ์, ข่าวการพยากรณ์ปริมาณน้ำนมดิบปี 2569
+และการบริหารน้ำนมส่วนเกิน:
+<a href="https://www.moac.go.th/news-preview-481291792052" target="_blank" rel="noopener">https://www.moac.go.th/news-preview-481291792052</a></p></li>
+<li><p>[3] รัฐบาลไทย, การรับสมัครผู้ประกอบการโครงการนมโรงเรียน ปี 2569:
+<a href="https://www.thaigov.go.th/th/news/163629" target="_blank" rel="noopener">https://www.thaigov.go.th/th/news/163629</a></p></li>
+<li><p>[4] องค์การส่งเสริมกิจการโคนมแห่งประเทศไทย (อ.ส.ค.), รายงานประจำปี
+2566:
+<a href="https://www.dpo.go.th/wp-content/uploads/2024/03/annual_report_2023.pdf" target="_blank" rel="noopener">https://www.dpo.go.th/wp-content/uploads/2024/03/annual_report_2023.pdf</a></p></li>
+<li><p>[5] Ashu Research, Thailand: Dairy Products Industry Sector
+Report (2024):
+<a href="https://cms.scout.asia/wp-content/uploads/2025/10/20251021-THB-27-04.pdf" target="_blank" rel="noopener">https://cms.scout.asia/wp-content/uploads/2025/10/20251021-THB-27-04.pdf</a></p></li>
+<li><p>[6] กรมส่งเสริมสหกรณ์, ข่าวสถานการณ์น้ำนมดิบ มี.ค.–พ.ค. 2568 และ MOU:
+<a href="https://cpd.go.th/activity-news-external/item/8602-News_Cpd_External-03march2568-1.html" target="_blank" rel="noopener">https://cpd.go.th/activity-news-external/item/8602-News_Cpd_External-03march2568-1.html</a></p></li>
+<li><p>[7] กรมการค้าภายใน, ข่าวข้อเสนอแก้ปัญหาน้ำนมดิบส่วนเกินและผลิตภัณฑ์นมค้างสต็อก
+ก.พ. 2569: <a href="https://www.dit.go.th/" target="_blank" rel="noopener">https://www.dit.go.th/</a></p></li>
+<li><p>[8] กระทรวงเกษตรและสหกรณ์, ข่าวการบริหารน้ำนมส่วนเกินและปริมาณประมาณ
+200–211 ตัน/วัน ปี 2569:
+<a href="https://www.moac.go.th/news-preview-481091791218" target="_blank" rel="noopener">https://www.moac.go.th/news-preview-481091791218</a></p></li>
+<li><p>[9] กรมการค้าต่างประเทศ, ประกาศจัดสรรปริมาณนำเข้านมผงขาดมันเนย ปี 2569:
+<a href="https://www.dft.go.th/th-th/Information/import-export-volume/cid/1363" target="_blank" rel="noopener">https://www.dft.go.th/th-th/Information/import-export-volume/cid/1363</a></p></li>
+</ol>
+<h1 id="sec-23">ข้อจำกัดของรายงาน</h1>
+<p>รายงานฉบับนี้ใช้ข้อมูลสาธารณะที่ตรวจสอบได้ ณ วันที่ 9 พฤศจิกายน 2569
+แต่ยังไม่มีข้อมูลรายบริษัท/รายสหกรณ์ของปริมาณรับซื้อน้ำนมดิบเข้าทุกโรงงาน
+และยังไม่มีตารางนำเข้าศุลกากรราย HS Code ที่ครบทุกผลิตภัณฑ์ในชุดข้อมูลเดียว
+ตัวเลขดังกล่าวจึงระบุเป็น “ช่องว่างข้อมูลที่ต้องขอจากหน่วยงาน”
+แทนการประมาณหรือสร้างตัวเลขขึ้นเอง นอกจากนี้
+ตัวเลขผลผลิตและการนำเข้าบางชุดมีนิยามต่างกัน
+ต้องตรวจสอบและปรับมาตรฐานก่อนใช้ตัดสินใจเชิงนโยบาย</p>
+
+    </article>
+  </div>
+</section>
+
+<!-- ===== AgroLink shared site footer (same on every public page; styles css/site-footer.css, behaviour js/site-footer.js) ===== -->
+<footer class="sf-footer">
+  <div class="sf-container sf-top">
+    <div class="sf-brand">
+      <a class="sf-brand-logo" href="index.html"><img src="assets/agrolink-logo.png" width="284" height="220" alt="AgroLink" loading="lazy" /></a>
+      <p data-i18n="sh_footer_desc">เชื่อมเกษตรกร สหกรณ์ บริการ การเงิน และตลาด ด้วยข้อมูลจากการผลิตจริง</p>
+      <p class="sf-slogan" data-i18n="sh_footer_slogan">เกษตรไทยก้าวไกล ไปด้วยกัน</p>
+    </div>
+    <details class="sf-col" open><summary><span data-i18n="sh_fc1">แพลตฟอร์มและบริการ</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="coop-portal.html"><span data-i18n="sh_m_coop">สำหรับสหกรณ์</span></a></li><li><a href="for-farmers.html"><span data-i18n="sh_m_farmer">สำหรับเกษตรกร</span></a></li><li><a href="finance-partners.html"><span data-i18n="sh_m_finance">การเงิน</span></a></li><li><a href="marketplace-partners.html"><span data-i18n="sh_fl_market">ตลาดกลาง</span></a></li><li><a href="custom-fertilizer.html"><span data-i18n="sh_m_fert">ปุ๋ยสั่งตัด</span></a></li><li><a href="ai-satellite-guide.html"><span data-i18n="sh_m_ai">AI และดาวเทียม</span></a></li><li><a href="insurance-marketplace.html"><span data-i18n="sh_fl_ins">ประกันภัยเกษตร</span></a></li><li><a href="carbon-credit-article.html"><span data-i18n="sh_m_carbon">คาร์บอนเครดิต</span></a></li><li><a href="biomass-economy.html"><span data-i18n="sh_m_bio">เศรษฐกิจชีวมวล</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc2">โซลูชันธุรกิจ</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="integrated-rice-business.html"><span data-i18n="sh_m_rice">ธุรกิจข้าวครบวงจร</span></a></li><li><a href="integrated-durian-business.html"><span data-i18n="sh_m_durian">ทุเรียนครบวงจร</span></a></li><li><a href="integrated-cassava-business.html"><span data-i18n="sh_m_cassava">มันสำปะหลังครบวงจร</span></a></li><li><a href="integrated-corn-business.html"><span data-i18n="sh_m_corn">ข้าวโพดครบวงจร</span></a></li><li><a href="integrated-coconut-business.html"><span data-i18n="sh_m_coconut">มะพร้าวน้ำหอมครบวงจร</span></a></li><li><a href="integrated-dairy-business.html"><span data-i18n="sh_m_dairy_full">โคนมครบวงจร</span></a></li><li><a href="index.html#roadmap"><span data-i18n="sh_fl_roadmap">แผนขยายสินค้า</span></a></li><li><a href="for-farmers-crop.html"><span data-i18n="sh_m_f_crop">เกษตรกรผู้ปลูกพืช</span></a></li><li><a href="for-farmers-livestock.html"><span data-i18n="sh_m_f_live">เกษตรกรผู้เลี้ยงสัตว์บก</span></a></li><li><a href="for-farmers-aquaculture.html"><span data-i18n="sh_m_f_aqua">เกษตรกรผู้เลี้ยงสัตว์น้ำ</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc3">พันธมิตร</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="index.html#partners"><span data-i18n="sh_pc1">สหกรณ์/กลุ่มเกษตรกร</span></a></li><li><a href="finance-partners.html"><span data-i18n="sh_pc2">สถาบันการเงิน</span></a></li><li><a href="marketplace-partners.html"><span data-i18n="sh_fl_buyer">ผู้ซื้อ</span></a></li><li><a href="index.html#partners"><span data-i18n="sh_fl_provider">ผู้ให้บริการ</span></a></li><li><a href="technology-partners.html"><span data-i18n="sh_pc5">พันธมิตรเทคโนโลยี</span></a></li><li><a href="biomass-portal.html"><span data-i18n="sh_pc6">ผู้รับซื้อชีวมวล</span></a></li><li><a href="logistics-portal.html"><span data-i18n="sh_pc4">ผู้ให้บริการขนส่ง</span></a></li><li><a href="insurance-portal.html"><span data-i18n="sh_pc7">ผู้ให้บริการประกันภัย</span></a></li></ul></details><details class="sf-col" open><summary><span data-i18n="sh_fc4">บริษัท</span> <i class="fa-solid fa-chevron-down sf-chev" aria-hidden="true"></i></summary><ul><li><a href="about.html"><span data-i18n="sh_nav_about">เกี่ยวกับเรา</span></a></li><li><a href="about-video.html"><span data-i18n="sh_m_about_video">เกี่ยวกับ AgroLink (วิดีโอ)</span></a></li><li><a href="business-model.html"><span data-i18n="sh_m_investor">นักลงทุน</span></a></li><li><a href="demo-preview.html"><span data-i18n="sh_m_demo">ตัวอย่างการใช้งานทีละขั้นตอน</span></a></li><li><a href="contact.html"><span data-i18n="sh_m_contact">ติดต่อเรา</span></a></li><li><a href="login.html"><span data-i18n="sh_login">เข้าสู่ระบบ</span></a></li></ul></details>
+  </div>
+  <div class="sf-container sf-bottom">
+    <span data-i18n="sh_copyright">© 2026 Pakdee Corporation Co.,Ltd. — สงวนลิขสิทธิ์</span>
+    <nav data-i18n="sh_legal_aria" data-i18n-attr="aria-label" aria-label="ข้อกฎหมาย">
+      <a href="privacy-policy.html"><span data-i18n="sh_privacy">นโยบายความเป็นส่วนตัว</span></a>
+      <a href="terms-of-use.html"><span data-i18n="sh_terms">ข้อกำหนดการใช้งาน</span></a>
+      <a href="contact.html"><span data-i18n="sh_m_contact">ติดต่อเรา</span></a>
+    </nav>
+  </div>
+</footer>
+<!-- ===== /shared site footer ===== -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+<script src="js/i18n-common.js"></script>
+<script src="js/i18n-dairy-business.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/site-header.js"></script>
+<script src="js/site-footer.js"></script>
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+<script src="js/track.js"></script>
+</body>
+</html>
