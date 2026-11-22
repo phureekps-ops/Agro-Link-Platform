@@ -14,5 +14,7 @@ window.AGROLINK_I18N = Object.assign(window.AGROLINK_I18N || {}, {
   "dairy_q3d": { "th": "ดูน้ำนม ค่านม และคำขอบริการของตนเอง", "en": "See your own milk, payments and service requests" },
   "dairy_q4": { "th": "พอร์ทัลสมาชิกทั้งหมด", "en": "All member portals" },
   "dairy_q4d": { "th": "แต่ละกลุ่มมีพอร์ทัลของตนเองและเชื่อมถึงกัน", "en": "Each group has its own portal, all connected" },
+  "dairy_info_alt": { "th": "อินโฟกราฟิกธุรกิจโคนมครบวงจร (Dairy Value Chain) ของ AgroLink ตั้งแต่ข้อมูลฟาร์ม สายพันธุ์ อาหาร การส่งน้ำนมให้สหกรณ์ การแปรรูป นมโรงเรียน การคาดการณ์ผลผลิต การบริหารนมส่วนเกิน การนำเข้า ไบโอแก๊ส และ Dashboard ระดับนโยบาย", "en": "AgroLink integrated dairy value chain infographic: farm records, breeding, feed, milk delivery to cooperatives, processing, school milk, production forecasting, surplus management, imports, biogas and a policy dashboard" },
+  "dairy_info_cap": { "th": "ธุรกิจโคนมครบวงจร — AgroLink เชื่อมข้อมูลตั้งแต่ฟาร์ม สหกรณ์ โรงงาน นมโรงเรียน จนถึงการตัดสินใจระดับนโยบาย", "en": "The integrated dairy business — AgroLink connects data from farms, cooperatives and factories to school milk and policy decisions" },
   "dairy_toc": { "th": "สารบัญ", "en": "Contents" }
 });
