@@ -103,7 +103,7 @@ const mushroomRouter = require('./routes/mushroom');
 const mushroomMemberRouter = require('./routes/mushroommember');
 const mushroomPartnerRouter = require('./routes/mushroompartner');
 const mushroomIotRouter = require('./routes/mushroomiot');
-// พอร์ทัลสหกรณ์โคนม / โปรแกรมบริหารธุรกิจโคนมครบวงจร (ดู backend/db/
+// แพลตฟอร์มบริหารโคนมแห่งชาติ (National Dairy Management Platform) (ดู backend/db/
 // grant_dairy_cooperative.sql): สหกรณ์ /dairy, สมาชิก /dairy-member, คู่ค้า
 // (โรงงาน ผู้ขายอาหารสัตว์ สัตวแพทย์ ผู้ซื้อผลิตภัณฑ์) /dairy-partner,
 // อุปกรณ์ IoT /dairy-iot, Dashboard นโยบายภาครัฐ /dairy-gov และหน้ายืนยัน

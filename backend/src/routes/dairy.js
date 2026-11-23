@@ -12,7 +12,7 @@ const notify = require('../lib/dairyNotify');
 const surplus = require('../lib/dairySurplus');
 
 /**
- * /dairy — พอร์ทัลสหกรณ์โคนม (โปรแกรมบริหารธุรกิจโคนมครบวงจร) ฝั่งสหกรณ์.
+ * /dairy — แพลตฟอร์มบริหารโคนมแห่งชาติ (National Dairy Management Platform) ฝั่งสหกรณ์.
  * ดู backend/db/grant_dairy_cooperative.sql สำหรับ schema และข้อตัดสินใจ
  * (จ่ายทุก 15 วัน, ราคาฐาน ± คุณภาพ, หักกลบตามลำดับผ่าน ธ.ก.ส.,
  * ค่าบริการ % ผู้ขายจ่าย).

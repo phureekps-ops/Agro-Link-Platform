@@ -20,7 +20,7 @@
     const t = g.totals;
     const fw = (c, days) => (c.forecast.find((w) => w.days === days) || null);
     $("#content").innerHTML = `
-      <p class="dg-note">ข้อมูล ณ ${esc(g.as_of)} จากสหกรณ์ที่ใช้พอร์ทัลสหกรณ์โคนมของ AgroLink — ไม่ใช่สถิติทางการทั้งประเทศ เกณฑ์สีเป็นข้อเสนอเพื่อออกแบบระบบ (เหลือง &gt;1% ส้ม &gt;3% แดง &gt;5% ของตลาดรองรับ) ต้องปรับเทียบกับข้อมูลจริง</p>
+      <p class="dg-note">ข้อมูล ณ ${esc(g.as_of)} จากสหกรณ์ที่ใช้แพลตฟอร์มบริหารโคนมแห่งชาติ (National Dairy Management Platform) ของ AgroLink — ไม่ใช่สถิติทางการทั้งประเทศ เกณฑ์สีเป็นข้อเสนอเพื่อออกแบบระบบ (เหลือง &gt;1% ส้ม &gt;3% แดง &gt;5% ของตลาดรองรับ) ต้องปรับเทียบกับข้อมูลจริง</p>
       <div class="dg-grid">
         <div class="dg-stat"><small>สหกรณ์ที่ใช้ระบบ</small><b>${t.coops || 0}</b></div>
         <div class="dg-stat"><small>สมาชิก / โครีดนม</small><b>${n2(t.members)}</b> <small>/ ${n2(t.milking_cows)} ตัว</small></div>

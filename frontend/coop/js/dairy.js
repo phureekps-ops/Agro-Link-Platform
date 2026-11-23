@@ -1,5 +1,5 @@
 /**
- * AgroLink — พอร์ทัลสหกรณ์โคนม (โปรแกรมบริหารธุรกิจโคนมครบวงจร) ฝั่งสหกรณ์.
+ * AgroLink — แพลตฟอร์มบริหารโคนมแห่งชาติ (National Dairy Management Platform) ฝั่งสหกรณ์.
  * Talks to backend/src/routes/dairy.js (/dairy/*) with the cooperative
  * session from js/api.js. Same structure as js/mushroom.js: each tab renders
  * itself from the API on open; buttons use data-act (ACT), forms data-form (FORM).
