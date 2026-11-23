@@ -64,6 +64,8 @@
       <form data-f="profile" class="mp-form"><div><label>ชื่อที่แสดง</label><input name="display_name" value="${esc(prof ? prof.display_name : "")}"></div>
         <div><label>รหัสจังหวัด</label><input name="province_code" value="${esc(prof ? prof.province_code || "" : "")}" placeholder="เช่น SARABURI"></div>
         <div><label>ผลิตภัณฑ์ที่ผลิต</label><input name="products" value="${esc(prof ? prof.products || "" : "")}"></div><div><label>โทรติดต่อ</label><input name="contact_phone" value="${esc(prof ? prof.contact_phone || "" : "")}"></div>
+        <div><label>ละติจูดโรงงาน</label><input name="lat" type="number" step="0.000001" min="5" max="21" value="${esc(prof && prof.lat != null ? prof.lat : "")}" placeholder="เช่น 14.650000"></div>
+        <div><label>ลองจิจูดโรงงาน</label><input name="lng" type="number" step="0.000001" min="97" max="106" value="${esc(prof && prof.lng != null ? prof.lng : "")}" placeholder="เช่น 101.200000"></div>
         <div><button class="mp-btn">${prof ? "บันทึก" : "ลงทะเบียนเข้าตลาด"}</button></div></form></${showMarket ? "div" : "details"}>`;
     if (prof) {
       const caps = await get("/dairy-partner/processor/capacities");

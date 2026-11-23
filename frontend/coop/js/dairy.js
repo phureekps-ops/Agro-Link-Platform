@@ -38,6 +38,9 @@
     received_more_than_sent: "รับมากกว่าที่ส่ง", missing_price: "ต้องระบุราคา", offer_not_open: "ประกาศนี้ไม่เปิดแล้ว", proposal_exists: "มีข้อเสนอค้างอยู่แล้ว",
     waiting_for_processor: "รอโรงงานตอบรับ", batch_expired: "ล็อตนี้หมดอายุแล้ว", member_needs_center: "ต้องกำหนดศูนย์รวบรวมก่อนอนุมัติ",
     invalid_deduction_order: "ลำดับการหักไม่ถูกต้อง", invalid_alert_thresholds: "เกณฑ์เตือนต้องเรียง เหลือง ≤ ส้ม ≤ แดง", device_needs_center: "อุปกรณ์นี้ต้องผูกกับศูนย์รวบรวม",
+    case_closed: "กรณีนี้ปิดแล้ว", option_already_decided: "ทางเลือกนี้ตัดสินใจไปแล้ว", option_not_approved: "ต้องอนุมัติทางเลือกก่อนบันทึกผล",
+    capacity_no_longer_available: "โรงงานปิดกำลังรับนี้แล้ว — กดตรวจตอนนี้เพื่อดูทางเลือกใหม่", discard_reason_required: "ทิ้งนมต้องระบุเหตุผล", note_required: "ต้องระบุเหตุผล",
+    case_not_found: "ไม่พบกรณีนี้", option_not_found: "ไม่พบทางเลือกนี้", invalid_case_status: "สถานะกรณีไม่ถูกต้อง",
     partner_type_mismatch: "ประเภทคู่ค้าไม่ตรง", missing_reject_reason: "ต้องระบุเหตุผลที่ปฏิเสธ", invalid_range: "ช่วงค่าไม่ถูกต้อง",
   };
   function toast(msg, isErr) {
@@ -140,6 +143,7 @@
       set("#cntRounds", o.open_rounds);
       set("#cntShip", o.shipments_pending);
       set("#cntSurplus", o.proposals_waiting);
+      set("#cntCases", o.surplus_cases_open);
       set("#cntAlerts", o.open_alerts);
     } catch (e) { /* page shows its own error */ }
   }
@@ -170,7 +174,7 @@
       </div>
       <div class="mh-card"><h3>งานที่รออยู่</h3><div class="mh-row">
         ${[[o.open_rounds, "รอบรับนมที่ยังไม่ปิด", "intake"], [o.open_requests, "คำขอจากสมาชิก", "services"], [o.shipments_pending, "เที่ยวส่งนมรอโรงงานยืนยัน", "factory"],
-    [o.proposals_waiting, "ข้อเสนอรับนมส่วนเกินจากโรงงาน", "surplus"], [o.school_today, "ส่งนมโรงเรียนวันนี้", "school"], [o.expiring_batches, "ล็อตผลิตภัณฑ์ใกล้หมดอายุ (≤3 วัน)", "processing"],
+    [o.surplus_cases_open, "กรณีนมเกินรอตัดสินใจ", "cases"], [o.proposals_waiting, "ข้อเสนอรับนมส่วนเกินจากโรงงาน", "surplus"], [o.school_today, "ส่งนมโรงเรียนวันนี้", "school"], [o.expiring_batches, "ล็อตผลิตภัณฑ์ใกล้หมดอายุ (≤3 วัน)", "processing"],
     [o.open_alerts, "แจ้งเตือน IoT", "iot"]].map(([n, t, tab]) => `<a href="#${tab}" data-act="go" data-tab="${tab}" class="mh-pill ${n ? "warn" : ""}">${t}: ${n}</a>`).join("")}
       </div></div>`;
   };
@@ -430,6 +434,121 @@
   };
 
   // ---- ตลาดนมส่วนเกิน ----
+  // ---- นมเกินและทางแก้ (ระบบแนะนำ: /dairy/surplus-cases) ----
+  const HORIZON_TH = { today: "วันนี้", "7d": "7 วันนี้", "30d": "30 วันข้างหน้า", "60d": "60 วันข้างหน้า", "90d": "90 วันข้างหน้า" };
+  const CASE_ST = { Open: ["รอตัดสินใจ", "warn"], Acting: ["กำลังแก้ไข", "ok"], Escalated: ["ขอความช่วยเหลือจังหวัด", "bad"], Resolved: ["แก้แล้ว", "ok"], Cleared: ["หายเอง", ""], Dismissed: ["ไม่ใช่ปัญหา", ""] };
+  const OPT_KIND = {
+    buyer_extra: "ขอผู้ซื้อตามสัญญารับเพิ่ม", transfer_center: "ย้ายไปถังศูนย์อื่น", processor_match: "เสนอโรงงานที่ประกาศรับว่าง", directory_buyer: "ติดต่อผู้รับซื้อในทะเบียน",
+    own_plant: "แปรรูปเองเป็นผลิตภัณฑ์อายุยาว", herd_plan: "วางแผนฝูงลดน้ำนมที่ต้นทาง", gov_help: "ขอความช่วยเหลือจังหวัด/ปศุสัตว์",
+  };
+  const OPT_ST = { Suggested: ["แนะนำ", ""], Approved: ["อนุมัติแล้ว", "ok"], Rejected: ["ไม่เลือก", ""], Done: ["สำเร็จ", "ok"], Failed: ["ไม่สำเร็จ", "bad"] };
+  const WHY = {
+    not_in_time: "ไม่ทันเวลา", below_min_price: "ต่ำกว่าราคาขั้นต่ำ", no_capacity: "ไม่มีที่ว่าง", transport_estimated: "ค่าขนส่งประมาณ (ไม่มีพิกัด)",
+    moves_storage_only: "ย้ายที่เก็บ แล้วขายตามปกติ", confirm_by_phone: "โทรยืนยันกับผู้ซื้อก่อน", assumed_20pct_of_contract: "สมมติรับเพิ่มได้ ≤20% ของสัญญา",
+    needs_processor_accept: "รอโรงงานกดตอบรับ", contact_needed: "ต้องติดต่อเอง", capacity_unknown: "ไม่ทราบกำลังรับ", price_unknown: "ไม่ทราบราคา",
+    check_plant_capacity: "ยังไม่รู้กำลังผลิตว่างของโรงนม — ตรวจก่อน", spare_from_history: "จำกัดตามกำลังผลิตว่าง (จากประวัติ 30 วัน)", needs_product_market: "ต้องมีตลาดรองรับผลิตภัณฑ์", processing_cost_not_set: "ยังไม่ได้ตั้งค่าแปรรูป",
+    dry_off_early: "หยุดรีดโคท้ายระยะให้นมเร็วขึ้น", cull_low_yield: "คัดโคให้นมต่ำ", adjust_concentrate: "ปรับอาหารข้น",
+    backup: "ทางเลือกสำรอง", uncovered_surplus: "ทางเลือกอื่นยังไม่พอ",
+  };
+  const LOG_TH = {
+    detected: "ระบบตรวจพบ", option_approved: "อนุมัติทางเลือก", option_rejected: "ไม่เลือกทางเลือก", option_done: "บันทึกผลสำเร็จ", option_failed: "บันทึกว่าไม่สำเร็จ",
+    resolved: "ปิดกรณี", escalated: "ขอความช่วยเหลือจังหวัด", auto_escalated: "เลยกำหนด — ยกระดับอัตโนมัติ", cleared: "ปริมาณกลับสู่ปกติ", dismissed: "ไม่ใช่ปัญหา",
+  };
+  const who = (a) => (a === "system" ? "ระบบ" : String(a || "").startsWith("staff:") ? "เจ้าหน้าที่" : "สหกรณ์");
+  function left(at) {
+    const h = (new Date(at).getTime() - Date.now()) / 3600e3;
+    if (h <= 0) return '<span style="color:var(--red-600)">เลยกำหนดแล้ว</span>';
+    return h < 48 ? `อีก ${Math.max(1, Math.round(h))} ชม.` : `อีก ${Math.round(h / 24)} วัน`;
+  }
+  function optionRow(k, o, active) {
+    const total = o.net_per_kg == null ? null : Number(o.net_per_kg) * Number(o.kg_per_day);
+    const why = (o.reasons || []).map((r) => WHY[r] || r).join(" · ");
+    const [stT, stC] = OPT_ST[o.status] || [o.status, ""];
+    let btn = pill(stT, stC);
+    if (active && o.status === "Suggested") {
+      btn = `<div class="mh-row"><button class="mh-btn sm" data-act="caseApprove" data-case="${k.case_id}" data-id="${o.option_id}" data-kind="${o.kind}">${o.kind === "gov_help" ? "ขอความช่วยเหลือ" : "อนุมัติ"}</button>
+        <button class="mh-btn sm ghost" data-act="caseReject" data-case="${k.case_id}" data-id="${o.option_id}">ไม่เลือก</button></div>`;
+    } else if (active && o.status === "Approved" && o.kind !== "gov_help") {
+      btn = `${pill(stT, stC)}<form data-form="caseOutcome" data-case="${k.case_id}" data-id="${o.option_id}" class="mh-row" style="margin-top:6px">
+        <input name="outcome_kg" type="number" min="0" step="1" placeholder="ระบายได้รวม กก." style="width:130px;padding:5px 8px;border:1px solid var(--gray-300);border-radius:6px">
+        <button class="mh-btn sm">สำเร็จ</button><button type="button" class="mh-btn sm danger" data-act="caseFailed" data-case="${k.case_id}" data-id="${o.option_id}">ไม่สำเร็จ</button></form>`;
+    }
+    const linkOffer = o.offer_id ? '<span class="mh-why">สร้างประกาศ + ส่งข้อเสนอแล้ว — ติดตามในแท็บ <a href="#surplus" data-act="go" data-tab="surplus">ตลาดนมส่วนเกิน</a></span>' : "";
+    return `<tr class="${o.status === "Suggested" && o.rank === 1 && o.feasible ? "top" : ""} ${o.feasible ? "" : "off"}">
+      <td class="num">${o.rank}</td>
+      <td><b>${esc(OPT_KIND[o.kind] || o.kind)}</b>${o.target_name ? `<br>${esc(o.target_name)}` : ""}${why ? `<span class="mh-why">${esc(why)}</span>` : ""}${linkOffer}</td>
+      <td class="num">${n2(o.kg_per_day)}${Number(o.days) > 1 ? `<br><small>× ${o.days} วัน</small>` : ""}</td>
+      <td class="num">${o.price_per_kg == null ? "-" : baht(o.price_per_kg)}</td>
+      <td class="num">${o.transport_per_kg == null ? "-" : baht(o.transport_per_kg)}${o.distance_km != null ? `<br><small>${n2(o.distance_km)} กม.</small>` : ""}</td>
+      <td class="num"><b>${o.net_per_kg == null ? "-" : baht(o.net_per_kg)}</b></td>
+      <td class="num">${total == null ? "-" : baht(total)}</td>
+      <td>${o.feasible ? pill(`ทัน (${o.lead_hours < 48 ? o.lead_hours + " ชม." : Math.round(o.lead_hours / 24) + " วัน"})`, "ok") : pill("ไม่ทัน/ไม่ผ่าน", "bad")}</td>
+      <td>${btn}</td></tr>`;
+  }
+  function caseCard(k) {
+    const active = ["Open", "Acting", "Escalated"].includes(k.status);
+    const [stT, stC] = CASE_ST[k.status] || [k.status, ""];
+    const cn = k.center_name || "";
+    const where = k.scope === "center" ? esc(cn.startsWith("ศูนย์") ? cn : `ศูนย์ ${cn}`) : "ทั้งสหกรณ์";
+    const title = { today: "ถังจะล้นวันนี้", "7d": "นมเกินที่ขายได้ (7 วันนี้)" }[k.horizon] || `คาดว่านมเกินใน ${HORIZON_TH[k.horizon] || k.horizon}`;
+    const det = k.detail || {};
+    const basis = k.horizon === "today"
+      ? `รับวันนี้ ${n2(det.accepted_today_kg)} − ส่งออกแล้ว ${n2(det.shipped_today_kg)} = ค้างถัง ${n2(det.unshipped_kg)} กก. + รอบถัดไป ~${n2(det.next_round_kg)} กก.`
+      : k.horizon === "7d"
+        ? `นมเข้าเฉลี่ย 14 วัน ${n2(det.recent_avg_kg_day)} กก./วัน · ผูกพัน 7 วัน ${n2(det.committed7_kg_day)} · ส่งจริงเฉลี่ย ${n2(det.shipped14_kg_day)}${Number(det.plant_kg_day) ? ` · โรงนม ${n2(det.plant_kg_day)}` : ""}`
+        : `พยากรณ์เฉลี่ย ${n2(det.avg_forecast_kg)} กก./วัน · สัญญา+นมโรงเรียน ${n2(det.avg_committed_kg)}${Number(det.plant_kg_day) ? ` · โรงนม ${n2(det.plant_kg_day)}` : ""}`;
+    const opts = k.options || [];
+    const covered = opts.filter((o) => o.feasible && o.kind !== "gov_help" && ["Suggested", "Approved", "Done"].includes(o.status)).slice(0, 3).reduce((a, o) => a + Number(o.kg_per_day), 0);
+    return `<div class="mh-card mh-case ${k.alert_level}">
+      <div class="mh-row" style="justify-content:space-between"><h3 style="margin:0">${lvl(k.alert_level)} · ${where} — ${title}</h3>
+        <div class="mh-row">${pill(stT, stC)}${k.shared_with_gov ? pill("แชร์ให้จังหวัดแล้ว", "warn") : ""}</div></div>
+      <div class="facts">
+        <div>คาดว่าจะมี<b>${n2(k.expected_kg_day)}</b>กก.${k.horizon === "today" ? "" : "/วัน"}</div>
+        <div>${k.horizon === "today" ? "ความจุถัง" : "ตลาดรองรับ"}<b>${n2(k.capacity_kg_day)}</b>กก.${k.horizon === "today" ? "" : "/วัน"}</div>
+        <div>ส่วนเกิน<b style="color:var(--red-600)">${n2(k.surplus_kg_day)}</b>กก.${k.horizon === "today" ? "" : "/วัน"}${k.surplus_pct == null ? "" : ` (${n2(k.surplus_pct)}%)`}</div>
+        <div>ต้องตัดสินใจภายใน<b>${active ? left(k.deadline_at) : "-"}</b>${dt(k.deadline_at)}</div>
+        <div>ทางเลือกที่ทำได้ (3 อันดับแรก)<b style="color:${covered >= Number(k.surplus_kg_day) ? "var(--green-700)" : "var(--red-600)"}">${covered >= Number(k.surplus_kg_day) ? "พอระบาย" : "ยังไม่พอ"}</b>รวมได้ ${n2(covered)} / ต้องระบาย ${n2(k.surplus_kg_day)} กก.</div>
+      </div>
+      <p class="mh-note" style="margin:0 0 10px">ที่มา: ${basis} · ตรวจพบ ${dt(k.first_detected_at)} · ล่าสุด ${dt(k.last_detected_at)}</p>
+      ${table(["#อันดับ", "ทางเลือก", "#กก./วัน", "#ราคา/กก.", "#ค่าขนส่ง/กก.", "#สุทธิ/กก.", "#มูลค่า/วัน", "เวลา", ""], opts.map((o) => optionRow(k, o, active)))}
+      ${active ? `<div class="mh-row" style="margin-top:10px">
+        <details><summary>✅ ปิดกรณี (แก้แล้ว)</summary><form data-form="caseResolve" data-case="${k.case_id}" class="mh-form" style="margin-top:8px">
+          <div><label>ระบายได้รวม (กก.)</label><input name="handled_kg" type="number" min="0" placeholder="${n2(k.handled_kg)}"></div>
+          <div><label>ต้องทิ้งนม (กก.)</label><input name="discarded_kg" type="number" min="0" value="0"></div>
+          <div><label>เหตุผลที่ทิ้ง (ถ้ามี)</label><input name="discard_reason" placeholder="เช่น ค้างถังเกินเวลา"></div>
+          <div class="full"><label>บันทึก</label><input name="note"></div><div><button class="mh-btn">ปิดกรณี</button></div></form></details>
+        ${k.status !== "Escalated" ? `<details><summary>🆘 ขอความช่วยเหลือจังหวัด</summary><form data-form="caseEscalate" data-case="${k.case_id}" class="mh-form" style="margin-top:8px">
+          <div class="full"><label>ต้องการให้ช่วยอะไร</label><input name="note" placeholder="เช่น หาโรงงานรับเพิ่ม 2 ตัน/วัน, รถขนนม"></div>
+          <div class="full mh-note">กรณีนี้ (เฉพาะกรณีนี้) จะแสดงชื่อสหกรณ์ ปริมาณ และทางเลือกให้เจ้าหน้าที่ปศุสัตว์ในจังหวัดเห็น — ไม่ส่งราคาและข้อมูลสมาชิก</div>
+          <div><button class="mh-btn warn">ส่งคำขอ</button></div></form></details>` : ""}
+        ${["Open", "Escalated"].includes(k.status) ? `<details><summary>ไม่ใช่ปัญหา</summary><form data-form="caseDismiss" data-case="${k.case_id}" class="mh-form" style="margin-top:8px">
+          <div class="full"><label>เหตุผล</label><input name="note" required placeholder="เช่น ตาชั่งบันทึกผิด, ส่งนมแล้วแต่ยังไม่บันทึก"></div><div><button class="mh-btn ghost">บันทึก</button></div></form></details>` : ""}
+      </div>` : `<p class="mh-note">ปิดเมื่อ ${dt(k.closed_at)} · ระบายได้ ${n2(k.handled_kg)} กก. · ทิ้ง ${n2(k.discarded_kg)} กก.${k.discard_reason ? ` (${esc(k.discard_reason)})` : ""}${k.outcome_note ? ` · ${esc(k.outcome_note)}` : ""}</p>`}
+      <details><summary>ประวัติ (${(k.logs || []).length})</summary>${table(["เวลา", "เหตุการณ์", "โดย"], (k.logs || []).map((l) => `<tr><td>${dt(l.created_at)}</td><td>${esc(LOG_TH[l.action] || l.action)}${l.detail && l.detail.target ? ` — ${esc(l.detail.target)}` : ""}${l.detail && l.detail.note ? ` — ${esc(l.detail.note)}` : ""}${l.detail && l.detail.outcome_kg ? ` (${n2(l.detail.outcome_kg)} กก.)` : ""}</td><td>${who(l.actor)}</td></tr>`))}</details>
+    </div>`;
+  }
+  PAGES.cases = async (sec) => {
+    const view = cache.caseView || "active";
+    const r = await API.get(`/dairy/surplus-cases${view === "closed" ? "?view=closed" : ""}`);
+    const m = r.summary;
+    sec.innerHTML = `
+      <div class="mh-card"><div class="mh-row" style="justify-content:space-between"><h3 style="margin:0">ระบบแนะนำการแก้ปัญหานมเกินกำลังรับซื้อ</h3>
+        <div class="mh-row"><button class="mh-btn sm" data-act="caseScan">🔍 ตรวจตอนนี้</button>
+          <button class="mh-btn sm ghost" data-act="caseView" data-view="${view === "closed" ? "active" : "closed"}">${view === "closed" ? "ดูกรณีที่เปิดอยู่" : "ดูกรณีที่ปิดแล้ว (90 วัน)"}</button></div></div>
+        <p class="mh-note">ระบบตรวจทุก 15 นาทีและทุกครั้งที่ปิดรอบรับนม: ถังศูนย์จะล้นวันนี้ไหม · นม 7 วันนี้เกินที่ขายได้ไหม · พยากรณ์ 30/60/90 วันเกินเกณฑ์เตือนไหม
+          แล้วจัดอันดับทางเลือกด้วยรายได้สุทธิต่อ กก. (ราคา − ค่าขนส่ง − ค่าแปรรูป) และดูว่าทำทันเวลาหรือไม่ — <b>ผู้จัดการเป็นคนอนุมัติเสมอ</b> ระบบไม่ส่งข้อเสนอเอง</p>
+        <div class="mh-grid" style="margin-top:10px">
+          <div class="mh-stat ${m.open ? "warn" : ""}"><small>รอตัดสินใจ</small><b>${m.open}</b> <small>กรณี</small></div>
+          <div class="mh-stat"><small>กำลังแก้ไข</small><b>${m.acting}</b> <small>กรณี</small></div>
+          <div class="mh-stat ${m.escalated ? "warn" : ""}"><small>ขอความช่วยเหลือจังหวัด</small><b>${m.escalated}</b> <small>กรณี</small></div>
+          <div class="mh-stat"><small>นมเกินตอนนี้ (วันนี้ + 7 วัน)</small><b>${n2(m.surplus_now_kg_day)}</b> <small>กก./วัน</small></div>
+          <div class="mh-stat"><small>30 วันที่ผ่านมา ระบายได้ / ทิ้ง</small><b>${n2(m.handled_30d_kg)}</b> <small>/ ${n2(m.discarded_30d_kg)} กก.</small></div>
+        </div>
+        ${r.centers_without_capacity || r.centers_without_location ? `<p class="mh-note" style="color:#8a5a00">⚠️ ${r.centers_without_capacity ? `ศูนย์ ${r.centers_without_capacity} แห่งยังไม่ได้ใส่ความจุถัง (ระบบตรวจถังล้นไม่ได้) ` : ""}${r.centers_without_location ? `ศูนย์ ${r.centers_without_location} แห่งยังไม่มีพิกัด (ค่าขนส่งเป็นค่าประมาณ) ` : ""}— แก้ที่ <a href="#settings" data-act="go" data-tab="settings">ตั้งค่า → ศูนย์รวบรวมน้ำนม</a></p>` : ""}
+      </div>
+      ${r.cases.length ? r.cases.map(caseCard).join("") : `<div class="mh-card"><div class="mh-empty">${view === "closed" ? "ยังไม่มีกรณีที่ปิดใน 90 วัน" : "✅ ตอนนี้ไม่พบนมเกินกำลังรับซื้อ"}</div></div>`}`;
+  };
+
   PAGES.surplus = async (sec) => {
     const s = await API.get("/dairy/surplus");
     const open = s.offers.filter((o) => o.status === "Open");
@@ -739,12 +858,26 @@
         ${f("tank_temp_max", "อุณหภูมิถังเย็นสูงสุด (°C)", "0.1")}${f("gestation_days", "ระยะตั้งท้อง (วัน)", 1)}${f("dry_period_days", "ระยะพักท้องก่อนคลอด (วัน)", 1)}
         </div><h3 style="margin-top:14px">เกณฑ์เตือนนมส่วนเกิน (% เกินตลาดรองรับ)</h3><div class="mh-form">
         ${f("alert_yellow_pct", "เหลือง >")}${f("alert_orange_pct", "ส้ม >")}${f("alert_red_pct", "แดง >")}
+        </div>${v.surplus_hold_hours === undefined ? "" : `<h3 style="margin-top:14px">ระบบแนะนำแก้ปัญหานมเกิน</h3><div class="mh-form">
+        ${f("surplus_hold_hours", "เก็บนมดิบในถังเย็นได้ (ชม.)", 1)}${f("surplus_min_kg_center", "เตือนถังศูนย์ล้นเมื่อเกิน (กก.)", 1)}${f("surplus_min_kg_coop", "เตือนสหกรณ์เมื่อเกิน (กก./วัน)", 1)}
+        ${f("transport_cost_per_ton_km", "ค่าขนส่ง (บาท/ตัน-กม.)")}${f("processing_cost_per_kg", "ค่าแปรรูปของโรงนมเอง (บาท/กก. นม)")}${f("surplus_min_price_per_kg", "ราคาขายนมส่วนเกินขั้นต่ำ (บาท/กก.)")}
+        <div class="full mh-note">ใช้คำนวณทางเลือกในแท็บ <a href="#cases" data-act="go" data-tab="cases">นมเกินและทางแก้</a> — ใส่ความจุถังและพิกัดของแต่ละศูนย์ด้านล่างเพื่อให้ตรวจถังล้นและคำนวณค่าขนส่งได้</div></div>`}
+        <div class="mh-form" style="margin-top:10px">
         <div><label><input type="checkbox" name="has_processing_plant"${v.has_processing_plant ? " checked" : ""}> สหกรณ์มีโรงนมแปรรูป</label></div>
         <div class="full"><label><input type="checkbox" name="gov_data_consent"${v.gov_data_consent ? " checked" : ""}> ยินยอมให้หน่วยงานรัฐเห็นข้อมูลรายสหกรณ์ใน Dashboard นโยบาย (ปริมาณนม สัญญารวม ระดับเตือน — ไม่รวมราคาสัญญาและข้อมูลสมาชิกรายคน)</label></div>
         <div><button class="mh-btn">บันทึกการตั้งค่า</button></div></div></form>
       <div class="mh-card"><h3>ศูนย์รวบรวมน้ำนม</h3>
-        <form data-form="center" class="mh-form"><div><label>ชื่อศูนย์</label><input name="name" required></div><div><label>ที่อยู่</label><input name="address"></div><div><label>ความจุถัง (กก.)</label><input type="number" name="tank_capacity_kg"></div><div><button class="mh-btn">เพิ่มศูนย์</button></div></form>
-        ${table(["ศูนย์", "ที่อยู่", "#ความจุถัง", "#สมาชิก"], s.centers.map((c) => `<tr><td>${esc(c.name)}</td><td>${esc(c.address || "")}</td><td class="num">${n2(c.tank_capacity_kg)}</td><td class="num">${c.members ?? ""}</td></tr>`))}</div>
+        <form data-form="center" class="mh-form"><div><label>ชื่อศูนย์</label><input name="name" required></div><div><label>ที่อยู่</label><input name="address"></div><div><label>ความจุถัง (กก.)</label><input type="number" name="tank_capacity_kg"></div>
+          <div><label>ละติจูด</label><input type="number" step="0.000001" min="5" max="21" name="lat" placeholder="เช่น 14.650000"></div><div><label>ลองจิจูด</label><input type="number" step="0.000001" min="97" max="106" name="lng" placeholder="เช่น 101.200000"></div>
+          <div><button class="mh-btn">เพิ่มศูนย์</button></div></form>
+        <p class="mh-note">พิกัด: เปิด Google Maps กดค้างที่ตำแหน่งศูนย์ แล้วคัดลอกตัวเลขสองค่าแรก (ละติจูด, ลองจิจูด)</p>
+        ${table(["ศูนย์", "ที่อยู่", "#ความจุถัง", "พิกัด", "#สมาชิก", ""], s.centers.map((c) => `<tr><td>${esc(c.name)}${c.active ? "" : " " + pill("ปิด", "")}</td><td>${esc(c.address || "")}</td><td class="num">${n2(c.tank_capacity_kg)}</td>
+          <td>${c.lat != null && c.lng != null ? `${Number(c.lat).toFixed(4)}, ${Number(c.lng).toFixed(4)}` : '<span class="mh-note">ยังไม่มี</span>'}</td><td class="num">${c.members ?? ""}</td>
+          <td><button class="mh-btn sm ghost" data-act="editCenter" data-id="${c.center_id}">แก้ไข</button></td></tr>
+          <tr id="ce-${c.center_id}" hidden><td colspan="6"><form data-form="editCenter" data-id="${c.center_id}" class="mh-form">
+            <div><label>ชื่อศูนย์</label><input name="name" value="${esc(c.name)}"></div><div><label>ความจุถัง (กก.)</label><input type="number" name="tank_capacity_kg" value="${c.tank_capacity_kg != null ? Number(c.tank_capacity_kg) : ""}"></div>
+            <div><label>ละติจูด</label><input type="number" step="0.000001" min="5" max="21" name="lat" value="${c.lat != null ? Number(c.lat) : ""}"></div><div><label>ลองจิจูด</label><input type="number" step="0.000001" min="97" max="106" name="lng" value="${c.lng != null ? Number(c.lng) : ""}"></div>
+            <div><label><input type="checkbox" name="active"${c.active ? " checked" : ""}> ใช้งาน</label></div><div><button class="mh-btn">บันทึก</button></div></form></td></tr>`))}</div>
       <div class="mh-card"><h3>ประวัติการแก้ไข</h3>${table(["เวลา", "รายการ", "เดิม", "ใหม่", "โดย"], s.history.map((h) => `<tr><td>${dt(h.changed_at)}</td><td>${esc(h.field_name)}</td><td>${esc(h.old_value ?? "")}</td><td>${esc(h.new_value ?? "")}</td><td><small>${esc(h.changed_by || "")}</small></td></tr>`))}</div>`;
   };
 
@@ -813,6 +946,15 @@
         URL.revokeObjectURL(a.href);
       } catch (e) { toast("ดาวน์โหลดไม่สำเร็จ", true); }
     },
+    caseScan: async () => { const r = await run(() => API.post("/dairy/surplus-cases/scan", {})); if (r) { toast(`ตรวจแล้ว: พบ ${r.scan.detected} · ใหม่ ${r.scan.opened} · หายเอง ${r.scan.cleared}`); refresh(); badges(); } },
+    caseView: (el) => { cache.caseView = el.dataset.view; refresh(); },
+    caseApprove: async (el) => {
+      const msg = el.dataset.kind === "processor_match" ? "สร้างประกาศนมส่วนเกินและส่งข้อเสนอให้โรงงานแล้ว" : el.dataset.kind === "gov_help" ? "ส่งคำขอความช่วยเหลือจังหวัดแล้ว" : "อนุมัติแล้ว — ดำเนินการแล้วบันทึกผล";
+      if (await run(() => API.post(`/dairy/surplus-cases/${el.dataset.case}/options/${el.dataset.id}/approve`, {}), msg)) { refresh(); badges(); }
+    },
+    caseReject: async (el) => { if (await run(() => API.post(`/dairy/surplus-cases/${el.dataset.case}/options/${el.dataset.id}/reject`, {}), "บันทึกแล้ว")) refresh(); },
+    caseFailed: async (el) => { if (await run(() => API.post(`/dairy/surplus-cases/${el.dataset.case}/options/${el.dataset.id}/outcome`, { done: false }), "บันทึกว่าไม่สำเร็จ")) { refresh(); badges(); } },
+    editCenter: (el) => { const row = $(`#ce-${el.dataset.id}`); row.hidden = !row.hidden; },
     ackAlert: async (el) => { if (await run(() => API.post(`/dairy/iot/alerts/${el.dataset.id}/ack`, {}), "รับทราบแล้ว")) { refresh(); badges(); } },
     readings: async (el) => { const r = await run(() => API.get(`/dairy/iot/devices/${el.dataset.id}/readings?hours=24`)); if (r) $(`#rd-${el.dataset.id}`).innerHTML = `<div style="padding:8px">${r.length ? spark(r) : '<div class="mh-empty">ไม่มีข้อมูล 24 ชม.</div>'}</div>`; },
   };
@@ -949,6 +1091,11 @@
       if (r) { toast(r.updated.length ? `บันทึก ${r.updated.length} รายการ` : "ไม่มีการเปลี่ยนแปลง"); refresh(); badges(); }
     },
     center: async (f) => { if (await run(() => API.post("/dairy/centers", clean(fd(f))), "เพิ่มศูนย์แล้ว")) refresh(); },
+    editCenter: async (f) => { const b = fd(f); ["lat", "lng"].forEach((k) => { if (b[k] === "") b[k] = null; }); if (b.tank_capacity_kg === "") delete b.tank_capacity_kg; if (await run(() => API.put(`/dairy/centers/${f.dataset.id}`, b), "บันทึกศูนย์แล้ว")) refresh(); },
+    caseOutcome: async (f) => { if (await run(() => API.post(`/dairy/surplus-cases/${f.dataset.case}/options/${f.dataset.id}/outcome`, { done: true, outcome_kg: f.outcome_kg.value }), "บันทึกผลแล้ว")) refresh(); },
+    caseResolve: async (f) => { if (await run(() => API.post(`/dairy/surplus-cases/${f.dataset.case}/resolve`, clean(fd(f))), "ปิดกรณีแล้ว")) { refresh(); badges(); } },
+    caseEscalate: async (f) => { if (await run(() => API.post(`/dairy/surplus-cases/${f.dataset.case}/escalate`, clean(fd(f))), "ส่งคำขอความช่วยเหลือจังหวัดแล้ว")) { refresh(); badges(); } },
+    caseDismiss: async (f) => { if (await run(() => API.post(`/dairy/surplus-cases/${f.dataset.case}/dismiss`, clean(fd(f))), "บันทึกแล้ว")) { refresh(); badges(); } },
   };
   document.addEventListener("submit", (e) => {
     const f = e.target.closest("form[data-form]");

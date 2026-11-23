@@ -31,6 +31,7 @@
         <div class="dg-stat"><small>กำลังรับว่างของโรงงาน (30 วัน)</small><b>${n2(g.processor_capacity_30d.kg_per_day)}</b> <small>กก./วัน · ${g.processor_capacity_30d.processors} โรงงาน</small></div>
         <div class="dg-stat"><small>นมโรงเรียน 30 วัน: ส่ง / ยืนยันรับ</small><b>${n2(g.school_milk_30d.units)}</b> <small>/ ${n2(g.school_milk_30d.received_units)} หน่วย · มีปัญหา ${g.school_milk_30d.issues}</small></div>
       </div>
+      <div id="surplusBox"></div>
       <div class="dg-card"><h3>รายจังหวัด (เรียงจากความเสี่ยง)</h3>
         ${table(["จังหวัด", "#สหกรณ์", "#โครีด", "#นมจริง (กก./วัน)", "#MOU", "#คาดการณ์ 30 วัน", "#รองรับ 30 วัน", "สัญญาณ 30 วัน", "สัญญาณ 90 วัน", "#ส่วนเกินที่ประกาศ"], g.provinces.map((p) => `<tr>
           <td>${esc(p.province_name_th)}</td><td class="num">${p.coops}</td><td class="num">${n2(p.milking_cows)}</td><td class="num">${n2(p.milk_kg_day)}</td><td class="num">${n2(p.contracted_kg_day)}</td>
@@ -41,5 +42,41 @@
           <td class="num">${n2(c.sold_30d_kg)}</td><td class="num">${n2(c.rejected_30d_kg)}</td><td><small>F ${n2(c.avg_fat)} S ${n2(c.avg_snf)} SCC ${n2(c.avg_scc_k)}</small></td>
           <td>${fw(c, 30) ? lvl(fw(c, 30)) : "-"}</td><td>${fw(c, 90) ? lvl(fw(c, 90)) : "-"}</td></tr>`))}
         <p class="dg-note">อีก ${g.coops_not_sharing} สหกรณ์ยังไม่เปิดให้เห็นข้อมูลรายสหกรณ์ (รวมอยู่ในตัวเลขรายจังหวัดแล้ว) · ไม่แสดงราคาสัญญารายบริษัทและข้อมูลสมาชิกรายคน</p></div>`;
+    loadSurplus();
   }).catch((e) => { if (e.message !== "session_expired") $("#content").innerHTML = `<div class="dg-card">โหลดไม่สำเร็จ: ${esc(e.message)}</div>`; });
+
+  // ---- กรณีนมเกินกำลังรับซื้อ (/dairy-gov/surplus, grant_dairy_surplus_cases.sql) ----
+  const HZ = { today: "วันนี้", "7d": "7 วัน", "30d": "30 วันข้างหน้า", "60d": "60 วันข้างหน้า", "90d": "90 วันข้างหน้า" };
+  const CST = { Open: "รอสหกรณ์ตัดสินใจ", Acting: "สหกรณ์กำลังแก้ไข", Escalated: "ขอความช่วยเหลือ" };
+  const KIND = {
+    buyer_extra: "ผู้ซื้อตามสัญญารับเพิ่ม", transfer_center: "ย้ายไปศูนย์อื่น", processor_match: "โรงงานที่ประกาศรับว่าง", directory_buyer: "ผู้รับซื้อในทะเบียน",
+    own_plant: "แปรรูปเอง", herd_plan: "วางแผนฝูง",
+  };
+  const dt = (v) => (v ? new Date(v).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-");
+  function loadSurplus() {
+    API.get("/dairy-gov/surplus").then((s) => {
+      const t = s.totals;
+      const box = $("#surplusBox");
+      if (!box) return;
+      box.innerHTML = `<div class="dg-card"><h3>🚨 กรณีนมเกินกำลังรับซื้อ (จากระบบแนะนำของสหกรณ์)</h3>
+        <div class="dg-grid">
+          <div class="dg-stat"><small>กรณีที่เปิดอยู่ / วิกฤต</small><b>${t.active_cases || 0}</b> <small>/ ${t.red_cases || 0} กรณี · ${t.coops_affected || 0} สหกรณ์</small></div>
+          <div class="dg-stat"><small>สหกรณ์ขอความช่วยเหลือ</small><b>${t.escalated_cases || 0}</b> <small>กรณี</small></div>
+          <div class="dg-stat"><small>นมเกินตอนนี้ (วันนี้ + 7 วัน)</small><b>${n2(t.surplus_now_kg_day)}</b> <small>กก./วัน</small></div>
+          <div class="dg-stat"><small>นมเกินที่คาดล่วงหน้า (30–90 วัน)</small><b>${n2(t.surplus_ahead_kg_day)}</b> <small>กก./วัน</small></div>
+          <div class="dg-stat"><small>30 วัน: ระบายได้ / ต้องทิ้ง</small><b>${n2(t.handled_30d_kg)}</b> <small>/ ${n2(t.discarded_30d_kg)} กก.</small></div>
+          <div class="dg-stat"><small>โรงงานประกาศรับว่าง 7 วัน</small><b>${n2(s.processor_capacity_7d.kg_per_day)}</b> <small>กก./วัน · ${s.processor_capacity_7d.processors} โรงงาน</small></div>
+        </div>
+        ${table(["จังหวัด", "#กรณีเปิด", "#วิกฤต", "#ขอช่วย", "#นมเกินตอนนี้ (กก./วัน)", "#ล่วงหน้า (กก./วัน)", "#ทิ้ง 30 วัน (กก.)"], s.provinces.map((p) => `<tr>
+          <td>${esc(p.province_name_th)}</td><td class="num">${p.active_cases}</td><td class="num">${p.red_cases}</td><td class="num">${p.escalated_cases}</td>
+          <td class="num">${n2(p.surplus_now_kg_day)}</td><td class="num">${n2(p.surplus_ahead_kg_day)}</td><td class="num">${n2(p.discarded_30d_kg)}</td></tr>`))}
+        <h3 style="margin-top:16px">รายกรณี (สหกรณ์ที่ขอความช่วยเหลือหรือยินยอมแบ่งปันข้อมูล)</h3>
+        ${table(["สหกรณ์", "จุด", "ช่วง", "ระดับ", "#นมเกิน (กก./วัน)", "สถานะ", "กำหนด", "สิ่งที่ขอ / ทางเลือกของสหกรณ์"], s.cases.map((k) => `<tr>
+          <td>${esc(k.org_name)}<br><small>${esc(k.province_name_th)}</small></td><td>${k.scope === "center" ? "ศูนย์ " + esc(k.center_name || "") : "ทั้งสหกรณ์"}</td>
+          <td>${HZ[k.horizon] || esc(k.horizon)}</td><td>${lvl({ level: k.alert_level, surplus_pct: k.surplus_pct == null ? null : Number(k.surplus_pct) })}</td>
+          <td class="num">${n2(k.surplus_kg_day)}</td><td>${CST[k.status] || esc(k.status)}</td><td>${dt(k.deadline_at)}</td>
+          <td>${k.escalation_note ? `<b>${esc(k.escalation_note)}</b><br>` : ""}<small>${(k.options || []).map((o) => `${esc(KIND[o.kind] || o.kind)}${o.target_name ? " " + esc(o.target_name) : ""} ${n2(o.kg_per_day)} กก.${o.status !== "Suggested" ? " (" + esc(o.status) + ")" : ""}`).join(" · ") || "-"}</small></td></tr>`))}
+        <p class="dg-note">อีก ${s.cases_not_shared} กรณียังไม่ได้แชร์รายละเอียด (รวมอยู่ในตัวเลขรายจังหวัดแล้ว) · ไม่แสดงราคาที่ตกลงกับโรงงานและข้อมูลสมาชิก</p></div>`;
+    }).catch(() => { /* ยังไม่ได้ติดตั้ง grant_dairy_surplus_cases.sql — ไม่แสดงส่วนนี้ */ });
+  }
 })();

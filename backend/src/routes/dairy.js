@@ -9,6 +9,7 @@ const {
 } = require('../lib/dairy');
 const core = require('../lib/dairyCore');
 const notify = require('../lib/dairyNotify');
+const surplus = require('../lib/dairySurplus');
 
 /**
  * /dairy — พอร์ทัลสหกรณ์โคนม (โปรแกรมบริหารธุรกิจโคนมครบวงจร) ฝั่งสหกรณ์.
@@ -147,6 +148,15 @@ router.get('/overview', h(async (req) => db(req, async (c, coop) => {
     [coop, today],
   )).rows;
   const f = await core.forecast(c, coop, 30);
+  // นับกรณีนมเกินที่ยังเปิด (ข้ามถ้ายังไม่ได้รัน grant_dairy_surplus_cases.sql)
+  x.surplus_cases_open = 0; x.surplus_cases_red = 0;
+  if ((await c.query(`SELECT to_regclass('dairy.surplus_case') IS NOT NULL AS ok`)).rows[0].ok) {
+    const k = (await c.query(
+      `SELECT COUNT(*)::int AS n, COUNT(*) FILTER (WHERE alert_level='red')::int AS red FROM dairy.surplus_case
+        WHERE coop_org_id=$1 AND status IN ('Open','Escalated')`, [coop],
+    )).rows[0];
+    x.surplus_cases_open = k.n; x.surplus_cases_red = k.red;
+  }
   return {
     org_name: req.org.org_name, today, settings_incomplete: !(Number(s.base_price_per_kg) > 0),
     has_processing_plant: s.has_processing_plant, ...x, forecast30: f.windows[0] || null, recent_avg_kg_day: f.recent_avg_kg_day,
@@ -162,6 +172,9 @@ const SETTING_FIELDS = {
   fee_rate_product_pct: { min: 0, max: 100 }, tank_temp_max: { min: -5, max: 30 }, alert_yellow_pct: { min: 0, max: 100 },
   alert_orange_pct: { min: 0, max: 100 }, alert_red_pct: { min: 0, max: 100 }, gestation_days: { min: 250, max: 310, int: true },
   dry_period_days: { min: 0, max: 120, int: true },
+  // ระบบแนะนำแก้ปัญหานมเกิน (grant_dairy_surplus_cases.sql)
+  surplus_hold_hours: { min: 1, max: 72, int: true }, surplus_min_kg_center: { min: 0, max: 1000000 }, surplus_min_kg_coop: { min: 0, max: 1000000 },
+  transport_cost_per_ton_km: { min: 0, max: 100 }, processing_cost_per_kg: { min: 0, max: 100 }, surplus_min_price_per_kg: { min: 0, max: 1000 },
 };
 const SETTING_BOOLS = ['gov_data_consent', 'has_processing_plant'];
 
@@ -247,15 +260,22 @@ router.get('/centers', h(async (req) => db(req, async (c, coop) => (await c.quer
      FROM dairy.collection_center cc WHERE cc.coop_org_id=$1 ORDER BY cc.created_at`, [coop],
 )).rows)));
 
-const CENTER_SPEC = { name: 'text', address: 'text', tank_capacity_kg: 'num', active: 'bool' };
+const CENTER_SPEC = { name: 'text', address: 'text', tank_capacity_kg: 'num', active: 'bool', lat: 'numnull', lng: 'numnull' };
+/** พิกัดศูนย์ (ใช้คำนวณค่าขนส่งในระบบแนะนำนมเกิน) ต้องอยู่ในประเทศไทย */
+function centerValues(b) {
+  const v = pick(b, CENTER_SPEC);
+  if (v.lat != null && !(v.lat >= 5 && v.lat <= 21)) throw bad('invalid_field', { field: 'lat' });
+  if (v.lng != null && !(v.lng >= 97 && v.lng <= 106)) throw bad('invalid_field', { field: 'lng' });
+  return v;
+}
 router.post('/centers', h(async (req) => db(req, async (c, coop) => {
-  const v = pick(req.body || {}, CENTER_SPEC);
+  const v = centerValues(req.body || {});
   if (!v.name) throw bad('missing_name');
   return insertRow(c, 'dairy.collection_center', { coop_org_id: coop, ...v }).catch(uniq('center_exists'));
 })));
 router.put('/centers/:id', h(async (req) => db(req, async (c, coop) => {
   const cc = await own(c, coop, 'center', req.params.id);
-  const v = pick(req.body || {}, CENTER_SPEC);
+  const v = centerValues(req.body || {});
   if ('name' in v && !v.name) throw bad('missing_name');
   return updateRow(c, 'dairy.collection_center', 'center_id', cc.center_id, v).catch(uniq('center_exists'));
 })));
@@ -584,7 +604,15 @@ router.delete('/rounds/:id/intakes/:intakeId', h(async (req) => db(req, async (c
   return { deleted: true };
 })));
 
-router.post('/rounds/:id/close', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+router.post('/rounds/:id/close', h(async (req) => db(req, async (c, coop) => {
+  const out = await closeRound(req, c, coop);
+  // ตรวจนมเกินทันทีหลังปิดรอบ — ล้มเหลวก็ไม่กระทบการปิดรอบ (สแกนเบื้องหลังทุก 15 นาทีจะลองใหม่)
+  try { await tx(c, () => surplus.scanCoop(c, coop, actor(req))); } catch (err) {
+    if (err.code !== '42P01' && err.code !== '42703') console.error('[dairy-surplus] scan after round close failed', err.message);
+  }
+  return out;
+})));
+const closeRound = (req, c, coop) => tx(c, async () => {
   const r = await own(c, coop, 'round', req.params.id, { lock: true });
   if (r.status !== 'Open') throw conflict('round_closed');
   const b = req.body || {};
@@ -599,7 +627,7 @@ router.post('/rounds/:id/close', h(async (req) => db(req, async (c, coop) => tx(
   await notify.notifyRoundRejections(c, row);
   await logAccess(c, 'write', 'dairy.milk_round', r.round_id);
   return { ...row, warning: temp !== null && temp > Number(s.tank_temp_max) ? 'tank_temp_high' : null };
-}))));
+});
 
 // ===========================================================================
 // (4) คุณภาพ
@@ -987,6 +1015,178 @@ const decideProposal = (action) => h(async (req) => db(req, async (c, coop) => t
 })));
 router.post('/surplus/proposals/:id/accept', decideProposal('accept'));
 router.post('/surplus/proposals/:id/reject', decideProposal('reject'));
+
+// ===========================================================================
+// (10b) ระบบแนะนำการแก้ปัญหานมเกินกำลังรับซื้อ (grant_dairy_surplus_cases.sql)
+// ระบบตรวจพบกรณี + เสนอทางเลือก 3 อันดับ — ผู้จัดการสหกรณ์เป็นคนอนุมัติทุกครั้ง
+// ===========================================================================
+const CASE_ACTIVE = ['Open', 'Acting', 'Escalated'];
+async function ownCase(c, coop, id) {
+  if (!isUuid(id)) throw notFound('case_not_found');
+  const k = (await c.query('SELECT * FROM dairy.surplus_case WHERE case_id=$1 AND coop_org_id=$2 FOR UPDATE', [id, coop])).rows[0];
+  if (!k) throw notFound('case_not_found');
+  return k;
+}
+async function ownOption(c, k, oid) {
+  if (!isUuid(oid)) throw notFound('option_not_found');
+  const o = (await c.query('SELECT * FROM dairy.surplus_option WHERE option_id=$1 AND case_id=$2 FOR UPDATE', [oid, k.case_id])).rows[0];
+  if (!o) throw notFound('option_not_found');
+  return o;
+}
+async function surplusCases(c, coop, view) {
+  const closed = view === 'closed';
+  const cases = (await c.query(
+    `SELECT k.*, cc.name AS center_name,
+            COALESCE((SELECT json_agg(o ORDER BY (o.status='Suggested'), o.rank) FROM dairy.surplus_option o WHERE o.case_id=k.case_id), '[]') AS options,
+            COALESCE((SELECT json_agg(l ORDER BY l.created_at DESC) FROM (SELECT action, detail, actor, created_at FROM dairy.surplus_case_log
+                       WHERE case_id=k.case_id ORDER BY created_at DESC LIMIT 20) l), '[]') AS logs
+       FROM dairy.surplus_case k LEFT JOIN dairy.collection_center cc ON cc.center_id=k.center_id
+      WHERE k.coop_org_id=$1 AND ${closed ? 'NOT ' : ''}(k.status = ANY($2))
+        ${closed ? "AND k.first_detected_at >= now() - interval '90 days'" : ''}
+      ORDER BY CASE k.alert_level WHEN 'red' THEN 0 WHEN 'orange' THEN 1 ELSE 2 END, k.deadline_at LIMIT 200`,
+    [coop, CASE_ACTIVE],
+  )).rows;
+  const [sum] = (await c.query(
+    `SELECT COUNT(*) FILTER (WHERE status='Open')::int AS open, COUNT(*) FILTER (WHERE status='Acting')::int AS acting,
+            COUNT(*) FILTER (WHERE status='Escalated')::int AS escalated,
+            COUNT(*) FILTER (WHERE status = ANY($2) AND alert_level='red')::int AS red,
+            COALESCE(SUM(surplus_kg_day) FILTER (WHERE status = ANY($2) AND horizon IN ('today','7d')),0)::numeric AS surplus_now_kg_day,
+            COALESCE(SUM(discarded_kg) FILTER (WHERE closed_at >= now() - interval '30 days'),0)::numeric AS discarded_30d_kg,
+            COALESCE(SUM(handled_kg) FILTER (WHERE closed_at >= now() - interval '30 days'),0)::numeric AS handled_30d_kg
+       FROM dairy.surplus_case WHERE coop_org_id=$1`, [coop, CASE_ACTIVE],
+  )).rows;
+  return { cases, summary: sum };
+}
+
+router.get('/surplus-cases', h(async (req) => db(req, async (c, coop) => {
+  const s = await core.settings(c, coop);
+  return {
+    ...(await surplusCases(c, coop, req.query.view)),
+    settings: {
+      surplus_hold_hours: s.surplus_hold_hours, surplus_min_kg_center: s.surplus_min_kg_center, surplus_min_kg_coop: s.surplus_min_kg_coop,
+      transport_cost_per_ton_km: s.transport_cost_per_ton_km, processing_cost_per_kg: s.processing_cost_per_kg,
+      surplus_min_price_per_kg: s.surplus_min_price_per_kg, alert_yellow_pct: s.alert_yellow_pct, alert_orange_pct: s.alert_orange_pct, alert_red_pct: s.alert_red_pct,
+    },
+    centers_without_capacity: (await c.query(
+      'SELECT COUNT(*)::int AS n FROM dairy.collection_center WHERE coop_org_id=$1 AND active AND (tank_capacity_kg IS NULL OR tank_capacity_kg=0)', [coop],
+    )).rows[0].n,
+    centers_without_location: (await c.query(
+      'SELECT COUNT(*)::int AS n FROM dairy.collection_center WHERE coop_org_id=$1 AND active AND (lat IS NULL OR lng IS NULL)', [coop],
+    )).rows[0].n,
+  };
+})));
+
+router.post('/surplus-cases/scan', h(async (req) => db(req, async (c, coop) => {
+  const r = await tx(c, () => surplus.scanCoop(c, coop, actor(req)));
+  return { scan: r, ...(await surplusCases(c, coop, 'active')) };
+})));
+
+router.post('/surplus-cases/:id/options/:oid/approve', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+  const k = await ownCase(c, coop, req.params.id);
+  if (!CASE_ACTIVE.includes(k.status)) throw conflict('case_closed');
+  const o = await ownOption(c, k, req.params.oid);
+  if (o.status !== 'Suggested') throw conflict('option_already_decided', { status: o.status });
+  const set = { status: 'Approved', decided_by: actor(req), decided_at: new Date() };
+  if (o.kind === 'processor_match') {
+    // สร้างประกาศนมส่วนเกิน + ส่งข้อเสนอไปยังกำลังรับว่างของโรงงาน (โรงงานต้องกดตอบรับในพอร์ทัลคู่ค้า)
+    const cap = (await c.query(
+      `SELECT k.* FROM dairy.processor_capacity k JOIN dairy.processor_profile pp ON pp.org_id=k.org_id AND pp.active
+        WHERE k.capacity_id=$1 AND k.active AND k.available_to >= $2`, [o.target_id, bkkToday()],
+    )).rows[0];
+    if (!cap) throw conflict('capacity_no_longer_available');
+    const s = await core.settings(c, coop);
+    const avg = (await c.query(
+      `SELECT ROUND(AVG(fat_pct),2) AS fat, ROUND(AVG(snf_pct),2) AS snf FROM dairy.quality_test WHERE coop_org_id=$1 AND sample_date >= $2::date - 30`,
+      [coop, bkkToday()],
+    )).rows[0];
+    const offer = await insertRow(c, 'dairy.surplus_offer', {
+      coop_org_id: coop, start_date: bkkToday(), days: Math.min(90, Math.max(1, Number(o.days))), kg_per_day: o.kg_per_day,
+      min_price: Number(s.surplus_min_price_per_kg) || 0, avg_fat_pct: avg.fat, avg_snf_pct: avg.snf, note: 'จากระบบแนะนำแก้ปัญหานมเกิน',
+    });
+    const prop = await insertRow(c, 'dairy.surplus_proposal', {
+      offer_id: offer.offer_id, processor_org_id: cap.org_id, capacity_id: cap.capacity_id,
+      kg_per_day: Math.min(Number(o.kg_per_day), Number(cap.kg_per_day)), price_per_kg: o.price_per_kg ?? cap.price_per_kg, proposed_by: 'coop',
+    });
+    set.offer_id = offer.offer_id; set.proposal_id = prop.proposal_id;
+  }
+  const opt = await updateRow(c, 'dairy.surplus_option', 'option_id', o.option_id, set);
+  if (o.kind === 'gov_help') {
+    await c.query(`UPDATE dairy.surplus_case SET status='Escalated', shared_with_gov=true, escalated_at=COALESCE(escalated_at, now()) WHERE case_id=$1`, [k.case_id]);
+  } else {
+    await c.query(`UPDATE dairy.surplus_case SET status='Acting' WHERE case_id=$1`, [k.case_id]);
+  }
+  await surplus.log(c, k.case_id, 'option_approved', { kind: o.kind, target: o.target_name, kg_per_day: o.kg_per_day, offer_id: set.offer_id || null }, actor(req));
+  await logAccess(c, 'write', 'dairy.surplus_case', k.case_id);
+  return opt;
+}))));
+
+router.post('/surplus-cases/:id/options/:oid/reject', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+  const k = await ownCase(c, coop, req.params.id);
+  const o = await ownOption(c, k, req.params.oid);
+  if (o.status !== 'Suggested') throw conflict('option_already_decided', { status: o.status });
+  const opt = await updateRow(c, 'dairy.surplus_option', 'option_id', o.option_id, { status: 'Rejected', decided_by: actor(req), decided_at: new Date() });
+  await surplus.log(c, k.case_id, 'option_rejected', { kind: o.kind, target: o.target_name, note: txt((req.body || {}).note) }, actor(req));
+  return opt;
+}))));
+
+/** ผลของทางเลือกที่อนุมัติแล้ว: { done: true, outcome_kg } หรือ { done: false, note } */
+router.post('/surplus-cases/:id/options/:oid/outcome', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+  const b = req.body || {};
+  const k = await ownCase(c, coop, req.params.id);
+  const o = await ownOption(c, k, req.params.oid);
+  if (o.status !== 'Approved') throw conflict('option_not_approved');
+  const done = b.done !== false;
+  const kg = done ? needPos(b.outcome_kg, 'outcome_kg') : 0;
+  const opt = await updateRow(c, 'dairy.surplus_option', 'option_id', o.option_id, { status: done ? 'Done' : 'Failed', outcome_kg: kg });
+  if (kg) await c.query('UPDATE dairy.surplus_case SET handled_kg = handled_kg + $2 WHERE case_id=$1', [k.case_id, kg]);
+  if (!done && k.status === 'Acting') {
+    const left = (await c.query(`SELECT COUNT(*)::int AS n FROM dairy.surplus_option WHERE case_id=$1 AND status='Approved'`, [k.case_id])).rows[0].n;
+    if (!left) await c.query(`UPDATE dairy.surplus_case SET status=CASE WHEN escalated_at IS NULL THEN 'Open' ELSE 'Escalated' END WHERE case_id=$1`, [k.case_id]);
+  }
+  await surplus.log(c, k.case_id, done ? 'option_done' : 'option_failed', { kind: o.kind, target: o.target_name, outcome_kg: kg, note: txt(b.note) }, actor(req));
+  return opt;
+}))));
+
+/** ปิดกรณี: { handled_kg?, discarded_kg?, discard_reason?, note? } — ทิ้งนม > 0 ต้องมีเหตุผล */
+router.post('/surplus-cases/:id/resolve', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+  const b = req.body || {};
+  const k = await ownCase(c, coop, req.params.id);
+  if (!CASE_ACTIVE.includes(k.status)) throw conflict('case_closed');
+  const discarded = b.discarded_kg ? needNonNeg(b.discarded_kg, 'discarded_kg') : 0;
+  const reason = txt(b.discard_reason);
+  if (discarded > 0 && !reason) throw bad('discard_reason_required');
+  const set = {
+    status: 'Resolved', discarded_kg: discarded, discard_reason: discarded > 0 ? reason : null, outcome_note: txt(b.note), closed_at: new Date(), closed_by: actor(req),
+  };
+  if (b.handled_kg !== undefined && b.handled_kg !== '' && b.handled_kg !== null) set.handled_kg = needNonNeg(b.handled_kg, 'handled_kg');
+  const row = await updateRow(c, 'dairy.surplus_case', 'case_id', k.case_id, set);
+  await surplus.log(c, k.case_id, 'resolved', { handled_kg: row.handled_kg, discarded_kg: discarded, reason: set.discard_reason }, actor(req));
+  await logAccess(c, 'write', 'dairy.surplus_case', k.case_id);
+  return row;
+}))));
+
+/** ขอความช่วยเหลือจังหวัด: แชร์กรณีนี้ (เท่านั้น) ให้เจ้าหน้าที่รัฐเห็น แม้ไม่ได้เปิด gov_data_consent */
+router.post('/surplus-cases/:id/escalate', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+  const k = await ownCase(c, coop, req.params.id);
+  if (!CASE_ACTIVE.includes(k.status)) throw conflict('case_closed');
+  const note = txt((req.body || {}).note);
+  const row = await updateRow(c, 'dairy.surplus_case', 'case_id', k.case_id, {
+    status: 'Escalated', shared_with_gov: true, escalated_at: k.escalated_at || new Date(), escalation_note: note || k.escalation_note || 'สหกรณ์ขอความช่วยเหลือ',
+  });
+  await c.query(`UPDATE dairy.surplus_option SET status='Approved', decided_by=$2, decided_at=now() WHERE case_id=$1 AND kind='gov_help' AND status='Suggested'`, [k.case_id, actor(req)]);
+  await surplus.log(c, k.case_id, 'escalated', { note }, actor(req));
+  return row;
+}))));
+
+router.post('/surplus-cases/:id/dismiss', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
+  const k = await ownCase(c, coop, req.params.id);
+  if (!['Open', 'Escalated'].includes(k.status)) throw conflict('invalid_case_status', { status: k.status });
+  const note = txt((req.body || {}).note);
+  if (!note) throw bad('note_required');
+  const row = await updateRow(c, 'dairy.surplus_case', 'case_id', k.case_id, { status: 'Dismissed', outcome_note: note, closed_at: new Date(), closed_by: actor(req) });
+  await surplus.log(c, k.case_id, 'dismissed', { note }, actor(req));
+  return row;
+}))));
 
 // ===========================================================================
 // (8) แปรรูปและสต็อกผลิตภัณฑ์

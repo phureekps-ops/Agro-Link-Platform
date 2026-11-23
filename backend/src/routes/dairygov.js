@@ -112,4 +112,66 @@ router.get('/overview', h(async (req, res) => db(req, async (c, officerId) => {
   };
 })));
 
+/**
+ * GET /dairy-gov/surplus — กรณีนมเกินกำลังรับซื้อ (grant_dairy_surplus_cases.sql).
+ * รวมรายจังหวัดจากทุกสหกรณ์ (ไม่ระบุชื่อ). รายละเอียดรายกรณีแสดงเฉพาะสหกรณ์ที่เปิด
+ * gov_data_consent หรือกรณีที่สหกรณ์กด "ขอความช่วยเหลือจังหวัด" เอง (shared_with_gov).
+ * ไม่ส่งราคาที่ตกลงกับโรงงาน และไม่ส่งข้อมูลสมาชิก.
+ */
+router.get('/surplus', h(async (req, res) => db(req, async (c, officerId) => {
+  const officer = (await c.query(
+    `SELECT officer_id, full_name, scope_type, province_code FROM identity.government_officer WHERE officer_id=$1 AND status='Active'`, [officerId],
+  )).rows[0];
+  if (!officer) { res.status(403).json({ error: 'officer_not_found_or_inactive' }); return undefined; }
+  if (!(await c.query(`SELECT to_regclass('dairy.surplus_case') IS NOT NULL AS ok`)).rows[0].ok) {
+    res.status(503).json({ error: 'dairy_surplus_not_installed', detail: 'run backend/db/grant_dairy_surplus_cases.sql' });
+    return undefined;
+  }
+  const params = [];
+  let scope = '';
+  if (officer.scope_type === 'Province') { params.push(officer.province_code); scope = `AND cp.province_code=$${params.length}`; }
+  const from = `FROM dairy.surplus_case k JOIN dairy.setting s ON s.coop_org_id=k.coop_org_id
+       JOIN identity.organization o ON o.org_id=k.coop_org_id AND o.kyb_status='Verified'
+       JOIN registry.cooperative_profile cp ON cp.org_id=k.coop_org_id JOIN registry.province pv ON pv.province_code=cp.province_code
+       LEFT JOIN dairy.collection_center cc ON cc.center_id=k.center_id`;
+  const base = `${from}
+      WHERE true ${scope}`;
+  const provinces = (await c.query(
+    `SELECT cp.province_code, pv.province_name_th,
+            COUNT(*) FILTER (WHERE k.status IN ('Open','Acting','Escalated'))::int AS active_cases,
+            COUNT(*) FILTER (WHERE k.status IN ('Open','Acting','Escalated') AND k.alert_level='red')::int AS red_cases,
+            COUNT(*) FILTER (WHERE k.status='Escalated')::int AS escalated_cases,
+            COUNT(DISTINCT k.coop_org_id) FILTER (WHERE k.status IN ('Open','Acting','Escalated'))::int AS coops_affected,
+            COALESCE(SUM(k.surplus_kg_day) FILTER (WHERE k.status IN ('Open','Acting','Escalated') AND k.horizon IN ('today','7d')),0)::numeric AS surplus_now_kg_day,
+            COALESCE(SUM(k.surplus_kg_day) FILTER (WHERE k.status IN ('Open','Acting','Escalated') AND k.horizon IN ('30d','60d','90d')),0)::numeric AS surplus_ahead_kg_day,
+            COALESCE(SUM(k.discarded_kg) FILTER (WHERE k.closed_at >= now() - interval '30 days'),0)::numeric AS discarded_30d_kg,
+            COALESCE(SUM(k.handled_kg) FILTER (WHERE k.closed_at >= now() - interval '30 days'),0)::numeric AS handled_30d_kg,
+            COUNT(*) FILTER (WHERE k.status='Resolved' AND k.closed_at >= now() - interval '30 days')::int AS resolved_30d
+       ${base} AND (k.status IN ('Open','Acting','Escalated') OR k.closed_at >= now() - interval '30 days')
+      GROUP BY cp.province_code, pv.province_name_th ORDER BY red_cases DESC, surplus_now_kg_day DESC`, params,
+  )).rows;
+  const cases = (await c.query(
+    `SELECT k.case_id, o.org_name, pv.province_name_th, k.horizon, k.scope, cc.name AS center_name, k.status, k.alert_level,
+            k.surplus_kg_day, k.surplus_pct, k.days, k.deadline_at, k.first_detected_at, k.escalated_at, k.escalation_note, k.shared_with_gov,
+            (SELECT json_agg(json_build_object('kind', x.kind, 'target_name', x.target_name, 'kg_per_day', x.kg_per_day, 'feasible', x.feasible, 'status', x.status)
+                     ORDER BY x.rank) FROM dairy.surplus_option x WHERE x.case_id=k.case_id AND x.kind <> 'gov_help') AS options
+       ${base} AND k.status IN ('Open','Acting','Escalated') AND (s.gov_data_consent OR k.shared_with_gov)
+      ORDER BY (k.status='Escalated') DESC, CASE k.alert_level WHEN 'red' THEN 0 WHEN 'orange' THEN 1 ELSE 2 END, k.deadline_at LIMIT 200`, params,
+  )).rows;
+  const hidden = (await c.query(
+    `SELECT COUNT(*)::int AS n ${base} AND k.status IN ('Open','Acting','Escalated') AND NOT (s.gov_data_consent OR k.shared_with_gov)`, params,
+  )).rows[0].n;
+  const capacity = (await c.query(
+    `SELECT COALESCE(SUM(kg_per_day),0)::numeric AS kg_per_day, COUNT(DISTINCT org_id)::int AS processors FROM dairy.processor_capacity
+      WHERE active AND available_from <= $1::date + 7 AND available_to >= $1`, [bkkToday()],
+  )).rows[0];
+  const totals = provinces.reduce((a, p) => {
+    ['active_cases', 'red_cases', 'escalated_cases', 'coops_affected', 'surplus_now_kg_day', 'surplus_ahead_kg_day', 'discarded_30d_kg', 'handled_30d_kg']
+      .forEach((f) => { a[f] = round2((a[f] || 0) + Number(p[f])); });
+    return a;
+  }, {});
+  await logAccess(c, 'read', 'dairy.surplus_case', null);
+  return { officer, as_of: bkkToday(), totals, provinces, cases, cases_not_shared: hidden, processor_capacity_7d: capacity };
+})));
+
 module.exports = router;

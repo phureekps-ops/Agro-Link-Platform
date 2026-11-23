@@ -37,11 +37,20 @@ router.put('/processor/profile', h(async (req) => db(req, async (c, org) => {
   if (!o) throw conflict('kyb_not_verified');
   const name = String(b.display_name || o.org_name).trim();
   if (b.province_code && !(await c.query('SELECT 1 FROM registry.province WHERE province_code=$1', [b.province_code])).rows.length) throw bad('invalid_province');
+  // พิกัดโรงงาน (ไม่บังคับ) — ใช้คำนวณค่าขนส่งในระบบแนะนำนมเกินของสหกรณ์ (grant_dairy_surplus_cases.sql)
+  const coord = (v, lo, hi, field) => {
+    if (v === undefined || v === null || v === '') return null;
+    const x = Number(v);
+    if (!(x >= lo && x <= hi)) throw bad('invalid_field', { field });
+    return x;
+  };
+  const lat = coord(b.lat, 5, 21, 'lat');
+  const lng = coord(b.lng, 97, 106, 'lng');
   return (await c.query(
-    `INSERT INTO dairy.processor_profile (org_id, display_name, province_code, products, contact_phone, active) VALUES ($1,$2,$3,$4,$5,$6)
+    `INSERT INTO dairy.processor_profile (org_id, display_name, province_code, products, contact_phone, active, lat, lng) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT (org_id) DO UPDATE SET display_name=EXCLUDED.display_name, province_code=EXCLUDED.province_code, products=EXCLUDED.products,
-       contact_phone=EXCLUDED.contact_phone, active=EXCLUDED.active RETURNING *`,
-    [org, name, b.province_code || null, b.products || null, b.contact_phone || null, b.active !== false],
+       contact_phone=EXCLUDED.contact_phone, active=EXCLUDED.active, lat=EXCLUDED.lat, lng=EXCLUDED.lng RETURNING *`,
+    [org, name, b.province_code || null, b.products || null, b.contact_phone || null, b.active !== false, lat, lng],
   )).rows[0];
 })));
 

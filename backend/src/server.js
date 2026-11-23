@@ -277,6 +277,8 @@ app.use((err, req, res, next) => {
 
 // Retry sweep for dairy LINE notifications (no-op without LINE_CHANNEL_ACCESS_TOKEN).
 require('./lib/dairyNotify').start();
+// Surplus-milk case scan every 15 min (grant_dairy_surplus_cases.sql; skipped in NODE_ENV=test).
+require('./lib/dairySurplus').start();
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

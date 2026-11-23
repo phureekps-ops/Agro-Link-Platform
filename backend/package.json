@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test",
-    "test:db": "node --test test/dairy.db.test.js"
+    "test:db": "node --test test/dairy.db.test.js test/dairySurplus.db.test.js"
   },
   "keywords": [],
   "author": "",
