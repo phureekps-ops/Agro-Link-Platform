@@ -80,6 +80,7 @@
         <div class="hub-nav-group">
           <div class="hub-nav-group-title">ภาพรวม</div>
           <button type="button" class="hub-nav-item active" data-page="overview">📊 ภาพรวมองค์กร</button>
+          <button type="button" class="hub-nav-item" data-page="members">👥 สมาชิก</button>
         </div>
         <div class="hub-nav-group">
           <div class="hub-nav-group-title">บริการทางธุรกิจ</div>
@@ -110,6 +111,10 @@
       </header>
 
       <div class="container" id="mainContainer">
+
+        <div class="hub-page" data-page-content="members" style="display:none;">
+          <div id="membershipClaimsWidget"></div>
+        </div>
 
         <div class="hub-page" data-page-content="overview">
           <div class="section-title">📊 ภาพรวมองค์กร</div>
@@ -175,6 +180,7 @@
 
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="../js/membership-claims-widget.js"></script>
   <script src="../js/support-widget.js"></script>
   <script src="../js/group-order-widget.js"></script>
 </body>

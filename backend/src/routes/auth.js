@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 const { pool, withSessionContext, withServiceRole, logAccess } = require('../db/pool');
 const { requireAuth } = require('../middleware/auth');
+const membership = require('../lib/membershipClaim');
 
 const router = express.Router();
 
@@ -180,6 +181,23 @@ router.post('/login', async (req, res, next) => {
  * FK/lookup table, validated client-side only against TH_DISTRICTS
  * (frontend/js/districts.js).
  */
+/**
+ * GET /auth/member-organizations?q=&province=&type= — ค้นหาหน่วยงาน (ไม่ต้อง login) สำหรับช่อง
+ * "เป็นสมาชิกสหกรณ์/หน่วยงาน" ในฟอร์มสมัคร: สหกรณ์ วิสาหกิจชุมชน กองทุนหมู่บ้าน กองทุนช่วยเหลือเกษตรกร
+ * ธนาคาร/ผู้ให้สินเชื่อ ที่ผ่าน KYB แล้ว. คืนเฉพาะชื่อ ประเภท จังหวัด (ต้องมี q ≥ 2 ตัวอักษร หรือ province/province_name)
+ * ดู src/lib/membershipClaim.js / grant_membership_claim.sql
+ */
+router.get('/member-organizations', async (req, res, next) => {
+  try {
+    const rows = await withServiceRole((client) => membership.searchOrganizations(client, {
+      q: req.query.q, province: req.query.province, provinceName: req.query.province_name, type: req.query.type,
+    }));
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.post('/register', async (req, res, next) => {
   const {
     full_name: fullName,
@@ -187,6 +205,9 @@ router.post('/register', async (req, res, next) => {
     national_id: nationalId,
     region_code: regionCode,
     district_code: districtCode,
+    // ไม่บังคับ: [{ org_id, member_no?, farmer_note? }] สูงสุด 5 — เกษตรกรแจ้งว่าเป็นสมาชิกสหกรณ์/หน่วยงาน
+    // (สถานะ "รอหน่วยงานยืนยัน" — ดู grant_membership_claim.sql)
+    memberships,
   } = req.body || {};
 
   if (!fullName || !phone || !nationalId || !regionCode || !districtCode) {
@@ -201,6 +222,14 @@ router.post('/register', async (req, res, next) => {
 
   try {
     const farmerId = await withServiceRole(async (client) => {
+      // ตรวจหน่วยงานที่แจ้งก่อนสร้างบัญชี (หน่วยงานผิด = ไม่สร้างบัญชีครึ่ง ๆ กลาง ๆ)
+      let claims = await membership.validateClaims(client, memberships);
+      if (claims.length && !(await client.query(`SELECT to_regclass('identity.membership_claim') IS NOT NULL AS ok`)).rows[0].ok) {
+        console.warn('[register] grant_membership_claim.sql not applied — membership claims skipped');
+        claims = [];
+      }
+      await client.query('BEGIN');
+      try {
       const { rows } = await client.query(
         `INSERT INTO identity.farmer (full_name, phone, national_id_hash, region_code, district_code, auth_subject_id, status)
          VALUES ($1, $2, $3, $4, $5, $6, 'pending_kyc')
@@ -222,8 +251,16 @@ router.post('/register', async (req, res, next) => {
 
       await client.query('SELECT security.set_session_context($1, $2)', ['farmer', newFarmerId]);
       await logAccess(client, 'write', 'identity.farmer', newFarmerId);
-
+      for (const claim of claims) {
+        const row = await membership.createClaim(client, newFarmerId, claim, 'registration');
+        await logAccess(client, 'write', 'identity.membership_claim', row.claim_id);
+      }
+      await client.query('COMMIT');
       return newFarmerId;
+      } catch (e) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw e;
+      }
     });
 
     const token = jwt.sign(
@@ -241,6 +278,7 @@ router.post('/register', async (req, res, next) => {
       status: 'pending_kyc',
     });
   } catch (err) {
+    if (membership.sendClaimError(res, err)) return undefined;
     if (err.code === UNIQUE_VIOLATION) {
       const reason = REGISTER_CONSTRAINT_ERRORS[err.constraint] || 'duplicate_value';
       return res.status(409).json({ error: reason });

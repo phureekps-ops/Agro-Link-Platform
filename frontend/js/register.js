@@ -6,6 +6,8 @@ const nationalIdInput = document.getElementById("nationalIdInput");
 const regionSelect = document.getElementById("regionSelect");
 const districtSelect = document.getElementById("districtSelect");
 const registerBtn = document.getElementById("registerBtn");
+// สมาชิกภาพสหกรณ์/หน่วยงาน (ไม่บังคับ) — ค้นหาจากจังหวัดที่เลือกได้เลยถ้ายังไม่พิมพ์ชื่อ (js/membership-picker.js)
+const membershipPicker = MembershipPicker.mount(document.getElementById("membershipPicker"), { getProvince: () => regionSelect.value });
 
 // Same province list/lookup used by the venue-marketplace and org
 // registration forms — see js/provinces.js.
@@ -72,7 +74,7 @@ registerForm.addEventListener("submit", async (e) => {
   try {
     // Backend auto-issues a session token on success (same shape as login)
     // and stores it via AgroLinkAPI.register() itself — see js/api.js.
-    await AgroLinkAPI.register({ fullName, phone, nationalId, regionCode, districtCode });
+    await AgroLinkAPI.register({ fullName, phone, nationalId, regionCode, districtCode, memberships: membershipPicker.value() });
     window.location.href = "dashboard.html";
   } catch (err) {
     const messages = {
@@ -80,6 +82,10 @@ registerForm.addEventListener("submit", async (e) => {
       phone_already_registered: "เบอร์โทรศัพท์นี้ถูกใช้สมัครสมาชิกไปแล้ว",
       national_id_already_registered: "เลขประจำตัวประชาชนนี้ถูกใช้สมัครสมาชิกไปแล้ว",
       subject_claim_collision: "เกิดข้อผิดพลาดในการสมัครสมาชิก กรุณาลองใหม่อีกครั้ง",
+      invalid_organization: "หน่วยงานที่เลือกใช้ไม่ได้ กรุณาลบแล้วเลือกใหม่",
+      duplicate_organization: "เลือกหน่วยงานซ้ำกัน",
+      too_many_memberships: "เลือกหน่วยงานได้สูงสุด 5 แห่ง",
+      field_too_long: "เลขสมาชิกยาวเกินไป (ไม่เกิน 40 ตัวอักษร)",
     };
     showError(messages[err.message] || "สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     registerBtn.disabled = false;

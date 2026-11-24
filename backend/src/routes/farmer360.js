@@ -2,6 +2,7 @@ const express = require('express');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireOrganization } = require('../middleware/auth');
+const membershipClaim = require('../lib/membershipClaim');
 
 const router = express.Router();
 
@@ -164,7 +165,7 @@ router.get('/relationships/mine', async (req, res, next) => {
 
       const rows = await client.query(
         `SELECT r.relationship_id, r.farmer_id, f.farmer_code, f.full_name, f.phone,
-                r.relationship_type, r.status, r.joined_at
+                r.relationship_type, r.status, r.joined_at, r.member_no
            FROM identity.farmer_org_relationship r
            JOIN identity.farmer f ON f.farmer_id = r.farmer_id
           WHERE r.org_id = $1 AND r.status = 'active'
@@ -180,6 +181,71 @@ router.get('/relationships/mine', async (req, res, next) => {
     next(err);
   }
 });
+
+/**
+ * คำแจ้งสมาชิกภาพจากเกษตรกร (grant_membership_claim.sql, src/lib/membershipClaim.js)
+ *   GET  /farmer360/membership-claims?status=Pending|all
+ *   POST /farmer360/membership-claims/:id/approve  { member_no? }  → เพิ่มเป็นสมาชิก (ทะเบียนเดียวกับ "เพิ่มเป็นสมาชิก")
+ *   POST /farmer360/membership-claims/:id/reject   { reason }
+ * หน่วยงานเห็นเฉพาะคำแจ้งที่เกษตรกรแจ้งถึงตนเอง — เกษตรกรเป็นผู้เลือกส่งข้อมูลให้หน่วยงานนี้
+ */
+router.get('/membership-claims', async (req, res, next) => {
+  try {
+    const all = req.query.status === 'all';
+    const result = await withSessionContext('organization', req.subject.subjectId, async (client) => {
+      const gate = await requireVerifiedOrg(client, req.subject.subjectId);
+      if (!gate.ok) return { gate };
+      const rows = await client.query(
+        `SELECT c.claim_id, c.farmer_id, f.farmer_code, f.full_name, f.phone, f.region_code, f.district_code,
+                c.member_no, c.farmer_note, c.source, c.status, c.reject_reason, c.created_at, c.decided_at
+           FROM identity.membership_claim c JOIN identity.farmer f ON f.farmer_id = c.farmer_id
+          WHERE c.org_id = $1 ${all ? '' : "AND c.status = 'Pending'"}
+          ORDER BY (c.status = 'Pending') DESC, c.created_at DESC LIMIT 300`,
+        [req.subject.subjectId],
+      );
+      await logAccess(client, 'read', 'identity.membership_claim', req.subject.subjectId);
+      return { gate, rows: rows.rows };
+    });
+    if (!result.gate.ok) return sendGateError(res, result.gate);
+    return res.json(result.rows);
+  } catch (err) {
+    if (err.code === '42P01') return res.json([]);
+    return next(err);
+  }
+});
+
+function decideClaim(action) {
+  return async (req, res, next) => {
+    try {
+      const orgId = req.subject.subjectId;
+      const actor = req.actingStaff ? `staff:${req.actingStaff.memberId}` : `org:${orgId}`;
+      const result = await withSessionContext('organization', orgId, async (client) => {
+        const gate = await requireVerifiedOrg(client, orgId);
+        if (!gate.ok) return { gate };
+        await client.query('BEGIN');
+        try {
+          const b = req.body || {};
+          const row = action === 'approve'
+            ? await membershipClaim.approveClaim(client, orgId, req.params.id, b.member_no, actor)
+            : await membershipClaim.rejectClaim(client, orgId, req.params.id, b.reason, actor);
+          await logAccess(client, 'write', 'identity.membership_claim', row.claim_id);
+          await client.query('COMMIT');
+          return { gate, row };
+        } catch (e) {
+          await client.query('ROLLBACK').catch(() => {});
+          throw e;
+        }
+      });
+      if (!result.gate.ok) return sendGateError(res, result.gate);
+      return res.json(result.row);
+    } catch (err) {
+      if (membershipClaim.sendClaimError(res, err)) return undefined;
+      return next(err);
+    }
+  };
+}
+router.post('/membership-claims/:id/approve', decideClaim('approve'));
+router.post('/membership-claims/:id/reject', decideClaim('reject'));
 
 /**
  * DELETE /farmer360/relationships/:farmerId

@@ -74,7 +74,7 @@ const AgroLinkAPI = (() => {
    * auto-issues a session token (same shape as login), so a new farmer
    * lands straight in the dashboard without a separate login step.
    */
-  async function register({ fullName, phone, nationalId, regionCode, districtCode }) {
+  async function register({ fullName, phone, nationalId, regionCode, districtCode, memberships }) {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -84,6 +84,8 @@ const AgroLinkAPI = (() => {
         national_id: nationalId,
         region_code: regionCode,
         district_code: districtCode,
+        // สมาชิกภาพที่เกษตรกรแจ้ง [{ org_id, member_no }] — รอหน่วยงานยืนยัน (ไม่บังคับ)
+        memberships: memberships && memberships.length ? memberships : undefined,
       }),
     });
 

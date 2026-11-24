@@ -6,6 +6,7 @@
 // visit to "ภาพรวมองค์กร" alone never loads all 4 embedded portals.
 // ============================================================
 const HUB_PAGE_BREADCRUMB_TH = {
+  members: "สมาชิก",
   overview: "ภาพรวมองค์กร",
   loans: "สินเชื่อ",
   machinery: "บริการเครื่องจักรกล",

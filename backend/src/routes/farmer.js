@@ -2,6 +2,7 @@ const express = require('express');
 
 const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireFarmer } = require('../middleware/auth');
+const membership = require('../lib/membershipClaim');
 
 const router = express.Router();
 
@@ -372,7 +373,7 @@ router.get('/memberships', async (req, res, next) => {
     const rows = await withSessionContext('farmer', subjectId, async (client) => {
       const result = await client.query(
         `SELECT r.relationship_id, o.org_id, o.org_name, o.org_type,
-                r.relationship_type, r.joined_at
+                r.relationship_type, r.joined_at, r.member_no
            FROM identity.farmer_org_relationship r
            JOIN identity.organization o ON o.org_id = r.org_id
           WHERE r.farmer_id = $1 AND r.status = 'active'
@@ -384,6 +385,59 @@ router.get('/memberships', async (req, res, next) => {
     });
 
     return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * แจ้งการเป็นสมาชิกสหกรณ์/หน่วยงาน (grant_membership_claim.sql, src/lib/membershipClaim.js)
+ *   GET  /farmer/membership-claims                 คำแจ้งของฉัน (รอยืนยัน/ยืนยันแล้ว/ไม่ผ่าน)
+ *   POST /farmer/membership-claims                 { org_id, member_no?, farmer_note? }
+ *   POST /farmer/membership-claims/:id/withdraw    ถอนคำแจ้งที่ยังรอยืนยัน
+ * แจ้งแล้วยังไม่ใช่สมาชิกจนกว่าหน่วยงานจะยืนยันในพอร์ทัลของหน่วยงาน (หน้า สมาชิก)
+ */
+router.get('/membership-claims', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const rows = await withSessionContext('farmer', subjectId, async (client) => (await client.query(
+      `SELECT c.claim_id, c.org_id, o.org_name, o.org_type, c.member_no, c.status, c.reject_reason, c.source, c.created_at, c.decided_at
+         FROM identity.membership_claim c JOIN identity.organization o ON o.org_id = c.org_id
+        WHERE c.farmer_id = $1 ORDER BY c.created_at DESC LIMIT 50`, [subjectId],
+    )).rows);
+    return res.json(rows);
+  } catch (err) {
+    if (err.code === '42P01') return res.json([]);
+    return next(err);
+  }
+});
+
+router.post('/membership-claims', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  try {
+    const row = await withSessionContext('farmer', subjectId, async (client) => {
+      const v = await membership.validateClaim(client, req.body || {});
+      const claim = await membership.createClaim(client, subjectId, v, 'portal');
+      await logAccess(client, 'write', 'identity.membership_claim', claim.claim_id);
+      return { ...claim, org_name: v.org.org_name, org_type: v.org.org_type };
+    });
+    return res.status(201).json(row);
+  } catch (err) {
+    if (membership.sendClaimError(res, err)) return undefined;
+    return next(err);
+  }
+});
+
+router.post('/membership-claims/:id/withdraw', async (req, res, next) => {
+  const { subjectId } = req.subject;
+  if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(404).json({ error: 'claim_not_found' });
+  try {
+    const row = await withSessionContext('farmer', subjectId, async (client) => (await client.query(
+      `UPDATE identity.membership_claim SET status = 'Withdrawn', decided_at = now(), decided_by = 'farmer'
+        WHERE claim_id = $1 AND farmer_id = $2 AND status = 'Pending' RETURNING claim_id, status`, [req.params.id, subjectId],
+    )).rows[0]);
+    if (!row) return res.status(404).json({ error: 'claim_not_found_or_decided' });
+    return res.json(row);
   } catch (err) {
     return next(err);
   }

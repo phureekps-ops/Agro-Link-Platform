@@ -157,7 +157,7 @@ function membershipCard(m) {
         <span class="title">${icon} ${escapeHtml(m.org_name)}</span>
         <span class="badge">${escapeHtml(relLabel)}</span>
       </div>
-      <div class="detail-line muted">เป็นสมาชิกตั้งแต่ ${thaiDate(m.joined_at)}</div>
+      <div class="detail-line muted">เป็นสมาชิกตั้งแต่ ${thaiDate(m.joined_at)}${m.member_no ? ` · เลขสมาชิก ${escapeHtml(m.member_no)}` : ""}</div>
     </div>
   `;
 }
@@ -170,10 +170,77 @@ async function loadMemberships() {
       el.innerHTML = `<div class="empty-state">ยังไม่มีหน่วยงานใดเพิ่มท่านเป็นสมาชิก — เมื่อสหกรณ์ ผู้ปล่อยกู้ หรือกองทุนหมู่บ้านเพิ่มท่านเป็นสมาชิก/ลูกค้า รายชื่อจะแสดงที่นี่</div>`;
       return;
     }
+    activeOrgIds = memberships.map((m) => m.org_id);
     el.innerHTML = memberships.map(membershipCard).join("");
   } catch (err) {
     el.innerHTML = `<div class="empty-state">โหลดข้อมูลสมาชิกภาพไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+// ---------- แจ้งการเป็นสมาชิกสหกรณ์/หน่วยงาน (identity.membership_claim) ----------
+// เกษตรกรแจ้ง → หน่วยงานยืนยันในพอร์ทัลของตน → ย้ายไปอยู่ใน "สมาชิกภาพของฉัน" ด้านบน
+const CLAIM_STATUS_TH = { Pending: ["รอหน่วยงานยืนยัน", "status-pending"], Rejected: ["หน่วยงานไม่ยืนยัน", "status-declined"], Withdrawn: ["ถอนแล้ว", ""] };
+const CLAIM_ERR_TH = {
+  already_member: "ท่านเป็นสมาชิกหน่วยงานนี้อยู่แล้ว", claim_pending: "มีคำแจ้งถึงหน่วยงานนี้ที่รอยืนยันอยู่แล้ว",
+  invalid_organization: "หน่วยงานนี้ใช้ไม่ได้", field_too_long: "เลขสมาชิกยาวเกินไป",
+};
+let farmerPicker = null;
+let activeOrgIds = [];
+
+function claimCard(c) {
+  const [label, cls] = CLAIM_STATUS_TH[c.status] || [c.status, ""];
+  return `
+    <div class="item-card">
+      <div class="row"><span class="title">📨 ${escapeHtml(c.org_name)}</span><span class="badge ${cls}">${escapeHtml(label)}</span></div>
+      <div class="detail-line muted">แจ้งเมื่อ ${thaiDate(c.created_at)}${c.member_no ? ` · เลขสมาชิกที่แจ้ง ${escapeHtml(c.member_no)}` : ""}</div>
+      ${c.status === "Rejected" && c.reject_reason ? `<div class="detail-line">เหตุผล: ${escapeHtml(c.reject_reason)}</div>` : ""}
+      ${c.status === "Pending" ? `<div class="action-row"><button type="button" class="btn btn-ghost btn-sm" data-withdraw-claim="${c.claim_id}">ถอนคำแจ้ง</button></div>` : ""}
+    </div>`;
+}
+
+async function loadMembershipClaims() {
+  const el = document.getElementById("membershipClaimsSection");
+  if (!el) return;
+  try {
+    const claims = (await AgroLinkAPI.get("/farmer/membership-claims")).filter((c) => c.status === "Pending" || c.status === "Rejected");
+    el.innerHTML = claims.length ? `<div class="detail-line" style="font-weight:600; margin-bottom:6px;">คำแจ้งที่ยังไม่ได้รับการยืนยัน</div>${claims.map(claimCard).join("")}` : "";
+  } catch (err) {
+    el.innerHTML = "";
+  }
+}
+
+if (document.getElementById("farmerMembershipPicker")) {
+  farmerPicker = MembershipPicker.mount(document.getElementById("farmerMembershipPicker"), { exclude: () => activeOrgIds });
+  document.getElementById("membershipClaimBtn").addEventListener("click", async () => {
+    const list = farmerPicker.value();
+    if (!list.length) { toast("เลือกหน่วยงานก่อน", true); return; }
+    const btn = document.getElementById("membershipClaimBtn");
+    btn.disabled = true;
+    let ok = 0;
+    for (const item of list) {
+      try {
+        await AgroLinkAPI.post("/farmer/membership-claims", item);
+        ok += 1;
+      } catch (err) {
+        toast(CLAIM_ERR_TH[err.message] || `ส่งคำแจ้งไม่สำเร็จ: ${err.message}`, true);
+      }
+    }
+    btn.disabled = false;
+    if (ok) { toast(`ส่งคำแจ้ง ${ok} หน่วยงานแล้ว — รอหน่วยงานยืนยัน`); farmerPicker.clear(); }
+    loadMembershipClaims();
+  });
+  document.getElementById("membershipClaimsSection").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-withdraw-claim]");
+    if (!b) return;
+    b.disabled = true;
+    try {
+      await AgroLinkAPI.post(`/farmer/membership-claims/${b.dataset.withdrawClaim}/withdraw`, {});
+      toast("ถอนคำแจ้งแล้ว");
+    } catch (err) {
+      toast(`ถอนไม่สำเร็จ: ${err.message}`, true);
+    }
+    loadMembershipClaims();
+  });
 }
 
 // ---------- คะแนนความน่าเชื่อถือทางสินเชื่อ (risk.v_farmer_latest_score) ----------
@@ -599,6 +666,7 @@ async function init() {
 
   loadFarmerProfile();
   loadMemberships();
+  loadMembershipClaims();
   loadCreditScore();
   loadContracts();
   loadNotifications();

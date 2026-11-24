@@ -4813,7 +4813,7 @@ function farmer360RosterCard(r) {
         <span class="title">${escapeHtml(r.full_name)}</span>
         <span class="badge">${escapeHtml(r.farmer_code)}</span>
       </div>
-      <div class="detail-line muted">${relationshipTypeLabel(r.relationship_type)} · เป็นสมาชิกตั้งแต่ ${thaiDate(r.joined_at)}</div>
+      <div class="detail-line muted">${relationshipTypeLabel(r.relationship_type)} · เป็นสมาชิกตั้งแต่ ${thaiDate(r.joined_at)}${r.member_no ? ` · เลขสมาชิก ${escapeHtml(r.member_no)}` : ""}</div>
       <div class="action-row">
         <button type="button" class="btn btn-ghost btn-sm" data-view360="${r.farmer_id}">ดูข้อมูล 360°</button>
         <button type="button" class="btn btn-decline btn-sm" data-unlink-farmer="${r.farmer_id}">เลิกเป็นสมาชิก</button>
@@ -4822,6 +4822,9 @@ function farmer360RosterCard(r) {
     </div>
   `;
 }
+
+// ยืนยันคำแจ้งสมาชิกภาพจากเกษตรกร (js/membership-claims-widget.js) → โหลดทะเบียนใหม่
+document.addEventListener("membership-claims:approved", () => { loadFarmer360Roster(); });
 
 async function loadFarmer360Roster() {
   const el = document.getElementById("farmer360RosterSection");

@@ -46,6 +46,11 @@
           <option value="">-- เลือกจังหวัดก่อน --</option>
         </select>
       </div>
+      <div class="field">
+        <label>เป็นสมาชิกสหกรณ์ หรือหน่วยงานใดบ้าง <span style="font-weight:400; color:var(--gray-500);">(ไม่บังคับ)</span></label>
+        <div class="hint" style="margin:0 0 8px;">เช่น สหกรณ์การเกษตร วิสาหกิจชุมชน กองทุนหมู่บ้าน ธ.ก.ส. — เลือกได้หลายแห่ง แล้วใส่เลขสมาชิก (ถ้ามี) หน่วยงานจะยืนยันให้ภายหลัง</div>
+        <div id="membershipPicker"></div>
+      </div>
       <button type="submit" class="btn btn-primary" id="registerBtn">สมัครสมาชิก</button>
     </form>
 
@@ -56,6 +61,7 @@
   <script src="js/provinces.js"></script>
   <script src="js/districts.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/membership-picker.js"></script>
   <script src="js/register.js"></script>
 <script src="js/track.js"></script>
 </body>

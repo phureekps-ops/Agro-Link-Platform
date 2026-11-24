@@ -159,6 +159,14 @@
     <div id="membershipsSection" class="card-list">
       <div class="loading-line">กำลังโหลดสมาชิกภาพ…</div>
     </div>
+    <div id="membershipClaimsSection" class="card-list" style="margin-top:12px;"></div>
+    <div class="panel" style="margin-top:16px;">
+      <h3 style="margin:0 0 6px; font-size:15px;">➕ แจ้งว่าเป็นสมาชิกสหกรณ์/หน่วยงาน</h3>
+      <p style="font-size:13px; color:var(--gray-500); margin:0 0 10px;">เลือกสหกรณ์ วิสาหกิจชุมชน กองทุนหมู่บ้าน หรือธนาคารที่ท่านเป็นสมาชิก/ลูกค้า แล้วใส่เลขสมาชิก (ถ้ามี) —
+        หน่วยงานจะตรวจกับทะเบียนแล้วยืนยัน จากนั้นจะแสดงในรายการด้านบน</p>
+      <div id="farmerMembershipPicker"></div>
+      <button type="button" class="btn btn-primary" id="membershipClaimBtn" style="max-width:220px; margin-top:10px;">ส่งคำแจ้ง</button>
+    </div>
       </div>
 
       <div class="farmer-page" data-page-content="credit-score" style="display:none;">
@@ -269,6 +277,7 @@
   <script src="js/provinces.js"></script>
   <script src="js/districts.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/membership-picker.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/farmer-fertilizer.js"></script>
   <script src="js/support-widget.js"></script>
