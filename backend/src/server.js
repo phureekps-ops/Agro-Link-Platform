@@ -279,6 +279,8 @@ app.use((err, req, res, next) => {
 require('./lib/dairyNotify').start();
 // Surplus-milk case scan every 15 min (grant_dairy_surplus_cases.sql; skipped in NODE_ENV=test).
 require('./lib/dairySurplus').start();
+// Dairy gateway offline alerts every 60 s (grant_dairy_iot_gateway.sql; skipped in NODE_ENV=test).
+require('./lib/dairyIot').start();
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

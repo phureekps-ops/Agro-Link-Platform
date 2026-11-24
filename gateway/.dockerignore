@@ -1,0 +1,6 @@
+data/
+data-sim/
+tests/
+__pycache__/
+*.key
+*.db*

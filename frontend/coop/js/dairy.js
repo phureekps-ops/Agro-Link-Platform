@@ -38,6 +38,8 @@
     received_more_than_sent: "รับมากกว่าที่ส่ง", missing_price: "ต้องระบุราคา", offer_not_open: "ประกาศนี้ไม่เปิดแล้ว", proposal_exists: "มีข้อเสนอค้างอยู่แล้ว",
     waiting_for_processor: "รอโรงงานตอบรับ", batch_expired: "ล็อตนี้หมดอายุแล้ว", member_needs_center: "ต้องกำหนดศูนย์รวบรวมก่อนอนุมัติ",
     invalid_deduction_order: "ลำดับการหักไม่ถูกต้อง", invalid_alert_thresholds: "เกณฑ์เตือนต้องเรียง เหลือง ≤ ส้ม ≤ แดง", device_needs_center: "อุปกรณ์นี้ต้องผูกกับศูนย์รวบรวม",
+    not_a_gateway: "อุปกรณ์นี้ไม่ใช่ Gateway", invalid_channel_type: "ชนิดนี้ต่อผ่าน Gateway ไม่ได้", channel_exists: "ชื่อช่องนี้มีอยู่แล้วใน Gateway นี้",
+    channel_has_no_key: "ช่องที่ต่อผ่าน Gateway ไม่มีคีย์ของตัวเอง — ออกคีย์ใหม่ที่ Gateway",
     case_closed: "กรณีนี้ปิดแล้ว", option_already_decided: "ทางเลือกนี้ตัดสินใจไปแล้ว", option_not_approved: "ต้องอนุมัติทางเลือกก่อนบันทึกผล",
     capacity_no_longer_available: "โรงงานปิดกำลังรับนี้แล้ว — กดตรวจตอนนี้เพื่อดูทางเลือกใหม่", discard_reason_required: "ทิ้งนมต้องระบุเหตุผล", note_required: "ต้องระบุเหตุผล",
     case_not_found: "ไม่พบกรณีนี้", option_not_found: "ไม่พบทางเลือกนี้", invalid_case_status: "สถานะกรณีไม่ถูกต้อง",
@@ -98,7 +100,7 @@
   const CAT = { concentrate: "อาหารข้น", roughage: "อาหารหยาบ", mineral: "แร่ธาตุ", medicine: "ยา/เวชภัณฑ์", semen: "น้ำเชื้อ", other: "อื่น ๆ" };
   const PROD = { pasteurized: "พาสเจอร์ไรส์", uht: "UHT", yogurt: "โยเกิร์ต", cheese: "ชีส", butter: "เนย", powder: "นมผง", other: "อื่น ๆ" };
   const REQ = { feed: "เบิกอาหาร/ปัจจัย", vet: "เรียกสัตวแพทย์", ai: "เรียกผสมเทียม" };
-  const DEV = { cooling_tank: "ถังเย็น", milk_scale: "เครื่องชั่งนม", vehicle: "รถขนนม", biogas: "บ่อไบโอแก๊ส", barn: "โรงเรือน" };
+  const DEV = { cooling_tank: "ถังเย็น", milk_scale: "เครื่องชั่งนม", vehicle: "รถขนนม", biogas: "บ่อไบโอแก๊ส", barn: "โรงเรือน", gateway: "Gateway ศูนย์รับนม", milk_analyzer: "เครื่องวิเคราะห์นม" };
   const PARAM = { fat: "ไขมัน (%)", snf: "ของแข็งไม่รวมไขมัน SNF (%)", scc: "เซลล์โซมาติก SCC (พัน/มล.)", tbc: "แบคทีเรีย TBC (พัน/มล.)" };
   const WD = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
@@ -801,22 +803,66 @@
       <small>อุณหภูมิ ${n2(lo)}–${n2(hi)}°C · ล่าสุด ${n2(v[v.length - 1])}°C · ${vals.length} ค่า</small>`;
   }
   PAGES.iot = async (sec) => {
-    const [devs, alerts, centers, ms] = await Promise.all([API.get("/dairy/iot/devices"), API.get("/dairy/iot/alerts"), API.get("/dairy/centers"), members()]);
+    const [devs, alerts, centers, ms, analyses] = await Promise.all([API.get("/dairy/iot/devices"), API.get("/dairy/iot/alerts"), API.get("/dairy/centers"), members(),
+      API.get("/dairy/iot/analyses").catch(() => [])]);
+    const gws = devs.filter((x) => x.device_type === "gateway");
+    const solo = devs.filter((x) => x.device_type !== "gateway" && !x.gateway_id);
+    const ALERT = { temp_low: "อุณหภูมิต่ำ", temp_high: "อุณหภูมิสูง", offline: "ออฟไลน์", milk_quality: "คุณภาพนม" };
+    const last = (x) => (x.last_reading ? `${x.last_reading.temp_c != null ? n2(x.last_reading.temp_c) + "°C " : ""}${x.last_reading.level_kg != null ? n2(x.last_reading.level_kg) + " กก." : ""}${x.last_reading.gas_m3 != null ? n2(x.last_reading.gas_m3) + " ลบ.ม." : ""}` : "-");
+    const online = (g) => g.last_seen_at && Date.now() - new Date(g.last_seen_at).getTime() < (g.offline_after_min || 10) * 60000;
+    const gwCard = (g) => {
+      const kids = devs.filter((x) => x.gateway_id === g.device_id);
+      const info = g.gateway_info || {};
+      return `<div class="mh-card" style="border-left:6px solid ${online(g) ? "#2e9e5b" : "#d64040"}">
+        <div class="mh-row" style="justify-content:space-between"><h3 style="margin:0">🛰️ ${esc(g.name)} · ${esc(g.center_name || "")}</h3>
+          <div class="mh-row">${online(g) ? pill("ออนไลน์", "ok") : pill(g.last_seen_at ? "ออฟไลน์" : "ยังไม่เคยเชื่อมต่อ", "bad")}
+          <button class="mh-btn sm ghost" data-act="rotateKey" data-id="${g.device_id}">ออกคีย์ใหม่</button></div></div>
+        <p class="mh-note">ติดต่อล่าสุด ${dt(g.last_seen_at)} · เตือนเมื่อเงียบเกิน ${g.offline_after_min || 10} นาที${info.version ? ` · โปรแกรม ${esc(info.version)}` : ""}${info.queue != null ? ` · ค้างในเครื่อง ${info.queue}` : ""}${g.event_stats ? ` · 24 ชม.: รับ ${g.event_stats.events_24h} รายการ ไม่ผ่าน ${g.event_stats.errors_24h}` : ""}</p>
+        <div id="key-${g.device_id}"></div>
+        ${table(["ช่อง (channel)", "อุปกรณ์", "ชนิด", "เกณฑ์ (°C)", "ค่าล่าสุด", "ล่าสุด", ""], kids.map((x) => `<tr><td><code>${esc(x.channel)}</code></td><td>${esc(x.name)}</td><td>${DEV[x.device_type] || x.device_type}</td>
+          <td>${x.temp_min != null || x.temp_max != null ? `${x.temp_min != null ? n2(x.temp_min) : ""}–${x.temp_max != null ? n2(x.temp_max) : ""}` : ""}</td><td>${last(x)}</td><td>${dt(x.last_seen_at)}</td>
+          <td>${["cooling_tank", "barn", "biogas"].includes(x.device_type) ? `<button class="mh-btn sm ghost" data-act="readings" data-id="${x.device_id}">กราฟ 24 ชม.</button>` : ""}</td></tr>
+          <tr><td colspan="7" id="rd-${x.device_id}" style="padding:0;border:0"></td></tr>`))}
+        <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600;color:var(--green-700)">➕ เพิ่มช่องอุปกรณ์ที่ต่อกับ Gateway นี้</summary>
+          <form data-form="device" data-key="key-${g.device_id}" class="mh-form" style="margin-top:8px"><input type="hidden" name="gateway_id" value="${g.device_id}">
+            <div><label>ชนิด</label><select name="device_type"><option value="milk_scale">เครื่องชั่งนม</option><option value="cooling_tank">ถังเย็น (อุณหภูมิ/ปริมาณนม)</option><option value="milk_analyzer">เครื่องวิเคราะห์นม</option></select></div>
+            <div><label>ชื่อ</label><input name="name" required placeholder="เช่น ถังเย็น 1"></div>
+            <div><label>ชื่อช่อง (ตรงกับไฟล์ตั้งค่า Gateway)</label><input name="channel" required pattern="[a-z0-9_\-]{1,32}" placeholder="เช่น tank1"></div>
+            <div><label>อุณหภูมิสูงสุด (ถังเย็น)</label><input type="number" step="0.1" name="temp_max"></div>
+            <div><button class="mh-btn">เพิ่มช่อง</button></div></form></details>
+      </div>`;
+    };
     sec.innerHTML = `
-      <div class="mh-card"><h3>แจ้งเตือน</h3>${table(["เวลา", "อุปกรณ์", "ข้อความ", ""], alerts.slice(0, 50).map((a) => `<tr${a.acknowledged_at ? "" : ' style="background:var(--red-100)"'}><td>${dt(a.created_at)}</td><td>${esc(a.device_name)}</td><td>${esc(a.message)}</td>
+      <div class="mh-card"><h3>แจ้งเตือน</h3>${table(["เวลา", "อุปกรณ์", "เรื่อง", "ข้อความ", ""], alerts.slice(0, 50).map((a) => `<tr${a.acknowledged_at ? "" : ' style="background:var(--red-100)"'}><td>${dt(a.created_at)}</td><td>${esc(a.device_name)}</td><td>${ALERT[a.alert_type] || esc(a.alert_type)}</td><td>${esc(a.message)}</td>
         <td>${a.acknowledged_at ? "รับทราบแล้ว" : `<button class="mh-btn sm" data-act="ackAlert" data-id="${a.alert_id}">รับทราบ</button>`}</td></tr>`))}</div>
-      <div class="mh-card"><h3>อุปกรณ์</h3>
-        ${table(["ชื่อ", "ชนิด", "ที่ตั้ง", "เกณฑ์ (°C)", "ค่าล่าสุด", "ออนไลน์ล่าสุด", ""], devs.map((x) => `<tr><td>${esc(x.name)}</td><td>${DEV[x.device_type]}</td><td>${esc(x.center_name || x.member_name || "")}</td>
-          <td>${x.temp_min != null ? n2(x.temp_min) : ""}–${x.temp_max != null ? n2(x.temp_max) : ""}</td>
-          <td>${x.last_reading ? `${x.last_reading.temp_c != null ? n2(x.last_reading.temp_c) + "°C " : ""}${x.last_reading.level_kg != null ? n2(x.last_reading.level_kg) + " กก." : ""}${x.last_reading.gas_m3 != null ? n2(x.last_reading.gas_m3) + " ลบ.ม." : ""}` : "-"}</td>
+      <h3 style="margin:18px 0 8px;color:var(--green-900)">Gateway ศูนย์รับนม</h3>
+      <p class="mh-note" style="margin:-4px 0 10px">Gateway หนึ่งเครื่องต่อศูนย์ รับข้อมูลจากเครื่องชั่ง เซนเซอร์ถังเย็น (อุณหภูมิ/ปริมาณนม) และเครื่องวิเคราะห์นม แล้วส่งขึ้นระบบด้วยคีย์เดียว
+        เน็ตหลุดก็เก็บไว้ในเครื่องแล้วส่งย้อนหลังตามเวลาที่วัดจริง — วิธีติดตั้งดูในโฟลเดอร์ <code>gateway/</code> ของโปรเจกต์</p>
+      ${gws.map(gwCard).join("") || '<div class="mh-card"><div class="mh-empty">ยังไม่มี Gateway</div></div>'}
+      <details class="mh-card"><summary>➕ เพิ่ม Gateway ให้ศูนย์รับนม</summary>
+        <form data-form="device" data-key="key-new-gw" class="mh-form" style="margin-top:10px"><input type="hidden" name="device_type" value="gateway">
+          <div><label>ชื่อ</label><input name="name" required placeholder="เช่น Gateway ศูนย์มวกเหล็ก"></div>
+          <div><label>ศูนย์รับนม</label><select name="center_id" required>${opt(centers.filter((c) => c.active), "center_id", "name")}</select></div>
+          <div><label>เตือนเมื่อเงียบเกิน (นาที)</label><input type="number" name="offline_after_min" value="10" min="2" max="1440"></div>
+          <div><button class="mh-btn">สร้าง Gateway และคีย์</button></div><div class="full" id="key-new-gw"></div></form></details>
+      <div class="mh-card"><h3>ผลวิเคราะห์น้ำนมวันนี้ (เครื่องวิเคราะห์ที่ศูนย์)</h3>
+        ${table(["เวลา", "ศูนย์", "สมาชิก", "ตัวอย่าง", "#ไขมัน", "#SNF", "#โปรตีน", "#ความหนาแน่น", "#น้ำปน %", "#จุดเยือกแข็ง", ""], analyses.map((x) => `<tr${Number(x.added_water_pct) >= 2 ? ' style="background:var(--red-100)"' : ""}>
+          <td>${dt(x.measured_at)}</td><td>${esc(x.center_name || "")}</td><td>${x.member_code ? `${esc(x.member_code)} ${esc(x.full_name)}` : "-"}</td><td>${esc(x.sample_no || "")}</td>
+          <td class="num">${n2(x.fat_pct)}</td><td class="num">${n2(x.snf_pct)}</td><td class="num">${n2(x.protein_pct)}</td><td class="num">${n2(x.density)}</td><td class="num">${n2(x.added_water_pct)}</td><td class="num">${x.freezing_point_c == null ? "-" : Number(x.freezing_point_c).toFixed(3)}</td>
+          <td>${x.used_for_pricing ? pill("ใช้คิดราคา", "ok") : ""}</td></tr>`))}
+        <p class="mh-note">ใช้ผลเครื่องวิเคราะห์คิดราคาค่านมหรือไม่ ตั้งได้ที่ <a href="#settings" data-act="go" data-tab="settings">ตั้งค่า</a> (ค่าเริ่ม = ไม่ใช้ ใช้ผลแล็บเหมือนเดิม)</p></div>
+      <div class="mh-card"><h3>อุปกรณ์อื่น (เชื่อมต่อเอง ไม่ผ่าน Gateway)</h3>
+        ${table(["ชื่อ", "ชนิด", "ที่ตั้ง", "เกณฑ์ (°C)", "ค่าล่าสุด", "ออนไลน์ล่าสุด", ""], solo.map((x) => `<tr><td>${esc(x.name)}</td><td>${DEV[x.device_type] || x.device_type}</td><td>${esc(x.center_name || x.member_name || "")}</td>
+          <td>${x.temp_min != null ? n2(x.temp_min) : ""}–${x.temp_max != null ? n2(x.temp_max) : ""}</td><td>${last(x)}</td>
           <td>${dt(x.last_seen_at)}</td><td><button class="mh-btn sm ghost" data-act="readings" data-id="${x.device_id}">กราฟ 24 ชม.</button></td></tr><tr><td colspan="7" id="rd-${x.device_id}" style="padding:0;border:0"></td></tr>`))}
-        <form data-form="device" class="mh-form" style="margin-top:12px">
-          <div><label>ชื่อ</label><input name="name" required></div><div><label>ชนิด</label><select name="device_type">${Object.entries(DEV).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></div>
+        <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600;color:var(--green-700)">➕ เพิ่มอุปกรณ์เดี่ยว</summary>
+        <form data-form="device" data-key="newKey" class="mh-form" style="margin-top:12px">
+          <div><label>ชื่อ</label><input name="name" required></div><div><label>ชนิด</label><select name="device_type">${Object.entries(DEV).filter(([k]) => !["gateway", "milk_analyzer"].includes(k)).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></div>
           <div><label>ศูนย์ (ถังเย็น/เครื่องชั่ง)</label><select name="center_id"><option value="">-</option>${opt(centers, "center_id", "name")}</select></div>
           <div><label>ฟาร์มสมาชิก</label><select name="member_id"><option value="">-</option>${opt(ms, "member_id", (m) => `${m.member_code} ${m.full_name}`)}</select></div>
           <div><label>อุณหภูมิต่ำสุด</label><input type="number" step="0.1" name="temp_min"></div><div><label>อุณหภูมิสูงสุด (ถังเย็นค่าเริ่ม = ตั้งค่า)</label><input type="number" step="0.1" name="temp_max"></div>
-          <div><button class="mh-btn">เพิ่มอุปกรณ์</button></div><div class="full" id="newKey"></div></form>
-        <p class="mh-note">อุปกรณ์ส่งค่าไปที่ POST /dairy-iot/readings และเครื่องชั่งนมส่งที่ POST /dairy-iot/intake { member_code, weight_kg } พร้อม header X-Device-Key</p></div>`;
+          <div><button class="mh-btn">เพิ่มอุปกรณ์</button></div><div class="full" id="newKey"></div></form></details>
+        <p class="mh-note">อุปกรณ์เดี่ยวส่งค่าไปที่ POST /dairy-iot/readings และเครื่องชั่งนมส่งที่ POST /dairy-iot/intake { member_code, weight_kg } พร้อม header X-Device-Key</p></div>`;
   };
 
   // ---- รายงาน ----
@@ -863,6 +909,7 @@
         ${f("transport_cost_per_ton_km", "ค่าขนส่ง (บาท/ตัน-กม.)")}${f("processing_cost_per_kg", "ค่าแปรรูปของโรงนมเอง (บาท/กก. นม)")}${f("surplus_min_price_per_kg", "ราคาขายนมส่วนเกินขั้นต่ำ (บาท/กก.)")}
         <div class="full mh-note">ใช้คำนวณทางเลือกในแท็บ <a href="#cases" data-act="go" data-tab="cases">นมเกินและทางแก้</a> — ใส่ความจุถังและพิกัดของแต่ละศูนย์ด้านล่างเพื่อให้ตรวจถังล้นและคำนวณค่าขนส่งได้</div></div>`}
         <div class="mh-form" style="margin-top:10px">
+        ${v.analyzer_for_pricing === undefined ? "" : `<div class="full"><label><input type="checkbox" name="analyzer_for_pricing"${v.analyzer_for_pricing ? " checked" : ""}> ใช้ผลเครื่องวิเคราะห์นมที่ศูนย์ (ไขมัน/SNF/โปรตีน จาก Gateway) คิดราคาค่านมรายสมาชิก — ไม่ติ๊ก = ใช้ผลแล็บเท่านั้น</label></div>`}
         <div><label><input type="checkbox" name="has_processing_plant"${v.has_processing_plant ? " checked" : ""}> สหกรณ์มีโรงนมแปรรูป</label></div>
         <div class="full"><label><input type="checkbox" name="gov_data_consent"${v.gov_data_consent ? " checked" : ""}> ยินยอมให้หน่วยงานรัฐเห็นข้อมูลรายสหกรณ์ใน Dashboard นโยบาย (ปริมาณนม สัญญารวม ระดับเตือน — ไม่รวมราคาสัญญาและข้อมูลสมาชิกรายคน)</label></div>
         <div><button class="mh-btn">บันทึกการตั้งค่า</button></div></div></form>
@@ -955,6 +1002,11 @@
     caseReject: async (el) => { if (await run(() => API.post(`/dairy/surplus-cases/${el.dataset.case}/options/${el.dataset.id}/reject`, {}), "บันทึกแล้ว")) refresh(); },
     caseFailed: async (el) => { if (await run(() => API.post(`/dairy/surplus-cases/${el.dataset.case}/options/${el.dataset.id}/outcome`, { done: false }), "บันทึกว่าไม่สำเร็จ")) { refresh(); badges(); } },
     editCenter: (el) => { const row = $(`#ce-${el.dataset.id}`); row.hidden = !row.hidden; },
+    rotateKey: async (el) => {
+      if (!window.confirm("ออกคีย์ใหม่? คีย์เดิมที่ Gateway ใช้อยู่จะใช้ไม่ได้ทันที ต้องใส่คีย์ใหม่ที่เครื่อง")) return;
+      const r = await run(() => API.post(`/dairy/iot/devices/${el.dataset.id}/rotate-key`, {}));
+      if (r) $(`#key-${el.dataset.id}`).innerHTML = `<div class="mh-card" style="background:var(--gold-100);margin:8px 0"><p style="margin:0 0 6px"><b>คีย์ใหม่ (แสดงครั้งเดียว)</b> — ใส่ที่ Gateway ด้วย <code>agrolink-gw setup</code></p><div class="mh-key">${esc(r.api_key)}</div></div>`;
+    },
     ackAlert: async (el) => { if (await run(() => API.post(`/dairy/iot/alerts/${el.dataset.id}/ack`, {}), "รับทราบแล้ว")) { refresh(); badges(); } },
     readings: async (el) => { const r = await run(() => API.get(`/dairy/iot/devices/${el.dataset.id}/readings?hours=24`)); if (r) $(`#rd-${el.dataset.id}`).innerHTML = `<div style="padding:8px">${r.length ? spark(r) : '<div class="mh-empty">ไม่มีข้อมูล 24 ชม.</div>'}</div>`; },
   };
@@ -1080,8 +1132,15 @@
     newRun: async (f) => { const r = await run(() => API.post("/dairy/settlements", fd(f))); if (r) { toast(`สร้างรอบแล้ว ${r.member_count} ราย ${baht(r.total_net)} บาท${r.members_with_carried_debit ? ` (มียอดหักยกไป ${r.members_with_carried_debit} ราย)` : ""}`); refresh(); } },
     ledgerEntry: async (f) => { if (await run(() => API.post("/dairy/ledger/entry", fd(f)), "บันทึกแล้ว")) refresh(); },
     device: async (f) => {
+      const box = f.dataset.key;
       const r = await run(() => API.post("/dairy/iot/devices", clean(fd(f))));
-      if (r) { await refresh(); $("#newKey").innerHTML = `<p><b>คีย์อุปกรณ์ (แสดงครั้งเดียว):</b></p><div class="mh-key">${esc(r.api_key)}</div>`; toast("สร้างอุปกรณ์แล้ว — คัดลอกคีย์ไปตั้งในอุปกรณ์"); }
+      if (!r) return;
+      await refresh();
+      if (r.api_key) {
+        const el = document.getElementById(box) || $("#newKey");
+        if (el) el.innerHTML = `<div class="mh-card" style="background:var(--gold-100);margin:8px 0"><p style="margin:0 0 6px"><b>คีย์ (แสดงครั้งเดียว)</b> — ใส่ที่ Gateway ด้วยคำสั่ง <code>agrolink-gw setup</code> ห้ามส่งทางแชทหรือแคปหน้าจอ</p><div class="mh-key">${esc(r.api_key)}</div></div>`;
+        toast("สร้างแล้ว — คัดลอกคีย์ไปใส่ที่อุปกรณ์ (แสดงครั้งเดียว)");
+      } else toast("เพิ่มช่องแล้ว");
     },
     report: (f) => { cache.repFrom = f.from.value; cache.repTo = f.to.value; refresh(); },
     settings: async (f) => {

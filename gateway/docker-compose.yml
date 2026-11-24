@@ -1,0 +1,25 @@
+# วางไฟล์นี้ไว้ในโฟลเดอร์เดียวกับโฟลเดอร์ data/ บน Gateway แล้ว:
+#   1) cp config.example.toml data/config.toml  แล้วแก้ port/channel ให้ตรงอุปกรณ์ (data_dir = "/data", key_file = "/data/device.key")
+#   2) docker compose run --rm agrolink-gw setup     ← วางคีย์ Gateway จากพอร์ทัล
+#   3) docker compose up -d                           ← เริ่มทำงาน และเริ่มเองทุกครั้งที่เปิดเครื่อง
+#   ดู log: docker compose logs -f
+services:
+  agrolink-gw:
+    image: agrolink-gw:1.0.0
+    build: .
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Bangkok
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"                 # หน้าจอรับนม http://<ip-gateway>:8080
+    devices:                        # แก้ให้ตรงกับช่อง Serial ของ Gateway รุ่นที่ใช้
+      - /dev/ttyS1:/dev/ttyS1       # เครื่องชั่ง (RS-232)
+      - /dev/ttyS2:/dev/ttyS2       # เครื่องวิเคราะห์นม (RS-232)
+      - /dev/ttyS3:/dev/ttyS3       # เซนเซอร์ถังเย็น (RS-485 / Modbus RTU)
+    group_add:
+      - dialout
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "3" }   # กันการ์ด/eMMC เต็ม

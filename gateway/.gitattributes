@@ -1,0 +1,8 @@
+# ไฟล์ที่รันบน Gateway (Linux) ต้องเป็น LF เสมอ แม้ checkout บน Windows
+*.sh text eol=lf
+*.py text eol=lf
+*.toml text eol=lf
+*.service text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf

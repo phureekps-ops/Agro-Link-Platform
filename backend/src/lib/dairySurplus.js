@@ -54,13 +54,15 @@ function levelOf(surplusKg, capacityKg, s) {
 }
 
 /**
- * ศูนย์รับนม วันนี้. center: { center_id, name, tank_capacity_kg, accepted_today_kg, shipped_today_kg, next_round_kg }.
+ * ศูนย์รับนม วันนี้. center: { center_id, name, tank_capacity_kg, accepted_today_kg, shipped_today_kg, next_round_kg, measured_tank_kg? }.
+ * มีค่าวัดจริงจากเซนเซอร์ระดับถัง (measured_tank_kg) → ใช้แทน "รับ − ส่ง" ที่คำนวณจากบันทึก.
  * เกินความจุอยู่แล้ว = แดง, จะเกินเมื่อรับรอบถัดไป = ส้ม.
  */
 function detectCenter(center, s, now = new Date()) {
   const cap = n(center.tank_capacity_kg);
   if (!(cap > 0)) return null;
-  const unshipped = pos(n(center.accepted_today_kg) - n(center.shipped_today_kg));
+  const measured = n(center.measured_tank_kg);
+  const unshipped = measured !== null ? pos(measured) : pos(n(center.accepted_today_kg) - n(center.shipped_today_kg));
   const next = pos(center.next_round_kg);
   const projected = unshipped + next;
   const surplus = round2(projected - cap);
@@ -72,7 +74,7 @@ function detectCenter(center, s, now = new Date()) {
     deadline_at: new Date(now.getTime() + Number(s.surplus_hold_hours || 24) * 3600 * 1000),
     detail: {
       accepted_today_kg: round2(n(center.accepted_today_kg) || 0), shipped_today_kg: round2(n(center.shipped_today_kg) || 0),
-      unshipped_kg: round2(unshipped), next_round_kg: round2(next), tank_capacity_kg: round2(cap),
+      unshipped_kg: round2(unshipped), next_round_kg: round2(next), tank_capacity_kg: round2(cap), measured_by_sensor: measured !== null,
     },
   };
 }
@@ -242,7 +244,12 @@ async function centerStats(c, coop, today) {
               WHERE r.center_id=cc.center_id AND r.round_date=$2 AND i.status='Accepted')::numeric AS accepted_today_kg,
             (SELECT COALESCE(SUM(sent_kg),0) FROM dairy.shipment sh WHERE sh.center_id=cc.center_id AND sh.ship_date=$2 AND sh.status<>'Cancelled')::numeric AS shipped_today_kg,
             (SELECT COALESCE(AVG(r.accepted_kg),0) FROM dairy.milk_round r
-              WHERE r.center_id=cc.center_id AND r.status='Closed' AND r.round_date >= $2::date - 14 AND r.round_date < $2)::numeric AS next_round_kg
+              WHERE r.center_id=cc.center_id AND r.status='Closed' AND r.round_date >= $2::date - 14 AND r.round_date < $2)::numeric AS next_round_kg,
+            -- ปริมาณนมในถังที่วัดจริงจากเซนเซอร์ (ผ่าน gateway) ภายใน 60 นาที — ไม่มี = NULL ใช้ค่าคำนวณแทน
+            (SELECT SUM(x.level_kg) FROM dairy.iot_device d CROSS JOIN LATERAL (
+               SELECT level_kg FROM dairy.iot_reading r WHERE r.device_id=d.device_id AND r.level_kg IS NOT NULL AND r.recorded_at >= now() - interval '60 minutes'
+                ORDER BY r.recorded_at DESC LIMIT 1) x
+              WHERE d.center_id=cc.center_id AND d.device_type='cooling_tank' AND d.active)::numeric AS measured_tank_kg
        FROM dairy.collection_center cc WHERE cc.coop_org_id=$1 AND cc.active ORDER BY cc.created_at`, [coop, today],
   )).rows;
 }
@@ -296,7 +303,10 @@ async function loadContext(c, coop, s, today, centers) {
   return {
     s, today, buyers, capacities, directory, plant_product: plantProduct, plant_spare_kg: plantSpare, sale_price: salePrice, coopOrigin,
     // ที่ว่างในถัง = ความจุ − นมค้างถัง − รอบถัดไปของศูนย์นั้นเอง
-    centers: centers.map((k) => ({ ...k, free_kg: pos(n(k.tank_capacity_kg) - pos(n(k.accepted_today_kg) - n(k.shipped_today_kg)) - pos(k.next_round_kg)) })),
+    centers: centers.map((k) => {
+      const inTank = n(k.measured_tank_kg) !== null ? pos(n(k.measured_tank_kg)) : pos(n(k.accepted_today_kg) - n(k.shipped_today_kg));
+      return { ...k, free_kg: pos(n(k.tank_capacity_kg) - inTank - pos(k.next_round_kg)) };
+    }),
   };
 }
 

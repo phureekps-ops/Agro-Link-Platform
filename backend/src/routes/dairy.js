@@ -176,7 +176,7 @@ const SETTING_FIELDS = {
   surplus_hold_hours: { min: 1, max: 72, int: true }, surplus_min_kg_center: { min: 0, max: 1000000 }, surplus_min_kg_coop: { min: 0, max: 1000000 },
   transport_cost_per_ton_km: { min: 0, max: 100 }, processing_cost_per_kg: { min: 0, max: 100 }, surplus_min_price_per_kg: { min: 0, max: 1000 },
 };
-const SETTING_BOOLS = ['gov_data_consent', 'has_processing_plant'];
+const SETTING_BOOLS = ['gov_data_consent', 'has_processing_plant', 'analyzer_for_pricing'];
 
 async function history(c, coop, field, oldV, newV, who) {
   await c.query('INSERT INTO dairy.setting_history (coop_org_id, field_name, old_value, new_value, changed_by) VALUES ($1,$2,$3,$4,$5)',
@@ -1543,23 +1543,42 @@ router.get('/fees', h(async (req) => db(req, async (c, coop) => {
 // ===========================================================================
 // (12) IoT พยากรณ์ รายงาน
 // ===========================================================================
-const DEVICE_TYPES = ['cooling_tank', 'milk_scale', 'vehicle', 'biogas', 'barn'];
+const DEVICE_TYPES = ['cooling_tank', 'milk_scale', 'vehicle', 'biogas', 'barn', 'gateway', 'milk_analyzer'];
+// อุปกรณ์ที่ต่อผ่าน gateway ได้ (เป็น "ช่อง" ของ gateway ไม่มีคีย์ของตัวเอง)
+const CHANNEL_TYPES = ['cooling_tank', 'milk_scale', 'milk_analyzer', 'barn', 'biogas'];
 router.get('/iot/devices', h(async (req) => db(req, async (c, coop) => (await c.query(
   `SELECT d.device_id, d.name, d.device_type, d.center_id, cc.name AS center_name, d.member_id, m.full_name AS member_name, d.temp_min, d.temp_max,
-          d.active, d.last_seen_at,
+          d.active, d.last_seen_at, d.gateway_id, d.channel, d.offline_after_min, d.gateway_info, g.name AS gateway_name,
           (SELECT row_to_json(x) FROM (SELECT recorded_at, temp_c, level_kg, gas_m3 FROM dairy.iot_reading r WHERE r.device_id=d.device_id ORDER BY recorded_at DESC LIMIT 1) x) AS last_reading,
-          (SELECT COUNT(*)::int FROM dairy.iot_alert a WHERE a.device_id=d.device_id AND a.acknowledged_at IS NULL) AS open_alerts
+          (SELECT COUNT(*)::int FROM dairy.iot_alert a WHERE a.device_id=d.device_id AND a.acknowledged_at IS NULL) AS open_alerts,
+          CASE WHEN d.device_type='gateway' THEN (SELECT json_build_object('events_24h', COUNT(*), 'errors_24h', COUNT(*) FILTER (WHERE e.status='error'))
+             FROM dairy.iot_event e WHERE e.device_id=d.device_id AND e.received_at >= now() - interval '24 hours') END AS event_stats
      FROM dairy.iot_device d LEFT JOIN dairy.collection_center cc ON cc.center_id=d.center_id LEFT JOIN dairy.member m ON m.member_id=d.member_id
-    WHERE d.coop_org_id=$1 ORDER BY d.created_at`, [coop],
+     LEFT JOIN dairy.iot_device g ON g.device_id=d.gateway_id
+    WHERE d.coop_org_id=$1 ORDER BY COALESCE(d.gateway_id, d.device_id), d.gateway_id NULLS FIRST, d.channel, d.created_at`, [coop],
 )).rows)));
 
+const newDeviceKey = () => {
+  const apiKey = `dk_${crypto.randomBytes(24).toString('hex')}`;
+  return { apiKey, hash: crypto.createHash('sha256').update(apiKey).digest('hex') };
+};
 router.post('/iot/devices', h(async (req) => db(req, async (c, coop) => {
   const b = req.body || {};
   const name = txt(b.name);
   if (!name) throw bad('missing_name');
   if (!DEVICE_TYPES.includes(b.device_type)) throw bad('invalid_field', { field: 'device_type' });
-  const centerId = b.center_id ? (await own(c, coop, 'center', b.center_id)).center_id : null;
-  if (['cooling_tank', 'milk_scale'].includes(b.device_type) && !centerId) throw bad('device_needs_center');
+  let centerId = b.center_id ? (await own(c, coop, 'center', b.center_id)).center_id : null;
+  // ต่อผ่าน gateway: ใช้ศูนย์ของ gateway, ต้องมีชื่อช่อง (channel) ตรงกับที่ตั้งในโปรแกรม gateway
+  let gatewayId = null; let channel = null;
+  if (b.gateway_id) {
+    const g = await own(c, coop, 'device', b.gateway_id);
+    if (g.device_type !== 'gateway') throw bad('not_a_gateway');
+    if (!CHANNEL_TYPES.includes(b.device_type)) throw bad('invalid_channel_type');
+    channel = String(b.channel || '').trim().toLowerCase();
+    if (!/^[a-z0-9_-]{1,32}$/.test(channel)) throw bad('invalid_field', { field: 'channel' });
+    gatewayId = g.device_id; centerId = g.center_id;
+  }
+  if (['cooling_tank', 'milk_scale', 'gateway', 'milk_analyzer'].includes(b.device_type) && !centerId) throw bad('device_needs_center');
   const memberId = b.member_id ? (await own(c, coop, 'member', b.member_id)).member_id : null;
   const s = await core.settings(c, coop);
   let tmin = num(b.temp_min, { min: -20, max: 80 });
@@ -1567,12 +1586,19 @@ router.post('/iot/devices', h(async (req) => db(req, async (c, coop) => {
   if (Number.isNaN(tmin) || Number.isNaN(tmax)) throw bad('invalid_field', { field: 'temp' });
   if (b.device_type === 'cooling_tank' && tmax === null) tmax = Number(s.tank_temp_max);
   if (tmin === null) tmin = null;
-  const apiKey = `dk_${crypto.randomBytes(24).toString('hex')}`;
-  const hash = crypto.createHash('sha256').update(apiKey).digest('hex');
+  let offline = null;
+  if (b.device_type === 'gateway') {
+    offline = b.offline_after_min ? num(b.offline_after_min, { min: 2, max: 1440 }) : 10;
+    if (!offline || Number.isNaN(offline)) throw bad('invalid_field', { field: 'offline_after_min' });
+  }
+  const { apiKey, hash } = newDeviceKey();
   const r = await insertRow(c, 'dairy.iot_device', {
     coop_org_id: coop, name, device_type: b.device_type, center_id: centerId, member_id: memberId, api_key_hash: hash, temp_min: tmin, temp_max: tmax,
-  });
+    gateway_id: gatewayId, channel, offline_after_min: offline,
+  }).catch(uniq('channel_exists'));
   delete r.api_key_hash;
+  // อุปกรณ์ที่ต่อผ่าน gateway ไม่ใช้คีย์ของตัวเอง (คีย์ที่สร้างไว้ไม่ถูกแสดงและไม่มีใครรู้)
+  if (gatewayId) return r;
   return { ...r, api_key: apiKey, api_key_note: 'แสดงครั้งเดียว — ใส่ในอุปกรณ์เป็น header X-Device-Key' };
 })));
 router.put('/iot/devices/:id', h(async (req) => db(req, async (c, coop) => {
@@ -1585,10 +1611,36 @@ router.put('/iot/devices/:id', h(async (req) => db(req, async (c, coop) => {
     if (Number.isNaN(x)) throw bad('invalid_field', { field: f });
     v[f] = x;
   });
+  if ('offline_after_min' in b && d.device_type === 'gateway') {
+    const x = num(b.offline_after_min, { min: 2, max: 1440 });
+    if (!x || Number.isNaN(x)) throw bad('invalid_field', { field: 'offline_after_min' });
+    v.offline_after_min = x;
+  }
   if ('name' in v && !v.name) throw bad('missing_name');
   const r = await updateRow(c, 'dairy.iot_device', 'device_id', d.device_id, v);
   delete r.api_key_hash;
   return r;
+})));
+/** ออกคีย์ใหม่ (เครื่องหาย/คีย์หลุด) — คีย์เดิมใช้ไม่ได้ทันที */
+router.post('/iot/devices/:id/rotate-key', h(async (req) => db(req, async (c, coop) => {
+  const d = await own(c, coop, 'device', req.params.id);
+  if (d.gateway_id) throw bad('channel_has_no_key');
+  const { apiKey, hash } = newDeviceKey();
+  await c.query('UPDATE dairy.iot_device SET api_key_hash=$2 WHERE device_id=$1', [d.device_id, hash]);
+  await logAccess(c, 'write', 'dairy.iot_device', d.device_id);
+  return { device_id: d.device_id, api_key: apiKey, api_key_note: 'แสดงครั้งเดียว — คีย์เดิมใช้ไม่ได้แล้ว' };
+})));
+/** ผลเครื่องวิเคราะห์น้ำนมที่ศูนย์ ?date=YYYY-MM-DD (ค่าเริ่ม = วันนี้) */
+router.get('/iot/analyses', h(async (req) => db(req, async (c, coop) => {
+  const day = isDate(req.query.date) ? req.query.date : bkkToday();
+  return (await c.query(
+    `SELECT a.analysis_id, a.measured_at, a.sample_no, a.fat_pct, a.snf_pct, a.protein_pct, a.lactose_pct, a.density, a.added_water_pct,
+            a.freezing_point_c, a.milk_temp_c, (a.test_id IS NOT NULL) AS used_for_pricing, m.member_code, m.full_name, cc.name AS center_name, d.name AS device_name
+       FROM dairy.milk_analysis a JOIN dairy.iot_device d ON d.device_id=a.device_id
+       LEFT JOIN dairy.member m ON m.member_id=a.member_id LEFT JOIN dairy.collection_center cc ON cc.center_id=a.center_id
+      WHERE a.coop_org_id=$1 AND (a.measured_at AT TIME ZONE 'Asia/Bangkok')::date = $2::date ORDER BY a.measured_at DESC LIMIT 500`,
+    [coop, day],
+  )).rows;
 })));
 router.get('/iot/devices/:id/readings', h(async (req) => db(req, async (c, coop) => {
   const d = await own(c, coop, 'device', req.params.id);

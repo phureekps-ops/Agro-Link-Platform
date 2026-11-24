@@ -5,6 +5,7 @@ const { withServiceRole } = require('../db/pool');
 const {
   h, bad, conflict, notFound, num, bkkToday, shiftOf,
 } = require('../lib/dairy');
+const gateway = require('../lib/dairyIot');
 
 /**
  * /dairy-iot — endpoint สำหรับอุปกรณ์ (ไม่มี JWT; ยืนยันด้วย header
@@ -14,6 +15,9 @@ const {
  *
  *  POST /readings  ถังเย็น/รถ/บ่อไบโอแก๊ส/โรงเรือน: { temp_c, level_kg, gas_m3, lat, lng, recorded_at? } หรือ { readings: [...] }
  *  POST /intake    เครื่องชั่งนมที่ศูนย์: { member_code, weight_kg } → บันทึกลงรอบเปิดของวันนี้ (เช้า/เย็นตามเวลา)
+ *  POST /gateway/events  Gateway อุตสาหกรรมที่ศูนย์ (คีย์ของ gateway): ส่งเหตุการณ์เป็นชุด มีรหัสกันซ้ำ
+ *                         และเวลาที่วัดจริง — ดู src/lib/dairyIot.js และโปรแกรมใน gateway/
+ *  GET  /gateway/config   รายชื่อช่องอุปกรณ์และสมาชิกของศูนย์ (gateway เก็บไว้ใช้ตอนออฟไลน์)
  *
  * /dairy-public — หน้าโรงเรียนยืนยันรับนม (สแกน QR ที่แนบใบส่ง) ไม่ต้อง login
  * ใช้ token สุ่ม 32 hex ต่อการส่งหนึ่งครั้ง.
@@ -27,6 +31,25 @@ async function deviceFromKey(c, req) {
   const hash = crypto.createHash('sha256').update(key).digest('hex');
   return (await c.query('SELECT * FROM dairy.iot_device WHERE api_key_hash=$1 AND active', [hash])).rows[0] || null;
 }
+
+// ---- Gateway อุตสาหกรรม (grant_dairy_iot_gateway.sql) ----
+async function gatewayFromKey(c, req, res) {
+  const d = await deviceFromKey(c, req);
+  if (!d) { res.status(401).json({ error: 'invalid_device_key' }); return null; }
+  if (d.device_type !== 'gateway') { res.status(403).json({ error: 'not_a_gateway' }); return null; }
+  return d;
+}
+iot.post('/gateway/events', h(async (req, res) => withServiceRole(async (c) => {
+  const gw = await gatewayFromKey(c, req, res);
+  if (!gw) return undefined;
+  return gateway.processBatch(c, gw, req.body || {});
+})));
+iot.get('/gateway/config', h(async (req, res) => withServiceRole(async (c) => {
+  const gw = await gatewayFromKey(c, req, res);
+  if (!gw) return undefined;
+  await c.query('UPDATE dairy.iot_device SET last_seen_at=now() WHERE device_id=$1', [gw.device_id]);
+  return gateway.gatewayConfig(c, gw);
+})));
 
 iot.post('/readings', h(async (req, res) => withServiceRole(async (c) => {
   const d = await deviceFromKey(c, req);

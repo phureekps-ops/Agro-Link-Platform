@@ -1,0 +1,87 @@
+# AgroLink Gateway — ไฟล์ตั้งค่าของศูนย์รับนมหนึ่งแห่ง
+# คัดลอกเป็น /etc/agrolink-gw/config.toml (ติดตั้งแบบ install.sh) หรือ ./data/config.toml (Docker) แล้วแก้ตามอุปกรณ์จริง
+# "channel" ของแต่ละอุปกรณ์ต้องตรงกับชื่อช่องที่เพิ่มไว้ในพอร์ทัลสหกรณ์ (แท็บ 📡 IoT › Gateway › เพิ่มช่อง)
+
+[agrolink]
+api_base = "https://agrolink-backend-vhv6.onrender.com"
+key_file = "/var/lib/agrolink-gw/device.key"   # คีย์ใส่ด้วยคำสั่ง agrolink-gw setup — ห้ามใส่คีย์ในไฟล์นี้
+send_every_s = 3        # ส่งคิวทุกกี่วินาที
+heartbeat_s = 60        # ไม่มีข้อมูลก็ส่งสัญญาณ "ยังทำงาน" ทุกกี่วินาที
+
+[gateway]
+name = "gw-ศูนย์มวกเหล็ก"
+data_dir = "/var/lib/agrolink-gw"   # คิวและรายชื่อสมาชิกที่เก็บไว้ใช้ตอนออฟไลน์
+ui_port = 8080                      # หน้าจอรับนม http://<ip-gateway>:8080
+ui_pin = ""                         # ใส่ตัวเลข 4-6 หลักถ้าต้องการให้ใส่ PIN ก่อนใช้หน้าจอ
+
+# ---------------------------------------------------------------------------
+# เครื่องชั่งนม (RS-232) — ค่าเริ่มอ่านรูปแบบ "ST,GS,+0012.34kg" (ST = นิ่ง, US = ยังแกว่ง)
+# ดูรูปแบบจริงด้วย: agrolink-gw test-scale แล้วปรับ pattern (ต้องมีกลุ่ม weight, มี stable หรือไม่ก็ได้)
+# ---------------------------------------------------------------------------
+[[scale]]
+channel = "scale1"
+label = "เครื่องชั่งจุดรับนม 1"
+port = "/dev/ttyS1"     # ช่อง RS-232 ของ gateway (หรือ /dev/ttyUSB0 ถ้าใช้สายแปลง USB)
+baud = 9600
+parity = "N"            # N / E / O
+bytesize = 8
+stopbits = 1
+min_kg = 0.5            # ต่ำกว่านี้ = ถังว่าง (ต้องยกถังออกก่อนชั่งถังถัดไป กันบันทึกซ้ำ)
+# pattern = '^(?P<stable>ST|US),(?:GS|NT),\s*(?P<weight>[+-]?\d+(?:\.\d+)?)\s*kg'
+# request = "Q\r\n"     # ถ้าเครื่องชั่งไม่ส่งค่าเอง ใส่คำสั่งขอน้ำหนักตามคู่มือเครื่อง
+
+# ---------------------------------------------------------------------------
+# เครื่องวิเคราะห์น้ำนม (RS-232/USB) — ตั้งตามรูปแบบที่เครื่องส่งออก (ดูคู่มือ หรือ agrolink-gw test-analyzer)
+#   format = "csv"      : คอลัมน์คั่นด้วย delimiter ตามลำดับ fields ("-" = ข้ามคอลัมน์นั้น)
+#   format = "keyvalue" : "Fat=3.85 SNF=8.40 ..." ใช้ keys จับชื่อ → ช่องของ AgroLink
+#   format = "regex"    : pattern ที่มี named groups
+# ช่องที่รองรับ: sample_no member_code fat_pct snf_pct protein_pct lactose_pct density added_water_pct freezing_point_c milk_temp_c
+# ⚠️ ลำดับคอลัมน์ด้านล่างเป็นตัวอย่าง — ต้องตรวจกับเครื่องจริงก่อนใช้
+# ---------------------------------------------------------------------------
+[[analyzer]]
+channel = "analyzer1"
+label = "เครื่องวิเคราะห์นม"
+port = "/dev/ttyS2"
+baud = 9600
+format = "csv"
+delimiter = ","
+fields = ["sample_no", "fat_pct", "snf_pct", "density", "protein_pct", "lactose_pct", "added_water_pct", "milk_temp_c", "freezing_point_c"]
+attach_member_s = 600   # ผลที่ไม่มีรหัสสมาชิก ผูกกับสมาชิกที่เลือกบนหน้าจอภายในกี่วินาที
+
+# ตัวอย่างแบบ keyvalue:
+# format = "keyvalue"
+# [analyzer.keys]
+# Fat = "fat_pct"
+# SNF = "snf_pct"
+# Density = "density"
+# Protein = "protein_pct"
+# Water = "added_water_pct"
+
+# ---------------------------------------------------------------------------
+# เซนเซอร์ถังเย็น Modbus RTU (RS-485) — อุณหภูมิ และปริมาณนมในถัง
+# register/type/scale ดูจากคู่มือเซนเซอร์; ทดสอบด้วย agrolink-gw test-modbus
+# ---------------------------------------------------------------------------
+[[modbus]]
+port = "/dev/ttyS3"     # ช่อง RS-485
+baud = 9600
+parity = "N"
+interval_s = 30         # อ่านทุก 30 วินาที
+send_every_s = 60       # ส่งขึ้น AgroLink ทุก 60 วินาที
+
+  [[modbus.sensor]]
+  channel = "tank1"     # ถังเย็นในพอร์ทัล (ชนิด "ถังเย็น")
+  field = "temp_c"
+  slave = 1
+  function = 4          # 3 = holding register, 4 = input register
+  register = 1
+  type = "int16"        # int16 uint16 int32 uint32 float32
+  scale = 0.1           # ค่าที่อ่านได้ × scale (เช่น 38 → 3.8 °C)
+
+  [[modbus.sensor]]
+  channel = "tank1"
+  field = "level_kg"    # ปริมาณนมในถัง (กก.) — ถ้าเซนเซอร์ให้เป็นลิตร ใส่ scale = 1.03
+  slave = 1
+  function = 3
+  register = 10
+  type = "float32"
+  word_order = "big"    # ถ้าค่าเพี้ยนมาก ลอง "little"

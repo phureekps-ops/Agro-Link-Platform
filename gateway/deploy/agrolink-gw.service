@@ -1,0 +1,23 @@
+[Unit]
+Description=AgroLink Gateway (ศูนย์รับนม)
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agrolink-gw
+Group=dialout
+Environment=AGROLINK_GW_CONFIG=/etc/agrolink-gw/config.toml
+Environment=TZ=Asia/Bangkok
+ExecStart=/opt/agrolink-gw/venv/bin/python -m agrolink_gw run
+WorkingDirectory=/opt/agrolink-gw
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/agrolink-gw
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

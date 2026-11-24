@@ -32,6 +32,12 @@ test('detectCenter: overflow now = red, overflow at next round = orange, small e
 
   assert.equal(S.detectCenter({ ...base, accepted_today_kg: 3000, shipped_today_kg: 0, next_round_kg: 2200 }, SET, NOW), null); // เกิน 200 < 300
   assert.equal(S.detectCenter({ ...base, tank_capacity_kg: null, accepted_today_kg: 9000 }, SET, NOW), null); // ไม่รู้ความจุ
+  // a tank-level sensor (via the gateway) beats the bookkeeping figure
+  const sensed = S.detectCenter({ ...base, accepted_today_kg: 3000, shipped_today_kg: 0, next_round_kg: 2600, measured_tank_kg: 1200 }, SET, NOW);
+  assert.equal(sensed, null); // 1,200 in the tank + 2,600 next round < 5,000
+  const sensedFull = S.detectCenter({ ...base, accepted_today_kg: 0, shipped_today_kg: 0, next_round_kg: 2600, measured_tank_kg: 4800 }, SET, NOW);
+  assert.equal(sensedFull.surplus_kg_day, 2400);
+  assert.equal(sensedFull.detail.measured_by_sensor, true);
   // shipping more than was received never goes negative
   assert.equal(S.detectCenter({ ...base, accepted_today_kg: 1000, shipped_today_kg: 4000, next_round_kg: 2000 }, SET, NOW), null);
 });

@@ -209,7 +209,17 @@ seed_dairy_market_directory_v0_1.sql
 grant_dairy_line_notify.sql
 grant_fertilizer_ldd.sql
 grant_dairy_surplus_cases.sql
+grant_dairy_iot_gateway.sql
 ```
+
+**เพิ่มเมื่อ 2026-11-24: Gateway อุตสาหกรรมที่ศูนย์รับนม** — รัน `grant_dairy_iot_gateway.sql` หนึ่งครั้ง **ก่อน push โค้ด**
+(`set PGCLIENTENCODING=UTF8` ก่อน รันซ้ำได้ ต้องรันหลัง `grant_dairy_cooperative.sql`)
+- เพิ่มชนิดอุปกรณ์ Gateway และเครื่องวิเคราะห์นม, ช่องอุปกรณ์ของ Gateway (`gateway_id`, `channel`), ตาราง `dairy.iot_event`
+  (กันบันทึกซ้ำ) และ `dairy.milk_analysis` (ผลเครื่องวิเคราะห์), ค่าตั้ง `analyzer_for_pricing` (ค่าเริ่ม = ไม่ใช้คิดราคา)
+- API: `POST /dairy-iot/gateway/events` และ `GET /dairy-iot/gateway/config` (ยืนยันด้วยคีย์ Gateway) — ระบบเตือน "ออฟไลน์" ทุก 60 วินาที
+- พอร์ทัลสหกรณ์ › 📡 IoT: เพิ่ม Gateway (ได้คีย์) → เพิ่มช่องเครื่องชั่ง/ถังเย็น/เครื่องวิเคราะห์ → ติดตั้งโปรแกรมตาม `gateway/README.md`
+- ปริมาณนมในถังจากเซนเซอร์ (ภายใน 60 นาที) ถูกใช้แทนค่าคำนวณในระบบแนะนำนมเกิน (ถังจะล้นวันนี้)
+- ทดสอบ: `npm test` และ `npm run test:db`; โปรแกรม Gateway: `cd gateway && python3 -m unittest discover -s tests`
 
 **เพิ่มเมื่อ 2026-11-23: ระบบแนะนำการแก้ปัญหานมเกินกำลังรับซื้อ (โปรแกรมโคนม)** — รัน `grant_dairy_surplus_cases.sql`
 หนึ่งครั้ง **ก่อน push โค้ด** (`set PGCLIENTENCODING=UTF8` ก่อน รันซ้ำได้ ต้องรันหลัง `grant_dairy_cooperative.sql`)
