@@ -203,9 +203,11 @@ async function loadMembershipClaims() {
   if (!el) return;
   try {
     const claims = (await AgroLinkAPI.get("/farmer/membership-claims")).filter((c) => c.status === "Pending" || c.status === "Rejected");
-    el.innerHTML = claims.length ? `<div class="detail-line" style="font-weight:600; margin-bottom:6px;">คำแจ้งที่ยังไม่ได้รับการยืนยัน</div>${claims.map(claimCard).join("")}` : "";
+    el.innerHTML = claims.map(claimCard).join("");
+    document.getElementById("membershipClaimsWrap").hidden = claims.length === 0;
   } catch (err) {
     el.innerHTML = "";
+    document.getElementById("membershipClaimsWrap").hidden = true;
   }
 }
 
