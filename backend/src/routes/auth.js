@@ -61,6 +61,8 @@ const ORG_SELF_REGISTER_TYPES = [
   // business roles (Lender/MachineryService/InputSupplier/Buyer) the same
   // moment KYB is approved for one of these two types.
   'FarmerAidFund', 'AgriCommunityEnterprise',
+  // Added 2026-11-25 — สหกรณ์ออมทรัพย์ (ผู้ให้กู้ในโมดูลสินเชื่อระหว่างสหกรณ์, grant_coop_lending.sql)
+  'SavingsCooperative',
 ];
 
 // Added 2026-09-06, three explicit requests in sequence: first Buyer,

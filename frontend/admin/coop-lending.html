@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ตั้งค่าสินเชื่อระหว่างสหกรณ์ (ผู้ดูแลระบบ)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>.cl-back { color:#fff; opacity:.85; text-decoration:none; font-size:13px; margin-right:12px; }</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><a class="cl-back" href="dashboard.html">← ผู้ดูแลระบบ</a>🏦 ตั้งค่าสินเชื่อระหว่างสหกรณ์</div>
+    <div class="who"><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+  </header>
+  <div class="cl-wrap" id="view"><div class="cl-empty">กำลังโหลด…</div></div>
+  <script src="js/api.js"></script>
+  <script src="../js/coop-lending-common.js"></script>
+  <script>
+  /* global AgroLinkAdminAPI, CL */
+  (function () {
+    const API = AgroLinkAdminAPI;
+    if (API.requireSessionOrRedirect && !API.requireSessionOrRedirect()) return;
+    CL.init(API);
+    const { esc, baht, date } = CL;
+    const view = document.getElementById("view");
+    document.getElementById("logoutBtn").onclick = () => API.logout();
+    async function render() {
+      const s = await CL.get("/admin/coop-lending/settings");
+      view.innerHTML = `${CL.sandboxBanner(s.bank)}
+        <div class="cl-stats">
+          <div class="cl-stat"><div class="v">${s.stats.savings_coops}</div><div class="l">สหกรณ์ออมทรัพย์ในระบบ</div></div>
+          <div class="cl-stat"><div class="v">${s.stats.active_facilities}</div><div class="l">วงเงินที่ใช้งาน</div></div>
+          <div class="cl-stat"><div class="v">${baht(s.stats.outstanding)}</div><div class="l">เงินต้นคงค้างทั้งระบบ</div></div>
+          <div class="cl-stat${s.stats.sc_late ? " warn" : ""}"><div class="v">${s.stats.sc_late}</div><div class="l">สหกรณ์ออมทรัพย์โอนช้า</div></div>
+          <div class="cl-stat${s.stats.ac_late ? " warn" : ""}"><div class="v">${s.stats.ac_late}</div><div class="l">สหกรณ์การเกษตรจ่ายผู้ขายช้า</div></div>
+          <div class="cl-stat"><div class="v">${baht(s.stats.fee_earned)}</div><div class="l">ค่าธรรมเนียมที่เกิดขึ้น</div></div>
+        </div>
+        <div class="cl-card"><h3>ค่าตั้ง</h3><form id="setForm" class="cl-form">
+          <div><label>ค่าธรรมเนียมแพลตฟอร์ม (% ของยอดที่สหกรณ์ออมทรัพย์โอนแต่ละงวด)</label><input name="fee_pct" type="number" step="0.01" min="0" max="5" value="${Number(s.fee_pct)}"></div>
+          <div><label>สหกรณ์ออมทรัพย์ต้องโอนภายใน (วันทำการ)</label><input name="sc_sla_days" type="number" min="1" max="30" value="${s.sc_sla_days}"></div>
+          <div><label>สหกรณ์การเกษตรต้องจ่ายผู้ขายภายใน (วันทำการ)</label><input name="ac_sla_days" type="number" min="1" max="30" value="${s.ac_sla_days}"></div>
+          <div><label>ค่าปรับ/ดอกเบี้ยผิดนัด (% ต่อปี)</label><input name="late_penalty_pct" type="number" step="0.01" min="0" max="30" value="${Number(s.late_penalty_pct)}"></div>
+          <div><button class="cl-btn" type="submit">บันทึก</button></div></form>
+          <div class="cl-muted" style="margin-top:6px">การเปลี่ยนค่าตั้งมีผลกับรายการที่เกิดหลังจากนี้ — ควรตรวจกับข้อกฎหมาย/ระเบียบนายทะเบียนสหกรณ์ก่อนเปิดใช้จริง</div></div>
+        <div class="cl-card"><h3>บัญชีรับค่าธรรมเนียมของแพลตฟอร์ม</h3>
+          <div class="cl-line">${s.platform_account ? esc(CL.accLabel(s.platform_account)) : '<span class="cl-late">ยังไม่ได้ตั้ง — สหกรณ์ออมทรัพย์จะชำระค่าธรรมเนียมไม่ได้</span>'}</div>
+          <form id="accForm" class="cl-form" style="margin-top:8px"><div><label>ธนาคาร</label><select name="bank_code">${CL.bankOptions()}</select></div>
+            <div><label>เลขที่บัญชี</label><input name="account_no" required></div><div><label>ชื่อบัญชี</label><input name="account_name" required></div>
+            <div><button class="cl-btn" type="submit">ตั้งบัญชี</button></div></form></div>
+        <div class="cl-card"><h3>วันหยุดราชการ (ไม่นับเป็นวันทำการ)</h3>
+          <div class="cl-muted">เสาร์-อาทิตย์ตัดให้อัตโนมัติ ประกาศวันหยุดล่วงหน้าทุกปีตามประกาศทางราชการ</div>
+          <table class="cl-table">${s.holidays.map((h) => `<tr><td>${esc(date(h.holiday_date))}</td><td>${esc(h.name_th)}</td><td><button class="cl-btn bad" data-del="${h.holiday_date}">ลบ</button></td></tr>`).join("") || '<tr><td class="cl-empty">ยังไม่มีวันหยุดที่ประกาศ</td></tr>'}</table>
+          <form id="holForm" class="cl-form" style="margin-top:8px"><div><label>วันที่</label><input type="date" name="holiday_date" required></div><div><label>ชื่อวันหยุด</label><input name="name_th" required></div><div><button class="cl-btn" type="submit">เพิ่ม</button></div></form></div>`;
+      document.getElementById("setForm").onsubmit = async (e) => { e.preventDefault(); if (await CL.act(e.submitter, () => CL.put("/admin/coop-lending/settings", CL.formData(e.target)), "บันทึกแล้ว")) render(); };
+      document.getElementById("accForm").onsubmit = async (e) => { e.preventDefault(); if (await CL.act(e.submitter, () => CL.post("/admin/coop-lending/platform-account", CL.formData(e.target)), "ตั้งบัญชีแล้ว")) render(); };
+      document.getElementById("holForm").onsubmit = async (e) => { e.preventDefault(); if (await CL.act(e.submitter, () => CL.post("/admin/coop-lending/holidays", CL.formData(e.target)), "เพิ่มแล้ว")) render(); };
+      view.onclick = async (e) => {
+        const b = e.target.closest("[data-del]");
+        if (!b) return;
+        if (await CL.act(b, () => fetchDel(b.dataset.del), "ลบแล้ว")) render();
+      };
+    }
+    async function fetchDel(d) {
+      const s = API.getSession();
+      const res = await fetch(`${API_BASE}/admin/coop-lending/holidays/${d}`, { method: "DELETE", headers: { Authorization: `Bearer ${s.access_token}` } });
+      if (!res.ok) throw new Error("delete_failed");
+      return res.json();
+    }
+    render().catch((err) => { view.innerHTML = `<div class="cl-card cl-late">โหลดไม่สำเร็จ: ${esc(CL.errText(err))}</div>`; });
+  }());
+  </script>
+</body>
+</html>

@@ -118,6 +118,7 @@ const ORG_TYPE_LABEL = {
   MarketVenue: "ตลาดค้าส่ง/ผู้ให้บริการพื้นที่ขายสินค้าเกษตร", FertilizerMixingService: "ผู้ให้บริการผสมปุ๋ยสั่งตัด",
   BiomassProducer: "ผู้ผลิตสินค้าจากชีวมวล",
   FarmerAidFund: "กองทุนสงเคราะห์เกษตรกร", AgriCommunityEnterprise: "วิสาหกิจชุมชนด้านการเกษตร",
+  SavingsCooperative: "สหกรณ์ออมทรัพย์",
 };
 
 // Farmer statuses reuse the same generic badge palette as everywhere else:

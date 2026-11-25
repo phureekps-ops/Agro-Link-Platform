@@ -6,6 +6,8 @@ const cors = require('cors');
 const authRouter = require('./routes/auth');
 const farmerRouter = require('./routes/farmer');
 const lenderRouter = require('./routes/lender');
+// coopLending.js — สินเชื่อระหว่างสหกรณ์ (สหกรณ์ออมทรัพย์ → สหกรณ์การเกษตร), grant_coop_lending.sql
+const coopLendingRouters = require('./routes/coopLending');
 const buyerRouter = require('./routes/buyer');
 const adminRouter = require('./routes/admin');
 const machineryRouter = require('./routes/machinery');
@@ -208,6 +210,11 @@ app.use('/admin/plot-ai', plotAiRouters.admin);
 // dairydirectory.js — ทะเบียนตลาดน้ำนมดิบระดับประเทศ (grant_dairy_market_directory.sql).
 // Also mounted before '/admin' and '/dairy' for the same reason as plotai.js.
 app.use('/admin/dairy-directory', dairyDirectoryRouters.admin);
+// coopLending.js — mounted before '/admin' for the same reason as plotai.js/dairydirectory.js.
+app.use('/admin/coop-lending', coopLendingRouters.admin);
+app.use('/savings', coopLendingRouters.savings);
+app.use('/coop-lending', coopLendingRouters.borrower);
+app.use('/farmer-lending', coopLendingRouters.farmer);
 app.use('/dairy/market-directory', dairyDirectoryRouters.coop);
 // coopcollection.js — M09 Collection & Quality station for cooperatives
 // (identity.organization_role.role_type = 'Cooperative'). Mounted at its
@@ -281,6 +288,7 @@ require('./lib/dairyNotify').start();
 require('./lib/dairySurplus').start();
 // Dairy gateway offline alerts every 60 s (grant_dairy_iot_gateway.sql; skipped in NODE_ENV=test).
 require('./lib/dairyIot').start();
+require('./lib/coopLending').start();
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

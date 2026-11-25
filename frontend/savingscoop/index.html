@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — เข้าสู่ระบบสหกรณ์ออมทรัพย์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-brand"><span class="leaf">🏦</span><h1>AgroLink Platform</h1></div>
+    <p class="login-sub">พอร์ทัลสหกรณ์ออมทรัพย์ — ให้สหกรณ์การเกษตรกู้ โดยเงินจ่ายตรงถึงผู้ขายตามหลักฐาน ผ่านบัญชีเฉพาะของสหกรณ์การเกษตร</p>
+    <div id="errorBox" class="error-box"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label for="claimInput">รหัสยืนยันตัวตน (บัญชีหลักขององค์กร หรือบัญชีเจ้าหน้าที่)</label>
+        <input type="text" id="claimInput" placeholder="เช่น oidc|org-... หรือ oidc|staff-..." autocomplete="off" required />
+        <div class="hint">การโอนเงินทุกครั้งต้องมีผู้จัดทำและผู้อนุมัติ "คนละคน" — เพิ่มบัญชีเจ้าหน้าที่ได้ในแท็บ "บัญชีธนาคาร &amp; เจ้าหน้าที่" หลังเข้าสู่ระบบ</div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">เข้าสู่ระบบ</button>
+    </form>
+    <div class="divider">ยังไม่มีบัญชีองค์กร?</div>
+    <a href="../register-provider.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box; margin-bottom:8px;">สมัครเป็นผู้ให้บริการ (เลือก "สหกรณ์ออมทรัพย์")</a>
+    <a href="../coop/index.html" class="btn btn-ghost" style="width:100%; text-align:center; display:block; box-sizing:border-box;">ไปที่พอร์ทัลสหกรณ์การเกษตร</a>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

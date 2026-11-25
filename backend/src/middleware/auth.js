@@ -142,7 +142,7 @@ const STAFF_ROLE_TO_BUSINESS_ROLES = {
   'coop.admin': null,
   'coop.manager': null,
   'coop.accountant': [],
-  'coop.credit_officer': ['Lender'],
+  'coop.credit_officer': ['Lender', 'SavingsCooperative'],
   'coop.member_officer': ['Cooperative'],
   'coop.warehouse_officer': ['DryingYardService'],
 };

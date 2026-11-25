@@ -1,0 +1,197 @@
+/**
+ * AgroLink — สินเชื่อระหว่างสหกรณ์: ตัวช่วยที่ใช้ร่วมกันระหว่าง
+ *   savingscoop/ (พอร์ทัลสหกรณ์ออมทรัพย์) และ coop/lending.html (สหกรณ์การเกษตรผู้กู้)
+ * Backend: backend/src/routes/coopLending.js
+ * ต้องโหลดหลัง js/api.js ของพอร์ทัลนั้น (ใช้ API_BASE และ getSession())
+ */
+/* global API_BASE */
+const CL = (() => {
+  let api = null;
+  function init(portalApi) { api = portalApi; style(); }
+
+  async function request(method, path, body) {
+    const s = api.getSession();
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: { "Content-Type": "application/json", ...(s && s.access_token ? { Authorization: `Bearer ${s.access_token}` } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (res.status === 401) { api.logout(); throw new Error("session_expired"); }
+    const json = await res.json().catch(() => null);
+    if (!res.ok) {
+      const err = new Error((json && json.error) || `request_failed_${res.status}`);
+      err.status = res.status; err.body = json || {};
+      throw err;
+    }
+    return json;
+  }
+  const get = (p) => request("GET", p);
+  const post = (p, b) => request("POST", p, b || {});
+  const patch = (p, b) => request("PATCH", p, b || {});
+  const put = (p, b) => request("PUT", p, b || {});
+
+  /** อัปโหลดไฟล์หลักฐานผ่าน /storage/upload → file_id */
+  async function upload(file) {
+    if (file.size > 5 * 1024 * 1024) throw new Error("file_too_large");
+    const b64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result).split(",")[1]);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+    const out = await post("/storage/upload", {
+      purpose: "coop_lending_evidence", filename: file.name, content_type: file.type || "application/octet-stream", file_base64: b64, uploaded_by: "coop-lending",
+    });
+    return out.file_id;
+  }
+
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const baht = (n) => (n == null || n === "" ? "-" : `${Number(n).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`);
+  const num = (n, d = 2) => Number(n || 0).toLocaleString("th-TH", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const date = (v) => (v ? new Date(String(v).length === 10 ? `${v}T00:00:00+07:00` : v).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" }) : "-");
+  const dt = (v) => (v ? new Date(v).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-");
+
+  const PURPOSE = { inputs: "ปัจจัยการผลิต", machinery_service: "ค่าบริการเครื่องจักร", procurement: "รับซื้อผลผลิต", asset: "ซื้อเครื่องจักร/อุปกรณ์" };
+  const ITEM_ST = {
+    Draft: ["ร่าง — รอแนบหลักฐาน", "#6b7a70", "#eef1ee"],
+    EvidencePending: ["รอเกษตรกรยืนยัน", "#8a5a00", "#fff2cc"],
+    EvidenceComplete: ["หลักฐานครบ — รอสหกรณ์ออมทรัพย์โอน", "#0b5394", "#e3eefb"],
+    Funded: ["เงินเข้าบัญชีเฉพาะ — รอจ่ายผู้ขาย", "#6a1b9a", "#f3e5f5"],
+    Paid: ["จ่ายผู้ขายแล้ว", "#1f6b38", "#ddf3e4"],
+    Rejected: ["ปฏิเสธ", "#a1261d", "#fde8e6"],
+    Disputed: ["เกษตรกรแจ้งไม่ตรง", "#a1261d", "#fde8e6"],
+    Cancelled: ["ยกเลิก", "#6b7a70", "#eef1ee"],
+  };
+  const TR_ST = { PendingApproval: ["รอผู้อนุมัติ", "#8a5a00", "#fff2cc"], Submitted: ["ส่งธนาคารแล้ว", "#0b5394", "#e3eefb"], Succeeded: ["โอนสำเร็จ", "#1f6b38", "#ddf3e4"], Failed: ["โอนไม่สำเร็จ", "#a1261d", "#fde8e6"], Cancelled: ["ยกเลิก", "#6b7a70", "#eef1ee"] };
+  const TR_KIND = { disbursement: "เบิกเงินกู้เข้าบัญชีเฉพาะ", seller_payment: "จ่ายผู้ขาย", repayment: "ชำระคืนเงินกู้", installment: "ค่างวดเครื่องจักร", platform_fee: "ค่าธรรมเนียมแพลตฟอร์ม" };
+  const SAT = { pass: ["ดาวเทียม: ผ่าน", "#1f6b38", "#ddf3e4"], review: ["ดาวเทียม: ต้องตรวจเพิ่ม", "#a1261d", "#fde8e6"], insufficient: ["ดาวเทียม: ข้อมูลไม่พอ", "#8a5a00", "#fff2cc"], na: ["ไม่ได้ระบุแปลง", "#6b7a70", "#eef1ee"] };
+  const EVIDENCE = {
+    invoice: "ใบกำกับภาษี/ใบเสร็จ", delivery_note: "ใบส่งของ", work_photo: "ภาพหน้างาน", weighing_slip: "ใบชั่ง", contract: "สัญญาซื้อขาย",
+    down_payment_slip: "หลักฐานจ่ายเงินดาวน์", serial_photo: "ภาพเลขเครื่อง/เลขตัวถัง", ownership_doc: "เอกสารกรรมสิทธิ์", insurance: "กรมธรรม์", other: "อื่นๆ",
+  };
+  const BANKS = [["002", "กรุงเทพ"], ["004", "กสิกรไทย"], ["006", "กรุงไทย"], ["011", "ทหารไทยธนชาต"], ["014", "ไทยพาณิชย์"], ["025", "กรุงศรีอยุธยา"], ["030", "ออมสิน"], ["033", "อาคารสงเคราะห์"], ["034", "ธ.ก.ส."], ["069", "เกียรตินาคินภัทร"], ["022", "ซีไอเอ็มบี"], ["024", "ยูโอบี"], ["073", "แลนด์ แอนด์ เฮ้าส์"]];
+  const bankName = (c) => (BANKS.find(([k]) => k === c) || [c, c])[1];
+  const pill = ([t, fg, bg]) => `<span class="cl-pill" style="color:${fg};background:${bg}">${esc(t)}</span>`;
+
+  const ERR = {
+    approver_must_differ_from_preparer: "ผู้อนุมัติต้องเป็นคนละคนกับผู้จัดทำ — ให้เจ้าหน้าที่อีกคน (หรือบัญชีหลักขององค์กร) เข้าสู่ระบบแล้วกดอนุมัติ",
+    satellite_review_not_acknowledged: "มีรายการที่ภาพดาวเทียมต้องตรวจเพิ่ม — เปิดดูรายละเอียดแล้วกด \"รับทราบผลดาวเทียม\" ก่อน",
+    account_not_verified: "บัญชีธนาคารยังไม่ผ่านการตรวจชื่อ", account_not_found: "ไม่พบบัญชีธนาคาร", account_required: "กรุณาเลือกบัญชีธนาคาร",
+    borrower_dedicated_account_missing: "สหกรณ์การเกษตรยังไม่ได้ผูกบัญชีเฉพาะเงินกู้กับวงเงินนี้",
+    evidence_incomplete: "หลักฐานยังไม่ครบ", evidence_file_already_used: "ไฟล์นี้เคยใช้เป็นหลักฐานแล้ว (ใช้ได้ครั้งเดียวทั้งแพลตฟอร์ม)",
+    source_already_used: "รายการต้นทางนี้เคยใช้เบิกแล้ว", doc_no_already_used: "เลขเอกสารนี้ของผู้ขายรายนี้เคยใช้เบิกแล้ว",
+    over_facility_limit: "เกินวงเงินคงเหลือ", over_purpose_limit: "เกินวงเงินของวัตถุประสงค์นี้", over_per_farmer_limit: "เกินเพดานต่อเกษตรกร", over_per_seller_limit: "เกินเพดานต่อผู้ขาย",
+    facility_not_active: "วงเงินถูกระงับหรือปิดแล้ว", farmer_not_verified_member: "เกษตรกรยังไม่ใช่สมาชิกที่ยืนยันแล้วของสหกรณ์",
+    seller_not_verified: "ผู้ขายยังไม่ผ่านการยืนยันตัวตน (KYB)", installment_exceeds_income_ratio: "ค่างวดสูงเกินสัดส่วนรายได้ที่โครงการกำหนด",
+    down_payment_too_low: "เงินดาวน์ต่ำกว่าที่โครงการกำหนด", serial_no_already_financed: "เลขเครื่องนี้ค้ำสินเชื่ออื่นอยู่แล้ว",
+    repayment_exceeds_debt: "ยอดชำระเกินยอดหนี้", payment_exceeds_installments: "ยอดเกินค่างวดที่ค้าง", lender_account_missing: "สหกรณ์ออมทรัพย์ยังไม่มีบัญชีรับเงินที่ตรวจแล้ว",
+    transfer_already_pending: "มีคำสั่งโอนของรายการนี้รออนุมัติอยู่แล้ว", item_state_changed: "สถานะรายการเปลี่ยนไปแล้ว กรุณาโหลดใหม่",
+    application_already_open: "มีคำขอที่รอพิจารณาอยู่แล้ว", program_limit_exhausted: "วงเงินโครงการไม่พอ", over_per_borrower_limit: "เกินเพดานต่อสหกรณ์ผู้กู้",
+    platform_account_not_set: "ผู้ดูแลแพลตฟอร์มยังไม่ได้ตั้งบัญชีรับค่าธรรมเนียม", file_too_large: "ไฟล์ใหญ่เกิน 5 MB",
+    invalid_text: "ข้อความสั้นหรือยาวเกินไป", invalid_number: "ตัวเลขไม่ถูกต้อง", only_admin_can_manage_staff: "เฉพาะผู้ดูแลหรือผู้จัดการเท่านั้นที่จัดการเจ้าหน้าที่ได้",
+  };
+  function errText(err) {
+    const b = err.body || {};
+    let msg = ERR[err.message] || err.message;
+    if (b.available !== undefined) msg += ` (คงเหลือ ${baht(b.available)})`;
+    if (b.missing) {
+      const m = b.missing;
+      const parts = [...(m.missingKinds || []).map((k) => EVIDENCE[k] || k), ...(m.missingFields || []).map((f) => ({ service_date: "วันที่ทำงาน", service_area_rai: "พื้นที่ (ไร่)" }[f] || f))];
+      if (m.needPayout) parts.push("บัญชีรับเงินของผู้ขาย");
+      if (parts.length) msg += `: ${parts.join(", ")}`;
+    }
+    if (b.ratio_pct !== undefined) msg += ` (${b.ratio_pct}% เกิน ${b.max_ratio_pct}%)`;
+    if (b.field) msg += ` [${b.field}]`;
+    return msg;
+  }
+  function toast(msg, bad) {
+    let el = document.getElementById("clToast");
+    if (!el) { el = document.createElement("div"); el.id = "clToast"; el.className = "cl-toast"; document.body.appendChild(el); }
+    el.textContent = msg;
+    el.style.background = bad ? "#a1261d" : "#1f6b38";
+    el.classList.add("show");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("show"), bad ? 6000 : 3000);
+  }
+  /** ปุ่มที่เรียก API: ปิดปุ่มระหว่างทำงาน แสดงผลด้วย toast */
+  async function act(btn, fn, okMsg) {
+    if (btn) btn.disabled = true;
+    try {
+      const r = await fn();
+      if (okMsg) toast(typeof okMsg === "function" ? okMsg(r) : okMsg);
+      return r;
+    } catch (err) {
+      toast(errText(err), true);
+      return null;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  const formData = (form) => Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, typeof v === "string" ? v.trim() : v]));
+  const bankOptions = () => BANKS.map(([k, v]) => `<option value="${k}">${k} ${esc(v)}</option>`).join("");
+  const accLabel = (a) => `${bankName(a.bank_code)} ${a.account_no_masked || `xxx-x-${a.from_tail || a.to_tail || ""}`} ${a.account_name}`;
+
+  function sandboxBanner(bank) {
+    if (!bank || bank.live) return "";
+    return `<div class="cl-sandbox">⚠️ ${esc(bank.label_th)} — ใช้ทดลองกระบวนการได้ แต่เงินจะไม่ถูกโอนจริงจนกว่าจะเชื่อมธนาคารคู่ค้า</div>`;
+  }
+
+  let styled = false;
+  function style() {
+    if (styled) return;
+    styled = true;
+    const s = document.createElement("style");
+    s.textContent = `
+      .cl-wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 48px; box-sizing: border-box; }
+      .cl-tabs { display:flex; flex-wrap:wrap; gap:6px; margin: 4px 0 16px; }
+      .cl-tab { border:1px solid var(--gray-300,#d7ddd8); background:#fff; border-radius:20px; padding:7px 14px; font:inherit; font-size:14px; cursor:pointer; }
+      .cl-tab.active { background: var(--green-700,#2e7d32); color:#fff; border-color: var(--green-700,#2e7d32); font-weight:600; }
+      .cl-tab .cl-count { background:#f0b429; color:#1b3a1f; border-radius:20px; padding:0 7px; font-size:12px; font-weight:700; margin-left:4px; }
+      .cl-card { background:#fff; border-radius: var(--radius,14px); box-shadow: var(--shadow, 0 2px 10px rgba(27,58,31,.08)); padding:16px 18px; margin-bottom:14px; }
+      .cl-card h3 { margin:0 0 6px; font-size:16px; }
+      .cl-row { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start; }
+      .cl-muted { color: var(--gray-500,#7b867e); font-size:13px; }
+      .cl-line { font-size:13.5px; color:#3a463e; margin-top:4px; }
+      .cl-pill { border-radius:20px; padding:2px 10px; font-size:12px; font-weight:700; white-space:nowrap; display:inline-block; }
+      .cl-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; align-items:center; }
+      .cl-btn { border:0; border-radius:9px; padding:8px 14px; font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; background: var(--green-700,#2e7d32); color:#fff; }
+      .cl-btn.ghost { background: var(--gray-100,#eef1ee); color:#1d2b22; } .cl-btn.bad { background:#fde8e6; color:#a1261d; } .cl-btn.blue { background:#0b5394; }
+      .cl-btn:disabled { opacity:.55; cursor:not-allowed; }
+      .cl-form { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px 14px; align-items:end; }
+      .cl-form label { display:block; font-size:12.5px; color:#4a554d; margin-bottom:4px; font-weight:600; }
+      .cl-form input, .cl-form select, .cl-form textarea, .cl-inline input, .cl-inline select { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--gray-300,#d7ddd8); border-radius:9px; font:inherit; font-size:14px; background:#fff; }
+      .cl-form .wide { grid-column: 1 / -1; }
+      .cl-inline { display:flex; gap:8px; flex-wrap:wrap; align-items:center; } .cl-inline input, .cl-inline select { width:auto; min-width:140px; }
+      .cl-table { width:100%; border-collapse:collapse; font-size:13.5px; } .cl-table th, .cl-table td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--gray-100,#eef1ee); vertical-align:top; }
+      .cl-table th { color:#55605a; font-weight:600; font-size:12.5px; } .cl-table td.r, .cl-table th.r { text-align:right; }
+      .cl-stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:14px; }
+      .cl-stat { background:#fff; border-radius: var(--radius,14px); box-shadow: var(--shadow, 0 2px 10px rgba(27,58,31,.08)); padding:14px 16px; }
+      .cl-stat .v { font-size:18px; font-weight:700; color: var(--green-900,#1b3a1f); } .cl-stat .l { font-size:12.5px; color:#6b7a70; } .cl-stat.warn .v { color:#a1261d; }
+      .cl-sandbox { background:#fff4e0; border:1px solid #f0c36d; color:#6b4a00; padding:10px 14px; border-radius:10px; font-size:13.5px; margin-bottom:14px; }
+      .cl-late { color:#a1261d; font-weight:700; }
+      .cl-flag { background:#fde8e6; color:#7a1d16; border-radius:8px; padding:6px 10px; font-size:13px; margin-top:6px; }
+      .cl-ev { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; } .cl-ev a, .cl-ev span { font-size:12.5px; background:#eef6f0; border-radius:8px; padding:3px 9px; color:#1f4f2c; text-decoration:none; }
+      .cl-ev .miss { background:#fff2cc; color:#6b4a00; }
+      .cl-toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(30px); opacity:0; color:#fff; padding:11px 18px; border-radius:12px; font-size:14px; max-width:92vw; transition:all .25s; z-index:50; box-shadow:0 6px 24px rgba(0,0,0,.2); }
+      .cl-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+      .cl-empty { color:#7b867e; font-size:14px; padding:6px 0; }
+      details.cl-more summary { cursor:pointer; font-size:13px; color:#0b5394; margin-top:8px; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  /** เปิดไฟล์หลักฐาน (path เช่น /savings/evidence/<id>/file) ด้วย token ของพอร์ทัล */
+  async function openFile(path) {
+    const s = api.getSession();
+    const w = window.open("", "_blank");
+    const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${s.access_token}` } });
+    if (!res.ok) { if (w) w.close(); toast("เปิดไฟล์ไม่ได้ (สิทธิ์ไม่พอหรือไฟล์ไม่พบ)", true); return; }
+    const url = URL.createObjectURL(await res.blob());
+    if (w) w.location.href = url; else window.open(url, "_blank");
+  }
+
+  return {
+    init, get, post, patch, put, upload, esc, baht, num, date, dt, PURPOSE, ITEM_ST, TR_ST, TR_KIND, SAT, EVIDENCE, BANKS, bankName, pill,
+    errText, toast, act, formData, bankOptions, accLabel, sandboxBanner, openFile,
+  };
+})();

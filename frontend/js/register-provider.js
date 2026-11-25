@@ -61,6 +61,7 @@ const ORG_TYPE_LABEL = {
   DryingYardService: "บริการลานตากข้าว/โกดังและไซโล",
   FarmerAidFund: "กองทุนสงเคราะห์เกษตรกร",
   AgriCommunityEnterprise: "วิสาหกิจชุมชนด้านการเกษตร",
+  SavingsCooperative: "สหกรณ์ออมทรัพย์",
 };
 
 // The role_types that share the machinery portal's rate card/routes —
@@ -225,6 +226,8 @@ registerForm.addEventListener("submit", async (e) => {
       // bundle-grants all 4 underlying roles, plus its own Group Order tab.
       FarmerAidFund: { sessionKey: "agrolink_farmeraidfund_session", dashboardUrl: "farmeraidfund/dashboard.html" },
       AgriCommunityEnterprise: { sessionKey: "agrolink_communityenterprise_session", dashboardUrl: "communityenterprise/dashboard.html" },
+      // สินเชื่อระหว่างสหกรณ์ (backend/src/routes/coopLending.js /savings/*)
+      SavingsCooperative: { sessionKey: "agrolink_savingscoop_session", dashboardUrl: "savingscoop/dashboard.html" },
     };
     const portal = PORTAL_BY_ORG_TYPE[orgType] || (MACHINERY_ORG_TYPES.includes(orgType)
       ? { sessionKey: "agrolink_machinery_session", dashboardUrl: "machinery/dashboard.html" }
