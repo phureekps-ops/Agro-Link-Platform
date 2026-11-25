@@ -24,9 +24,17 @@
     const mount = document.getElementById("coopLendingFarmerWidget");
     if (!mount || typeof AgroLinkAPI === "undefined") return;
     async function load() {
-      let rows;
-      try { rows = await call("GET", "/farmer-lending/items"); } catch (e) { mount.innerHTML = ""; return; }
-      if (!rows.length) { mount.innerHTML = ""; return; }
+      let rows; let plans;
+      try { [rows, plans] = await Promise.all([call("GET", "/farmer-lending/items"), call("GET", "/farmer-lending/plans").catch(() => [])]); } catch (e) { mount.innerHTML = ""; return; }
+      if (!rows.length && !plans.length) { mount.innerHTML = ""; return; }
+      const SST = { Locked: ["#f3f5f3", "#8a948d", "ยังไม่ถึง"], Open: ["#e3eefb", "#0b5394", "เบิกได้"], CheckSubmitted: ["#fff2cc", "#6b4a00", "รอตรวจแปลง"], Passed: ["#ddf3e4", "#1f6b38", "ผ่าน"], Held: ["#fde8e6", "#a1261d", "ระงับ"] };
+      const PST = { Submitted: "รอสหกรณ์ออมทรัพย์อนุมัติ", Active: "กำลังดำเนินการ", Suspended: "ระงับชั่วคราว", Completed: "ครบทุกงวด" };
+      const planCard = (p) => `<div class="panel" style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>🌾 ${esc(p.season_label)} · ${esc(p.commodity_name || p.commodity_code)} ${p.area_rai} ไร่</b><span style="font-size:12.5px;font-weight:700">${esc(PST[p.status] || p.status)}</span></div>
+          <div style="font-size:13px;margin-top:4px">วงเงินทั้งฤดู ${baht(p.total_amount)} จาก ${esc(p.borrower_name)} — สหกรณ์จ่ายค่าปัจจัย/ค่าบริการให้ผู้ขายแทนท่านตามงวด</div>
+          <div style="display:flex;gap:3px;margin-top:8px">${p.stages.map((st) => `<div style="flex:1;min-width:0;border-radius:7px;padding:5px 6px;font-size:11px;line-height:1.3;background:${SST[st.status][0]};color:${SST[st.status][1]}"><b>${st.seq}. ${esc(st.name_th)}</b><br>${SST[st.status][2]}</div>`).join("")}</div>
+          ${p.status === "Suspended" ? `<div style="font-size:12.5px;color:#a1261d;margin-top:6px">${esc(p.suspended_reason || "")} — ติดต่อสหกรณ์</div>` : ""}
+        </div>`;
       const waiting = rows.filter((r) => r.status === "EvidencePending" && !r.farmer_confirmed_at);
       const card = (r) => {
         const ask = r.status === "EvidencePending" && !r.farmer_confirmed_at;
@@ -44,7 +52,7 @@
       };
       mount.innerHTML = `<div class="section-title">🏦 รายการเงินกู้ของสหกรณ์ที่เกี่ยวกับท่าน${waiting.length ? ` <span style="background:#f0b429;border-radius:20px;padding:1px 9px;font-size:12px">${waiting.length} รอยืนยัน</span>` : ""}</div>
         <p style="font-size:13px;color:var(--gray-500);margin:-10px 0 12px">สหกรณ์จ่ายเงินให้ผู้ขายแทนท่านด้วยเงินกู้จากสหกรณ์ออมทรัพย์ — เงินจะออกต่อเมื่อท่านยืนยันว่าเป็นความจริงเท่านั้น</p>
-        ${rows.slice(0, 20).map(card).join("")}`;
+        ${plans.map(planCard).join("")}${rows.slice(0, 20).map(card).join("")}`;
     }
     mount.addEventListener("click", async (e) => {
       const b = e.target.closest("[data-cla]");

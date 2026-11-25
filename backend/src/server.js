@@ -215,6 +215,7 @@ app.use('/admin/coop-lending', coopLendingRouters.admin);
 app.use('/savings', coopLendingRouters.savings);
 app.use('/coop-lending', coopLendingRouters.borrower);
 app.use('/farmer-lending', coopLendingRouters.farmer);
+app.use('/gov/coop-lending', coopLendingRouters.gov);
 app.use('/dairy/market-directory', dairyDirectoryRouters.coop);
 // coopcollection.js — M09 Collection & Quality station for cooperatives
 // (identity.organization_role.role_type = 'Cooperative'). Mounted at its

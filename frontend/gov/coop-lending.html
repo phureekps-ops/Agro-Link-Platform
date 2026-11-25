@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ติดตามการเชื่อมโยงเงินทุนระหว่างสหกรณ์ (กรมส่งเสริมสหกรณ์)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  .g-scope { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:space-between; }
+  .g-scope select { padding:7px 10px; border:1px solid #d7ddd8; border-radius:9px; font:inherit; }
+  .g-grid2 { display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:14px; }
+  .g-kpi { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid #eef1ee; font-size:14px; }
+  .g-kpi b { font-size:18px; color:#1b3a1f; } .g-kpi .bad { color:#a1261d; }
+  .g-meter { height:8px; background:#eef1ee; border-radius:8px; overflow:hidden; margin-top:4px; } .g-meter > i { display:block; height:100%; background:#2e7d32; border-radius:8px; }
+  .g-stack { display:flex; height:22px; border-radius:6px; overflow:hidden; gap:2px; margin:8px 0; } .g-stack > i { display:block; height:100%; }
+  .g-legend { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12.5px; color:#3a463e; } .g-legend span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; background: var(--c); }
+  .g-funnel td.bar { width:46%; } .g-funnel .g-stack { margin:0; height:16px; }
+  .g-note { font-size:12.5px; color:#6b7a70; margin-top:6px; }
+  .cl-stats { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .cl-table td.r { white-space:nowrap; }
+  .cl-wrap h2 { font-size:17px; margin:22px 0 10px; color:#1b3a1f; }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><a href="dashboard.html" style="color:#fff;opacity:.85;text-decoration:none;font-size:13px;margin-right:12px">← พอร์ทัลภาครัฐ</a>🏛️ ติดตามการเชื่อมโยงเงินทุนระหว่างสหกรณ์</div>
+    <div class="who"><span class="name" id="officerName">กำลังโหลด…</span><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+  </header>
+  <div class="cl-wrap">
+    <div id="sandboxBox"></div>
+    <div class="cl-card g-scope" id="scopeBox"></div>
+    <div id="body"><div class="cl-empty">กำลังโหลด…</div></div>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="../js/coop-lending-common.js"></script>
+  <script src="js/coop-lending.js"></script>
+</body>
+</html>

@@ -53,7 +53,7 @@ test('coop lending: program → facility → evidence → 2-person bank transfer
   const sign = (subjectType, subjectId) => jwt.sign({ subjectType, subjectId }, JWT_SECRET);
   const org = async (type, name) => {
     const id = crypto.randomUUID();
-    await db.query(`INSERT INTO identity.organization (org_id, org_type, org_name, tax_id, kyb_status, region_code) VALUES ($1,$2,$3,$4,'Verified','TH-30')`,
+    await db.query(`INSERT INTO identity.organization (org_id, org_type, org_name, tax_id, kyb_status, region_code) VALUES ($1,$2,$3,$4,'Verified','TH-40')`,
       [id, type, name, `C${Date.now()}${crypto.randomBytes(3).toString('hex')}`.slice(0, 20)]);
     await db.query(`INSERT INTO identity.subject_role (subject_type, subject_id, role_code) VALUES ('organization',$1,'org.admin')`, [id]);
     return { id, name, token: sign('organization', id) };
@@ -81,7 +81,7 @@ test('coop lending: program → facility → evidence → 2-person bank transfer
      VALUES ($1,'Plot', ST_GeomFromText('POLYGON((102.1 14.9,102.101 14.9,102.101 14.901,102.1 14.901,102.1 14.9))',4326), 10, 'RICE_PADDY', '2026/27') RETURNING unit_id`, [farmerId],
   )).rows[0].unit_id;
   await db.query(`INSERT INTO ai.plot_assessment (unit_id, as_of, risk_level, flags, result, assessed_by_type)
-                  VALUES ($1, current_date, 'medium', $2, '{}', 'platform')`, [unitId, JSON.stringify([{ code: 'NO_CROP_CYCLE', severity: 'medium', message_th: 'ไม่พบรอบการปลูก' }])]);
+                  VALUES ($1, (now() AT TIME ZONE 'Asia/Bangkok')::date, 'medium', $2, '{}', 'platform')`, [unitId, JSON.stringify([{ code: 'NO_CROP_CYCLE', severity: 'medium', message_th: 'ไม่พบรอบการปลูก' }])]);
   await db.query(`INSERT INTO partner.vendor_profile (org_id, business_registration_no, commercial_status) VALUES ($1, $2, 'active')`, [supplier.id, `BR${tag}`]);
   const listing = (await db.query(`INSERT INTO marketplace.product_listing (org_id, category, product_name, unit_price) VALUES ($1,'fertilizer_hormone','ปุ๋ย 16-16-8',850) RETURNING listing_id`, [supplier.id])).rows[0].listing_id;
   const orderId = (await db.query(
@@ -95,6 +95,7 @@ test('coop lending: program → facility → evidence → 2-person bank transfer
 
   let program; let facility; let soAcc; let ded; let cop; let payout; let item;
   await t.test('accounts are verified by name; programs and facility', async () => {
+    await call(admin, 'PUT', '/admin/coop-lending/settings', { fee_pct: 0 }); // a previous aborted run may have left a fee
     const bad = await call(savings.token, 'POST', '/savings/bank-accounts', { bank_code: '006', account_no: '1234567890', account_name: 'ชื่ออื่น' }, 201);
     assert.equal(bad.verification_status, 'Failed');
     soAcc = await call(savings.token, 'POST', '/savings/bank-accounts', { bank_code: '006', account_no: '1234567891', account_name: savings.name }, 201);
@@ -174,7 +175,7 @@ test('coop lending: program → facility → evidence → 2-person bank transfer
 
   await t.test('repayment: interest accrues daily, overdue days at 10%, interest first then principal', async () => {
     // pretend the money went out 200 days ago (tenor 180 → 20 days overdue)
-    await db.query(`UPDATE coop_lending.disbursement_item SET interest_accrued_to = current_date - 200, funded_at = now() - interval '200 days', loan_due_date = current_date - 20 WHERE item_id = $1`, [item.item_id]);
+    await db.query(`UPDATE coop_lending.disbursement_item SET interest_accrued_to = (now() AT TIME ZONE 'Asia/Bangkok')::date - 200, funded_at = now() - interval '200 days', loan_due_date = (now() AT TIME ZONE 'Asia/Bangkok')::date - 20 WHERE item_id = $1`, [item.item_id]);
     const debt = await call(coop.token, 'GET', `/coop-lending/facilities/${facility.facility_id}/debt`);
     const expected = Math.round((85000 * 0.045 * 180 / 365 + 85000 * 0.10 * 20 / 365) * 100) / 100;
     assert.ok(Math.abs(debt.interest - expected) <= 0.02, `${debt.interest} vs ${expected}`);
@@ -202,8 +203,8 @@ test('coop lending: program → facility → evidence → 2-person bank transfer
     await call(coop.token, 'POST', `/coop-lending/items/${it2.item_id}/evidence`, { kind: 'invoice', file_id: await upload(coop.token, 't') }, 201);
     await call(coop.token, 'POST', `/coop-lending/items/${it2.item_id}/submit`, {});
     await call(F, 'POST', `/farmer-lending/items/${it2.item_id}/confirm`, {});
-    await db.query('UPDATE coop_lending.disbursement_item SET sc_due_date = current_date - 3 WHERE item_id = $1', [it2.item_id]);
-    await db.query(`DELETE FROM coop_lending.holiday WHERE holiday_date = current_date`);
+    await db.query(`UPDATE coop_lending.disbursement_item SET sc_due_date = (now() AT TIME ZONE 'Asia/Bangkok')::date - 3 WHERE item_id = $1`, [it2.item_id]);
+    await db.query(`DELETE FROM coop_lending.holiday WHERE holiday_date = (now() AT TIME ZONE 'Asia/Bangkok')::date`);
     const sweep = await call(admin, 'POST', '/admin/coop-lending/sla-sweep', {});
     const notices = await call(savings.token, 'GET', '/savings/notices');
     const weekday = ![0, 6].includes(new Date(Date.now() + 7 * 3600e3).getUTCDay());
@@ -261,7 +262,7 @@ test('coop lending: program → facility → evidence → 2-person bank transfer
     assert.equal(l.schedule.length, 6);
     assert.equal(Number(l.schedule[0].installment), 130075.26);
     // first installment 10 days late → 10% default interest on top
-    await db.query(`UPDATE coop_lending.repayment_schedule SET due_date = current_date - 10 WHERE asset_loan_id = $1 AND seq = 1`, [loan.asset_loan_id]);
+    await db.query(`UPDATE coop_lending.repayment_schedule SET due_date = (now() AT TIME ZONE 'Asia/Bangkok')::date - 10 WHERE asset_loan_id = $1 AND seq = 1`, [loan.asset_loan_id]);
     const l2 = (await call(coop.token, 'GET', '/coop-lending/asset-loans')).find((x) => x.asset_loan_id === loan.asset_loan_id);
     const pen = Math.round(130075.26 * 0.10 * 10 / 365 * 100) / 100;
     assert.equal(l2.due[0].penalty, pen);

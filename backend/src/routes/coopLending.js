@@ -17,9 +17,9 @@
 const express = require('express');
 const crypto = require('crypto');
 
-const { withSessionContext } = require('../db/pool');
+const { withSessionContext, logAccess } = require('../db/pool');
 const {
-  requireAuth, requireOrganizationOrStaff, resolveEffectiveOrgSubject, requireFarmer, requirePlatform,
+  requireAuth, requireOrganizationOrStaff, resolveEffectiveOrgSubject, requireFarmer, requirePlatform, requireGovernmentOfficer,
 } = require('../middleware/auth');
 const L = require('../lib/coopLending');
 const bank = require('../lib/bankGateway');
@@ -40,6 +40,8 @@ const CONSTRAINT_ERRORS = {
   uq_cl_application_open: 'application_already_open',
   uq_cl_asset_serial: 'serial_no_already_financed',
   uq_cl_bank_account: 'bank_account_exists',
+  uq_cl_crop_plan_unit_open: 'duplicate_open_plan',
+  uq_cl_stage_check_hash: 'check_file_already_used',
   bank_transfer_check: 'approver_must_differ_from_preparer',
 };
 function wrap(fn) {
@@ -374,6 +376,7 @@ async function notices(c, orgId) {
 async function itemRows(c, where, params) {
   return (await c.query(
     `SELECT i.*, b.org_name AS borrower_name, l.org_name AS lender_name, f.full_name AS farmer_name,
+            (SELECT st.name_th FROM coop_lending.crop_plan_stage st WHERE st.plan_id = i.plan_id AND st.seq = i.stage_seq) AS stage_name,
             pa.account_name AS payout_name, pa.bank_code AS payout_bank, right(pa.account_no, 5) AS payout_tail, pa.verification_status AS payout_status,
             (SELECT COALESCE(json_agg(json_build_object('evidence_id', e.evidence_id, 'kind', e.kind, 'file_id', e.file_id, 'doc_no', e.doc_no, 'note', e.note, 'created_at', e.created_at) ORDER BY e.created_at), '[]')
                FROM coop_lending.evidence e WHERE e.item_id = i.item_id) AS evidence,
@@ -720,6 +723,10 @@ savings.post('/transfers/prepare', wrap(async (req, res) => {
     for (const it of items) {
       if (it.status !== 'EvidenceComplete') fail(409, 'item_not_ready', { item_id: it.item_id, status: it.status });
       if (it.satellite_result === 'review' && !it.satellite_ack_by) fail(409, 'satellite_review_not_acknowledged', { item_id: it.item_id });
+      if (it.plan_id) {
+        const ps = (await c.query('SELECT status FROM coop_lending.crop_plan WHERE plan_id = $1', [it.plan_id])).rows[0];
+        if (ps.status === 'Suspended') fail(409, 'plan_suspended', { item_id: it.item_id });
+      }
       if (await openTransferFor(c, it.item_id, 'disbursement')) fail(409, 'transfer_already_pending', { item_id: it.item_id });
       const penalty = L.latePenalty(Number(it.amount), L.toDateStr(it.sc_due_date), today, Number(settings.late_penalty_pct));
       lines.push({ item_id: it.item_id, amount: Number(it.amount), penalty });
@@ -958,9 +965,12 @@ borrower.get('/facilities', wrap(async (req, res) => {
     )).rows;
     const settings = await L.loadSettings(c);
     const today = L.todayBangkok();
-    return rows.map((f) => ({
+    const out = [];
+    for (const f of rows) out.push({ ...f, usage: await L.facilityUsage(c, f.facility_id) });
+    return out.map((f) => ({
       ...f,
-      available: L.round2(Number(f.limit_amount) - Number(f.in_review) - Number(f.outstanding) - Number(f.asset_committed)),
+      available: L.round2(Number(f.limit_amount) - f.usage.used),
+      plans_reserved: f.usage.plans,
       // ดอกเบี้ยถึงวันนี้ (ประมาณการ — ตัดจริงตอนชำระ)
       penalty_pct: Number(settings.late_penalty_pct),
       as_of: today,
@@ -1108,18 +1118,36 @@ borrower.post('/items', wrap(async (req, res) => {
       if (!['organization', 'farmer'].includes(sellerType) || !isUuid(sellerId)) fail(400, 'seller_required');
       if (!amount) fail(400, 'amount_required');
     }
+    // แผนสินเชื่อการผลิต: รายการต้องอยู่ในงวดที่เปิดอยู่ ของเกษตรกรและแปลงตามแผน ไม่เกินเงินของงวด
+    let plan = null;
+    let stage = null;
+    if (b.plan_id !== undefined && b.plan_id !== null && b.plan_id !== '') {
+      if (!isUuid(b.plan_id)) fail(400, 'plan_required');
+      plan = (await c.query('SELECT * FROM coop_lending.crop_plan WHERE plan_id = $1 AND borrower_org_id = $2 AND facility_id = $3 FOR UPDATE', [b.plan_id, req.org.org_id, f.facility_id])).rows[0];
+      if (!plan) fail(404, 'plan_not_found');
+      if (plan.status !== 'Active') fail(409, 'plan_not_active', { status: plan.status, reason: plan.suspended_reason });
+      stage = (await c.query(`SELECT * FROM coop_lending.crop_plan_stage WHERE plan_id = $1 AND status = 'Open'`, [plan.plan_id])).rows[0];
+      if (!stage) fail(409, 'no_open_stage');
+      if (!stage.purposes.includes(purpose)) fail(400, 'purpose_not_in_stage', { stage: stage.name_th });
+      if (farmerId && farmerId !== plan.farmer_id) fail(400, 'farmer_not_in_plan');
+      farmerId = plan.farmer_id;
+      b.unit_ids = [plan.unit_id];
+      const spent = Number((await c.query(`SELECT COALESCE(SUM(amount), 0) AS s FROM coop_lending.disbursement_item WHERE plan_id = $1 AND stage_seq = $2 AND status NOT IN ('Rejected','Cancelled','Disputed')`,
+        [plan.plan_id, stage.seq])).rows[0].s);
+      const left = L.round2(Number(stage.planned_amount) - spent);
+      if (amount > left + 0.004) fail(409, 'over_stage_amount', { available: left, stage: stage.name_th });
+    }
     if (farmerId) await memberName(c, req.org.org_id, farmerId);
     const name = await sellerName(c, req.org.org_id, sellerType, sellerId);
 
     // วงเงิน: คงเหลือ = วงเงิน − ยอดรอพิจารณา − เงินต้นค้าง − สินเชื่อเครื่องจักรที่ผูกไว้ (รายการเครื่องจักรนับในสินเชื่อเครื่องจักรแล้ว)
-    if (purpose !== 'asset') {
+    if (purpose !== 'asset' && !plan) {
       const used = (await c.query(
-        `SELECT COALESCE(SUM(CASE WHEN status IN ('Draft','EvidencePending','EvidenceComplete') THEN amount ELSE principal_outstanding END), 0)::numeric AS used,
-                COALESCE(SUM(CASE WHEN status IN ('Draft','EvidencePending','EvidenceComplete') THEN amount ELSE principal_outstanding END) FILTER (WHERE purpose = $2), 0)::numeric AS used_purpose
-           FROM coop_lending.disbursement_item WHERE facility_id = $1 AND purpose <> 'asset' AND status NOT IN ('Rejected','Cancelled','Disputed')`, [f.facility_id, purpose],
+        `SELECT COALESCE(SUM(CASE WHEN status IN ('Draft','EvidencePending','EvidenceComplete') THEN amount ELSE principal_outstanding END) FILTER (WHERE purpose = $2), 0)::numeric AS used_purpose
+           FROM coop_lending.disbursement_item WHERE facility_id = $1 AND purpose <> 'asset' AND plan_id IS NULL AND status NOT IN ('Rejected','Cancelled','Disputed')`, [f.facility_id, purpose],
       )).rows[0];
-      const asset = Number((await c.query(`SELECT COALESCE(SUM(loan_amount), 0) AS s FROM coop_lending.asset_loan WHERE facility_id = $1 AND status IN ('Submitted','Approved','Active')`, [f.facility_id])).rows[0].s);
-      const available = L.round2(Number(f.limit_amount) - Number(used.used) - asset);
+      const usage = await L.facilityUsage(c, f.facility_id);
+      const available = L.round2(Number(f.limit_amount) - usage.used);
       if (amount > available) fail(409, 'over_facility_limit', { available });
       const pl = f.purpose_limits && f.purpose_limits[purpose];
       if (pl !== undefined && Number(used.used_purpose) + amount > Number(pl)) fail(409, 'over_purpose_limit', { available: L.round2(Number(pl) - Number(used.used_purpose)) });
@@ -1137,11 +1165,12 @@ borrower.post('/items', wrap(async (req, res) => {
     if (b.payout_account_id) payout = await verifiedAccount(c, b.payout_account_id, sellerType, sellerId, ['payout']);
     const item = (await c.query(
       `INSERT INTO coop_lending.disbursement_item (facility_id, borrower_org_id, lender_org_id, purpose, farmer_id, seller_type, seller_id, seller_name,
-              payout_account_id, amount, description, source_type, source_id, doc_no, service_date, service_area_rai, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+              payout_account_id, amount, description, source_type, source_id, doc_no, service_date, service_area_rai, created_by, plan_id, stage_seq)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [f.facility_id, req.org.org_id, f.lender_org_id, purpose, farmerId, sellerType, sellerId, name, payout ? payout.account_id : null, amount,
         text(b.description, 'description', { min: 3, max: 500 }), sourceType, sourceId, text(b.doc_no, 'doc_no', { max: 60, allowNull: true }),
-        b.service_date && L.isDate(b.service_date) ? b.service_date : null, b.service_area_rai ? num(b.service_area_rai, 'service_area_rai', { min: 0.01, max: 100000 }) : null, actor.key],
+        b.service_date && L.isDate(b.service_date) ? b.service_date : null, b.service_area_rai ? num(b.service_area_rai, 'service_area_rai', { min: 0.01, max: 100000 }) : null, actor.key,
+        plan ? plan.plan_id : null, stage ? stage.seq : null],
     )).rows[0];
     await setPlots(c, item, b.unit_ids);
     await L.logEvent(c, { itemId: item.item_id, facilityId: f.facility_id, actor: actor.key, action: 'item_created', detail: { amount } });
@@ -1389,12 +1418,8 @@ borrower.post('/asset-loans', wrap(async (req, res) => {
     });
     const aff = L.affordability(schedule, v.income, Number(f.asset_max_income_ratio_pct));
     if (!aff.ok) fail(409, 'installment_exceeds_income_ratio', { ratio_pct: aff.ratio_pct, max_ratio_pct: Number(f.asset_max_income_ratio_pct), installment: aff.installment });
-    const used = Number((await c.query(
-      `SELECT COALESCE(SUM(CASE WHEN status IN ('Draft','EvidencePending','EvidenceComplete') THEN amount ELSE principal_outstanding END), 0) AS s
-         FROM coop_lending.disbursement_item WHERE facility_id = $1 AND purpose <> 'asset' AND status NOT IN ('Rejected','Cancelled','Disputed')`, [f.facility_id],
-    )).rows[0].s);
-    const asset = Number((await c.query(`SELECT COALESCE(SUM(loan_amount), 0) AS s FROM coop_lending.asset_loan WHERE facility_id = $1 AND status IN ('Submitted','Approved','Active')`, [f.facility_id])).rows[0].s);
-    if (v.loan > Number(f.limit_amount) - used - asset + 0.004) fail(409, 'over_facility_limit', { available: L.round2(Number(f.limit_amount) - used - asset) });
+    const usage = await L.facilityUsage(c, f.facility_id);
+    if (v.loan > Number(f.limit_amount) - usage.used + 0.004) fail(409, 'over_facility_limit', { available: L.round2(Number(f.limit_amount) - usage.used) });
     const r = (await c.query(
       `INSERT INTO coop_lending.asset_loan (facility_id, borrower_org_id, lender_org_id, buyer_type, farmer_id, asset_kind, brand_model, seller_org_id, quotation_no,
               price, down_payment, loan_amount, rate_pct, term_months, interval_months, grace_periods, income_per_period, income_basis, installment, income_ratio_pct, serial_no)
@@ -1574,6 +1599,407 @@ admin.delete('/holidays/:date', wrap(async (req, res) => {
 }));
 admin.post('/sla-sweep', wrap(async (req, res) => { res.json(await adminTx(req, (c) => L.slaSweep(c))); }));
 
+// ===========================================================================
+// สินเชื่อการผลิตแบบแบ่งงวด (Concept Note ประเภท A) — grant_coop_lending_crop_plan.sql
+// ===========================================================================
+async function planRows(c, where, params) {
+  return (await c.query(
+    `SELECT p.*, f.full_name AS farmer_name, b.org_name AS borrower_name, l.org_name AS lender_name,
+            pu.area_rai AS plot_area_rai, cr.name_th AS commodity_name,
+            (SELECT json_agg(x ORDER BY x.seq) FROM (
+               SELECT st.seq, st.stage_key, st.name_th, st.purposes, st.planned_amount, st.window_start, st.window_end, st.check_method_th, st.status,
+                      st.opened_at, st.check_file_id IS NOT NULL AS has_check_file, st.check_note, st.check_submitted_at, st.satellite_result, st.satellite_detail,
+                      st.decided_by, st.decided_at, st.decision_note,
+                      (SELECT COALESCE(SUM(i.amount), 0) FROM coop_lending.disbursement_item i WHERE i.plan_id = st.plan_id AND i.stage_seq = st.seq AND i.status NOT IN ('Rejected','Cancelled','Disputed')) AS committed,
+                      (SELECT COALESCE(SUM(i.amount), 0) FROM coop_lending.disbursement_item i WHERE i.plan_id = st.plan_id AND i.stage_seq = st.seq AND i.status IN ('Funded','Paid')) AS disbursed,
+                      (SELECT COUNT(*) FROM coop_lending.disbursement_item i WHERE i.plan_id = st.plan_id AND i.stage_seq = st.seq AND i.status NOT IN ('Rejected','Cancelled')) AS items
+                 FROM coop_lending.crop_plan_stage st WHERE st.plan_id = p.plan_id) x) AS stages
+       FROM coop_lending.crop_plan p
+       JOIN identity.farmer f ON f.farmer_id = p.farmer_id
+       JOIN identity.organization b ON b.org_id = p.borrower_org_id
+       JOIN identity.organization l ON l.org_id = p.lender_org_id
+       JOIN registry.production_unit pu ON pu.unit_id = p.unit_id
+       LEFT JOIN registry.commodity_ref cr ON cr.commodity_code = p.commodity_code
+      WHERE ${where} ORDER BY (p.status IN ('Submitted','Suspended')) DESC, p.created_at DESC LIMIT 300`, params,
+  )).rows.map((p) => ({
+    ...p,
+    planting_date: L.toDateStr(p.planting_date),
+    stages: (p.stages || []).map((st) => ({ ...st, window_start: L.toDateStr(st.window_start), window_end: L.toDateStr(st.window_end) })),
+  }));
+}
+async function lockPlan(c, planId, column, orgId) {
+  if (!isUuid(planId)) fail(404, 'plan_not_found');
+  const p = (await c.query(`SELECT * FROM coop_lending.crop_plan WHERE plan_id = $1 AND ${column} = $2 FOR UPDATE`, [planId, orgId])).rows[0];
+  if (!p) fail(404, 'plan_not_found');
+  return p;
+}
+async function lockStage(c, planId, seq) {
+  const n = parseInt(seq, 10);
+  if (!Number.isInteger(n)) fail(404, 'stage_not_found');
+  const st = (await c.query('SELECT * FROM coop_lending.crop_plan_stage WHERE plan_id = $1 AND seq = $2 FOR UPDATE', [planId, n])).rows[0];
+  if (!st) fail(404, 'stage_not_found');
+  return st;
+}
+async function planNotice(c, orgId, kind, plan, message) {
+  await c.query(`INSERT INTO coop_lending.dunning_notice (target_org_id, kind, plan_id, notice_date, message) VALUES ($1,$2,$3,$4,$5)`,
+    [orgId, kind, plan.plan_id, L.todayBangkok(), message]);
+}
+function stageFileRoute(column) {
+  return wrap(async (req, res) => {
+    if (!isUuid(req.params.id)) fail(404, 'plan_not_found');
+    const f = await orgTx(req, async (c) => (await c.query(
+      `SELECT fo.storage_path, fo.content_type, fo.original_filename FROM coop_lending.crop_plan_stage st
+         JOIN coop_lending.crop_plan p ON p.plan_id = st.plan_id JOIN storage.file_object fo ON fo.file_id = st.check_file_id
+        WHERE st.plan_id = $1 AND st.seq = $2 AND p.${column} = $3`, [req.params.id, parseInt(req.params.seq, 10) || 0, req.org.org_id],
+    )).rows[0]);
+    if (!f) fail(404, 'file_not_found');
+    res.setHeader('Content-Type', f.content_type);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(f.original_filename)}"`);
+    res.send(await objectStorage.readFile(f.storage_path));
+  });
+}
+
+borrower.get('/crop-templates', wrap(async (req, res) => {
+  res.json({ templates: L.CROP_TEMPLATES, stages: L.STAGE_TEMPLATE });
+}));
+function planBody(b) {
+  if (!isUuid(b.unit_id)) fail(400, 'plot_required');
+  if (!L.isDate(b.planting_date)) fail(400, 'invalid_planting_date');
+  return { total: num(b.total_amount, 'total_amount', { min: 1000 }), amounts: Array.isArray(b.stage_amounts) ? b.stage_amounts : null };
+}
+async function plotFor(c, orgId, unitId) {
+  const u = (await c.query(
+    `SELECT pu.*, f.full_name FROM registry.production_unit pu JOIN identity.farmer f ON f.farmer_id = pu.owner_farmer_id
+      WHERE pu.unit_id = $1 AND EXISTS (SELECT 1 FROM identity.farmer_org_relationship r WHERE r.farmer_id = pu.owner_farmer_id AND r.org_id = $2 AND r.status = 'active')`,
+    [unitId, orgId],
+  )).rows[0];
+  if (!u) fail(404, 'plot_not_found_or_not_member');
+  const t = L.templateFor(u.commodity_code);
+  if (!t) fail(400, 'crop_not_supported', { commodity_code: u.commodity_code, supported: Object.values(L.CROP_TEMPLATES).flatMap((x) => x.commodities) });
+  return { u, t };
+}
+borrower.post('/crop-plans/preview', wrap(async (req, res) => {
+  const b = req.body || {};
+  const v = planBody(b);
+  res.json(await orgTx(req, async (c) => {
+    const { u, t } = await plotFor(c, req.org.org_id, b.unit_id);
+    let stages;
+    try { stages = L.buildStages(t.key, b.planting_date, v.total, v.amounts); } catch (e) { fail(400, e.message); }
+    return { template: t, area_rai: Number(u.area_rai), per_rai: L.round2(v.total / Number(u.area_rai)), stages };
+  }));
+}));
+borrower.post('/crop-plans', wrap(async (req, res) => {
+  const b = req.body || {};
+  if (!isUuid(b.facility_id)) fail(400, 'facility_required');
+  const v = planBody(b);
+  const out = await orgTx(req, async (c) => {
+    const actor = await actorOf(c, req);
+    const f = (await c.query(
+      `SELECT f.*, p.purposes, p.per_farmer_limit FROM coop_lending.facility f JOIN coop_lending.program p ON p.program_id = f.program_id
+        WHERE f.facility_id = $1 AND f.borrower_org_id = $2 FOR UPDATE OF f`, [b.facility_id, req.org.org_id],
+    )).rows[0];
+    if (!f) fail(404, 'facility_not_found');
+    if (f.status !== 'Active') fail(409, 'facility_not_active');
+    if (!f.purposes.includes('inputs')) fail(400, 'program_has_no_production_purpose');
+    const { u, t } = await plotFor(c, req.org.org_id, b.unit_id);
+    let stages;
+    try { stages = L.buildStages(t.key, b.planting_date, v.total, v.amounts); } catch (e) { fail(400, e.message); }
+    if (L.toDateStr(f.available_until) < L.todayBangkok()) fail(409, 'facility_expired');
+    const usage = await L.facilityUsage(c, f.facility_id);
+    const available = L.round2(Number(f.limit_amount) - usage.used);
+    if (v.total > available + 0.004) fail(409, 'over_facility_limit', { available });
+    if (f.per_farmer_limit && v.total > Number(f.per_farmer_limit)) fail(409, 'over_per_farmer_limit', { available: Number(f.per_farmer_limit) });
+    const p = (await c.query(
+      `INSERT INTO coop_lending.crop_plan (facility_id, borrower_org_id, lender_org_id, farmer_id, unit_id, commodity_code, template_key, season_label, planting_date, area_rai, total_amount, note, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [f.facility_id, req.org.org_id, f.lender_org_id, u.owner_farmer_id, u.unit_id, u.commodity_code, t.key, text(b.season_label, 'season_label', { min: 2, max: 60 }),
+        b.planting_date, u.area_rai, v.total, text(b.note, 'note', { max: 1000, allowNull: true }), actor.key],
+    )).rows[0];
+    for (const st of stages) {
+      await c.query(
+        `INSERT INTO coop_lending.crop_plan_stage (plan_id, seq, stage_key, name_th, purposes, planned_amount, window_start, window_end, check_method_th)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [p.plan_id, st.seq, st.stage_key, st.name_th, st.purposes, st.planned_amount, st.window_start, st.window_end, st.check_method_th],
+      );
+    }
+    await L.logEvent(c, { facilityId: f.facility_id, actor: actor.key, action: 'plan_submitted', detail: { plan_id: p.plan_id, total: v.total } });
+    return p;
+  });
+  res.status(201).json(out);
+}));
+borrower.get('/crop-plans', wrap(async (req, res) => { res.json(await orgTx(req, (c) => planRows(c, 'p.borrower_org_id = $1', [req.org.org_id]))); }));
+borrower.post('/crop-plans/:id/cancel', wrap(async (req, res) => {
+  res.json(await orgTx(req, async (c) => {
+    const p = await lockPlan(c, req.params.id, 'borrower_org_id', req.org.org_id);
+    if (p.status !== 'Submitted') fail(409, 'plan_not_cancellable');
+    return (await c.query(`UPDATE coop_lending.crop_plan SET status = 'Cancelled' WHERE plan_id = $1 RETURNING *`, [p.plan_id])).rows[0];
+  }));
+}));
+/** ส่งผลตรวจแปลงของงวด (ภาพหน้างาน + หมายเหตุ) — ระบบแนบผลดาวเทียมให้อัตโนมัติ */
+borrower.post('/crop-plans/:id/stages/:seq/check', wrap(async (req, res) => {
+  const b = req.body || {};
+  if (!isUuid(b.file_id)) fail(400, 'file_required');
+  const out = await orgTx(req, async (c) => {
+    const actor = await actorOf(c, req);
+    const p = await lockPlan(c, req.params.id, 'borrower_org_id', req.org.org_id);
+    if (p.status !== 'Active') fail(409, 'plan_not_active', { status: p.status });
+    const st = await lockStage(c, p.plan_id, req.params.seq);
+    if (!['Open', 'Held'].includes(st.status)) fail(409, 'stage_not_open', { status: st.status });
+    const file = (await c.query(
+      `SELECT fo.* FROM storage.file_object fo
+        WHERE fo.file_id = $1 AND ((fo.owner_subject_type = 'organization' AND fo.owner_subject_id = $2)
+           OR (fo.owner_subject_type = 'organization_member' AND fo.owner_subject_id IN (SELECT member_id FROM identity.organization_member WHERE org_id = $2)))`,
+      [b.file_id, req.org.org_id],
+    )).rows[0];
+    if (!file) fail(404, 'file_not_found');
+    const a = (await c.query('SELECT * FROM ai.v_latest_assessment WHERE unit_id = $1', [p.unit_id])).rows[0] || null;
+    const sat = L.classifyStage(st.stage_key, a, { plantingDate: L.toDateStr(p.planting_date) });
+    const r = (await c.query(
+      `UPDATE coop_lending.crop_plan_stage SET status = 'CheckSubmitted', check_file_id = $3, check_sha256 = $4, check_note = $5, check_submitted_by = $6,
+              check_submitted_at = now(), satellite_result = $7, satellite_detail = $8, decided_by = NULL, decided_at = NULL, decision_note = NULL
+        WHERE plan_id = $1 AND seq = $2 RETURNING *`,
+      [p.plan_id, st.seq, file.file_id, file.sha256_hash, text(b.note, 'note', { max: 1000, allowNull: true }), actor.key, sat.result, JSON.stringify(sat)],
+    )).rows[0];
+    await planNotice(c, p.lender_org_id, 'stage_check_waiting', p, `ผลตรวจแปลงงวดที่ ${st.seq} (${st.name_th}) รอพิจารณา — ดาวเทียม: ${sat.result}`);
+    await L.logEvent(c, { facilityId: p.facility_id, actor: actor.key, action: 'stage_check_submitted', detail: { plan_id: p.plan_id, seq: st.seq, satellite: sat.result } });
+    return r;
+  });
+  res.json(out);
+}));
+borrower.get('/crop-plans/:id/stages/:seq/file', stageFileRoute('borrower_org_id'));
+
+savings.get('/crop-plans', wrap(async (req, res) => { res.json(await orgTx(req, (c) => planRows(c, 'p.lender_org_id = $1', [req.org.org_id]))); }));
+savings.get('/crop-plans/:id/stages/:seq/file', stageFileRoute('lender_org_id'));
+for (const ACTION of ['approve', 'reject', 'resume']) savings.post(`/crop-plans/:id/${ACTION}`, wrap(async (req, res) => {
+  const out = await orgTx(req, async (c) => {
+    const actor = await actorOf(c, req);
+    const p = await lockPlan(c, req.params.id, 'lender_org_id', req.org.org_id);
+    if (ACTION === 'approve' || ACTION === 'reject') {
+      if (p.status !== 'Submitted') fail(409, 'plan_already_decided');
+      if (ACTION === 'reject') {
+        const reason = text((req.body || {}).reason, 'reason', { min: 3, max: 500 });
+        return (await c.query(`UPDATE coop_lending.crop_plan SET status = 'Rejected', decided_reason = $2, approved_by = $3 WHERE plan_id = $1 RETURNING *`, [p.plan_id, reason, actor.key])).rows[0];
+      }
+      await c.query(`UPDATE coop_lending.crop_plan_stage SET status = 'Open', opened_at = now() WHERE plan_id = $1 AND seq = 1`, [p.plan_id]);
+      await L.logEvent(c, { facilityId: p.facility_id, actor: actor.key, action: 'plan_approved', detail: { plan_id: p.plan_id } });
+      return (await c.query(`UPDATE coop_lending.crop_plan SET status = 'Active', approved_at = now(), approved_by = $2 WHERE plan_id = $1 RETURNING *`, [p.plan_id, actor.key])).rows[0];
+    }
+    if (p.status !== 'Suspended') fail(409, 'plan_not_suspended');
+    await c.query(`UPDATE coop_lending.crop_plan_stage SET status = 'Open' WHERE plan_id = $1 AND status = 'Held'`, [p.plan_id]);
+    await L.logEvent(c, { facilityId: p.facility_id, actor: actor.key, action: 'plan_resumed', detail: { plan_id: p.plan_id } });
+    return (await c.query(`UPDATE coop_lending.crop_plan SET status = 'Active', suspended_reason = NULL WHERE plan_id = $1 RETURNING *`, [p.plan_id])).rows[0];
+  });
+  res.json(out);
+}));
+/** ผ่านงวด = เปิดงวดถัดไป (งวดสุดท้าย = แผนเสร็จสิ้น) · ระงับ = หยุดแผนทั้งแผนจนกว่าจะพิจารณาใหม่ */
+for (const ACTION of ['pass', 'hold']) savings.post(`/crop-plans/:id/stages/:seq/${ACTION}`, wrap(async (req, res) => {
+  const out = await orgTx(req, async (c) => {
+    const actor = await actorOf(c, req);
+    const p = await lockPlan(c, req.params.id, 'lender_org_id', req.org.org_id);
+    if (p.status !== 'Active') fail(409, 'plan_not_active', { status: p.status });
+    const st = await lockStage(c, p.plan_id, req.params.seq);
+    const note = (req.body || {}).note;
+    if (ACTION === 'pass') {
+      if (st.status !== 'CheckSubmitted') fail(409, 'stage_check_not_submitted', { status: st.status });
+      if (st.satellite_result === 'review' && !(note && String(note).trim().length >= 5)) fail(400, 'satellite_review_needs_reason');
+      await c.query(`UPDATE coop_lending.crop_plan_stage SET status = 'Passed', decided_by = $3, decided_at = now(), decision_note = $4 WHERE plan_id = $1 AND seq = $2`,
+        [p.plan_id, st.seq, actor.key, text(note, 'note', { max: 500, allowNull: true })]);
+      const next = (await c.query(`UPDATE coop_lending.crop_plan_stage SET status = 'Open', opened_at = now() WHERE plan_id = $1 AND seq = $2 RETURNING seq, name_th`, [p.plan_id, st.seq + 1])).rows[0];
+      if (!next) await c.query(`UPDATE coop_lending.crop_plan SET status = 'Completed', completed_at = now() WHERE plan_id = $1`, [p.plan_id]);
+      await L.logEvent(c, { facilityId: p.facility_id, actor: actor.key, action: 'stage_passed', detail: { plan_id: p.plan_id, seq: st.seq, next: next ? next.seq : null } });
+      return { passed: st.seq, opened: next || null, completed: !next };
+    }
+    if (!['Open', 'CheckSubmitted'].includes(st.status)) fail(409, 'stage_not_holdable', { status: st.status });
+    const reason = text(note, 'note', { min: 5, max: 500 });
+    await c.query(`UPDATE coop_lending.crop_plan_stage SET status = 'Held', decided_by = $3, decided_at = now(), decision_note = $4 WHERE plan_id = $1 AND seq = $2`, [p.plan_id, st.seq, actor.key, reason]);
+    await c.query(`UPDATE coop_lending.crop_plan SET status = 'Suspended', suspended_reason = $2 WHERE plan_id = $1`, [p.plan_id, `งวดที่ ${st.seq}: ${reason}`]);
+    await planNotice(c, p.borrower_org_id, 'plan_held', p, `ระงับแผนสินเชื่อการผลิตงวดที่ ${st.seq} (${st.name_th}): ${reason}`);
+    await L.logEvent(c, { facilityId: p.facility_id, actor: actor.key, action: 'plan_held', detail: { plan_id: p.plan_id, seq: st.seq, reason } });
+    return { held: st.seq };
+  });
+  res.json(out);
+}));
+
+farmer.get('/plans', wrap(async (req, res) => {
+  res.json(await farmerTx(req, (c) => planRows(c, 'p.farmer_id = $1 AND p.status NOT IN (\'Cancelled\',\'Rejected\')', [req.subject.subjectId])));
+}));
+
+// ===========================================================================
+// /gov/coop-lending — กรมส่งเสริมสหกรณ์ติดตามการเชื่อมโยงเงินทุน (อ่านอย่างเดียว)
+// เจ้าหน้าที่ระดับจังหวัดเห็นเฉพาะสหกรณ์การเกษตรผู้กู้ในจังหวัดของตน · ระดับประเทศเห็นทั้งหมด (เลือกจังหวัดได้)
+// ===========================================================================
+const gov = express.Router();
+gov.use(requireAuth, requireGovernmentOfficer);
+const govTx = (req, fn) => tx('government_officer', req.subject.subjectId, fn);
+async function officerScope(c, req) {
+  const o = (await c.query(
+    `SELECT o.officer_id, o.full_name, o.scope_type, o.province_code, pv.province_name_th
+       FROM identity.government_officer o LEFT JOIN registry.province pv ON pv.province_code = o.province_code
+      WHERE o.officer_id = $1 AND o.status = 'Active'`, [req.subject.subjectId],
+  )).rows[0];
+  if (!o) fail(403, 'officer_not_found_or_inactive');
+  const wanted = typeof req.query.province === 'string' && req.query.province ? req.query.province.slice(0, 40) : null;
+  return { officer: o, province: o.scope_type === 'Province' ? o.province_code : wanted };
+}
+// facility อยู่ในขอบเขต = จังหวัดของสหกรณ์ผู้กู้
+const SCOPE_FAC = `JOIN registry.cooperative_profile scp ON scp.org_id = f.borrower_org_id AND ($1::text IS NULL OR scp.province_code = $1)`;
+const pct = (a, b) => (b > 0 ? Math.round((a / b) * 1000) / 10 : null);
+
+gov.get('/overview', wrap(async (req, res) => {
+  res.json(await govTx(req, async (c) => {
+    const { officer, province } = await officerScope(c, req);
+    const today = L.todayBangkok();
+    const q = async (sql, extra = []) => (await c.query(sql, [province, ...extra])).rows;
+    const tot = (await q(
+      `SELECT COUNT(DISTINCT f.lender_org_id)::int AS lenders, COUNT(DISTINCT f.borrower_org_id)::int AS borrowers, COUNT(*)::int AS facilities,
+              COALESCE(SUM(f.limit_amount), 0)::numeric AS limit_total,
+              COUNT(*) FILTER (WHERE f.status = 'Suspended')::int AS suspended
+         FROM coop_lending.facility f ${SCOPE_FAC} WHERE f.status <> 'Closed'`,
+    ))[0];
+    const it = (await q(
+      `SELECT COUNT(*) FILTER (WHERE i.status IN ('Funded','Paid'))::int AS funded_n,
+              COALESCE(SUM(i.amount) FILTER (WHERE i.status IN ('Funded','Paid')), 0)::numeric AS disbursed,
+              COALESCE(SUM(i.amount) FILTER (WHERE i.status = 'Paid'), 0)::numeric AS paid_to_sellers,
+              COALESCE(SUM(i.principal_outstanding), 0)::numeric AS outstanding,
+              COALESCE(SUM(i.principal_outstanding) FILTER (WHERE i.loan_due_date < $2), 0)::numeric AS overdue_amount,
+              COUNT(*) FILTER (WHERE i.principal_outstanding > 0 AND i.loan_due_date < $2)::int AS overdue_n,
+              COUNT(*) FILTER (WHERE i.status IN ('Funded','Paid') AND EXISTS (SELECT 1 FROM coop_lending.evidence e WHERE e.item_id = i.item_id)
+                                 AND (i.farmer_id IS NULL OR i.farmer_confirmed_at IS NOT NULL))::int AS evidenced_n,
+              COUNT(*) FILTER (WHERE i.funded_at IS NOT NULL AND i.sc_due_date IS NOT NULL)::int AS sc_n,
+              COUNT(*) FILTER (WHERE i.funded_at IS NOT NULL AND (i.funded_at AT TIME ZONE 'Asia/Bangkok')::date <= i.sc_due_date)::int AS sc_ontime,
+              COUNT(*) FILTER (WHERE i.paid_at IS NOT NULL AND i.ac_due_date IS NOT NULL)::int AS ac_n,
+              COUNT(*) FILTER (WHERE i.paid_at IS NOT NULL AND (i.paid_at AT TIME ZONE 'Asia/Bangkok')::date <= i.ac_due_date)::int AS ac_ontime,
+              COUNT(*) FILTER (WHERE i.status = 'Disputed')::int AS disputed, COUNT(*) FILTER (WHERE i.status = 'Rejected')::int AS rejected,
+              COUNT(*) FILTER (WHERE i.status IN ('EvidencePending','EvidenceComplete'))::int AS in_review,
+              COUNT(*) FILTER (WHERE i.satellite_result = 'pass')::int AS sat_pass, COUNT(*) FILTER (WHERE i.satellite_result = 'review')::int AS sat_review,
+              COUNT(*) FILTER (WHERE i.satellite_result = 'insufficient')::int AS sat_insufficient, COUNT(*) FILTER (WHERE i.satellite_result = 'na')::int AS sat_na,
+              COALESCE(SUM(i.sc_penalty + i.ac_penalty), 0)::numeric AS penalties
+         FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id ${SCOPE_FAC}`, [today],
+    ))[0];
+    const asset = (await q(
+      `SELECT COUNT(*) FILTER (WHERE a.status = 'Active')::int AS active,
+              COALESCE(SUM(s.installment - s.paid_amount) FILTER (WHERE a.status = 'Active'), 0)::numeric AS remaining,
+              COALESCE(SUM(s.installment - s.paid_amount) FILTER (WHERE a.status = 'Active' AND s.due_date < $2 AND s.paid_amount < s.installment), 0)::numeric AS overdue
+         FROM coop_lending.asset_loan a JOIN coop_lending.facility f ON f.facility_id = a.facility_id ${SCOPE_FAC}
+         LEFT JOIN coop_lending.repayment_schedule s ON s.asset_loan_id = a.asset_loan_id`, [today],
+    ))[0];
+    const repaid = (await q(
+      `SELECT COALESCE(SUM(r.amount), 0)::numeric AS repaid, COALESCE(SUM(r.interest_part + r.penalty_part), 0)::numeric AS interest
+         FROM coop_lending.repayment r JOIN coop_lending.facility f ON f.facility_id = r.facility_id ${SCOPE_FAC}`,
+    ))[0];
+    const plans = (await q(
+      `SELECT p.status, COUNT(*)::int AS n, COALESCE(SUM(p.total_amount), 0)::numeric AS amount, COALESCE(SUM(p.area_rai), 0)::numeric AS rai
+         FROM coop_lending.crop_plan p JOIN coop_lending.facility f ON f.facility_id = p.facility_id ${SCOPE_FAC} GROUP BY p.status`,
+    ));
+    const stages = (await q(
+      `SELECT st.seq, st.name_th, COUNT(*) FILTER (WHERE st.status = 'Passed')::int AS passed, COUNT(*) FILTER (WHERE st.status IN ('Open','CheckSubmitted'))::int AS current,
+              COUNT(*) FILTER (WHERE st.status = 'Held')::int AS held, COUNT(*) FILTER (WHERE st.satellite_result = 'review')::int AS sat_review
+         FROM coop_lending.crop_plan_stage st JOIN coop_lending.crop_plan p ON p.plan_id = st.plan_id
+         JOIN coop_lending.facility f ON f.facility_id = p.facility_id ${SCOPE_FAC}
+        WHERE p.status IN ('Active','Suspended','Completed') GROUP BY st.seq, st.name_th ORDER BY st.seq`,
+    ));
+    const byProvince = (await q(
+      `SELECT COALESCE(pv.province_name_th, scp.province_code) AS province, scp.province_code,
+              COUNT(DISTINCT f.borrower_org_id)::int AS borrowers, COUNT(DISTINCT f.lender_org_id)::int AS lenders, COALESCE(SUM(f.limit_amount), 0)::numeric AS limit_total,
+              COALESCE(SUM((SELECT SUM(i.principal_outstanding) FROM coop_lending.disbursement_item i WHERE i.facility_id = f.facility_id)), 0)::numeric AS outstanding,
+              COALESCE(SUM((SELECT SUM(i.principal_outstanding) FROM coop_lending.disbursement_item i WHERE i.facility_id = f.facility_id AND i.loan_due_date < $2)), 0)::numeric AS overdue,
+              COALESCE(SUM((SELECT SUM(p.area_rai) FROM coop_lending.crop_plan p WHERE p.facility_id = f.facility_id AND p.status IN ('Active','Suspended','Completed'))), 0)::numeric AS plan_rai
+         FROM coop_lending.facility f ${SCOPE_FAC} LEFT JOIN registry.province pv ON pv.province_code = scp.province_code
+        WHERE f.status <> 'Closed' GROUP BY 1, 2 ORDER BY limit_total DESC`, [today],
+    ));
+    const facilities = (await q(
+      `SELECT f.facility_id, l.org_name AS lender_name, b.org_name AS borrower_name, COALESCE(pv.province_name_th, scp.province_code) AS province,
+              f.limit_amount, f.rate_pct, f.status, f.suspended_reason,
+              (SELECT COALESCE(SUM(i.principal_outstanding), 0) FROM coop_lending.disbursement_item i WHERE i.facility_id = f.facility_id)::numeric AS outstanding,
+              (SELECT COALESCE(SUM(i.principal_outstanding), 0) FROM coop_lending.disbursement_item i WHERE i.facility_id = f.facility_id AND i.loan_due_date < $2)::numeric AS overdue,
+              (SELECT COALESCE(SUM(i.amount), 0) FROM coop_lending.disbursement_item i WHERE i.facility_id = f.facility_id AND i.status IN ('Funded','Paid'))::numeric AS disbursed,
+              (SELECT COUNT(*) FROM coop_lending.disbursement_item i WHERE i.facility_id = f.facility_id AND i.paid_at IS NOT NULL)::int AS paid_n,
+              (SELECT COUNT(*) FROM coop_lending.disbursement_item i WHERE i.facility_id = f.facility_id AND i.paid_at IS NOT NULL AND (i.paid_at AT TIME ZONE 'Asia/Bangkok')::date <= i.ac_due_date)::int AS paid_ontime,
+              (SELECT COUNT(*) FROM coop_lending.crop_plan p WHERE p.facility_id = f.facility_id AND p.status IN ('Active','Suspended'))::int AS plans_active,
+              (SELECT COUNT(*) FROM identity.farmer_org_relationship r WHERE r.org_id = f.borrower_org_id AND r.status = 'active')::int AS members
+         FROM coop_lending.facility f ${SCOPE_FAC}
+         JOIN identity.organization l ON l.org_id = f.lender_org_id JOIN identity.organization b ON b.org_id = f.borrower_org_id
+         LEFT JOIN registry.province pv ON pv.province_code = scp.province_code
+        WHERE f.status <> 'Closed' ORDER BY f.limit_amount DESC LIMIT 200`, [today],
+    ));
+    const alerts = (await q(
+      `SELECT e.created_at, e.action, e.detail, b.org_name AS borrower_name, l.org_name AS lender_name
+         FROM coop_lending.event e JOIN coop_lending.facility f ON f.facility_id = e.facility_id ${SCOPE_FAC}
+         JOIN identity.organization b ON b.org_id = f.borrower_org_id JOIN identity.organization l ON l.org_id = f.lender_org_id
+        WHERE e.action IN ('farmer_disputed','sc_reject','sc_return','facility_suspended','plan_held','settle_error')
+           OR (e.action = 'stage_check_submitted' AND e.detail->>'satellite' = 'review')
+        ORDER BY e.event_id DESC LIMIT 40`,
+    ));
+    const late = (await q(
+      `SELECT 'sc' AS who, l.org_name AS party, b.org_name AS borrower_name, i.amount, i.sc_due_date AS due, i.description
+         FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id ${SCOPE_FAC}
+         JOIN identity.organization l ON l.org_id = i.lender_org_id JOIN identity.organization b ON b.org_id = i.borrower_org_id
+        WHERE i.status = 'EvidenceComplete' AND i.sc_due_date < $2
+       UNION ALL
+       SELECT 'ac', b.org_name, b.org_name, i.amount, i.ac_due_date, i.description
+         FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id ${SCOPE_FAC}
+         JOIN identity.organization b ON b.org_id = i.borrower_org_id
+        WHERE i.status = 'Funded' AND i.ac_due_date < $2 ORDER BY 5 LIMIT 50`, [today],
+    ));
+    const provinces = officer.scope_type === 'National'
+      ? (await c.query(`SELECT DISTINCT scp.province_code, COALESCE(pv.province_name_th, scp.province_code) AS name_th FROM coop_lending.facility f
+                          JOIN registry.cooperative_profile scp ON scp.org_id = f.borrower_org_id LEFT JOIN registry.province pv ON pv.province_code = scp.province_code ORDER BY 2`)).rows
+      : [];
+    await logAccess(c, 'read', 'coop_lending.facility', null);
+    const n = (x) => Number(x);
+    return {
+      officer, province, provinces, as_of: today, bank: bank.info(),
+      totals: {
+        lenders: tot.lenders, borrowers: tot.borrowers, facilities: tot.facilities, suspended: tot.suspended, limit_total: n(tot.limit_total),
+        disbursed: n(it.disbursed), paid_to_sellers: n(it.paid_to_sellers), outstanding: n(it.outstanding), asset_remaining: n(asset.remaining),
+        overdue_amount: n(it.overdue_amount) + n(asset.overdue), overdue_n: it.overdue_n, repaid: n(repaid.repaid), interest_paid: n(repaid.interest),
+        penalties: n(it.penalties), asset_active: asset.active,
+      },
+      kpi: {
+        evidence_complete_pct: pct(it.evidenced_n, it.funded_n), funded_n: it.funded_n,
+        sc_ontime_pct: pct(it.sc_ontime, it.sc_n), ac_ontime_pct: pct(it.ac_ontime, it.ac_n),
+        disputed: it.disputed, rejected: it.rejected, in_review: it.in_review,
+        satellite: { pass: it.sat_pass, review: it.sat_review, insufficient: it.sat_insufficient, na: it.sat_na },
+      },
+      plans: plans.map((p) => ({ status: p.status, n: p.n, amount: n(p.amount), rai: n(p.rai) })),
+      stages, by_province: byProvince.map((r) => ({ ...r, limit_total: n(r.limit_total), outstanding: n(r.outstanding), overdue: n(r.overdue), plan_rai: n(r.plan_rai) })),
+      facilities: facilities.map((f) => ({ ...f, ontime_pct: pct(f.paid_ontime, f.paid_n) })),
+      alerts, late: late.map((r) => ({ ...r, due: L.toDateStr(r.due) })),
+    };
+  }));
+}));
+/** รายการเบิกทั้งหมดในขอบเขต (CSV) — สำหรับตรวจสอบย้อนหลัง */
+gov.get('/transactions.csv', wrap(async (req, res) => {
+  const rows = await govTx(req, async (c) => {
+    const { province } = await officerScope(c, req);
+    const r = (await c.query(
+      `SELECT to_char(i.created_at AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM-DD') AS created, l.org_name AS lender, b.org_name AS borrower,
+              COALESCE(pv.province_name_th, scp.province_code) AS province, i.purpose, cp.season_label, st.name_th AS stage, fa.full_name AS farmer, i.seller_name,
+              i.description, i.doc_no, i.amount, i.status, i.satellite_result,
+              (SELECT COUNT(*) FROM coop_lending.evidence e WHERE e.item_id = i.item_id) AS evidence_n, i.farmer_confirmed_at IS NOT NULL AS farmer_confirmed,
+              to_char(i.funded_at AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM-DD') AS funded, i.sc_due_date, to_char(i.paid_at AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM-DD') AS paid, i.ac_due_date,
+              i.sc_penalty, i.ac_penalty, i.principal_outstanding,
+              (SELECT string_agg(t.bank_ref, ' ') FROM coop_lending.transfer_item ti JOIN coop_lending.bank_transfer t ON t.transfer_id = ti.transfer_id WHERE ti.item_id = i.item_id AND t.status = 'Succeeded') AS bank_refs
+         FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id ${SCOPE_FAC}
+         JOIN identity.organization l ON l.org_id = i.lender_org_id JOIN identity.organization b ON b.org_id = i.borrower_org_id
+         LEFT JOIN registry.province pv ON pv.province_code = scp.province_code LEFT JOIN identity.farmer fa ON fa.farmer_id = i.farmer_id
+         LEFT JOIN coop_lending.crop_plan cp ON cp.plan_id = i.plan_id LEFT JOIN coop_lending.crop_plan_stage st ON st.plan_id = i.plan_id AND st.seq = i.stage_seq
+        ORDER BY i.created_at DESC LIMIT 20000`, [province],
+    )).rows;
+    await logAccess(c, 'read', 'coop_lending.disbursement_item', null);
+    return r;
+  });
+  const cols = ['created', 'lender', 'borrower', 'province', 'purpose', 'season_label', 'stage', 'farmer', 'seller_name', 'description', 'doc_no', 'amount', 'status', 'satellite_result',
+    'evidence_n', 'farmer_confirmed', 'funded', 'sc_due_date', 'paid', 'ac_due_date', 'sc_penalty', 'ac_penalty', 'principal_outstanding', 'bank_refs'];
+  const cell = (v) => {
+    let t = v == null ? '' : (v instanceof Date ? L.toDateStr(v) : String(v));
+    if (/^[=+\-@]/.test(t)) t = `'${t}`; // กันสูตรใน Excel
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="coop-lending-${L.todayBangkok()}.csv"`);
+  res.send(`\uFEFF${[cols.join(','), ...rows.map((r) => cols.map((k) => cell(r[k])).join(','))].join('\n')}`);
+}));
+
 module.exports = {
-  savings, borrower, farmer, admin, _internal: { approveTransfer, settleTransfer },
+  savings, borrower, farmer, admin, gov, _internal: { approveTransfer, settleTransfer },
 };

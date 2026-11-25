@@ -421,6 +421,108 @@ async function suspendFacility(c, facilityId, reason, today = todayBangkok()) {
   return f;
 }
 
+// ---------------------------------------------------------------------------
+// สินเชื่อการผลิตแบบแบ่งงวด (grant_coop_lending_crop_plan.sql)
+// ---------------------------------------------------------------------------
+
+/**
+ * แม่แบบงวดตาม Concept Note ประเภท A — วันเป็นจำนวนวันนับจากวันปลูก (ข้าวรอบ 120 วัน)
+ * พืชอื่นปรับช่วงเวลาตามอายุพืช (cycle) — สัดส่วนเงินแต่ละงวดแก้ได้ตอนสร้างแผน
+ * satellite: none = ใช้ภาพหน้างาน, planted = ต้องเห็นการเริ่มรอบปลูก, growing = พืชกำลังเจริญเติบโต, harvested = เก็บเกี่ยวแล้ว
+ */
+const STAGE_TEMPLATE = [
+  { key: 'land_prep', name_th: 'เตรียมพื้นที่และปรับปรุงดิน', pct: 15, from: -30, to: -1, purposes: ['machinery_service', 'inputs'], satellite: 'none', check_th: 'ภาพถ่ายแปลงที่เตรียมดินแล้ว (มีพิกัดและเวลา)' },
+  { key: 'seed_inputs', name_th: 'จัดซื้อเมล็ดพันธุ์และปัจจัยการผลิต', pct: 20, from: -14, to: 7, purposes: ['inputs'], satellite: 'none', check_th: 'ใบสั่งซื้อ หลักฐานส่งมอบ และภาพปัจจัยที่แปลง' },
+  { key: 'planting', name_th: 'เพาะปลูกและลงมือดำเนินการ', pct: 15, from: 0, to: 21, purposes: ['machinery_service', 'inputs'], satellite: 'planted', check_th: 'ภาพถ่ายดาวเทียมพบการเริ่มรอบปลูก + ภาพแปลงหลังปลูก' },
+  { key: 'fertilize', name_th: 'ใส่ปุ๋ยและบำรุงรักษา', pct: 25, from: 21, to: 60, purposes: ['inputs', 'machinery_service'], satellite: 'growing', check_th: 'หลักฐานการจัดซื้อปุ๋ย + ภาพแปลง + ดาวเทียมพืชเจริญเติบโต' },
+  { key: 'care', name_th: 'ดูแลรักษาและติดตามการเจริญเติบโต', pct: 10, from: 60, to: 100, purposes: ['inputs', 'machinery_service'], satellite: 'growing', check_th: 'Satellite Monitoring และ AI ติดตามแปลง' },
+  { key: 'harvest', name_th: 'เก็บเกี่ยวและรวบรวมผลผลิต', pct: 15, from: 100, to: 130, purposes: ['machinery_service'], satellite: 'harvested', check_th: 'ดาวเทียมพบการเก็บเกี่ยว + หลักฐานผลผลิต/การรับซื้อ' },
+];
+const CROP_TEMPLATES = {
+  rice: { name_th: 'ข้าว (รอบ 120 วัน)', cycle: 120, commodities: ['RICE_JASMINE', 'RICE_PADDY'] },
+  corn: { name_th: 'ข้าวโพดเลี้ยงสัตว์ (รอบ 110 วัน)', cycle: 110, commodities: ['CORN_FEED'] },
+  cassava: { name_th: 'มันสำปะหลัง (รอบ 300 วัน)', cycle: 300, commodities: ['CASSAVA'] },
+};
+function templateFor(commodity) {
+  const key = Object.keys(CROP_TEMPLATES).find((k) => CROP_TEMPLATES[k].commodities.includes(commodity));
+  return key ? { key, ...CROP_TEMPLATES[key] } : null;
+}
+/** งวดของแผน: ช่วงวันที่จากวันปลูก และเงินแต่ละงวด (ปัดให้รวมเท่ายอดรวมพอดี) */
+function buildStages(templateKey, plantingDate, totalAmount, amounts) {
+  const t = CROP_TEMPLATES[templateKey];
+  if (!t) throw new Error('unknown_template');
+  const scale = t.cycle / 120;
+  const n = STAGE_TEMPLATE.length;
+  let planned;
+  if (Array.isArray(amounts) && amounts.length === n) {
+    planned = amounts.map((a) => round2(Number(a)));
+    if (planned.some((a) => !(a >= 0))) throw new Error('invalid_stage_amount');
+    if (Math.abs(planned.reduce((x, y) => x + y, 0) - totalAmount) > 0.01) throw new Error('stage_amounts_must_sum_to_total');
+  } else {
+    planned = STAGE_TEMPLATE.map((s) => round2(totalAmount * s.pct / 100));
+    planned[n - 1] = round2(totalAmount - planned.slice(0, -1).reduce((x, y) => x + y, 0));
+  }
+  return STAGE_TEMPLATE.map((s, i) => ({
+    seq: i + 1, stage_key: s.key, name_th: s.name_th, purposes: s.purposes, planned_amount: planned[i], satellite: s.satellite, check_method_th: s.check_th,
+    window_start: addDays(plantingDate, Math.round(s.from * (s.from < 0 ? 1 : scale))), window_end: addDays(plantingDate, Math.round(s.to * (s.to < 0 ? 1 : scale))),
+  }));
+}
+const stageSatelliteExpect = (stageKey) => (STAGE_TEMPLATE.find((s) => s.key === stageKey) || {}).satellite || 'none';
+
+/**
+ * ผลดาวเทียมของการตรวจงวด จากผล Plot AI ล่าสุดของแปลง (ai.v_latest_assessment)
+ * ใช้ประกอบภาพหน้างาน ไม่ปฏิเสธเอง: 'review' = สหกรณ์ออมทรัพย์ต้องระบุเหตุผลก่อนผ่านงวด
+ */
+function classifyStage(stageKey, a, { plantingDate, today = todayBangkok() } = {}) {
+  const expect = stageSatelliteExpect(stageKey);
+  if (expect === 'none') return { result: 'na', expect, notes: ['งวดนี้ตรวจด้วยภาพหน้างานและหลักฐานการซื้อ'] };
+  if (!a) return { result: 'insufficient', expect, notes: ['แปลงนี้ยังไม่มีผลประเมินจากภาพดาวเทียม — สั่งประเมินได้ที่หน้า AI ติดตามแปลง'] };
+  const asOf = toDateStr(a.assessed_at);
+  const age = daysBetween(asOf, today);
+  const out = {
+    expect, season_status: a.season_status || null, planting_date: toDateStr(a.planting_date), harvest_date: toDateStr(a.harvest_date), assessed_at: asOf, notes: [],
+  };
+  if (age > 30) return { ...out, result: 'insufficient', notes: [`ผลประเมินล่าสุดเก่า ${age} วัน — ควรสั่งประเมินใหม่`] };
+  const flags = a.flags || [];
+  if (flags.some((f) => f.code === 'LOW_DATA')) return { ...out, result: 'insufficient', notes: ['ภาพปลอดเมฆไม่พอ (ฤดูฝน) — ใช้ภาพหน้างานประกอบ'] };
+  const bad = flags.filter((f) => ['CROP_MISMATCH', 'AREA_MISMATCH'].includes(f.code) && (f.severity === 'high' || f.severity === 'medium'));
+  if (bad.length) return { ...out, result: 'review', notes: bad.map((f) => f.message_th || f.code) };
+  const st = a.season_status;
+  if (expect === 'planted') {
+    const ok = ['growing', 'new_season_starting'].includes(st) || (out.planting_date && plantingDate && out.planting_date >= addDays(plantingDate, -30));
+    return { ...out, result: ok ? 'pass' : 'review', notes: [ok ? 'ภาพดาวเทียมพบการเริ่มรอบปลูก' : 'ภาพดาวเทียมยังไม่พบการเริ่มรอบปลูกในแปลงนี้'] };
+  }
+  if (expect === 'growing') {
+    const ok = st === 'growing' && !flags.some((f) => f.code === 'NO_CROP_CYCLE');
+    return { ...out, result: ok ? 'pass' : 'review', notes: [ok ? 'พืชกำลังเจริญเติบโตตามรอบ' : 'ภาพดาวเทียมไม่พบพืชที่กำลังเจริญเติบโต'] };
+  }
+  const ok = st === 'harvested' || (out.harvest_date && plantingDate && out.harvest_date >= plantingDate);
+  return { ...out, result: ok ? 'pass' : 'review', notes: [ok ? 'ภาพดาวเทียมพบการเก็บเกี่ยวแล้ว' : 'ภาพดาวเทียมยังไม่พบการเก็บเกี่ยว'] };
+}
+
+/**
+ * วงเงินที่ใช้ไปแล้วของ facility:
+ *   รายการทั่วไป (ไม่ใช่แผน/เครื่องจักร): ยอดที่รออนุมัติ + เงินต้นคงค้าง
+ *   สินเชื่อเครื่องจักร: ยอดกู้ของรายการที่ยื่น/อนุมัติ/ผ่อนอยู่
+ *   แผนสินเชื่อการผลิตที่ยังไม่จบ: กันวงเงินทั้งแผน (หักเงินต้นที่ชำระคืนแล้ว) · แผนที่จบแล้ว: เงินต้นคงค้าง
+ */
+async function facilityUsage(c, facilityId) {
+  const r = (await c.query(
+    `SELECT
+       (SELECT COALESCE(SUM(CASE WHEN status IN ('Draft','EvidencePending','EvidenceComplete') THEN amount ELSE principal_outstanding END), 0)
+          FROM coop_lending.disbursement_item WHERE facility_id = $1 AND purpose <> 'asset' AND plan_id IS NULL
+           AND status NOT IN ('Rejected','Cancelled','Disputed'))::numeric AS items,
+       (SELECT COALESCE(SUM(loan_amount), 0) FROM coop_lending.asset_loan WHERE facility_id = $1 AND status IN ('Submitted','Approved','Active'))::numeric AS asset,
+       (SELECT COALESCE(SUM(CASE WHEN p.status IN ('Submitted','Active','Suspended')
+                   THEN p.total_amount - COALESCE((SELECT SUM(i.amount - i.principal_outstanding) FROM coop_lending.disbursement_item i
+                                                    WHERE i.plan_id = p.plan_id AND i.status IN ('Funded','Paid')), 0)
+                   ELSE COALESCE((SELECT SUM(i.principal_outstanding) FROM coop_lending.disbursement_item i WHERE i.plan_id = p.plan_id), 0) END), 0)
+          FROM coop_lending.crop_plan p WHERE p.facility_id = $1 AND p.status NOT IN ('Rejected','Cancelled'))::numeric AS plans`, [facilityId],
+  )).rows[0];
+  const items = Number(r.items); const asset = Number(r.asset); const plans = Number(r.plans);
+  return { items, asset, plans, used: round2(items + asset + plans) };
+}
+
 let timer = null;
 function start() {
   if (timer || process.env.NODE_ENV === 'test') return;
@@ -438,5 +540,6 @@ module.exports = {
   PURPOSES, PURPOSE_TH, round2, todayBangkok, isDate, toDateStr, addDays, addMonths, daysBetween,
   isBusinessDay, addBusinessDays, businessDaysLate, accrueInterest, latePenalty, annuitySchedule, affordability,
   allocateRepayment, evidenceRequirements, missingEvidence, classifySatellite, namesMatch,
+  STAGE_TEMPLATE, CROP_TEMPLATES, templateFor, buildStages, classifyStage, facilityUsage,
   loadSettings, loadHolidays, logEvent, checkSatellite, evaluateItem, accrueFacility, installmentsDue, slaSweep, suspendFacility, start,
 };

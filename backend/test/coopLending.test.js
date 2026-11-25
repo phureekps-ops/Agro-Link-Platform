@@ -106,3 +106,31 @@ test('sandbox bank driver', async () => {
   assert.equal(ok.bank_ref, (await d.transfer({ from: { account_no: '1231234567' }, idempotencyKey: 'k1' })).bank_ref);
   assert.equal((await d.transfer({ from: { account_no: '0001234567' }, idempotencyKey: 'k2' })).status, 'Failed');
 });
+
+test('crop plan stages: template split, scaled windows, custom amounts must add up', () => {
+  const s = L.buildStages('rice', '2027-06-01', 60000);
+  assert.equal(s.length, 6);
+  assert.deepEqual(s.map((x) => x.planned_amount), [9000, 12000, 9000, 15000, 6000, 9000]);
+  assert.equal(s[0].window_start, '2027-05-02');
+  assert.equal(s.at(-1).window_start, '2027-09-09');
+  const odd = L.buildStages('rice', '2027-06-01', 10001);
+  assert.equal(L.round2(odd.reduce((a, x) => a + x.planned_amount, 0)), 10001);
+  const cassava = L.buildStages('cassava', '2027-06-01', 30000);
+  assert.ok(cassava.at(-1).window_start > '2028-01-01'); // cycle 300 days
+  assert.throws(() => L.buildStages('rice', '2027-06-01', 60000, [1, 2, 3, 4, 5, 6]), /stage_amounts/);
+  assert.equal(L.templateFor('RICE_JASMINE').key, 'rice');
+  assert.equal(L.templateFor('DURIAN'), null);
+});
+
+test('stage satellite check: none for paperwork stages, planted/growing/harvested otherwise', () => {
+  const today = '2027-07-10';
+  const a = (x) => ({ assessed_at: '2027-07-05', flags: [], ...x });
+  assert.equal(L.classifyStage('land_prep', null, { plantingDate: '2027-06-01', today }).result, 'na');
+  assert.equal(L.classifyStage('planting', null, { plantingDate: '2027-06-01', today }).result, 'insufficient');
+  assert.equal(L.classifyStage('planting', a({ season_status: 'growing' }), { plantingDate: '2027-06-01', today }).result, 'pass');
+  assert.equal(L.classifyStage('planting', a({ season_status: 'no_season' }), { plantingDate: '2027-06-01', today }).result, 'review');
+  assert.equal(L.classifyStage('planting', a({ assessed_at: '2027-05-01', season_status: 'growing' }), { plantingDate: '2027-06-01', today }).result, 'insufficient');
+  assert.equal(L.classifyStage('fertilize', a({ season_status: 'growing', flags: [{ code: 'LOW_DATA', severity: 'info' }] }), { plantingDate: '2027-06-01', today }).result, 'insufficient');
+  assert.equal(L.classifyStage('fertilize', a({ season_status: 'growing', flags: [{ code: 'CROP_MISMATCH', severity: 'high' }] }), { plantingDate: '2027-06-01', today }).result, 'review');
+  assert.equal(L.classifyStage('harvest', a({ season_status: 'harvested' }), { plantingDate: '2027-06-01', today }).result, 'pass');
+});

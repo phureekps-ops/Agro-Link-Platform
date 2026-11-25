@@ -88,6 +88,14 @@ const CL = (() => {
     transfer_already_pending: "มีคำสั่งโอนของรายการนี้รออนุมัติอยู่แล้ว", item_state_changed: "สถานะรายการเปลี่ยนไปแล้ว กรุณาโหลดใหม่",
     application_already_open: "มีคำขอที่รอพิจารณาอยู่แล้ว", program_limit_exhausted: "วงเงินโครงการไม่พอ", over_per_borrower_limit: "เกินเพดานต่อสหกรณ์ผู้กู้",
     platform_account_not_set: "ผู้ดูแลแพลตฟอร์มยังไม่ได้ตั้งบัญชีรับค่าธรรมเนียม", file_too_large: "ไฟล์ใหญ่เกิน 5 MB",
+    plan_not_active: "แผนการผลิตยังไม่อนุมัติหรือถูกระงับอยู่", no_open_stage: "แผนนี้ยังไม่มีงวดที่เปิดให้เบิก", over_stage_amount: "เกินเงินของงวดนี้",
+    purpose_not_in_stage: "วัตถุประสงค์นี้ไม่อยู่ในงวดปัจจุบัน", farmer_not_in_plan: "เกษตรกรไม่ตรงกับแผน", stage_not_open: "งวดนี้ยังไม่เปิด (ต้องผ่านงวดก่อนหน้า)",
+    stage_check_not_submitted: "ยังไม่ได้ส่งผลตรวจแปลงของงวดนี้", satellite_review_needs_reason: "ผลดาวเทียมต้องตรวจเพิ่ม — ระบุเหตุผลที่ให้ผ่าน (อย่างน้อย 5 ตัวอักษร)",
+    plan_suspended: "แผนการผลิตของรายการนี้ถูกระงับอยู่", plan_already_decided: "แผนนี้พิจารณาไปแล้ว", plan_not_suspended: "แผนนี้ไม่ได้ถูกระงับ",
+    plan_not_cancellable: "ยกเลิกได้เฉพาะแผนที่ยังไม่อนุมัติ", crop_not_supported: "พืชของแปลงนี้ยังไม่มีแบบงวด (รองรับข้าว ข้าวโพดเลี้ยงสัตว์ มันสำปะหลัง)",
+    plot_not_found_or_not_member: "ไม่พบแปลง หรือเจ้าของแปลงไม่ใช่สมาชิกของสหกรณ์", program_has_no_production_purpose: "โครงการนี้ไม่ได้ให้กู้เพื่อปัจจัยการผลิต",
+    stage_amounts_must_sum_to_total: "ยอดรายงวดรวมกันต้องเท่ากับยอดทั้งแผน", stage_not_holdable: "ระงับได้เฉพาะงวดที่เปิดอยู่หรือรอตรวจ", facility_expired: "วงเงินหมดอายุแล้ว",
+    duplicate_open_plan: "แปลงนี้มีแผนที่ยังไม่จบอยู่แล้ว", check_file_already_used: "ภาพนี้เคยใช้ตรวจแปลงแล้ว",
     invalid_text: "ข้อความสั้นหรือยาวเกินไป", invalid_number: "ตัวเลขไม่ถูกต้อง", only_admin_can_manage_staff: "เฉพาะผู้ดูแลหรือผู้จัดการเท่านั้นที่จัดการเจ้าหน้าที่ได้",
   };
   function errText(err) {
@@ -175,6 +183,11 @@ const CL = (() => {
       .cl-toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(30px); opacity:0; color:#fff; padding:11px 18px; border-radius:12px; font-size:14px; max-width:92vw; transition:all .25s; z-index:50; box-shadow:0 6px 24px rgba(0,0,0,.2); }
       .cl-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
       .cl-empty { color:#7b867e; font-size:14px; padding:6px 0; }
+      .cl-track { display:flex; gap:4px; margin:10px 0 4px; } .cl-track > div { flex:1; min-width:0; border-radius:8px; padding:6px 7px; font-size:11.5px; line-height:1.3; border:1px solid transparent; }
+      .cl-track .Locked { background:#f3f5f3; color:#8a948d; } .cl-track .Open { background:#e3eefb; color:#0b5394; border-color:#9cc0e8; font-weight:700; }
+      .cl-track .CheckSubmitted { background:#fff2cc; color:#6b4a00; border-color:#f0c36d; font-weight:700; } .cl-track .Passed { background:#ddf3e4; color:#1f6b38; }
+      .cl-track .Held { background:#fde8e6; color:#a1261d; border-color:#f1a59e; font-weight:700; } .cl-track b { display:block; font-size:12px; }
+      .cl-bar { height:8px; background:#eef1ee; border-radius:8px; overflow:hidden; } .cl-bar > i { display:block; height:100%; background: var(--green-700,#2e7d32); }
       details.cl-more summary { cursor:pointer; font-size:13px; color:#0b5394; margin-top:8px; }
     `;
     document.head.appendChild(s);
@@ -190,7 +203,20 @@ const CL = (() => {
     if (w) w.location.href = url; else window.open(url, "_blank");
   }
 
+  const PLAN_ST = { Submitted: ["รอสหกรณ์ออมทรัพย์อนุมัติ", "#8a5a00", "#fff2cc"], Active: ["กำลังดำเนินการ", "#0b5394", "#e3eefb"], Suspended: ["ระงับชั่วคราว", "#a1261d", "#fde8e6"],
+    Completed: ["ครบทุกงวด", "#1f6b38", "#ddf3e4"], Rejected: ["ไม่อนุมัติ", "#a1261d", "#fde8e6"], Cancelled: ["ยกเลิก", "#6b7a70", "#eef1ee"] };
+  const STAGE_ST = { Locked: "ยังไม่ถึง", Open: "เปิดให้เบิก", CheckSubmitted: "รอตรวจผลแปลง", Passed: "ผ่านแล้ว", Held: "ระงับ" };
+  /** แถบความคืบหน้ารายงวดของแผนสินเชื่อการผลิต */
+  function planTrack(p) {
+    return `<div class="cl-track">${(p.stages || []).map((st) => `<div class="${st.status}" title="${esc(st.check_method_th)}"><b>${st.seq}. ${esc(st.name_th)}</b>${esc(STAGE_ST[st.status])} · ${baht(st.planned_amount)}${Number(st.disbursed) ? `<br>เบิกแล้ว ${baht(st.disbursed)}` : ""}</div>`).join("")}</div>`;
+  }
+  function satNotes(d) {
+    if (!d) return "";
+    return `${(d.notes || []).map((n) => esc(n)).join(" · ")}${d.season_status ? ` <span class="cl-muted">(สถานะฤดู: ${esc(d.season_status)}${d.planting_date ? `, ปลูก ${esc(date(d.planting_date))}` : ""}${d.assessed_at ? `, ประเมิน ${esc(date(d.assessed_at))}` : ""})</span>` : ""}`;
+  }
+
   return {
+    PLAN_ST, STAGE_ST, planTrack, satNotes,
     init, get, post, patch, put, upload, esc, baht, num, date, dt, PURPOSE, ITEM_ST, TR_ST, TR_KIND, SAT, EVIDENCE, BANKS, bankName, pill,
     errText, toast, act, formData, bankOptions, accLabel, sandboxBanner, openFile,
   };

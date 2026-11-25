@@ -52,6 +52,7 @@
     };
     badge("queue", ov.queue); badge("transfers", ov.pending_transfers); badge("applications", ov.pending_applications);
     badge("assets", ov.pending_asset_loans); badge("notices", ov.unread_notices);
+    CL.get("/savings/crop-plans").then((ps) => badge("plans", ps.filter((p) => p.status === "Submitted" || p.stages.some((x) => x.status === "CheckSubmitted")).length)).catch(() => {});
     return true;
   }
   async function loadAccounts() { accounts = await CL.get("/savings/bank-accounts"); }
@@ -66,7 +67,7 @@
     view.innerHTML = '<div class="cl-empty">กำลังโหลด…</div>';
     try {
       await ({
-        queue: renderQueue, transfers: renderTransfers, applications: renderApplications, assets: renderAssets, facilities: renderFacilities,
+        queue: renderQueue, plans: renderPlans, transfers: renderTransfers, applications: renderApplications, assets: renderAssets, facilities: renderFacilities,
         programs: renderPrograms, money: renderMoney, setup: renderSetup, notices: renderNotices,
       }[tab])();
     } catch (err) {
@@ -162,6 +163,72 @@
         <span class="cl-muted">ผู้อนุมัติต้องไม่ใช่ ${esc(t.prepared_by_label)}</span></div>` : ""}
     </div>`;
   }
+  // ----- แผนสินเชื่อการผลิตแบบแบ่งงวด ------------------------------------------
+  async function renderPlans() {
+    const plans = await CL.get("/savings/crop-plans");
+    const todo = plans.filter((p) => p.status === "Submitted" || (p.status === "Active" && p.stages.some((x) => x.status === "CheckSubmitted")));
+    const running = plans.filter((p) => !todo.includes(p) && ["Active", "Suspended"].includes(p.status));
+    const rest = plans.filter((p) => !todo.includes(p) && !running.includes(p));
+    view.innerHTML = `<div class="cl-card" style="background:#f4faf5">เงินออกตามรอบการผลิตจริง — อนุมัติแผนแล้วงวดที่ 1 เปิดให้เบิก · งวดถัดไปเปิดเมื่อท่าน<b>ผ่าน</b>ผลตรวจแปลงของงวดก่อน
+        (ภาพหน้างานจากสหกรณ์การเกษตร + ผลภาพถ่ายดาวเทียมที่ระบบแนบ) · พบความผิดปกติกด<b>ระงับ</b> แผนทั้งแผนจะหยุดเบิกและหยุดโอนทันที</div>
+      <div class="section-title">รอท่านพิจารณา (${todo.length})</div>${todo.map(planCard).join("") || '<div class="cl-empty">ไม่มี</div>'}
+      <div class="section-title">กำลังดำเนินการ / ระงับ (${running.length})</div>${running.map(planCard).join("") || '<div class="cl-empty">ไม่มี</div>'}
+      ${rest.length ? `<details class="cl-more"><summary>จบแล้ว / ไม่อนุมัติ / ยกเลิก (${rest.length})</summary>${rest.map(planCard).join("")}</details>` : ""}`;
+    view.onclick = planClick;
+  }
+  function planCard(p) {
+    const chk = p.stages.find((x) => x.status === "CheckSubmitted");
+    const held = p.stages.find((x) => x.status === "Held");
+    let act = "";
+    if (p.status === "Submitted") {
+      act = `<table class="cl-table" style="margin-top:8px"><tr><th>งวด</th><th>กิจกรรม</th><th>ช่วงเวลา</th><th>วิธีตรวจ</th><th class="r">ยอด</th></tr>
+        ${p.stages.map((st) => `<tr><td>${st.seq}</td><td>${esc(st.name_th)}</td><td>${esc(date(st.window_start))} – ${esc(date(st.window_end))}</td><td class="cl-muted">${esc(st.check_method_th)}</td><td class="r">${baht(st.planned_amount)}</td></tr>`).join("")}</table>
+        <div class="cl-actions cl-inline"><button class="cl-btn" data-pact="approve">อนุมัติแผน (เปิดงวดที่ 1)</button><input class="p-reason" placeholder="เหตุผลกรณีไม่อนุมัติ"><button class="cl-btn bad" data-pact="reject">ไม่อนุมัติ</button></div>`;
+    } else if (chk) {
+      act = `<div class="cl-card" style="background:#fffaf0;margin:8px 0 0;box-shadow:none;border:1px solid #f0c36d">
+          <b>ผลตรวจแปลงงวดที่ ${chk.seq}: ${esc(chk.name_th)}</b> · ส่งเมื่อ ${esc(dt(chk.check_submitted_at))}
+          <div class="cl-line">${pill(CL.SAT[chk.satellite_result])} ${CL.satNotes(chk.satellite_detail)}</div>
+          ${chk.check_note ? `<div class="cl-line">บันทึกจากสหกรณ์: ${esc(chk.check_note)}</div>` : ""}
+          <div class="cl-line">เบิกในงวดนี้แล้ว ${baht(chk.disbursed)} จาก ${baht(chk.planned_amount)} (${chk.items} รายการ)</div>
+          <div class="cl-ev">${chk.has_check_file ? `<a href="#" data-sfile="${chk.seq}">📷 เปิดภาพหน้างาน</a>` : ""}</div>
+          <div class="cl-actions cl-inline" data-stage="${chk.seq}"><input class="p-note" placeholder="${chk.satellite_result === "review" ? "ต้องระบุเหตุผลที่ให้ผ่าน" : "หมายเหตุ (ถ้ามี)"}" style="min-width:260px">
+            <button class="cl-btn" data-pact="pass">ผ่าน — เปิดงวดถัดไป</button><button class="cl-btn bad" data-pact="hold">ระงับแผน</button></div></div>`;
+    } else if (p.status === "Active") {
+      const cur = p.stages.find((x) => x.status === "Open");
+      act = cur ? `<div class="cl-actions cl-inline" data-stage="${cur.seq}"><span class="cl-line">งวดที่ ${cur.seq} เปิดอยู่ — รอสหกรณ์การเกษตรส่งผลตรวจ</span>
+        <input class="p-note" placeholder="เหตุผลที่ระงับ"><button class="cl-btn bad" data-pact="hold">ระงับแผน</button></div>` : "";
+    } else if (p.status === "Suspended") {
+      act = `<div class="cl-flag">ระงับอยู่: ${esc(p.suspended_reason || "")}</div>${held && held.has_check_file ? `<div class="cl-ev"><a href="#" data-sfile="${held.seq}">📷 ภาพหน้างานงวดที่ ${held.seq}</a></div>` : ""}
+        <div class="cl-actions"><button class="cl-btn" data-pact="resume">ยกเลิกการระงับ (เปิดงวดเดิมให้ส่งผลตรวจใหม่)</button></div>`;
+    }
+    return `<div class="cl-card" data-plan="${p.plan_id}">
+      <div class="cl-row"><div><b>${esc(p.borrower_name)}</b> → สมาชิก ${esc(p.farmer_name)} · ${esc(p.commodity_name || p.commodity_code)} ${p.area_rai} ไร่ · ${esc(p.season_label)}</div><div>${pill(CL.PLAN_ST[p.status])}</div></div>
+      <div class="cl-line">วงเงินทั้งแผน <b>${baht(p.total_amount)}</b> (${baht(Number(p.total_amount) / Number(p.area_rai))}/ไร่) · ปลูก ${esc(date(p.planting_date))}${p.note ? ` · ${esc(p.note)}` : ""}</div>
+      ${CL.planTrack(p)}${act}</div>`;
+  }
+  async function planClick(e) {
+    const card = e.target.closest("[data-plan]");
+    if (!card) return;
+    const id = card.dataset.plan;
+    const f = e.target.closest("[data-sfile]");
+    if (f) { e.preventDefault(); CL.openFile(`/savings/crop-plans/${id}/stages/${f.dataset.sfile}/file`); return; }
+    const b = e.target.closest("[data-pact]");
+    if (!b) return;
+    const a = b.dataset.pact;
+    const row = b.closest("[data-stage]");
+    let r = null;
+    if (a === "approve") r = await CL.act(b, () => CL.post(`/savings/crop-plans/${id}/approve`), "อนุมัติแล้ว — งวดที่ 1 เปิดให้เบิก");
+    else if (a === "reject") r = await CL.act(b, () => CL.post(`/savings/crop-plans/${id}/reject`, { reason: card.querySelector(".p-reason").value }), "แจ้งไม่อนุมัติแล้ว");
+    else if (a === "resume") r = await CL.act(b, () => CL.post(`/savings/crop-plans/${id}/resume`), "ยกเลิกการระงับแล้ว");
+    else if (a === "pass") r = await CL.act(b, () => CL.post(`/savings/crop-plans/${id}/stages/${row.dataset.stage}/pass`, { note: row.querySelector(".p-note").value || undefined }),
+      (x) => (x.completed ? "ผ่านงวดสุดท้าย — แผนครบทุกงวด" : `ผ่านแล้ว — เปิดงวดที่ ${x.opened.seq} ${x.opened.name_th}`));
+    else if (a === "hold") {
+      if (!window.confirm("ระงับแผนนี้? การเบิกและการโอนของแผนจะหยุดทันที")) return;
+      r = await CL.act(b, () => CL.post(`/savings/crop-plans/${id}/stages/${row.dataset.stage}/hold`, { note: row.querySelector(".p-note").value }), "ระงับแผนแล้ว — แจ้งสหกรณ์การเกษตรแล้ว");
+    }
+    if (r) { await loadOverview(); await render(); }
+  }
+
   async function renderTransfers() {
     const list = await CL.get("/savings/transfers");
     const pend = list.filter((t) => t.status === "PendingApproval");

@@ -9,7 +9,7 @@
   const { esc, baht, date, dt, pill } = CL;
   const view = document.getElementById("view");
   let ov = null;
-  let tab = "items";
+  let tab = "plans";
   let facilities = [];
   let accounts = [];
   let members = null;
@@ -45,7 +45,8 @@
       const old = b.querySelector(".cl-count"); if (old) old.remove();
       if (n > 0) b.insertAdjacentHTML("beforeend", `<span class="cl-count">${n}</span>`);
     };
-    badge("items", ov.to_pay + ov.drafts); badge("transfers", ov.pending_transfers); badge("notices", ov.unread_notices);
+    badge("items", ov.to_pay + ov.drafts);
+    CL.get("/coop-lending/crop-plans").then((ps) => badge("plans", ps.filter((p) => p.status === "Suspended" || (p.status === "Active" && p.stages.some((x) => x.status === "Open" || x.status === "Held"))).length)).catch(() => {}); badge("transfers", ov.pending_transfers); badge("notices", ov.unread_notices);
   }
   async function loadCommon() {
     [facilities, accounts] = await Promise.all([CL.get("/coop-lending/facilities"), CL.get("/coop-lending/bank-accounts")]);
@@ -62,7 +63,7 @@
     try {
       await loadCommon();
       await ({
-        items: renderItems, transfers: renderTransfers, facilities: renderFacilities, assets: renderAssets, programs: renderPrograms, accounts: renderAccounts, notices: renderNotices,
+        plans: renderPlans, items: renderItems, transfers: renderTransfers, facilities: renderFacilities, assets: renderAssets, programs: renderPrograms, accounts: renderAccounts, notices: renderNotices,
       }[tab])();
     } catch (err) {
       view.innerHTML = `<div class="cl-card cl-late">โหลดข้อมูลไม่สำเร็จ: ${esc(CL.errText(err))}</div>`;
@@ -224,6 +225,133 @@
     }
     if (r) refresh();
   }
+
+  // ----- สินเชื่อการผลิตแบบแบ่งงวด ---------------------------------------------
+  // แผน = เกษตรกร × แปลง × ฤดู · งวดถัดไปเปิดเมื่อสหกรณ์ออมทรัพย์ "ผ่าน" ผลตรวจแปลงของงวดก่อน (ภาพหน้างาน + ดาวเทียม)
+  async function renderPlans() {
+    const [plans, tpl] = await Promise.all([CL.get("/coop-lending/crop-plans"), CL.get("/coop-lending/crop-templates")]);
+    if (!members) members = await CL.get("/coop-lending/members");
+    const active = facilities.filter((f) => f.status === "Active" && f.purposes.includes("inputs"));
+    const supported = new Set(Object.values(tpl.templates).flatMap((t) => t.commodities));
+    const plotOpts = members.flatMap((m) => m.plots.filter((p) => supported.has(p.commodity_code)).map((p) => ({ ...p, farmer: m.full_name, member_no: m.member_no })));
+    const open = plans.filter((p) => ["Submitted", "Active", "Suspended"].includes(p.status));
+    const done = plans.filter((p) => !["Submitted", "Active", "Suspended"].includes(p.status));
+    view.innerHTML = `
+      <div class="cl-card" style="background:#f4faf5"><b>สินเชื่อการผลิตแบบแบ่งงวด:</b> วงเงินของสมาชิกแต่ละรายถูกแบ่งตามรอบการเพาะปลูก
+        (เตรียมดิน → ปัจจัย/เมล็ดพันธุ์ → เพาะปลูก → ใส่ปุ๋ย → ดูแลรักษา → เก็บเกี่ยว) — เบิกได้เฉพาะงวดที่เปิดอยู่
+        และงวดถัดไปจะเปิดเมื่อส่งผลตรวจแปลง (ภาพหน้างาน + ผลภาพถ่ายดาวเทียมที่ระบบแนบให้อัตโนมัติ) แล้วสหกรณ์ออมทรัพย์ให้ผ่าน</div>
+      <div class="cl-card"><h3>ยื่นแผนสินเชื่อการผลิตของสมาชิก</h3>
+        ${!active.length ? '<div class="cl-muted">ยังไม่มีวงเงินที่ให้กู้เพื่อปัจจัยการผลิต — ยื่นขอกู้ที่แท็บ "ขอกู้"</div>'
+          : !plotOpts.length ? '<div class="cl-muted">ยังไม่มีสมาชิกที่มีแปลงข้าว ข้าวโพดเลี้ยงสัตว์ หรือมันสำปะหลังที่ลงทะเบียนไว้</div>'
+          : `<form id="planForm" class="cl-form">
+          <div><label>วงเงิน</label><select name="facility_id">${active.map((f) => `<option value="${f.facility_id}">${esc(f.lender_name)} — คงเหลือ ${baht(f.available)}</option>`).join("")}</select></div>
+          <div><label>สมาชิก / แปลง</label><select name="unit_id">${plotOpts.map((p) => `<option value="${p.unit_id}">${esc(p.farmer)}${p.member_no ? ` (${esc(p.member_no)})` : ""} — ${esc(p.commodity_code)} ${p.area_rai} ไร่</option>`).join("")}</select></div>
+          <div><label>ฤดูการผลิต</label><input name="season_label" value="นาปี ${new Date().getFullYear() + 543}" required></div>
+          <div><label>วันที่คาดว่าจะปลูก</label><input type="date" name="planting_date" required value="${new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10)}"></div>
+          <div><label>วงเงินทั้งแผน (บาท)</label><input type="number" name="total_amount" min="1000" step="100" required></div>
+          <div><button type="button" class="cl-btn ghost" id="planPreview">คำนวณงวด</button></div>
+          <div class="wide" id="planStages"></div>
+          <div class="wide"><label>หมายเหตุถึงสหกรณ์ออมทรัพย์</label><input name="note" placeholder="เช่น ใช้พันธุ์ กข15 ทำนาหว่านน้ำตม"></div>
+        </form>`}
+      </div>
+      <div class="section-title">แผนที่กำลังดำเนินการ (${open.length})</div>${open.map(planCard).join("") || '<div class="cl-empty">ยังไม่มี</div>'}
+      ${done.length ? `<details class="cl-more"><summary>แผนที่จบแล้ว / ไม่อนุมัติ (${done.length})</summary>${done.map(planCard).join("")}</details>` : ""}`;
+    const form = document.getElementById("planForm");
+    if (form) bindPlanForm(form);
+    view.onclick = planClick;
+  }
+  function bindPlanForm(form) {
+    const box = document.getElementById("planStages");
+    let preview = null;
+    const run = async (btn) => {
+      const d = CL.formData(form);
+      if (!d.total_amount) { CL.toast("ใส่วงเงินทั้งแผนก่อน", true); return; }
+      preview = await CL.act(btn, () => CL.post("/coop-lending/crop-plans/preview", { unit_id: d.unit_id, planting_date: d.planting_date, total_amount: Number(d.total_amount) }));
+      if (!preview) return;
+      box.innerHTML = `<div class="cl-line">${esc(preview.template.name_th)} · ${preview.area_rai} ไร่ · เฉลี่ย ${baht(preview.per_rai)} ต่อไร่ — ปรับยอดรายงวดได้ (รวมต้องเท่ากับยอดทั้งแผน)</div>
+        <table class="cl-table"><tr><th>งวด</th><th>กิจกรรม</th><th>ช่วงเวลา</th><th>ใช้เบิก</th><th>วิธีตรวจก่อนเปิดงวดถัดไป</th><th class="r">ยอด (บาท)</th></tr>
+        ${preview.stages.map((st) => `<tr><td>${st.seq}</td><td>${esc(st.name_th)}</td><td>${esc(date(st.window_start))} – ${esc(date(st.window_end))}</td>
+          <td>${st.purposes.map((x) => esc(CL.PURPOSE[x])).join(", ")}</td><td class="cl-muted">${esc(st.check_method_th)}</td>
+          <td class="r"><input type="number" class="st-amt" step="0.01" min="0" value="${st.planned_amount}" style="width:110px;text-align:right"></td></tr>`).join("")}
+        <tr><td colspan="5" class="r"><b>รวม</b></td><td class="r"><b id="stSum">${baht(Number(form.total_amount.value))}</b></td></tr></table>
+        <div class="cl-actions"><button type="button" class="cl-btn" id="planSubmit">ยื่นแผนให้สหกรณ์ออมทรัพย์พิจารณา</button></div>`;
+      box.querySelectorAll(".st-amt").forEach((i) => { i.oninput = () => { document.getElementById("stSum").textContent = baht([...box.querySelectorAll(".st-amt")].reduce((a, x) => a + Number(x.value || 0), 0)); }; });
+      document.getElementById("planSubmit").onclick = async (e) => {
+        const d2 = CL.formData(form);
+        const amounts = [...box.querySelectorAll(".st-amt")].map((x) => Number(x.value || 0));
+        const r = await CL.act(e.target, () => CL.post("/coop-lending/crop-plans", { ...d2, total_amount: Number(d2.total_amount), stage_amounts: amounts }), "ยื่นแผนแล้ว — รอสหกรณ์ออมทรัพย์อนุมัติ");
+        if (r) refresh();
+      };
+    };
+    document.getElementById("planPreview").onclick = (e) => run(e.target);
+    ["unit_id", "planting_date"].forEach((n) => { form[n].onchange = () => { if (preview) run(document.getElementById("planPreview")); }; });
+  }
+  function planCard(p) {
+    const cur = (p.stages || []).find((st) => ["Open", "CheckSubmitted", "Held"].includes(st.status));
+    const used = (p.stages || []).reduce((a, st) => a + Number(st.disbursed), 0);
+    let act = "";
+    if (p.status === "Submitted") act = '<div class="cl-actions"><button class="cl-btn bad" data-pact="cancel">ยกเลิกแผน</button></div>';
+    if (p.status === "Active" && cur && cur.status === "Open") {
+      const left = Number(cur.planned_amount) - Number(cur.committed);
+      act = `<div class="cl-line"><b>งวดที่ ${cur.seq} ${esc(cur.name_th)}</b> เปิดอยู่ · เบิกได้อีก ${baht(left)} · ช่วง ${esc(date(cur.window_start))} – ${esc(date(cur.window_end))}</div>
+        <div class="cl-actions cl-inline" data-stage="${cur.seq}">
+          <select class="pi-purpose">${cur.purposes.map((x) => `<option value="${x}">${esc(CL.PURPOSE[x])}</option>`).join("")}</select>
+          <input class="pi-q" placeholder="ค้นชื่อร้าน/ผู้ให้บริการ"><select class="pi-seller"></select>
+          <input class="pi-desc" placeholder="รายการ เช่น เมล็ดพันธุ์ กข15 20 ถุง"><input class="pi-amt" type="number" min="1" step="0.01" placeholder="ยอด (บาท)" style="min-width:110px">
+          <button class="cl-btn" data-pact="item">สร้างรายการเบิกของงวดนี้</button></div>
+        <div class="cl-actions cl-inline" data-stage="${cur.seq}">
+          <span class="cl-muted">เมื่อทำกิจกรรมงวดนี้เสร็จ: ${esc(cur.check_method_th)}</span>
+          <input type="file" class="pc-file" accept="image/*,application/pdf"><input class="pc-note" placeholder="บันทึกจากการลงพื้นที่">
+          <button class="cl-btn blue" data-pact="check">ส่งผลตรวจแปลง</button></div>`;
+    } else if (cur && cur.status === "CheckSubmitted") {
+      act = `<div class="cl-line">⏳ ส่งผลตรวจงวดที่ ${cur.seq} แล้ว — รอสหกรณ์ออมทรัพย์พิจารณา · ${pill(CL.SAT[cur.satellite_result])} ${CL.satNotes(cur.satellite_detail)}</div>`;
+    } else if (p.status === "Suspended" && cur) {
+      act = `<div class="cl-flag">ระงับ: ${esc(p.suspended_reason || cur.decision_note || "")}</div><div class="cl-line">แก้ไขตามที่สหกรณ์ออมทรัพย์แจ้ง แล้วติดต่อให้พิจารณาใหม่ — ระหว่างนี้เบิกเงินและโอนเงินของแผนนี้ไม่ได้</div>`;
+    }
+    return `<div class="cl-card" data-plan="${p.plan_id}">
+      <div class="cl-row"><div><b>${esc(p.farmer_name)}</b> · ${esc(p.commodity_name || p.commodity_code)} ${p.area_rai} ไร่ · ${esc(p.season_label)} · ปลูก ${esc(date(p.planting_date))}</div>
+        <div>${pill(CL.PLAN_ST[p.status])}</div></div>
+      <div class="cl-line">วงเงินทั้งแผน <b>${baht(p.total_amount)}</b> (${baht(Number(p.total_amount) / Number(p.area_rai))}/ไร่) · เบิกจ่ายแล้ว ${baht(used)} · ผู้ให้กู้ ${esc(p.lender_name)}
+        ${p.status === "Rejected" ? `<span class="cl-late"> — ${esc(p.decided_reason)}</span>` : ""}</div>
+      ${CL.planTrack(p)}${act}</div>`;
+  }
+  async function planClick(e) {
+    const b = e.target.closest("[data-pact]");
+    if (!b) return;
+    const card = b.closest("[data-plan]");
+    const id = card.dataset.plan;
+    const row = b.closest("[data-stage]");
+    let r = null;
+    if (b.dataset.pact === "cancel") {
+      if (!window.confirm("ยกเลิกแผนนี้?")) return;
+      r = await CL.act(b, () => CL.post(`/coop-lending/crop-plans/${id}/cancel`), "ยกเลิกแล้ว");
+    } else if (b.dataset.pact === "item") {
+      const seller = row.querySelector(".pi-seller").value;
+      if (!seller) { CL.toast("ค้นและเลือกผู้ขายก่อน", true); return; }
+      const p = (await CL.get("/coop-lending/crop-plans")).find((x) => x.plan_id === id);
+      const payout = accounts.find((a) => a.purpose === "payout" && a.owner_type === "organization" && a.owner_id === seller && a.verification_status === "Verified");
+      r = await CL.act(b, () => CL.post("/coop-lending/items", {
+        facility_id: p.facility_id, plan_id: id, purpose: row.querySelector(".pi-purpose").value, source_type: "manual", seller_type: "organization", seller_id: seller,
+        amount: Number(row.querySelector(".pi-amt").value), description: row.querySelector(".pi-desc").value, payout_account_id: payout ? payout.account_id : undefined,
+      }), "สร้างรายการแล้ว — แนบใบแจ้งหนี้และส่งตรวจที่แท็บ \"รายการเบิก\"");
+    } else if (b.dataset.pact === "check") {
+      const file = row.querySelector(".pc-file").files[0];
+      if (!file) { CL.toast("แนบภาพแปลงก่อน", true); return; }
+      r = await CL.act(b, async () => CL.post(`/coop-lending/crop-plans/${id}/stages/${row.dataset.stage}/check`, { file_id: await CL.upload(file), note: row.querySelector(".pc-note").value || undefined }),
+        (x) => `ส่งผลตรวจแล้ว — ${CL.SAT[x.satellite_result][0]}`);
+    }
+    if (r) refresh();
+  }
+  view.addEventListener("input", (e) => {
+    if (!e.target.classList.contains("pi-q")) return;
+    const sel = e.target.parentElement.querySelector(".pi-seller");
+    clearTimeout(e.target._t);
+    e.target._t = setTimeout(async () => {
+      if (e.target.value.trim().length < 2) return;
+      const list = await CL.get(`/coop-lending/sellers?q=${encodeURIComponent(e.target.value)}`);
+      sel.innerHTML = list.map((o) => `<option value="${o.org_id}">${esc(o.org_name)}</option>`).join("");
+    }, 300);
+  });
 
   // ----- คำสั่งโอน -----------------------------------------------------------
   async function renderTransfers() {
