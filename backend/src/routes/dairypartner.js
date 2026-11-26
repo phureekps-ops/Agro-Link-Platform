@@ -6,6 +6,7 @@ const {
   h, tx, bad, notFound, conflict, bkkToday, isDate, isUuid, needPos, needNonNeg,
 } = require('../lib/dairy');
 const core = require('../lib/dairyCore');
+const trace = require('../lib/dairyTrace');
 
 /**
  * /dairy-partner — พอร์ทัลคู่ค้าโคนม สำหรับองค์กรที่มีบัญชีบน AgroLink:
@@ -145,9 +146,10 @@ router.get('/shipments', h(async (req) => db(req, async (c, org) => {
   const r = (await c.query(
     `SELECT s.shipment_id, s.ship_date, s.vehicle, s.driver_name, s.sent_kg, s.tank_temp_c, s.status, s.received_kg, s.fat_pct, s.snf_pct, s.scc_k, s.tbc_k,
             s.price_per_kg, s.amount, s.reject_reason, s.paid_at, s.proposal_id IS NOT NULL AS is_surplus, k.contract_no, k.price_per_kg AS contract_price,
-            sp.price_per_kg AS deal_price, o.org_name AS coop_name
+            sp.price_per_kg AS deal_price, o.org_name AS coop_name, b.batch_code, b.farm_count AS batch_farms
        FROM dairy.shipment s JOIN dairy.partner p ON p.partner_id=s.partner_id JOIN identity.organization o ON o.org_id=s.coop_org_id
        LEFT JOIN dairy.contract k ON k.contract_id=s.contract_id LEFT JOIN dairy.surplus_proposal sp ON sp.proposal_id=s.proposal_id
+       LEFT JOIN dairy.milk_batch b ON b.batch_id=s.batch_id
       WHERE p.linked_org_id=$1 AND s.status <> 'Cancelled' ORDER BY (s.status='Sent') DESC, s.ship_date DESC LIMIT 200`, [org],
   )).rows;
   await logAccess(c, 'read', 'dairy.shipment', org);
@@ -162,6 +164,17 @@ router.post('/shipments/:id/receive', h(async (req) => db(req, async (c, org) =>
   if (!s) throw notFound('shipment_not_found');
   return core.receiveShipment(c, s, req.body || {});
 }))));
+
+/** ตรวจสอบย้อนกลับล็อตน้ำนมที่โรงงานรับ: ฟาร์ม (รหัส + ทะเบียนฟาร์ม ไม่มีชื่อบุคคล) → รอบ → ถัง → เที่ยวรถ */
+router.get('/trace/:code', h(async (req) => db(req, async (c, org) => {
+  const b = (await c.query(
+    `SELECT b.* FROM dairy.milk_batch b JOIN dairy.shipment s ON s.shipment_id=b.shipment_id JOIN dairy.partner p ON p.partner_id=s.partner_id
+      WHERE b.batch_code=$1 AND p.linked_org_id=$2`, [String(req.params.code).trim().toUpperCase(), org],
+  )).rows[0];
+  if (!b) throw notFound('batch_not_found');
+  await logAccess(c, 'read', 'dairy.milk_batch', b.batch_id);
+  return trace.traceBatch(c, b, 'partner');
+})));
 
 // ---- ผู้ขายอาหารสัตว์ ----
 router.get('/purchase-orders', h(async (req) => db(req, async (c, org) => (await c.query(

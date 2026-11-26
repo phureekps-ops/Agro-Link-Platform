@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test",
-    "test:db": "node --test test/dairy.db.test.js test/dairySurplus.db.test.js test/dairyGateway.db.test.js test/membershipClaim.db.test.js test/coopLending.db.test.js test/coopLendingPlan.db.test.js test/coopMarket.db.test.js"
+    "test:db": "node --test test/dairy.db.test.js test/dairySurplus.db.test.js test/dairyGateway.db.test.js test/membershipClaim.db.test.js test/coopLending.db.test.js test/coopLendingPlan.db.test.js test/coopMarket.db.test.js test/dairyImportTrace.db.test.js"
   },
   "keywords": [],
   "author": "",

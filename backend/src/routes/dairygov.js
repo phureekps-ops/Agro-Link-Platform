@@ -4,6 +4,7 @@ const { withSessionContext, logAccess } = require('../db/pool');
 const { requireAuth, requireGovernmentOfficer } = require('../middleware/auth');
 const { h, round2, bkkToday, addDays } = require('../lib/dairy');
 const core = require('../lib/dairyCore');
+const trace = require('../lib/dairyTrace');
 
 /**
  * /dairy-gov — Dashboard นโยบายโคนมสำหรับเจ้าหน้าที่รัฐ (อ่านอย่างเดียว).
@@ -172,6 +173,58 @@ router.get('/surplus', h(async (req, res) => db(req, async (c, officerId) => {
   }, {});
   await logAccess(c, 'read', 'dairy.surplus_case', null);
   return { officer, as_of: bkkToday(), totals, provinces, cases, cases_not_shared: hidden, processor_capacity_7d: capacity };
+})));
+
+// ===========================================================================
+// ตรวจสอบย้อนกลับล็อตน้ำนม + คุณภาพข้อมูลรายสหกรณ์
+// เฉพาะสหกรณ์ในขอบเขตของเจ้าหน้าที่ที่เปิด gov_data_consent; ไม่มีชื่อ/รหัสสมาชิก เห็นเพียงเลขทะเบียนฟาร์ม
+// ===========================================================================
+async function officerScope(c, officerId) {
+  const o = (await c.query(`SELECT scope_type, province_code FROM identity.government_officer WHERE officer_id=$1 AND status='Active'`, [officerId])).rows[0];
+  if (!o) throw Object.assign(new Error('officer'), { httpStatus: 403, body: { error: 'officer_not_found_or_inactive' } });
+  return o;
+}
+router.get('/trace/:code', h(async (req) => db(req, async (c, officerId) => {
+  const o = await officerScope(c, officerId);
+  const b = (await c.query(
+    `SELECT b.*, s.gov_data_consent, cp.province_code FROM dairy.milk_batch b JOIN dairy.setting s ON s.coop_org_id=b.coop_org_id
+       JOIN registry.cooperative_profile cp ON cp.org_id=b.coop_org_id WHERE b.batch_code=$1`, [String(req.params.code).trim().toUpperCase()],
+  )).rows[0];
+  if (!b || (o.scope_type === 'Province' && b.province_code !== o.province_code)) throw Object.assign(new Error('nf'), { httpStatus: 404, body: { error: 'batch_not_found' } });
+  if (!b.gov_data_consent) throw Object.assign(new Error('consent'), { httpStatus: 403, body: { error: 'coop_no_gov_consent' } });
+  await logAccess(c, 'read', 'dairy.milk_batch', b.batch_id);
+  return trace.traceBatch(c, b, 'gov');
+})));
+
+router.get('/data-quality', h(async (req) => db(req, async (c, officerId) => {
+  const o = await officerScope(c, officerId);
+  const to = bkkToday();
+  const from = addDays(to, -29);
+  const params = [from, to];
+  let scope = '';
+  if (o.scope_type === 'Province') { params.push(o.province_code); scope = 'AND cp.province_code=$3'; }
+  const rows = (await c.query(
+    `SELECT o.org_name, pv.province_name_th,
+            (SELECT COUNT(*) FROM dairy.milk_intake i JOIN dairy.milk_round r USING (round_id) WHERE r.coop_org_id=s.coop_org_id AND r.round_date BETWEEN $1 AND $2)::int AS intakes,
+            (SELECT COUNT(*) FROM dairy.milk_intake i JOIN dairy.milk_round r USING (round_id) WHERE r.coop_org_id=s.coop_org_id AND r.round_date BETWEEN $1 AND $2
+                AND i.source IN ('scale','gateway','api'))::int AS automated,
+            (SELECT COUNT(*) FROM dairy.milk_intake i JOIN dairy.milk_round r USING (round_id) WHERE r.coop_org_id=s.coop_org_id AND r.round_date BETWEEN $1 AND $2
+                AND i.source='file')::int AS from_file,
+            (SELECT COUNT(*) FROM dairy.shipment x WHERE x.coop_org_id=s.coop_org_id AND x.ship_date BETWEEN $1 AND $2 AND x.status <> 'Cancelled')::int AS shipments,
+            (SELECT COUNT(*) FROM dairy.shipment x WHERE x.coop_org_id=s.coop_org_id AND x.ship_date BETWEEN $1 AND $2 AND x.status <> 'Cancelled' AND x.batch_id IS NOT NULL)::int AS traced,
+            (SELECT COUNT(*) FROM dairy.milk_batch b JOIN dairy.shipment x ON x.shipment_id=b.shipment_id WHERE b.coop_org_id=s.coop_org_id AND x.ship_date BETWEEN $1 AND $2
+                AND (b.accepted_kg = 0 OR ABS(x.sent_kg - b.accepted_kg) / b.accepted_kg * 100 > ${trace.DIFF_WARN_PCT}))::int AS mismatched,
+            (SELECT COUNT(*) FROM dairy.milk_round r WHERE r.coop_org_id=s.coop_org_id AND r.status='Open' AND r.round_date < $2)::int AS open_old_rounds,
+            (SELECT batch_code FROM dairy.milk_batch b WHERE b.coop_org_id=s.coop_org_id AND b.status <> 'Collecting' ORDER BY b.shipped_at DESC LIMIT 1) AS latest_batch
+       FROM dairy.setting s JOIN identity.organization o ON o.org_id=s.coop_org_id
+       JOIN registry.cooperative_profile cp ON cp.org_id=s.coop_org_id JOIN registry.province pv ON pv.province_code=cp.province_code
+      WHERE o.kyb_status='Verified' AND s.gov_data_consent ${scope} ORDER BY pv.province_name_th, o.org_name`, params,
+  )).rows.map((r) => ({
+    ...r,
+    automated_pct: r.intakes ? round2((r.automated / r.intakes) * 100) : null,
+    traced_pct: r.shipments ? round2((r.traced / r.shipments) * 100) : null,
+  }));
+  return { from, to, coops: rows };
 })));
 
 module.exports = router;

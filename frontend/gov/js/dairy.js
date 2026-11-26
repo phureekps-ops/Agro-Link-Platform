@@ -31,6 +31,13 @@
         <div class="dg-stat"><small>กำลังรับว่างของโรงงาน (30 วัน)</small><b>${n2(g.processor_capacity_30d.kg_per_day)}</b> <small>กก./วัน · ${g.processor_capacity_30d.processors} โรงงาน</small></div>
         <div class="dg-stat"><small>นมโรงเรียน 30 วัน: ส่ง / ยืนยันรับ</small><b>${n2(g.school_milk_30d.units)}</b> <small>/ ${n2(g.school_milk_30d.received_units)} หน่วย · มีปัญหา ${g.school_milk_30d.issues}</small></div>
       </div>
+      <div class="dg-card"><h3>🔎 ตรวจสอบย้อนกลับล็อตน้ำนม</h3>
+        <form id="traceForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end"><div><label class="dg-note" for="traceCode">รหัสล็อต (จากใบส่งนมหรือโรงงาน)</label><br>
+          <input id="traceCode" placeholder="MB-261126-…" required style="padding:9px;border:1px solid var(--gray-300);border-radius:8px;font:inherit;min-width:240px"></div>
+          <button class="btn btn-primary" style="width:auto">ดูเส้นทาง</button></form>
+        <p class="dg-note">เฉพาะสหกรณ์ในขอบเขตของท่านที่ยินยอมแบ่งปันข้อมูล · แสดงเลขทะเบียนฟาร์มโดยไม่มีชื่อหรือรหัสสมาชิก</p></div>
+      <div id="traceBox"></div>
+      <div id="dqBox"></div>
       <div id="surplusBox"></div>
       <div id="quotaBox"></div>
       <div class="dg-card"><h3>รายจังหวัด (เรียงจากความเสี่ยง)</h3>
@@ -45,7 +52,34 @@
         <p class="dg-note">อีก ${g.coops_not_sharing} สหกรณ์ยังไม่เปิดให้เห็นข้อมูลรายสหกรณ์ (รวมอยู่ในตัวเลขรายจังหวัดแล้ว) · ไม่แสดงราคาสัญญารายบริษัทและข้อมูลสมาชิกรายคน</p></div>`;
     loadSurplus();
     loadQuota();
+    loadDataQuality();
+    $("#traceForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const code = $("#traceCode").value.trim().toUpperCase();
+      const box = $("#traceBox");
+      API.get(`/dairy-gov/trace/${encodeURIComponent(code)}`).then((t) => window.AgroDairyTraceView.mount(box, t, "gov"))
+        .catch((err) => {
+          const e2 = (err.body && err.body.error) || err.message;
+          box.innerHTML = `<div class="dg-card">${esc({ batch_not_found: "ไม่พบล็อตนี้ในขอบเขตของท่าน", coop_no_gov_consent: "สหกรณ์เจ้าของล็อตยังไม่ยินยอมแบ่งปันข้อมูลกับภาครัฐ" }[e2] || e2)}</div>`;
+        });
+    });
   }).catch((e) => { if (e.message !== "session_expired") $("#content").innerHTML = `<div class="dg-card">โหลดไม่สำเร็จ: ${esc(e.message)}</div>`; });
+
+  // ---- คุณภาพข้อมูลและการตรวจสอบย้อนกลับรายสหกรณ์ (/dairy-gov/data-quality) ----
+  function loadDataQuality() {
+    API.get("/dairy-gov/data-quality").then((q) => {
+      const box = $("#dqBox");
+      if (!box || !q.coops.length) return;
+      const pct = (v) => (v == null ? "-" : `${n2(v)}%`);
+      box.innerHTML = `<div class="dg-card"><h3>✅ คุณภาพข้อมูลรายสหกรณ์ (30 วัน)</h3>
+        ${table(["สหกรณ์", "จังหวัด", "#รายการรับนม", "#บันทึกอัตโนมัติ", "#จากไฟล์", "#เที่ยวส่ง", "#ตรวจย้อนกลับได้", "#ล็อตยอดไม่ตรง", "#รอบค้างไม่ปิด", "ล็อตล่าสุด"], q.coops.map((c) => `<tr>
+          <td>${esc(c.org_name)}</td><td>${esc(c.province_name_th)}</td><td class="num">${n2(c.intakes)}</td><td class="num">${pct(c.automated_pct)}</td><td class="num">${n2(c.from_file)}</td>
+          <td class="num">${n2(c.shipments)}</td><td class="num">${pct(c.traced_pct)}</td><td class="num">${c.mismatched || "-"}</td><td class="num">${c.open_old_rounds || "-"}</td>
+          <td style="white-space:nowrap">${c.latest_batch ? `<a href="#" data-trace="${esc(c.latest_batch)}">${esc(c.latest_batch)}</a>` : "-"}</td></tr>`))}
+        <p class="dg-note">บันทึกอัตโนมัติ = เครื่องชั่ง/Gateway/API · ตรวจย้อนกลับได้ = เที่ยวส่งที่ผูกกับล็อตน้ำนม (ฟาร์ม → รอบ → ถัง → รถ → โรงงาน) · ล็อตยอดไม่ตรง = ส่งออกต่างจากที่รวบรวมเกิน 3%</p></div>`;
+      box.querySelectorAll("[data-trace]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); $("#traceCode").value = a.dataset.trace; $("#traceForm").requestSubmit(); }));
+    }).catch(() => {});
+  }
 
   // ---- กรณีนมเกินกำลังรับซื้อ (/dairy-gov/surplus, grant_dairy_surplus_cases.sql) ----
   const HZ = { today: "วันนี้", "7d": "7 วัน", "30d": "30 วันข้างหน้า", "60d": "60 วันข้างหน้า", "90d": "90 วันข้างหน้า" };

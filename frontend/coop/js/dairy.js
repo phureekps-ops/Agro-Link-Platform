@@ -103,6 +103,7 @@
   const DEV = { cooling_tank: "ถังเย็น", milk_scale: "เครื่องชั่งนม", vehicle: "รถขนนม", biogas: "บ่อไบโอแก๊ส", barn: "โรงเรือน", gateway: "Gateway ศูนย์รับนม", milk_analyzer: "เครื่องวิเคราะห์นม" };
   const PARAM = { fat: "ไขมัน (%)", snf: "ของแข็งไม่รวมไขมัน SNF (%)", scc: "เซลล์โซมาติก SCC (พัน/มล.)", tbc: "แบคทีเรีย TBC (พัน/มล.)" };
   const WD = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+  const SOURCE_TH = { manual: "บันทึกมือ", scale: "เครื่องชั่ง", gateway: "Gateway", file: "ไฟล์", api: "API" };
 
   const cache = {};
   async function load(key, path) { cache[key] = await API.get(path); return cache[key]; }
@@ -360,7 +361,7 @@
       ${table(["รหัส", "สมาชิก", "#กก.", "ผล", "#ราคา/กก.", "#เงิน", "ที่มา", ""], r.intakes.map((i) => `<tr><td>${esc(i.member_code)}</td><td>${esc(i.full_name)}</td><td class="num">${n2(i.weight_kg)}</td>
         <td>${i.status === "Accepted" ? pill("รับ", "ok") : pill("ปฏิเสธ: " + (REJ[i.reject_reason] || ""), "bad")}</td>
         <td class="num">${i.price_per_kg == null ? "-" : baht(i.price_per_kg)}${i.price_detail && i.price_detail.no_test ? ' <small title="ยังไม่มีผลตรวจ">*</small>' : ""}</td><td class="num">${i.amount == null ? "-" : baht(i.amount)}</td>
-        <td><small>${i.source === "scale" ? "เครื่องชั่ง" : "บันทึกมือ"}</small></td>
+        <td><small>${SOURCE_TH[i.source] || "บันทึกมือ"}</small></td>
         <td>${r.status === "Open" ? `<button class="mh-btn sm danger" data-act="delIntake" data-id="${i.intake_id}">ลบ</button>` : ""}</td></tr>`))}
       ${r.pending.length && r.status === "Open" ? `<p class="mh-note">ยังไม่ส่งนม: ${r.pending.map((m) => `${esc(m.member_code)} ${esc(m.full_name)}${m.withdrawal_cows ? " ⚠️" : ""}`).join(", ")}</p>` : ""}
       ${r.status === "Open" ? `<form data-form="closeRound" class="mh-form" style="margin-top:12px"><div><label>อุณหภูมิถังเย็นตอนปิดรอบ (°C)</label><input name="tank_temp_c" type="number" step="0.1"></div>
@@ -417,7 +418,7 @@
           <div><label>ทะเบียนรถ</label><input name="vehicle"></div><div><label>คนขับ</label><input name="driver_name"></div><div><button class="mh-btn">บันทึก</button></div></form></div>
       <div class="mh-card"><h3>เที่ยวส่งนม</h3>
         ${table(["วันที่", "โรงงาน", "อ้างอิง", "#ส่ง (กก.)", "#รับ (กก.)", "คุณภาพปลายทาง", "#ราคา", "#ยอดเงิน", "สถานะ", ""], ships.map((s) => `<tr>
-          <td>${d(s.ship_date)}</td><td>${esc(s.partner_name)}</td><td>${s.contract_no ? "สัญญา " + esc(s.contract_no) : s.proposal_id ? pill("ส่วนเกิน", "warn") : "-"}</td>
+          <td>${d(s.ship_date)}${s.batch_code ? `<br><a href="#trace" data-act="traceOpen" data-code="${esc(s.batch_code)}" title="ตรวจสอบย้อนกลับ"><small>🔎 ${esc(s.batch_code)}</small></a>` : ""}</td><td>${esc(s.partner_name)}</td><td>${s.contract_no ? "สัญญา " + esc(s.contract_no) : s.proposal_id ? pill("ส่วนเกิน", "warn") : "-"}</td>
           <td class="num">${n2(s.sent_kg)}</td><td class="num">${n2(s.received_kg)}</td><td><small>${s.fat_pct ? `F ${n2(s.fat_pct)} S ${n2(s.snf_pct)} SCC ${n2(s.scc_k)}` : ""}${s.reject_reason ? esc(s.reject_reason) : ""}</small></td>
           <td class="num">${s.price_per_kg ? baht(s.price_per_kg) : "-"}</td><td class="num">${s.amount ? baht(s.amount) : "-"}</td><td>${st(s.status)}${s.paid_at ? " " + pill("ได้รับเงิน", "ok") : ""}</td>
           <td class="mh-row">${s.status === "Sent" ? `<button class="mh-btn sm" data-act="receiveForm" data-id="${s.shipment_id}">บันทึกผลโรงงาน</button><button class="mh-btn sm danger" data-act="cancelShip" data-id="${s.shipment_id}">ยกเลิก</button>` : ""}
@@ -1105,7 +1106,8 @@
       const [kind, id] = b.ref.split(":");
       delete b.ref;
       b[`${kind}_id`] = id;
-      if (await run(() => API.post("/dairy/shipments", b), "บันทึกเที่ยวส่งนมแล้ว")) { refresh(); badges(); }
+      const r = await run(() => API.post("/dairy/shipments", b));
+      if (r) { toast(r.batch_code ? `บันทึกเที่ยวส่งนมแล้ว — ล็อต ${r.batch_code} (${n2(r.batch_kg)} กก. จากรอบที่ปิดแล้ว)` : "บันทึกเที่ยวส่งนมแล้ว"); refresh(); badges(); }
     },
     receive: async (f) => { const r = await run(() => API.post(`/dairy/shipments/${f.dataset.id}/receive`, clean(fd(f)))); if (r) { toast(r.status === "Received" ? `โรงงานรับ ${n2(r.received_kg)} กก. ${baht(r.amount)} บาท` : "บันทึกการปฏิเสธแล้ว"); refresh(); badges(); } },
     contract: async (f) => { if (await run(() => API.post("/dairy/contracts", clean(fd(f))), "บันทึกสัญญาแล้ว")) refresh(); },
@@ -1169,6 +1171,14 @@
       if (f.dataset.form === "intake" && f.isConnected) { f.reset(); f.member_code.focus(); }
     });
   });
+
+  // ส่วนต่อขยาย (js/dairy-data.js: นำเข้าไฟล์ คุณภาพข้อมูล ล็อตน้ำนม) เพิ่มแท็บของตัวเองผ่าน hook นี้
+  if (typeof window.AgroDairyExt === "function") {
+    window.AgroDairyExt({
+      API, API_BASE, PAGES, ACT, FORM, $, esc, n2, baht, d, dt, today, addDays, table, pill, st, toast, run, errMsg, fd, clean, opt, members,
+      show: (t) => show(t), refresh: () => refresh(), ERR, REJ, SOURCE_TH, STATUS_TH,
+    });
+  }
 
   window.addEventListener("hashchange", () => {
     const t = (location.hash || "").slice(1);

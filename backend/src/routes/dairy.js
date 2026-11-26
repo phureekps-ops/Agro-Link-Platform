@@ -605,17 +605,20 @@ router.delete('/rounds/:id/intakes/:intakeId', h(async (req) => db(req, async (c
 })));
 
 router.post('/rounds/:id/close', h(async (req) => db(req, async (c, coop) => {
-  const out = await closeRound(req, c, coop);
-  // ตรวจนมเกินทันทีหลังปิดรอบ — ล้มเหลวก็ไม่กระทบการปิดรอบ (สแกนเบื้องหลังทุก 15 นาทีจะลองใหม่)
-  try { await tx(c, () => surplus.scanCoop(c, coop, actor(req))); } catch (err) {
-    if (err.code !== '42P01' && err.code !== '42703') console.error('[dairy-surplus] scan after round close failed', err.message);
-  }
+  const out = await tx(c, () => closeRoundById(c, coop, req.params.id, req.body || {}));
+  await scanSurplusAfterClose(c, coop, actor(req));
   return out;
 })));
-const closeRound = (req, c, coop) => tx(c, async () => {
-  const r = await own(c, coop, 'round', req.params.id, { lock: true });
+/** ตรวจนมเกินทันทีหลังปิดรอบ — ล้มเหลวก็ไม่กระทบการปิดรอบ (สแกนเบื้องหลังทุก 15 นาทีจะลองใหม่) */
+async function scanSurplusAfterClose(c, coop, who) {
+  try { await tx(c, () => surplus.scanCoop(c, coop, who)); } catch (err) {
+    if (err.code !== '42P01' && err.code !== '42703') console.error('[dairy-surplus] scan after round close failed', err.message);
+  }
+}
+/** ปิดรอบ: คิดเงินตามคุณภาพ → Closed (trigger จัดรอบเข้าล็อตน้ำนมของศูนย์) → แจ้งสมาชิกที่ถูกปฏิเสธ. ต้องเรียกใน tx */
+async function closeRoundById(c, coop, roundId, b) {
+  const r = await own(c, coop, 'round', roundId, { lock: true });
   if (r.status !== 'Open') throw conflict('round_closed');
-  const b = req.body || {};
   const temp = num(b.tank_temp_c, { min: -10, max: 50 });
   if (Number.isNaN(temp)) throw bad('invalid_field', { field: 'tank_temp_c' });
   const res = await core.priceRound(c, coop, r);
@@ -626,8 +629,9 @@ const closeRound = (req, c, coop) => tx(c, async () => {
   )).rows[0];
   await notify.notifyRoundRejections(c, row);
   await logAccess(c, 'write', 'dairy.milk_round', r.round_id);
-  return { ...row, warning: temp !== null && temp > Number(s.tank_temp_max) ? 'tank_temp_high' : null };
-});
+  const batch = (await c.query('SELECT b.batch_code FROM dairy.milk_round r JOIN dairy.milk_batch b ON b.batch_id=r.batch_id WHERE r.round_id=$1', [r.round_id])).rows[0];
+  return { ...row, batch_code: batch ? batch.batch_code : null, warning: temp !== null && temp > Number(s.tank_temp_max) ? 'tank_temp_high' : null };
+}
 
 // ===========================================================================
 // (4) คุณภาพ
@@ -648,6 +652,11 @@ router.post('/quality-tests', h(async (req) => db(req, async (c, coop) => tx(c, 
   const b = req.body || {};
   const list = Array.isArray(b.tests) ? b.tests : [b];
   if (!list.length || list.length > 1000) throw bad('invalid_tests_count');
+  const out = await saveQualityTests(c, coop, list);
+  return { saved: out.length, tests: out };
+}))));
+/** บันทึกผลตรวจหลายรายการ แล้วแจ้งผลล่าสุดของสมาชิกแต่ละราย (ข้อความเดียวต่อคน). ต้องเรียกใน tx */
+async function saveQualityTests(c, coop, list, { source = 'manual', importId = null } = {}) {
   const out = [];
   for (const t of list) {
     let m;
@@ -659,9 +668,9 @@ router.post('/quality-tests', h(async (req) => db(req, async (c, coop) => tx(c, 
     if (!isDate(date)) throw bad('invalid_field', { field: 'sample_date' });
     const v = pick(t, TEST_SPEC);
     if (['fat_pct', 'snf_pct', 'scc_k', 'tbc_k'].every((k) => v[k] === null || v[k] === undefined)) throw bad('empty_test');
-    out.push(await insertRow(c, 'dairy.quality_test', { coop_org_id: coop, member_id: m.member_id, sample_date: date, ...v }));
+    const extra = source === 'manual' ? {} : { source, import_id: importId };
+    out.push(await insertRow(c, 'dairy.quality_test', { coop_org_id: coop, member_id: m.member_id, sample_date: date, ...v, ...extra }));
   }
-  // tell each member their newest result (one message per member, not per row)
   const s = await core.settings(c, coop);
   const rules = (await c.query('SELECT * FROM dairy.quality_rule WHERE coop_org_id=$1 AND active', [coop])).rows;
   const newest = new Map();
@@ -676,8 +685,8 @@ router.post('/quality-tests', h(async (req) => db(req, async (c, coop) => tx(c, 
       await notify.notifyQualityTest(c, test, m, priceFor(s.base_price_per_kg, test, rules));
     }
   }
-  return { saved: out.length, tests: out };
-}))));
+  return out;
+}
 
 /** ผลล่าสุดของสมาชิกแต่ละรายพร้อมราคาที่จะได้ (ราคาฐาน ± ตาราง) */
 router.get('/quality/summary', h(async (req) => db(req, async (c, coop) => {
@@ -889,8 +898,10 @@ router.post('/contracts/:id/end', h(async (req) => db(req, async (c, coop) => {
 })));
 
 router.get('/shipments', h(async (req) => db(req, async (c, coop) => (await c.query(
-  `SELECT s.*, p.name AS partner_name, k.contract_no, cc.name AS center_name FROM dairy.shipment s JOIN dairy.partner p ON p.partner_id=s.partner_id
+  `SELECT s.*, p.name AS partner_name, k.contract_no, cc.name AS center_name, b.batch_code, b.accepted_kg AS batch_kg
+     FROM dairy.shipment s JOIN dairy.partner p ON p.partner_id=s.partner_id
      LEFT JOIN dairy.contract k ON k.contract_id=s.contract_id LEFT JOIN dairy.collection_center cc ON cc.center_id=s.center_id
+     LEFT JOIN dairy.milk_batch b ON b.batch_id=s.batch_id
     WHERE s.coop_org_id=$1 ORDER BY s.ship_date DESC, s.sent_at DESC LIMIT 300`, [coop],
 )).rows)));
 
@@ -916,10 +927,13 @@ router.post('/shipments', h(async (req) => db(req, async (c, coop) => {
   const centerId = b.center_id ? (await own(c, coop, 'center', b.center_id)).center_id : null;
   const temp = num(b.tank_temp_c, { min: -10, max: 50 });
   if (Number.isNaN(temp)) throw bad('invalid_field', { field: 'tank_temp_c' });
-  return insertRow(c, 'dairy.shipment', {
+  // บันทึกเที่ยวส่งจากศูนย์ → trigger ปิดล็อตน้ำนมที่กำลังรวบรวมของศูนย์และผูกกับเที่ยวนี้
+  const row = await insertRow(c, 'dairy.shipment', {
     coop_org_id: coop, partner_id: partnerId, contract_id: contractId, proposal_id: proposalId, center_id: centerId, ship_date: date,
     vehicle: txt(b.vehicle), driver_name: txt(b.driver_name), sent_kg: needPos(b.sent_kg, 'sent_kg'), tank_temp_c: temp,
   });
+  const batch = row.batch_id ? (await c.query('SELECT batch_code, accepted_kg FROM dairy.milk_batch WHERE batch_id=$1', [row.batch_id])).rows[0] : null;
+  return { ...row, batch_code: batch ? batch.batch_code : null, batch_kg: batch ? batch.accepted_kg : null };
 })));
 router.post('/shipments/:id/receive', h(async (req) => db(req, async (c, coop) => tx(c, async () => {
   const s = await own(c, coop, 'shipment', req.params.id, { lock: true });
@@ -1753,5 +1767,8 @@ router.get('/reports/summary', h(async (req) => db(req, async (c, coop) => {
     milk_balance_kg: balance,
   };
 })));
+
+// นำเข้าไฟล์ + คุณภาพข้อมูล + ล็อตน้ำนม/ตรวจสอบย้อนกลับ (routes/dairyData.js)
+require('./dairyData').attach(router, { db, own, actor, closeRoundById, saveQualityTests, scanSurplusAfterClose });
 
 module.exports = router;

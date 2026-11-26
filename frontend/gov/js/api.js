@@ -100,7 +100,7 @@ const AgroLinkGovAPI = (() => {
     }
     if (res.status === 403) {
       const body = await res.json().catch(() => ({}));
-      if (body.error === "officer_not_found_or_inactive" || body.error === "cooperative_out_of_scope") {
+      if (body.error === "officer_not_found_or_inactive" || body.error === "cooperative_out_of_scope" || body.error === "coop_no_gov_consent") {
         const err = new Error(body.error);
         err.status = 403;
         err.body = body;

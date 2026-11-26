@@ -17,7 +17,7 @@
   const ST = { Ordered: "รอยืนยัน", Confirmed: "ยืนยันแล้ว", Delivered: "ส่งมอบแล้ว", Cancelled: "ยกเลิก", Sent: "รอยืนยันรับ", Received: "รับแล้ว", Rejected: "ปฏิเสธ", Pending: "รอตอบ", Accepted: "ตกลง", Withdrawn: "ถอน", Assigned: "รอดำเนินการ", Done: "เสร็จ", Open: "เปิด", Active: "ใช้งาน", Ended: "สิ้นสุด", Matched: "จับคู่แล้ว" };
   const pill = (s) => `<span class="mp-pill ${["Delivered", "Received", "Accepted", "Done", "Confirmed", "Active", "Matched"].includes(s) ? "ok" : ["Rejected", "Cancelled", "Withdrawn"].includes(s) ? "bad" : "warn"}">${ST[s] || s}</span>`;
   const table = (heads, rows) => (rows.length ? `<div class="mp-scroll"><table class="mp-table"><thead><tr>${heads.map((h) => `<th${h[0] === "#" ? ' class="num"' : ""}>${h.replace(/^#/, "")}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>` : '<div class="mp-empty">ยังไม่มีข้อมูล</div>');
-  const ERR = { processor_profile_required: "ลงทะเบียนโปรไฟล์โรงงานก่อน", below_min_price: "ต่ำกว่าราคาขั้นต่ำของประกาศ", more_than_offered: "มากกว่าปริมาณที่ประกาศ", proposal_exists: "มีข้อเสนอค้างอยู่แล้ว", received_more_than_sent: "รับมากกว่าที่สหกรณ์ส่ง", missing_reject_reason: "ต้องระบุเหตุผล", offer_not_open: "ประกาศปิดแล้ว", waiting_for_coop: "รอสหกรณ์ตอบ", kyb_not_verified: "องค์กรยังไม่ผ่านการยืนยันตัวตน", invalid_dates: "วันที่ไม่ถูกต้อง", female_only: "ใช้ได้กับโคเพศเมีย", no_insemination_record: "ยังไม่มีบันทึกการผสม" };
+  const ERR = { batch_not_found: "ไม่พบล็อตนี้ในเที่ยวส่งของโรงงานท่าน", processor_profile_required: "ลงทะเบียนโปรไฟล์โรงงานก่อน", below_min_price: "ต่ำกว่าราคาขั้นต่ำของประกาศ", more_than_offered: "มากกว่าปริมาณที่ประกาศ", proposal_exists: "มีข้อเสนอค้างอยู่แล้ว", received_more_than_sent: "รับมากกว่าที่สหกรณ์ส่ง", missing_reject_reason: "ต้องระบุเหตุผล", offer_not_open: "ประกาศปิดแล้ว", waiting_for_coop: "รอสหกรณ์ตอบ", kyb_not_verified: "องค์กรยังไม่ผ่านการยืนยันตัวตน", invalid_dates: "วันที่ไม่ถูกต้อง", female_only: "ใช้ได้กับโคเพศเมีย", no_insemination_record: "ยังไม่มีบันทึกการผสม" };
   const errText = (e) => ERR[(e.body || {}).error] || (e.body && e.body.error) || e.message;
 
   const session = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
@@ -87,8 +87,12 @@
 
     if (types.has("processor")) {
       const [ships, contracts] = await Promise.all([get("/dairy-partner/shipments"), get("/dairy-partner/contracts")]);
-      html += `<div class="mp-card"><h3>🥛 นมดิบที่สหกรณ์ส่งมา</h3>
-        ${table(["วันที่", "สหกรณ์", "อ้างอิง", "#ส่ง (กก.)", "#อุณหภูมิ", "ผลรับ", "#ยอดเงิน", "สถานะ"], ships.map((s) => `<tr><td>${d(s.ship_date)}<br><small>${esc(s.vehicle || "")}</small></td><td>${esc(s.coop_name)}</td>
+      html += `<div id="traceBox"></div>
+      <div class="mp-card"><h3>🔎 ตรวจสอบย้อนกลับล็อตน้ำนม</h3>
+        <form data-f="trace" class="mp-form"><div><label>รหัสล็อต (อยู่ในใบส่งนม)</label><input name="code" placeholder="MB-261126-…" required></div><div><button class="mp-btn">ดูเส้นทาง</button></div></form>
+        <p class="mp-empty" style="margin-top:6px">เห็นฟาร์มต้นทาง (รหัสสมาชิกและเลขทะเบียนฟาร์ม) รอบรับนม อุณหภูมิถังเย็น และเที่ยวรถ ของล็อตที่ส่งมาที่โรงงานท่านเท่านั้น</p></div>
+      <div class="mp-card"><h3>🥛 นมดิบที่สหกรณ์ส่งมา</h3>
+        ${table(["วันที่ / ล็อต", "สหกรณ์", "อ้างอิง", "#ส่ง (กก.)", "#อุณหภูมิ", "ผลรับ", "#ยอดเงิน", "สถานะ"], ships.map((s) => `<tr><td>${d(s.ship_date)}<br><small>${esc(s.vehicle || "")}</small>${s.batch_code ? `<br><a href="#" data-a="trace" data-code="${esc(s.batch_code)}"><small>🔎 ${esc(s.batch_code)}</small></a>${s.batch_farms ? ` <small>(${s.batch_farms} ฟาร์ม)</small>` : ""}` : ""}</td><td>${esc(s.coop_name)}</td>
           <td>${s.contract_no ? "สัญญา " + esc(s.contract_no) : s.is_surplus ? "ตลาดส่วนเกิน" : "-"}<br><small>ราคา ${baht(s.contract_price || s.deal_price || 0)}</small></td><td class="num">${n2(s.sent_kg)}</td><td class="num">${s.tank_temp_c == null ? "-" : n2(s.tank_temp_c) + "°C"}</td>
           <td>${s.status === "Sent" ? `<form data-f="receive" data-id="${s.shipment_id}" class="mp-form mp-sub">
               <div><label>ผล</label><select name="status"><option value="Received">รับ</option><option value="Rejected">ปฏิเสธทั้งเที่ยว</option></select></div>
@@ -130,9 +134,14 @@
     propAccept: (el) => post(`/dairy-partner/market/proposals/${el.dataset.id}/accept`).then(() => { msg("ตกลงรับนมแล้ว — สหกรณ์จะบันทึกเที่ยวส่ง"); render(); }),
     propReject: (el) => post(`/dairy-partner/market/proposals/${el.dataset.id}/reject`).then(() => { msg("บันทึกแล้ว"); render(); }),
     poConfirm: (el) => post(`/dairy-partner/purchase-orders/${el.dataset.id}/confirm`).then(() => { msg("ยืนยันใบสั่งซื้อแล้ว"); render(); }),
+    trace: (el) => showTrace(el.dataset.code),
     photo: (el) => get(`/dairy-partner/vet/requests/${el.dataset.id}/photo`).then((r) => { if (r.photo_data_url) $(`#ph-${el.dataset.id}`).innerHTML = `<img src="${esc(r.photo_data_url)}" alt="รูปประกอบ" style="max-width:220px;border-radius:8px">`; }),
   };
+  function showTrace(code) {
+    return get(`/dairy-partner/trace/${encodeURIComponent(String(code).trim().toUpperCase())}`).then((t) => window.AgroDairyTraceView.mount($("#traceBox"), t, "partner"));
+  }
   const FORMS = {
+    trace: (f) => showTrace(f.code.value),
     profile: (f) => put("/dairy-partner/processor/profile", fd(f)).then(() => msg("บันทึกโปรไฟล์โรงงานแล้ว")),
     capacity: (f) => post("/dairy-partner/processor/capacities", fd(f)).then(() => msg("ประกาศกำลังรับแล้ว")),
     propose: (f) => post(`/dairy-partner/market/offers/${f.dataset.id}/propose`, fd(f)).then(() => msg("ส่งข้อเสนอแล้ว รอสหกรณ์ตอบรับ")),
@@ -155,7 +164,8 @@
     const f = e.target.closest("form[data-f]");
     if (!f || !FORMS[f.dataset.f]) return;
     e.preventDefault();
-    FORMS[f.dataset.f](f).then(render).catch((err) => msg(errText(err), true));
+    // ค้นหาล็อตไม่เปลี่ยนข้อมูล จึงไม่ต้องโหลดหน้าใหม่ (ซึ่งจะล้างผลที่เพิ่งแสดง)
+    FORMS[f.dataset.f](f).then(f.dataset.f === "trace" ? null : render).catch((err) => msg(errText(err), true));
   });
 
   function start() {

@@ -82,6 +82,12 @@
   .mh-why { display: block; font-size: 11.5px; color: var(--gray-500); margin-top: 2px; }
   .mh-case details { margin-top: 8px; } .mh-case details > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--green-700); }
   details.mh-card > summary { cursor: pointer; font-weight: 700; color: var(--green-900); }
+  .mh-filter { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+  .mh-filter .mh-btn.on { background: var(--green-900); color: #fff; }
+  .mh-iss { display: block; font-size: 12px; } .mh-iss.e { color: var(--red-600); } .mh-iss.w { color: #8a5a00; }
+  .mh-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--gray-100); margin: 6px 0; }
+  .mh-bar span { display: block; height: 100%; border-right: 2px solid #fff; }
+  @media print { .mh-side, .mh-noprint { display: none !important; } .mh-card { box-shadow: none; border: 1px solid #ddd; } }
   @media (max-width: 860px) {
     .mh-shell { flex-direction: column; }
     .mh-side { width: 100%; flex: 0 0 auto; padding: 10px; }
@@ -104,7 +110,9 @@
       <div class="mh-group">น้ำนม</div>
       <button data-tab="intake">🥛 รับน้ำนม <span class="cnt" id="cntRounds" hidden></span></button>
       <button data-tab="quality">🧪 คุณภาพและราคา</button>
+      <button data-tab="import">📥 นำเข้าไฟล์ Excel/CSV</button>
       <button data-tab="factory">🏭 สัญญาและส่งโรงงาน <span class="cnt" id="cntShip" hidden></span></button>
+      <button data-tab="trace">🔎 ล็อตน้ำนม ตรวจสอบย้อนกลับ</button>
       <button data-tab="cases">🚨 นมเกินและทางแก้ <span class="cnt" id="cntCases" hidden></span></button>
       <button data-tab="surplus">🔁 ตลาดนมส่วนเกิน <span class="cnt" id="cntSurplus" hidden></span></button>
       <button data-tab="buyers">📇 ทำเนียบผู้รับซื้อ</button>
@@ -118,6 +126,7 @@
       <button data-tab="forecast">📈 พยากรณ์ 30/60/90 วัน</button>
       <button data-tab="iot">📡 IoT <span class="cnt" id="cntAlerts" hidden></span></button>
       <button data-tab="reports">📋 รายงาน</button>
+      <button data-tab="dataquality">✅ คุณภาพข้อมูล</button>
       <button data-tab="settings">⚙️ ตั้งค่า</button>
     </nav>
     <a class="mh-back" href="dashboard.html">← กลับพอร์ทัลสหกรณ์</a>
@@ -134,7 +143,9 @@
       <section class="mh-page" data-page="services"></section>
       <section class="mh-page" data-page="intake"></section>
       <section class="mh-page" data-page="quality"></section>
+      <section class="mh-page" data-page="import"></section>
       <section class="mh-page" data-page="factory"></section>
+      <section class="mh-page" data-page="trace"></section>
       <section class="mh-page" data-page="cases"></section>
       <section class="mh-page" data-page="surplus"></section>
       <section class="mh-page" data-page="buyers"></section>
@@ -146,12 +157,15 @@
       <section class="mh-page" data-page="forecast"></section>
       <section class="mh-page" data-page="iot"></section>
       <section class="mh-page" data-page="reports"></section>
+      <section class="mh-page" data-page="dataquality"></section>
       <section class="mh-page" data-page="settings"></section>
     </div>
   </div>
 </div>
 <div class="mh-toast" id="mhToast"></div>
 <script src="js/api.js"></script>
+<script src="../js/dairy-trace-view.js"></script>
+<script src="js/dairy-data.js"></script>
 <script src="js/dairy.js"></script>
 </body>
 </html>
