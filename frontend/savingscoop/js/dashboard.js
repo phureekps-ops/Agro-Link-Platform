@@ -1,7 +1,7 @@
 /**
  * พอร์ทัลสหกรณ์ออมทรัพย์ — สินเชื่อระหว่างสหกรณ์ (backend/src/routes/coopLending.js /savings/*)
  */
-/* global AgroLinkSavingsCoopAPI, CL */
+/* global AgroLinkSavingsCoopAPI, CL, LenderMarket */
 (function () {
   const API = AgroLinkSavingsCoopAPI;
   if (!API.requireSessionOrRedirect()) return;
@@ -10,13 +10,14 @@
   const view = document.getElementById("view");
   let ov = null;
   let accounts = [];
-  let tab = "queue";
+  let tab = "market";
 
   document.getElementById("logoutBtn").addEventListener("click", () => API.logout());
   document.getElementById("tabs").addEventListener("click", (e) => {
     const b = e.target.closest("[data-tab]");
     if (!b) return;
     tab = b.dataset.tab;
+    if (tab === "market") LenderMarket.reset();
     document.querySelectorAll(".cl-tab").forEach((x) => x.classList.toggle("active", x === b));
     render();
   });
@@ -43,15 +44,17 @@
       st(ov.queue, `รายการหลักฐานครบ รอโอน (ภายใน ${ov.settings.sc_sla_days} วันทำการ)`),
       st(ov.late, "เลยกำหนดโอน — ถูกปรับ " + ov.settings.late_penalty_pct + "% ต่อปี", ov.late > 0),
       st(ov.pending_transfers, "คำสั่งโอนรอผู้อนุมัติ", ov.pending_transfers > 0),
-      st(ov.pending_applications + ov.pending_asset_loans, "คำขอกู้/สินเชื่อเครื่องจักรรอพิจารณา"),
+      st(ov.pending_asset_loans, "สินเชื่อเครื่องจักรรอพิจารณา"),
     ].join("");
     const badge = (t, n) => {
       const b = document.querySelector(`[data-tab="${t}"]`);
       const old = b.querySelector(".cl-count"); if (old) old.remove();
       if (n > 0) b.insertAdjacentHTML("beforeend", `<span class="cl-count">${n}</span>`);
     };
-    badge("queue", ov.queue); badge("transfers", ov.pending_transfers); badge("applications", ov.pending_applications);
+    badge("queue", ov.queue); badge("transfers", ov.pending_transfers);
     badge("assets", ov.pending_asset_loans); badge("notices", ov.unread_notices);
+    CL.get("/savings/market/offers").then((os) => badge("offers", os.filter((o) => ["Accepted", "Countered"].includes(o.status) || (o.agreement_status === "Drafted" && !o.i_signed)).length)).catch(() => {});
+    CL.get("/savings/market/listings?match_only=1").then((d) => badge("market", d.listings.filter((l) => ["Listed", "Offered"].includes(l.status) && !l.my_offer).length)).catch(() => {});
     CL.get("/savings/crop-plans").then((ps) => badge("plans", ps.filter((p) => p.status === "Submitted" || p.stages.some((x) => x.status === "CheckSubmitted")).length)).catch(() => {});
     return true;
   }
@@ -63,10 +66,17 @@
     return `<select name="${name}">${ops.map((a) => `<option value="${a.account_id}">${esc(CL.accLabel(a))}</option>`).join("")}</select>`;
   };
 
+  function gotoTab(t) {
+    tab = t;
+    document.querySelectorAll(".cl-tab").forEach((x) => x.classList.toggle("active", x.dataset.tab === t));
+    render();
+  }
+  const mctx = () => ({ view, refresh: async () => { await loadOverview(); await render(); }, gotoTab });
   async function render() {
     view.innerHTML = '<div class="cl-empty">กำลังโหลด…</div>';
     try {
       await ({
+        market: () => LenderMarket.renderBrowse(mctx()), offers: () => LenderMarket.renderOffers(mctx()), lprofile: () => LenderMarket.renderProfile(mctx()),
         queue: renderQueue, plans: renderPlans, transfers: renderTransfers, applications: renderApplications, assets: renderAssets, facilities: renderFacilities,
         programs: renderPrograms, money: renderMoney, setup: renderSetup, notices: renderNotices,
       }[tab])();

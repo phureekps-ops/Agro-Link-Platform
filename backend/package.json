@@ -6,13 +6,14 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test",
-    "test:db": "node --test test/dairy.db.test.js test/dairySurplus.db.test.js test/dairyGateway.db.test.js test/membershipClaim.db.test.js test/coopLending.db.test.js test/coopLendingPlan.db.test.js"
+    "test:db": "node --test test/dairy.db.test.js test/dairySurplus.db.test.js test/dairyGateway.db.test.js test/membershipClaim.db.test.js test/coopLending.db.test.js test/coopLendingPlan.db.test.js test/coopMarket.db.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
+    "docx": "^9.16.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",

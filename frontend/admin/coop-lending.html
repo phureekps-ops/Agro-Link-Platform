@@ -14,7 +14,7 @@
     <div class="brand"><a class="cl-back" href="dashboard.html">← ผู้ดูแลระบบ</a>🏦 ตั้งค่าสินเชื่อระหว่างสหกรณ์</div>
     <div class="who"><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
   </header>
-  <div class="cl-wrap" id="view"><div class="cl-empty">กำลังโหลด…</div></div>
+  <div class="cl-wrap"><div id="marketBox"></div><div id="view"><div class="cl-empty">กำลังโหลด…</div></div></div>
   <script src="js/api.js"></script>
   <script src="../js/coop-lending-common.js"></script>
   <script>
@@ -23,7 +23,7 @@
     const API = AgroLinkAdminAPI;
     if (API.requireSessionOrRedirect && !API.requireSessionOrRedirect()) return;
     CL.init(API);
-    const { esc, baht, date } = CL;
+    const { esc, baht, date, pill } = CL;
     const view = document.getElementById("view");
     document.getElementById("logoutBtn").onclick = () => API.logout();
     async function render() {
@@ -68,6 +68,36 @@
       if (!res.ok) throw new Error("delete_failed");
       return res.json();
     }
+    // ---- ตลาดสินเชื่อ: ตรวจความครบถ้วนของโครงการขอกู้ก่อนประกาศ ----
+    const mbox = document.getElementById("marketBox");
+    async function renderMarket() {
+      let rows;
+      try { rows = await CL.get("/admin/coop-lending/market/listings"); } catch (err) { mbox.innerHTML = ""; return; }
+      const review = rows.filter((l) => l.status === "Review");
+      const other = rows.filter((l) => l.status !== "Review");
+      const DK = { resolution: "มติ", financial_statement: "งบการเงิน", business_plan: "แผนธุรกิจ", quotation: "ใบเสนอราคา", member_list: "รายชื่อสมาชิก", production_plan: "แผนการผลิต", buyer_contract: "ผู้ซื้อปลายทาง", collateral: "หลักประกัน", other: "อื่น ๆ" };
+      mbox.innerHTML = `<div class="cl-card"><h3>📣 โครงการขอกู้รอตรวจก่อนประกาศ (${review.length})</h3>
+        <div class="cl-muted">ตรวจความครบถ้วนของข้อมูลและเอกสารเท่านั้น — การพิจารณาให้กู้เป็นของสหกรณ์ผู้ให้กู้ เมื่อประกาศแล้วระบบแจ้งผู้ให้กู้ที่นโยบายตรงกับโครงการ</div>
+        ${review.map((l) => `<div class="cl-card" data-l="${l.listing_id}" style="box-shadow:none;border:1px solid #eef1ee;margin:8px 0">
+          <div class="cl-row"><div><b>${esc(l.title)}</b> · ${esc(l.borrower_name)} · ${esc(l.province_name_th || "")}</div><div>${CL.gradeBadge(l.score && l.score.grade, l.score && l.score.score)}</div></div>
+          <div class="cl-line">${esc(CL.PTYPE[l.project_type])} · ${baht(l.amount_requested)} · ${l.tenor_months} เดือน</div>
+          <div class="cl-ev">${l.documents.map((x) => `<span>📎 ${esc(DK[x.kind] || x.kind)}: ${esc(x.title)}</span>`).join("")}</div>
+          ${l.checks.ok ? '<div class="cl-line">✅ ข้อมูลครบตามเกณฑ์</div>' : `<div class="cl-ev">${l.checks.missing.map((m) => `<span class="miss">${esc(m.label)}</span>`).join("")}</div>`}
+          <div class="cl-actions cl-inline">รับข้อเสนอ <input class="m-days" type="number" value="30" min="7" max="90" style="min-width:70px"> วัน <button class="cl-btn" data-ma="approve" ${l.checks.ok ? "" : "disabled"}>ประกาศ</button>
+            <input class="m-note" placeholder="สิ่งที่ต้องแก้ไข" style="min-width:260px"><button class="cl-btn bad" data-ma="return">ส่งกลับให้แก้</button></div></div>`).join("") || '<div class="cl-empty">ไม่มี</div>'}
+        ${other.length ? `<details class="cl-more"><summary>โครงการอื่น (${other.length})</summary><table class="cl-table">${other.map((l) => `<tr><td>${esc(l.title)}</td><td>${esc(l.borrower_name)}</td><td>${pill(CL.LISTING_ST[l.status])}</td><td class="r">${baht(l.amount_requested)}</td><td class="r">ข้อเสนอ ${l.live_offers}</td></tr>`).join("")}</table></details>` : ""}</div>`;
+      mbox.onclick = async (e) => {
+        const b = e.target.closest("[data-ma]");
+        if (!b) return;
+        const card = b.closest("[data-l]");
+        const id = card.dataset.l;
+        const r = b.dataset.ma === "approve"
+          ? await CL.act(b, () => CL.post(`/admin/coop-lending/market/listings/${id}/approve`, { offer_days: card.querySelector(".m-days").value }), (x) => `ประกาศแล้ว — แจ้งผู้ให้กู้ที่นโยบายตรง ${x.notified_lenders} ราย`)
+          : await CL.act(b, () => CL.post(`/admin/coop-lending/market/listings/${id}/return`, { note: card.querySelector(".m-note").value }), "ส่งกลับแล้ว");
+        if (r) renderMarket();
+      };
+    }
+    renderMarket();
     render().catch((err) => { view.innerHTML = `<div class="cl-card cl-late">โหลดไม่สำเร็จ: ${esc(CL.errText(err))}</div>`; });
   }());
   </script>

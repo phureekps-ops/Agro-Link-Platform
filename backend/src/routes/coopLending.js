@@ -104,7 +104,8 @@ function orgGuard(orgType, staffBusinessRoles) {
         'SELECT org_id, org_name, org_type, kyb_status, tax_id, region_code FROM identity.organization WHERE org_id = $1', [req.subject.subjectId],
       )).rows[0]);
       if (!org) return res.status(403).json({ error: 'organization_not_found' });
-      if (org.org_type !== orgType) return res.status(403).json({ error: 'wrong_org_type', required: orgType, org_type: org.org_type });
+      const types = Array.isArray(orgType) ? orgType : [orgType];
+      if (!types.includes(org.org_type)) return res.status(403).json({ error: 'wrong_org_type', required: orgType, org_type: org.org_type });
       if (org.kyb_status !== 'Verified') return res.status(403).json({ error: 'kyb_not_verified', kyb_status: org.kyb_status, org_name: org.org_name });
       req.org = org;
       return next();
@@ -429,7 +430,9 @@ function evidenceFileRoute(column) {
 // /savings — พอร์ทัลสหกรณ์ออมทรัพย์
 // ===========================================================================
 const savings = express.Router();
-savings.use(requireAuth, requireOrganizationOrStaff, orgGuard('SavingsCooperative', ['SavingsCooperative']));
+// ผู้ให้กู้: สหกรณ์ออมทรัพย์ และสหกรณ์เครดิตยูเนี่ยน (grant_coop_lending_marketplace.sql)
+const LENDER_TYPES = ['SavingsCooperative', 'CreditUnion'];
+savings.use(requireAuth, requireOrganizationOrStaff, orgGuard(LENDER_TYPES, LENDER_TYPES));
 
 savings.get('/overview', wrap(async (req, res) => {
   const out = await orgTx(req, async (c) => {
@@ -535,7 +538,7 @@ function programBody(b, partial = false) {
 savings.get('/programs', wrap(async (req, res) => {
   res.json(await orgTx(req, async (c) => (await c.query(
     `SELECT p.*, (SELECT COALESCE(SUM(f.limit_amount), 0) FROM coop_lending.facility f WHERE f.program_id = p.program_id AND f.status <> 'Closed')::numeric AS committed
-       FROM coop_lending.program p WHERE lender_org_id = $1 ORDER BY created_at DESC`, [req.org.org_id],
+       FROM coop_lending.program p WHERE lender_org_id = $1 AND listing_id IS NULL ORDER BY created_at DESC`, [req.org.org_id],
   )).rows));
 }));
 savings.post('/programs', wrap(async (req, res) => {
@@ -723,6 +726,7 @@ savings.post('/transfers/prepare', wrap(async (req, res) => {
     for (const it of items) {
       if (it.status !== 'EvidenceComplete') fail(409, 'item_not_ready', { item_id: it.item_id, status: it.status });
       if (it.satellite_result === 'review' && !it.satellite_ack_by) fail(409, 'satellite_review_not_acknowledged', { item_id: it.item_id });
+      if (it.price_check && it.price_check.flag && !it.satellite_ack_by) fail(409, 'price_check_not_acknowledged', { item_id: it.item_id });
       if (it.plan_id) {
         const ps = (await c.query('SELECT status FROM coop_lending.crop_plan WHERE plan_id = $1', [it.plan_id])).rows[0];
         if (ps.status === 'Suspended') fail(409, 'plan_suspended', { item_id: it.item_id });
@@ -1080,6 +1084,7 @@ borrower.post('/items', wrap(async (req, res) => {
     if (!f.purposes.includes(purpose)) fail(400, 'purpose_not_in_program');
 
     // ต้นทางกำหนดผู้ขาย เกษตรกร และยอด — ไม่ให้กรอกเองเมื่อมีต้นทางในระบบ
+    let deliveryKg = null;
     let farmerId = isUuid(b.farmer_id) ? b.farmer_id : null;
     let sellerType = b.seller_type;
     let sellerId = b.seller_id;
@@ -1108,6 +1113,7 @@ borrower.post('/items', wrap(async (req, res) => {
       )).rows[0];
       if (!d) fail(404, 'delivery_not_found');
       farmerId = d.owner_farmer_id; sellerType = 'farmer'; sellerId = d.owner_farmer_id; amount = L.round2(Number(d.total_amount));
+      deliveryKg = Number(d.quantity_ton) * 1000;
       b.unit_ids = [...new Set([...(Array.isArray(b.unit_ids) ? b.unit_ids : []), d.unit_id])];
     } else if (sourceType === 'asset_loan') {
       const a = (await c.query(`SELECT * FROM coop_lending.asset_loan WHERE asset_loan_id = $1 AND borrower_org_id = $2 AND facility_id = $3 AND status = 'Approved'`,
@@ -1173,6 +1179,18 @@ borrower.post('/items', wrap(async (req, res) => {
         plan ? plan.plan_id : null, stage ? stage.seq : null],
     )).rows[0];
     await setPlots(c, item, b.unit_ids);
+    // โครงการรับซื้อจากตลาดสินเชื่อ: ตรวจราคาต่อ กก. เทียบราคาอ้างอิงในประกาศ (ต่างเกิน 15% ต้องให้ผู้ให้กู้รับทราบก่อนโอน)
+    if (f.listing_id && purpose === 'procurement') {
+      const ref = (await c.query(`SELECT (details->>'reference_price')::numeric AS ref FROM coop_lending.loan_listing WHERE listing_id = $1`, [f.listing_id])).rows[0];
+      const kg = deliveryKg || num(b.quantity_kg, 'quantity_kg', { min: 0, allowNull: true });
+      if (ref && ref.ref && kg) {
+        const actual = L.round2(amount / kg);
+        const diff = L.round2(((actual - Number(ref.ref)) / Number(ref.ref)) * 100);
+        const pc = { reference: Number(ref.ref), actual, quantity_kg: kg, diff_pct: diff, flag: Math.abs(diff) > 15 };
+        await c.query('UPDATE coop_lending.disbursement_item SET price_check = $2 WHERE item_id = $1', [item.item_id, JSON.stringify(pc)]);
+        item.price_check = pc;
+      }
+    }
     await L.logEvent(c, { itemId: item.item_id, facilityId: f.facility_id, actor: actor.key, action: 'item_created', detail: { amount } });
     return item;
   });
@@ -1544,7 +1562,7 @@ admin.get('/settings', wrap(async (req, res) => {
     const acc = s.platform_account_id ? (await c.query('SELECT * FROM coop_lending.bank_account WHERE account_id = $1', [s.platform_account_id])).rows[0] : null;
     const holidays = (await c.query(`SELECT to_char(holiday_date, 'YYYY-MM-DD') AS holiday_date, name_th FROM coop_lending.holiday WHERE holiday_date >= current_date - 30 ORDER BY holiday_date`)).rows;
     const stats = (await c.query(
-      `SELECT (SELECT COUNT(*) FROM identity.organization WHERE org_type = 'SavingsCooperative')::int AS savings_coops,
+      `SELECT (SELECT COUNT(*) FROM identity.organization WHERE org_type IN ('SavingsCooperative','CreditUnion'))::int AS savings_coops,
               (SELECT COUNT(*) FROM coop_lending.facility WHERE status = 'Active')::int AS active_facilities,
               (SELECT COALESCE(SUM(principal_outstanding), 0) FROM coop_lending.disbursement_item)::numeric AS outstanding,
               (SELECT COUNT(*) FROM coop_lending.disbursement_item WHERE status = 'EvidenceComplete' AND sc_due_date < current_date)::int AS sc_late,
@@ -1999,6 +2017,11 @@ gov.get('/transactions.csv', wrap(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="coop-lending-${L.todayBangkok()}.csv"`);
   res.send(`\uFEFF${[cols.join(','), ...rows.map((r) => cols.map((k) => cell(r[k])).join(','))].join('\n')}`);
 }));
+
+// ตลาดสินเชื่อระหว่างสหกรณ์ (routes/coopMarket.js) — ใช้ helper ชุดเดียวกัน
+require('./coopMarket').attach({ savings, borrower, admin, gov }, {
+  wrap, fail, HttpError, tx, orgTx, num, text, isUuid, actorOf, verifiedAccount, logAccess, objectStorage, govTx, officerScope,
+});
 
 module.exports = {
   savings, borrower, farmer, admin, gov, _internal: { approveTransfer, settleTransfer },

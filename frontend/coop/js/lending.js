@@ -1,7 +1,7 @@
 /**
  * พอร์ทัลสหกรณ์การเกษตร — สินเชื่อจากสหกรณ์ออมทรัพย์ (backend/src/routes/coopLending.js /coop-lending/*)
  */
-/* global AgroLinkCoopAPI, CL */
+/* global AgroLinkCoopAPI, CL, CoopMarket */
 (function () {
   const API = AgroLinkCoopAPI;
   if (!API.requireSessionOrRedirect()) return;
@@ -9,7 +9,7 @@
   const { esc, baht, date, dt, pill } = CL;
   const view = document.getElementById("view");
   let ov = null;
-  let tab = "plans";
+  let tab = "market";
   let facilities = [];
   let accounts = [];
   let members = null;
@@ -19,6 +19,7 @@
     const b = e.target.closest("[data-tab]");
     if (!b) return;
     tab = b.dataset.tab;
+    if (tab === "market") CoopMarket.reset();
     document.querySelectorAll(".cl-tab").forEach((x) => x.classList.toggle("active", x === b));
     render();
   });
@@ -46,6 +47,7 @@
       if (n > 0) b.insertAdjacentHTML("beforeend", `<span class="cl-count">${n}</span>`);
     };
     badge("items", ov.to_pay + ov.drafts);
+    CL.get("/coop-lending/market/listings").then((ls) => badge("market", ls.reduce((a, l) => a + l.open_questions + (["Listed", "Offered"].includes(l.status) ? l.live_offers : 0), 0))).catch(() => {});
     CL.get("/coop-lending/crop-plans").then((ps) => badge("plans", ps.filter((p) => p.status === "Suspended" || (p.status === "Active" && p.stages.some((x) => x.status === "Open" || x.status === "Held"))).length)).catch(() => {}); badge("transfers", ov.pending_transfers); badge("notices", ov.unread_notices);
   }
   async function loadCommon() {
@@ -63,13 +65,19 @@
     try {
       await loadCommon();
       await ({
-        plans: renderPlans, items: renderItems, transfers: renderTransfers, facilities: renderFacilities, assets: renderAssets, programs: renderPrograms, accounts: renderAccounts, notices: renderNotices,
+        market: () => CoopMarket.renderMarket(mctx()), profile: () => CoopMarket.renderProfile(mctx()), plans: renderPlans, items: renderItems, transfers: renderTransfers, facilities: renderFacilities, assets: renderAssets, programs: renderPrograms, accounts: renderAccounts, notices: renderNotices,
       }[tab])();
     } catch (err) {
       view.innerHTML = `<div class="cl-card cl-late">โหลดข้อมูลไม่สำเร็จ: ${esc(CL.errText(err))}</div>`;
     }
   }
   const refresh = async () => { await loadOverview(); await render(); };
+  function gotoTab(t) {
+    tab = t;
+    document.querySelectorAll(".cl-tab").forEach((x) => x.classList.toggle("active", x.dataset.tab === t));
+    render();
+  }
+  const mctx = () => ({ view, refresh, accounts, orgName: ov && ov.org.org_name, gotoTab });
 
   // ----- รายการเบิก --------------------------------------------------------
   function missingText(m) {

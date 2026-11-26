@@ -66,7 +66,7 @@ const CL = (() => {
   const TR_KIND = { disbursement: "เบิกเงินกู้เข้าบัญชีเฉพาะ", seller_payment: "จ่ายผู้ขาย", repayment: "ชำระคืนเงินกู้", installment: "ค่างวดเครื่องจักร", platform_fee: "ค่าธรรมเนียมแพลตฟอร์ม" };
   const SAT = { pass: ["ดาวเทียม: ผ่าน", "#1f6b38", "#ddf3e4"], review: ["ดาวเทียม: ต้องตรวจเพิ่ม", "#a1261d", "#fde8e6"], insufficient: ["ดาวเทียม: ข้อมูลไม่พอ", "#8a5a00", "#fff2cc"], na: ["ไม่ได้ระบุแปลง", "#6b7a70", "#eef1ee"] };
   const EVIDENCE = {
-    invoice: "ใบกำกับภาษี/ใบเสร็จ", delivery_note: "ใบส่งของ", work_photo: "ภาพหน้างาน", weighing_slip: "ใบชั่ง", contract: "สัญญาซื้อขาย",
+    invoice: "ใบกำกับภาษี/ใบเสร็จ", delivery_note: "ใบส่งของ", work_photo: "ภาพหน้างาน", weighing_slip: "ใบชั่งน้ำหนัก", quality_slip: "ใบตรวจคุณภาพ", purchase_receipt: "ใบรับซื้อ", acceptance_report: "ใบตรวจรับงาน/ส่งมอบ", contract: "สัญญาซื้อขาย",
     down_payment_slip: "หลักฐานจ่ายเงินดาวน์", serial_photo: "ภาพเลขเครื่อง/เลขตัวถัง", ownership_doc: "เอกสารกรรมสิทธิ์", insurance: "กรมธรรม์", other: "อื่นๆ",
   };
   const BANKS = [["002", "กรุงเทพ"], ["004", "กสิกรไทย"], ["006", "กรุงไทย"], ["011", "ทหารไทยธนชาต"], ["014", "ไทยพาณิชย์"], ["025", "กรุงศรีอยุธยา"], ["030", "ออมสิน"], ["033", "อาคารสงเคราะห์"], ["034", "ธ.ก.ส."], ["069", "เกียรตินาคินภัทร"], ["022", "ซีไอเอ็มบี"], ["024", "ยูโอบี"], ["073", "แลนด์ แอนด์ เฮ้าส์"]];
@@ -96,6 +96,12 @@ const CL = (() => {
     plot_not_found_or_not_member: "ไม่พบแปลง หรือเจ้าของแปลงไม่ใช่สมาชิกของสหกรณ์", program_has_no_production_purpose: "โครงการนี้ไม่ได้ให้กู้เพื่อปัจจัยการผลิต",
     stage_amounts_must_sum_to_total: "ยอดรายงวดรวมกันต้องเท่ากับยอดทั้งแผน", stage_not_holdable: "ระงับได้เฉพาะงวดที่เปิดอยู่หรือรอตรวจ", facility_expired: "วงเงินหมดอายุแล้ว",
     duplicate_open_plan: "แปลงนี้มีแผนที่ยังไม่จบอยู่แล้ว", check_file_already_used: "ภาพนี้เคยใช้ตรวจแปลงแล้ว",
+    listing_incomplete: "ข้อมูลโครงการยังไม่ครบ", listing_not_editable: "แก้ไขได้เฉพาะโครงการที่เป็นร่างหรือถูกส่งกลับ", listing_not_open: "โครงการนี้ไม่ได้เปิดรับข้อเสนอแล้ว",
+    offers_closed: "ปิดรับข้อเสนอแล้ว", offer_over_requested: "เกินวงเงินที่ขอ", over_requested_amount: "ข้อเสนอที่เลือกรวมกันเกินวงเงินที่ขอ", no_confirmed_offer: "ยังไม่มีข้อเสนอที่ผู้ให้กู้ยืนยันตามอำนาจอนุมัติ",
+    confirmed_below_minimum: "ข้อเสนอที่ยืนยันแล้วรวมกันยังไม่ถึงวงเงินขั้นต่ำ", offer_not_counterable: "โต้ตอบได้เฉพาะข้อเสนอที่รอพิจารณา", offer_not_acceptable: "เลือกได้เฉพาะข้อเสนอที่รอพิจารณา (ถ้าโต้ตอบไว้ ต้องรอผู้ให้กู้ตอบก่อน)",
+    offer_not_accepted: "ข้อเสนอนี้ยังไม่ถูกผู้ขอกู้เลือก", lender_profile_required: "กรอกข้อมูลและนโยบายสินเชื่อของสหกรณ์ก่อนยื่นข้อเสนอ", agreement_not_signable: "สัญญานี้ลงนามครบแล้วหรือถูกยกเลิก",
+    price_check_not_acknowledged: "ราคารับซื้อต่างจากราคาอ้างอิงเกิน 15% — เปิดดูแล้วกด \"รับทราบ\" ก่อน", counter_empty: "ระบุเงื่อนไขที่ต้องการอย่างน้อยหนึ่งข้อ", invalid_project_type: "เลือกประเภทโครงการ",
+    listing_not_in_review: "โครงการไม่ได้อยู่ในสถานะรอตรวจสอบ",
     invalid_text: "ข้อความสั้นหรือยาวเกินไป", invalid_number: "ตัวเลขไม่ถูกต้อง", only_admin_can_manage_staff: "เฉพาะผู้ดูแลหรือผู้จัดการเท่านั้นที่จัดการเจ้าหน้าที่ได้",
   };
   function errText(err) {
@@ -110,6 +116,7 @@ const CL = (() => {
     }
     if (b.ratio_pct !== undefined) msg += ` (${b.ratio_pct}% เกิน ${b.max_ratio_pct}%)`;
     if (b.field) msg += ` [${b.field}]`;
+    if (Array.isArray(b.missing)) msg += `: ${b.missing.map((m) => m.label).join(", ")}`;
     return msg;
   }
   function toast(msg, bad) {
@@ -215,7 +222,48 @@ const CL = (() => {
     return `${(d.notes || []).map((n) => esc(n)).join(" · ")}${d.season_status ? ` <span class="cl-muted">(สถานะฤดู: ${esc(d.season_status)}${d.planting_date ? `, ปลูก ${esc(date(d.planting_date))}` : ""}${d.assessed_at ? `, ประเมิน ${esc(date(d.assessed_at))}` : ""})</span>` : ""}`;
   }
 
+  // ---- ตลาดสินเชื่อระหว่างสหกรณ์ ----
+  const PTYPE = { member_onlending: "กู้เพื่อปล่อยกู้ต่อแก่สมาชิก", procurement: "ทุนหมุนเวียนรับซื้อผลผลิต", investment: "ลงทุนโครงการใหม่ของสหกรณ์" };
+  const LISTING_ST = {
+    Draft: ["ร่าง", "#6b7a70", "#eef1ee"], Review: ["รอตรวจสอบ", "#8a5a00", "#fff2cc"], Returned: ["ส่งกลับให้แก้", "#a1261d", "#fde8e6"], Listed: ["ประกาศแล้ว", "#0b5394", "#e3eefb"],
+    Offered: ["มีข้อเสนอ", "#0b5394", "#d6e6fa"], Matched: ["จับคู่แล้ว รอลงนาม", "#6b3fa0", "#efe6fa"], Signed: ["ลงนามแล้ว · เบิกจ่าย/ชำระคืน", "#1f6b38", "#ddf3e4"],
+    Active: ["ระหว่างเบิกจ่าย/ชำระคืน", "#1f6b38", "#ddf3e4"], Closed: ["ปิดโครงการ", "#6b7a70", "#eef1ee"], Withdrawn: ["ถอนแล้ว", "#6b7a70", "#eef1ee"],
+  };
+  const OFFER_ST = {
+    Submitted: ["รอผู้ขอกู้พิจารณา", "#0b5394", "#e3eefb"], Countered: ["ผู้ขอกู้โต้ตอบ — รอผู้ให้กู้", "#8a5a00", "#fff2cc"], Accepted: ["ผู้ขอกู้เลือกแล้ว — รอผู้ให้กู้ยืนยัน", "#6b3fa0", "#efe6fa"],
+    Confirmed: ["ผู้ให้กู้ยืนยันแล้ว", "#1f6b38", "#ddf3e4"], Declined: ["ไม่ถูกเลือก", "#6b7a70", "#eef1ee"], Withdrawn: ["ถอนแล้ว", "#6b7a70", "#eef1ee"],
+    Expired: ["สิ้นผล", "#6b7a70", "#eef1ee"], Superseded: ["จับคู่กับรายอื่นแล้ว", "#6b7a70", "#eef1ee"],
+  };
+  const GRADE_C = { A: "#1f6b38", B: "#4a8a2e", C: "#8a5a00", D: "#b35a00", E: "#a1261d" };
+  const gradeBadge = (g, sc) => (g ? `<span class="cl-pill" style="color:#fff;background:${GRADE_C[g]}">เกรด ${g}${sc != null ? ` · ${sc}` : ""}</span>` : '<span class="cl-pill" style="background:#eef1ee;color:#6b7a70">ยังไม่มีคะแนน</span>');
+  function scorePanel(sc) {
+    if (!sc) return "";
+    return `<div class="cl-row"><div><b>คะแนนความน่าเชื่อถือ</b> ${gradeBadge(sc.grade, sc.score)}</div><div class="cl-muted">ข้อมูล ณ ${esc(date(sc.data_as_of))} · ความครบถ้วนของข้อมูล ${sc.completeness_pct}%</div></div>
+      ${sc.note ? `<div class="cl-flag">${esc(sc.note)}</div>` : ""}
+      <table class="cl-table" style="margin-top:6px"><tr><th>ปัจจัย</th><th>ค่า</th><th class="r">คะแนน</th><th>หมายเหตุ</th></tr>
+      ${sc.factors.map((f) => `<tr><td>${esc(f.label)}</td><td>${esc(f.value ?? "—")}</td><td class="r"><b>${f.points}</b>/${f.max}</td><td class="cl-muted">${esc(f.note || "")}</td></tr>`).join("")}</table>
+      <div class="cl-muted">คำนวณจากข้อมูลที่สหกรณ์บันทึกและประวัติในระบบ — เป็นข้อมูลประกอบ ผู้ให้กู้ตัดสินใจตามระเบียบของตน</div>`;
+  }
+  function riskPanel(r) {
+    if (!r || !r.indicators.length) return "";
+    return `<table class="cl-table"><tr><th>ตัวชี้วัดโครงการ</th><th>ค่า</th><th></th><th>เกณฑ์</th></tr>${r.indicators.map((i) => `<tr><td>${esc(i.label)}</td><td>${esc(typeof i.value === "number" ? num(i.value) : i.value ?? "—")}</td><td>${i.ok ? "✅" : "⚠️"}</td><td class="cl-muted">${esc(i.note)}</td></tr>`).join("")}</table>`;
+  }
+  /** ดาวน์โหลดไฟล์จาก API ด้วย token ของพอร์ทัล */
+  async function download(path, filename) {
+    const s = api.getSession();
+    const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${s.access_token}` } });
+    if (!res.ok) { toast("ดาวน์โหลดไม่สำเร็จ", true); return; }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await res.blob());
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  const PROVINCES = [["BANGKOK", "กรุงเทพมหานคร"], ["NAKHON_RATCHASIMA", "นครราชสีมา"], ["KHON_KAEN", "ขอนแก่น"], ["UBON_RATCHATHANI", "อุบลราชธานี"], ["SURIN", "สุรินทร์"], ["BURIRAM", "บุรีรัมย์"],
+    ["ROI_ET", "ร้อยเอ็ด"], ["UDON_THANI", "อุดรธานี"], ["CHAIYAPHUM", "ชัยภูมิ"], ["SISAKET", "ศรีสะเกษ"], ["CHIANG_MAI", "เชียงใหม่"], ["CHIANG_RAI", "เชียงราย"], ["NAKHON_SAWAN", "นครสวรรค์"],
+    ["PHITSANULOK", "พิษณุโลก"], ["SUPHAN_BURI", "สุพรรณบุรี"], ["AYUTTHAYA", "พระนครศรีอยุธยา"], ["SARABURI", "สระบุรี"], ["RATCHABURI", "ราชบุรี"], ["CHANTHABURI", "จันทบุรี"], ["SURAT_THANI", "สุราษฎร์ธานี"], ["SONGKHLA", "สงขลา"]];
+
   return {
+    PTYPE, LISTING_ST, OFFER_ST, gradeBadge, scorePanel, riskPanel, download, PROVINCES,
     PLAN_ST, STAGE_ST, planTrack, satNotes,
     init, get, post, patch, put, upload, esc, baht, num, date, dt, PURPOSE, ITEM_ST, TR_ST, TR_KIND, SAT, EVIDENCE, BANKS, bankName, pill,
     errText, toast, act, formData, bankOptions, accLabel, sandboxBanner, openFile,

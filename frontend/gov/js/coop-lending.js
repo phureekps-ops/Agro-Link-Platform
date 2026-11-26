@@ -62,6 +62,7 @@
         ${st(baht(t.overdue_amount), `ค้างชำระเกินกำหนด${t.overdue_n ? ` (${t.overdue_n} รายการ)` : ""}`, t.overdue_amount > 0)}
       </div>
 
+      <div id="marketBox"></div>
       <h2>🌾 สินเชื่อการผลิตแบบแบ่งงวดตามรอบการเพาะปลูก</h2>
       <div class="g-grid2">
         <div class="cl-card">
@@ -120,6 +121,45 @@
       </div>
       <div class="g-note" style="margin-top:14px">ทุกการเปิดดูหน้านี้และการส่งออกข้อมูลถูกบันทึกในบันทึกการเข้าถึงข้อมูล · ไม่แสดงเลขบัญชีธนาคารหรือข้อมูลส่วนบุคคลเกินจำเป็น</div>`;
     body.querySelectorAll("[data-prov]").forEach((a) => { a.onclick = (e) => { e.preventDefault(); province = a.dataset.prov; load(); }; });
+    loadMarket();
+  }
+
+  const LST = { Review: "รอตรวจ", Returned: "ส่งกลับแก้", Listed: "ประกาศ", Offered: "มีข้อเสนอ", Matched: "จับคู่แล้ว", Signed: "ลงนามแล้ว", Active: "เบิกจ่าย/ชำระคืน", Closed: "ปิด", Withdrawn: "ถอน" };
+  const PT = { member_onlending: "ปล่อยกู้ต่อสมาชิก", procurement: "ทุนรับซื้อผลผลิต", investment: "ลงทุนโครงการใหม่" };
+  async function loadMarket() {
+    const box = document.getElementById("marketBox");
+    if (!box) return;
+    let m;
+    try { m = await CL.get(`/gov/coop-lending/market${province ? `?province=${encodeURIComponent(province)}` : ""}`); } catch (err) { box.innerHTML = ""; return; }
+    const r = m.registry; const f = m.flow; const nc = m.national_counts;
+    const cmeter = (v) => `<div class="g-meter"><i style="width:${Math.max(1, Math.min(100, v))}%;background:#4a86c5"></i></div>`;
+    const cov = (a, b) => `${a.toLocaleString("th-TH")} / ${b.toLocaleString("th-TH")} แห่ง (${b ? Math.round((a / b) * 1000) / 10 : 0}%)`;
+    const st = (k) => m.by_status.filter((x) => x.status === k).reduce((a, x) => a + x.n, 0);
+    const funnel = [["ประกาศ", f.listed], ["มีข้อเสนอ", m.offers.listings_with_offers], ["จับคู่", f.matched], ["ลงนาม", f.signed]];
+    const max = Math.max(1, ...funnel.map((x) => x[1]));
+    const GC = { A: "#1f6b38", B: "#4a8a2e", C: "#c98a00", D: "#b35a00", E: "#a1261d" };
+    const gTot = m.grades.reduce((a, g) => a + g.n, 0);
+    box.innerHTML = `<h2>📣 ตลาดสินเชื่อระหว่างสหกรณ์ (ผู้ขอกู้ประกาศ ผู้ให้กู้แข่งกันเสนอ)</h2>
+      <div class="g-grid2">
+        <div class="cl-card"><b>ฐานข้อมูลสหกรณ์ในระบบ เทียบจำนวนทั้งประเทศ</b>
+          <div class="g-kpi"><span>สหกรณ์ออมทรัพย์</span><b style="font-size:15px">${cov(r.savings, nc.savings)}</b></div>${cmeter((r.savings / nc.savings) * 100)}
+          <div class="g-kpi"><span>สหกรณ์เครดิตยูเนี่ยน</span><b style="font-size:15px">${cov(r.credit_unions, nc.credit_unions)}</b></div>${cmeter((r.credit_unions / nc.credit_unions) * 100)}
+          <div class="g-kpi"><span>สหกรณ์การเกษตรที่มีข้อมูลผู้ขอกู้${province ? " (จังหวัดนี้)" : ""}</span><b style="font-size:15px">${province ? `${r.borrower_profiles} แห่ง` : cov(r.borrower_profiles, nc.agri)}</b></div>${province ? "" : cmeter((r.borrower_profiles / nc.agri) * 100)}
+          <div class="g-kpi"><span>ผู้ให้กู้ที่กำหนดนโยบายสินเชื่อแล้ว · เงินที่ประกาศว่าจัดสรรได้</span><b style="font-size:15px">${r.lender_profiles} แห่ง · ${baht(r.allocatable)}</b></div>
+          <div class="g-note">${esc(nc.source)} — ตัวเลขตามทะเบียนรวมสหกรณ์ที่ยังไม่เริ่มดำเนินการ</div></div>
+        <div class="cl-card"><b>การจับคู่</b>
+          <table class="cl-table g-funnel">${funnel.map(([k, v]) => `<tr><td style="width:90px">${k}</td><td class="bar"><div class="g-stack" style="width:${(v / max) * 100}%"><i style="flex:1;background:#2e7d32"></i></div></td><td class="r">${v}</td></tr>`).join("")}</table>
+          <div class="g-kpi"><span>อัตราการจับคู่สำเร็จ</span><b>${pctTxt(f.match_rate_pct)}</b></div>
+          <div class="g-kpi"><span>ข้อเสนอเฉลี่ยต่อโครงการ · ดอกเบี้ยเฉลี่ย</span><b>${m.offers.per_listing ?? "—"} · ${m.offers.avg_rate != null ? `${m.offers.avg_rate}%` : "—"}</b></div>
+          <div class="g-kpi"><span>ระยะเวลาประกาศ → ลงนาม (เฉลี่ย)</span><b>${f.avg_days_to_sign != null ? `${f.avg_days_to_sign} วัน` : "—"}</b></div>
+          <div class="g-kpi"><span>วงเงินตามสัญญาที่ลงนาม · ผู้ให้กู้ร่วมหลายราย</span><b>${baht(f.signed_amount)} · ${f.syndicated} สัญญา</b></div>
+          ${gTot ? `<div style="margin-top:8px"><b>ระดับความเสี่ยงของโครงการที่ยื่น</b><div class="g-stack">${m.grades.map((g) => `<i style="flex:${g.n};background:${GC[g.grade] || "#999"}" title="เกรด ${g.grade}: ${g.n}"></i>`).join("")}</div>
+            <div class="g-legend">${m.grades.map((g) => `<span style="--c:${GC[g.grade] || "#999"}">เกรด ${g.grade} ${g.n}</span>`).join("")}</div></div>` : ""}
+          <div class="g-note">รอตรวจ ${st("Review")} · ประกาศ/มีข้อเสนอ ${st("Listed") + st("Offered")} · รอลงนาม ${st("Matched")}</div></div>
+      </div>
+      <div class="cl-card" style="overflow-x:auto">${m.listings.length ? `<table class="cl-table"><tr><th>โครงการ</th><th>ผู้ขอกู้</th><th>ประเภท</th><th class="r">วงเงิน</th><th>เกรด</th><th class="r">ข้อเสนอ</th><th>สถานะ</th><th>ผู้ให้กู้ตามสัญญา</th></tr>
+        ${m.listings.map((l) => `<tr><td>${esc(l.title)}</td><td>${esc(l.borrower_name)}<div class="cl-muted">${esc(l.province_name_th || "")}</div></td><td>${esc(PT[l.project_type])}</td><td class="r">${baht(l.amount_requested)}</td>
+          <td>${esc(l.grade || "-")}</td><td class="r">${l.offers}</td><td>${esc(LST[l.status] || l.status)}</td><td>${esc(l.lenders || "-")}</td></tr>`).join("")}</table>` : '<div class="cl-empty">ยังไม่มีโครงการที่ประกาศ</div>'}</div>`;
   }
   async function downloadCsv(btn) {
     btn.disabled = true;

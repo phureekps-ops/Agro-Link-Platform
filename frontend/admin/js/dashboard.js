@@ -119,6 +119,7 @@ const ORG_TYPE_LABEL = {
   BiomassProducer: "ผู้ผลิตสินค้าจากชีวมวล",
   FarmerAidFund: "กองทุนสงเคราะห์เกษตรกร", AgriCommunityEnterprise: "วิสาหกิจชุมชนด้านการเกษตร",
   SavingsCooperative: "สหกรณ์ออมทรัพย์",
+  CreditUnion: "สหกรณ์เครดิตยูเนี่ยน",
 };
 
 // Farmer statuses reuse the same generic badge palette as everywhere else:

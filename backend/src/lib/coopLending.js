@@ -171,7 +171,7 @@ function evidenceRequirements(item) {
   switch (item.source_type === 'manual' ? `manual_${item.purpose}` : item.purpose) {
     case 'inputs': req.kinds = ['invoice']; break;
     case 'machinery_service': req.kinds = ['work_photo']; req.fields = ['service_date', 'service_area_rai']; break;
-    case 'procurement': req.kinds = ['weighing_slip']; break;
+    case 'procurement': req.kinds = ['weighing_slip', 'quality_slip', 'purchase_receipt']; break; // ใบชั่ง ใบตรวจคุณภาพ ใบรับซื้อ
     case 'asset': req.kinds = ['contract', 'down_payment_slip', 'serial_photo', 'invoice']; break;
     default: req.kinds = ['invoice'];
   }

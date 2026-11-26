@@ -11,25 +11,26 @@
 </head>
 <body>
   <header class="app-header">
-    <div class="brand"><a class="cl-back" href="dashboard.html">← พอร์ทัลสหกรณ์</a>🏦 สินเชื่อจากสหกรณ์ออมทรัพย์</div>
+    <div class="brand"><a class="cl-back" href="dashboard.html">← พอร์ทัลสหกรณ์</a>🏦 ตลาดสินเชื่อระหว่างสหกรณ์</div>
     <div class="who"><span class="name" id="orgName"></span><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
   </header>
   <div class="cl-wrap">
     <div id="sandboxBox"></div>
     <div class="cl-card" style="background:#f4faf5">
-      <b>หลักการ:</b> ไม่มีการรับเงินกู้เป็นก้อน — สหกรณ์ยื่นเบิกเป็นรายการพร้อมหลักฐาน (คำสั่งซื้อปัจจัย การจองเครื่องจักร การรับซื้อผลผลิต หรือการซื้อเครื่องจักร)
+      <b>หลักการ:</b> สหกรณ์ประกาศโครงการขอกู้ ผู้ให้กู้ยื่นข้อเสนอแข่งกัน แล้วระบบจัดทำสัญญา · ไม่มีการรับเงินกู้เป็นก้อน — สหกรณ์ยื่นเบิกเป็นรายการพร้อมหลักฐาน (คำสั่งซื้อปัจจัย การจองเครื่องจักร การรับซื้อผลผลิต หรือการซื้อเครื่องจักร)
       เมื่อหลักฐานครบและเกษตรกรยืนยันจากบัญชีของตนเอง สหกรณ์ออมทรัพย์โอนเข้า<b>บัญชีเฉพาะเงินกู้</b>ภายใน <span id="scDays">3</span> วันทำการ
       แล้วสหกรณ์จ่ายตรงถึงผู้ขายภายใน <span id="acDays">4</span> วันทำการ — เลยกำหนดถูกทวงถามและปรับ <span id="penPct">10</span>% ต่อปีจากยอดค้าง (ค่าปรับเป็นของผู้ขาย)
       · สหกรณ์รับผิดชอบชำระคืนเต็มจำนวน แม้สมาชิกบางรายยังไม่ชำระ
     </div>
     <div id="statsBox" class="cl-stats"></div>
     <div class="cl-tabs" id="tabs">
-      <button class="cl-tab active" data-tab="plans">🌾 สินเชื่อการผลิตรายงวด</button>
+      <button class="cl-tab active" data-tab="market">📣 โครงการขอกู้</button>
+      <button class="cl-tab" data-tab="profile">🏢 ข้อมูลสหกรณ์</button>
+      <button class="cl-tab" data-tab="plans">🌾 สินเชื่อการผลิตรายงวด</button>
       <button class="cl-tab" data-tab="items">🧾 รายการเบิก</button>
       <button class="cl-tab" data-tab="transfers">🏦 คำสั่งโอน</button>
       <button class="cl-tab" data-tab="facilities">📑 วงเงิน &amp; ชำระคืน</button>
       <button class="cl-tab" data-tab="assets">🚜 สินเชื่อเครื่องจักร</button>
-      <button class="cl-tab" data-tab="programs">📢 ขอกู้</button>
       <button class="cl-tab" data-tab="accounts">💳 บัญชีธนาคาร</button>
       <button class="cl-tab" data-tab="notices">🔔 การทวงถาม</button>
     </div>
@@ -37,6 +38,7 @@
   </div>
   <script src="js/api.js"></script>
   <script src="../js/coop-lending-common.js"></script>
+  <script src="js/lending-market.js"></script>
   <script src="js/lending.js"></script>
 </body>
 </html>

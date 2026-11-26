@@ -32,7 +32,7 @@ const PORTALS = {
   farmeraidfund: { name_th: 'กองทุนสงเคราะห์เกษตรกร', desc_th: 'สินเชื่อ เครื่องจักรกล ปัจจัยการผลิต รับซื้อผลผลิต', icon: '🤲', url: 'farmeraidfund/dashboard.html', storage_key: 'agrolink_farmeraidfund_session' },
   communityenterprise: { name_th: 'วิสาหกิจชุมชนด้านการเกษตร', desc_th: 'สินเชื่อ เครื่องจักรกล ปัจจัยการผลิต รับซื้อผลผลิต', icon: '🏘️', url: 'communityenterprise/dashboard.html', storage_key: 'agrolink_communityenterprise_session' },
   biomassproducer: { name_th: 'ผู้ผลิตสินค้าจากชีวมวล', desc_th: 'ฟางอัดก้อน/อัดเม็ด ยอดอ้อยอัดก้อน ไบโอชาร์', icon: '♻️', url: 'biomassproducer/dashboard.html', storage_key: 'agrolink_biomassproducer_session' },
-  savingscoop: { name_th: 'สหกรณ์ออมทรัพย์', desc_th: 'ให้สหกรณ์การเกษตรกู้ จ่ายตรงถึงผู้ขายตามหลักฐาน', icon: '🏦', url: 'savingscoop/dashboard.html', storage_key: 'agrolink_savingscoop_session' },
+  savingscoop: { name_th: 'สหกรณ์ออมทรัพย์ / เครดิตยูเนี่ยน', desc_th: 'ตลาดสินเชื่อระหว่างสหกรณ์ — ยื่นข้อเสนอให้กู้ จ่ายตรงถึงผู้ขายตามหลักฐาน', icon: '🏦', url: 'savingscoop/dashboard.html', storage_key: 'agrolink_savingscoop_session' },
   biomassbuyer: { name_th: 'ผู้รับซื้อชีวมวล', desc_th: 'ระบุชนิดชีวมวลและสเปคที่ต้องการ', icon: '🏭', url: 'biomassbuyer/dashboard.html', storage_key: 'agrolink_biomassbuyer_session' },
   dairypartner: { name_th: 'คู่ค้าโคนม', desc_th: 'โรงงานแปรรูปนม ตลาดนมส่วนเกิน ผู้ขายอาหารสัตว์ สัตวแพทย์', icon: '🥛', url: 'dairy-partner.html', storage_key: 'agrolink_dairy_partner_session' },
   gov: { name_th: 'เจ้าหน้าที่ภาครัฐ', desc_th: 'ติดตามข้อมูลระดับพื้นที่และนโยบาย', icon: '🏛️', url: 'gov/dashboard.html', storage_key: 'agrolink_gov_session' },
@@ -57,12 +57,13 @@ const ROLE_PORTALS = {
   BiomassProducer: ['biomassproducer'],
   BiomassBuyer: ['biomassbuyer'],
   SavingsCooperative: ['savingscoop'],
+  CreditUnion: ['savingscoop'],
 };
 // portals whose backend accepts a staff (organization_member) login
 const STAFF_PORTALS = {
   coop: 'Cooperative', dairy: 'Cooperative', lender: 'Lender', logistics: 'Logistics', machinery: null, dryingyard: 'DryingYardService',
   biomassproducer: 'BiomassProducer', biomassbuyer: 'BiomassBuyer',
-  savingscoop: 'SavingsCooperative',
+  savingscoop: null, // สหกรณ์ออมทรัพย์ หรือ สหกรณ์เครดิตยูเนี่ยน
 };
 
 const STATUS_RANK = { Verified: 2, Pending: 1, Rejected: 0 };
