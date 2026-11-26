@@ -442,6 +442,7 @@
   const OPT_KIND = {
     buyer_extra: "ขอผู้ซื้อตามสัญญารับเพิ่ม", transfer_center: "ย้ายไปถังศูนย์อื่น", processor_match: "เสนอโรงงานที่ประกาศรับว่าง", directory_buyer: "ติดต่อผู้รับซื้อในทะเบียน",
     own_plant: "แปรรูปเองเป็นผลิตภัณฑ์อายุยาว", herd_plan: "วางแผนฝูงลดน้ำนมที่ต้นทาง", gov_help: "ขอความช่วยเหลือจังหวัด/ปศุสัตว์",
+    quota_holder: "ส่งให้ผู้ถือโควตานำเข้านม (ตามมาตรการรับซื้อนมส่วนเกิน)",
   };
   const OPT_ST = { Suggested: ["แนะนำ", ""], Approved: ["อนุมัติแล้ว", "ok"], Rejected: ["ไม่เลือก", ""], Done: ["สำเร็จ", "ok"], Failed: ["ไม่สำเร็จ", "bad"] };
   const WHY = {
@@ -451,6 +452,7 @@
     check_plant_capacity: "ยังไม่รู้กำลังผลิตว่างของโรงนม — ตรวจก่อน", spare_from_history: "จำกัดตามกำลังผลิตว่าง (จากประวัติ 30 วัน)", needs_product_market: "ต้องมีตลาดรองรับผลิตภัณฑ์", processing_cost_not_set: "ยังไม่ได้ตั้งค่าแปรรูป",
     dry_off_early: "หยุดรีดโคท้ายระยะให้นมเร็วขึ้น", cull_low_yield: "คัดโคให้นมต่ำ", adjust_concentrate: "ปรับอาหารข้น",
     backup: "ทางเลือกสำรอง", uncovered_surplus: "ทางเลือกอื่นยังไม่พอ",
+    import_quota_measure: "ผู้ได้รับโควตานำเข้านมต้องรับซื้อตามมาตรการของคณะกรรมการโคนมฯ (ยังรับไม่ครบส่วนของตน)", price_reference_contract: "ราคาอ้างอิงราคาสัญญาเดิมของสหกรณ์ — ยืนยันกับโรงงาน",
   };
   const LOG_TH = {
     detected: "ระบบตรวจพบ", option_approved: "อนุมัติทางเลือก", option_rejected: "ไม่เลือกทางเลือก", option_done: "บันทึกผลสำเร็จ", option_failed: "บันทึกว่าไม่สำเร็จ",
@@ -996,7 +998,7 @@
     caseScan: async () => { const r = await run(() => API.post("/dairy/surplus-cases/scan", {})); if (r) { toast(`ตรวจแล้ว: พบ ${r.scan.detected} · ใหม่ ${r.scan.opened} · หายเอง ${r.scan.cleared}`); refresh(); badges(); } },
     caseView: (el) => { cache.caseView = el.dataset.view; refresh(); },
     caseApprove: async (el) => {
-      const msg = el.dataset.kind === "processor_match" ? "สร้างประกาศนมส่วนเกินและส่งข้อเสนอให้โรงงานแล้ว" : el.dataset.kind === "gov_help" ? "ส่งคำขอความช่วยเหลือจังหวัดแล้ว" : "อนุมัติแล้ว — ดำเนินการแล้วบันทึกผล";
+      const msg = ["processor_match", "quota_holder"].includes(el.dataset.kind) ? "สร้างประกาศนมส่วนเกินและส่งข้อเสนอให้โรงงานแล้ว" : el.dataset.kind === "gov_help" ? "ส่งคำขอความช่วยเหลือจังหวัดแล้ว" : "อนุมัติแล้ว — ดำเนินการแล้วบันทึกผล";
       if (await run(() => API.post(`/dairy/surplus-cases/${el.dataset.case}/options/${el.dataset.id}/approve`, {}), msg)) { refresh(); badges(); }
     },
     caseReject: async (el) => { if (await run(() => API.post(`/dairy/surplus-cases/${el.dataset.case}/options/${el.dataset.id}/reject`, {}), "บันทึกแล้ว")) refresh(); },

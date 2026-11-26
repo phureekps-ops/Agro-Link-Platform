@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — โควตานำเข้านม (ผู้ดูแลระบบ)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>.cl-back { color:#fff; opacity:.85; text-decoration:none; font-size:13px; margin-right:12px; } .q-edit input, .q-edit select { padding:5px 7px; border:1px solid #d7ddd8; border-radius:7px; font:inherit; font-size:13px; width:95px; }</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><a class="cl-back" href="dashboard.html">← ผู้ดูแลระบบ</a>📦 โควตานำเข้าสินค้านม × ปัญหานมล้น</div>
+    <div class="who"><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+  </header>
+  <div class="cl-wrap" id="view"><div class="cl-empty">กำลังโหลด…</div></div>
+  <script src="js/api.js"></script>
+  <script src="../js/coop-lending-common.js"></script>
+  <script>
+  /* global AgroLinkAdminAPI, CL */
+  (function () {
+    const API = AgroLinkAdminAPI;
+    if (API.requireSessionOrRedirect && !API.requireSessionOrRedirect()) return;
+    CL.init(API);
+    const { esc, date, num } = CL;
+    const n2 = (v) => num(v, 2);
+    const view = document.getElementById("view");
+    document.getElementById("logoutBtn").onclick = () => API.logout();
+    const AGR = { WTO: "WTO", TAFTA: "TAFTA", TNZCEP: "TNZCEP", TAFTA_TNZCEP: "TAFTA/TNZCEP", AFTA: "AFTA", ALL: "รวมทุกความตกลง" };
+    const TST = { Planned: "รอเปิด", Open: "เปิดแล้ว", DeferProposed: "เสนอชะลอ", Deferred: "ชะลอแล้ว", Closed: "ปิด" };
+    const MST = { Draft: "ร่าง", Active: "มีผล", Closed: "สิ้นสุด" };
+    let year = null;
+    async function render() {
+      let d;
+      try { d = await CL.get(`/admin/dairy-import-quota${year ? `?year=${year}` : ""}`); } catch (err) {
+        view.innerHTML = `<div class="cl-card cl-late">โหลดไม่สำเร็จ: ${esc(CL.errText(err))}${err.message === "dairy_import_quota_not_installed" ? " — รัน backend/db/grant_dairy_import_quota.sql บน Render ก่อน" : ""}</div>`;
+        return;
+      }
+      year = d.quota_year;
+      const pOpts = d.products.map((p) => `<option value="${p.product_code}">${esc(p.name_th)}</option>`).join("");
+      const procOpts = `<option value="">— ไม่อยู่ในระบบ —</option>${d.processors.map((p) => `<option value="${p.org_id}">${esc(p.display_name)}</option>`).join("")}`;
+      const prog = (mid) => d.progress.find((x) => x.measure_id === mid);
+      view.innerHTML = `
+        <div class="cl-card" style="background:#f4faf5">บันทึกตามมติคณะกรรมการโคนมและผลิตภัณฑ์นม — ระบบใช้ข้อมูลนี้ (1) คำนวณทางเลือกเชิงนโยบายในแดชบอร์ดนโยบายโคนมของภาครัฐ
+          และ (2) ระหว่างมีมาตรการรับซื้อนมส่วนเกิน ผู้ถือโควตาที่เป็นโรงงานในระบบจะเป็นทางเลือกในระบบแนะนำนมเกินของสหกรณ์
+          <div class="cl-inline" style="margin-top:8px">ปีโควตา (พ.ศ.) <select id="yearSel">${[...new Set([...d.years, d.quota_year])].map((y) => `<option ${y === d.quota_year ? "selected" : ""}>${y}</option>`).join("")}</select></div></div>
+
+        <div class="cl-card"><h3>โควตา/ปริมาณนำเข้ารายงวด ปี ${d.quota_year}</h3>
+          <table class="cl-table q-edit"><tr><th>สินค้า</th><th>ความตกลง</th><th>กลุ่ม</th><th>งวด</th><th class="r">ปริมาณ (ตัน)</th><th>ลงระบบ</th><th>สถานะ</th><th class="r">ชะลอ (ตัน)</th><th class="r">นำเข้าจริง (ตัน)</th><th></th></tr>
+          ${d.tranches.map((t) => `<tr data-tr="${t.tranche_id}"><td>${esc(t.name_th)}</td><td>${esc(AGR[t.agreement])}</td><td>${t.entity_group || "-"}</td><td>${t.tranche_no}</td>
+            <td class="r">${n2(t.quantity_t)}</td><td>${esc(date(t.opens_on))}</td>
+            <td><select class="t-st">${Object.entries(TST).map(([k, v]) => `<option value="${k}" ${k === t.status ? "selected" : ""}>${v}</option>`).join("")}</select></td>
+            <td class="r"><input class="t-def" type="number" step="0.01" min="0" value="${t.deferred_t || ""}"></td><td class="r"><input class="t-imp" type="number" step="0.01" min="0" value="${t.imported_t ?? ""}"></td>
+            <td><button class="cl-btn ghost" data-act="tr-save">บันทึก</button></td></tr>
+            ${t.source_ref ? `<tr><td colspan="10" class="cl-muted" style="border-top:0;padding-top:0">ที่มา: ${esc(t.source_ref)}${t.note ? ` · ${esc(t.note)}` : ""}</td></tr>` : ""}`).join("") || '<tr><td colspan="10" class="cl-empty">ยังไม่มี</td></tr>'}</table>
+          <form id="trForm" class="cl-form" style="margin-top:10px">
+            <div><label>สินค้า</label><select name="product_code">${pOpts}</select></div>
+            <div><label>ความตกลง</label><select name="agreement">${Object.entries(AGR).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></div>
+            <div><label>กลุ่มนิติบุคคล</label><select name="entity_group"><option value="">ไม่แยก</option><option value="1">กลุ่มที่ 1</option><option value="2">กลุ่มที่ 2</option></select></div>
+            <div><label>งวดที่</label><input name="tranche_no" type="number" min="1" max="4" value="1"></div>
+            <div><label>ปริมาณ (ตัน)</label><input name="quantity_t" type="number" step="0.01" min="0.01" required></div>
+            <div><label>วันลงระบบ</label><input name="opens_on" type="date" required></div>
+            <div class="wide"><label>ที่มา (มติ/ประกาศ)</label><input name="source_ref"></div>
+            <div><button class="cl-btn" type="submit">เพิ่มงวด</button></div></form></div>
+
+        <div class="cl-card"><h3>ผู้ได้รับจัดสรรโควตารายนิติบุคคล ปี ${d.quota_year}</h3>
+          <div class="cl-muted">ผูกกับโรงงานในระบบเพื่อให้เป็นทางเลือกในระบบแนะนำนมเกินของสหกรณ์ระหว่างมีมาตรการ</div>
+          <table class="cl-table"><tr><th>ผู้ถือโควตา</th><th>สินค้า</th><th>กลุ่ม</th><th class="r">โควตา (ตัน)</th><th class="r">รับซื้อนมดิบตาม MOU (กก./วัน)</th><th>โรงงานในระบบ</th><th></th></tr>
+          ${d.holders.map((h) => `<tr data-h="${h.holder_id}" style="${h.active ? "" : "opacity:.5"}"><td>${esc(h.holder_name)}</td><td>${esc(h.product_code)}</td><td>${h.entity_group}</td><td class="r">${n2(h.quantity_t)}</td>
+            <td class="r">${h.mou_raw_milk_kg_day == null ? "-" : n2(h.mou_raw_milk_kg_day)}</td><td>${h.processor_name ? `✅ ${esc(h.processor_name)}` : "—"}</td>
+            <td><button class="cl-btn ghost" data-act="h-toggle" data-on="${h.active ? 1 : 0}">${h.active ? "ปิดใช้" : "เปิดใช้"}</button></td></tr>`).join("") || '<tr><td colspan="7" class="cl-empty">ยังไม่มี</td></tr>'}</table>
+          <form id="hForm" class="cl-form" style="margin-top:10px">
+            <div class="wide"><label>ชื่อนิติบุคคล</label><input name="holder_name" required></div>
+            <div><label>สินค้า</label><select name="product_code">${pOpts}</select></div>
+            <div><label>กลุ่มนิติบุคคล</label><select name="entity_group"><option value="1">กลุ่มที่ 1</option><option value="2">กลุ่มที่ 2</option></select></div>
+            <div><label>โควตา (ตัน)</label><input name="quantity_t" type="number" step="0.01" min="0.01" required></div>
+            <div><label>รับซื้อนมดิบตาม MOU (กก./วัน)</label><input name="mou_raw_milk_kg_day" type="number" step="0.01" min="0"></div>
+            <div><label>โรงงานในระบบ</label><select name="org_id">${procOpts}</select></div>
+            <div><button class="cl-btn" type="submit">เพิ่มผู้ถือโควตา</button></div></form></div>
+
+        <div class="cl-card"><h3>มาตรการรับซื้อน้ำนมดิบส่วนเกิน</h3>
+          ${d.measures.map((m) => {
+            const p = prog(m.measure_id);
+            return `<div class="cl-card" data-m="${m.measure_id}" style="box-shadow:none;border:1px solid #eef1ee;margin:8px 0">
+              <div class="cl-row"><div><b>${esc(m.title)}</b> · ${n2(m.total_kg_day)} กก./วัน × ${m.days} วัน (${esc(date(m.start_date))} – ${esc(date(m.end_date))}) · กลุ่ม 1 : 2 = ${Number(m.group1_pct)} : ${100 - Number(m.group1_pct)}</div>
+                <div class="cl-inline"><b>${MST[m.status]}</b>${m.status !== "Active" ? '<button class="cl-btn" data-act="m-Active">ให้มีผล</button>' : ""}${m.status !== "Closed" ? '<button class="cl-btn bad" data-act="m-Closed">สิ้นสุด</button>' : ""}</div></div>
+              ${p ? `<table class="cl-table" style="margin-top:6px"><tr><th>ผู้ถือโควตา</th><th>กลุ่ม</th><th class="r">ต้องรับ (กก./วัน)</th><th class="r">สหกรณ์ตกลงส่ง (กก./วัน)</th><th class="r">ส่งจริง (กก.)</th></tr>
+                ${p.rows.map((r) => `<tr><td>${esc(r.holder_name)}${r.org_id ? "" : ' <span class="cl-muted">(ไม่อยู่ในระบบ)</span>'}</td><td>${r.entity_group}</td><td class="r">${n2(r.kg_per_day)}</td><td class="r">${n2(r.approved_kg_day)}</td><td class="r">${n2(r.delivered_kg)}</td></tr>`).join("")}</table>
+                ${p.unassigned_kg_day > 0 ? `<div class="cl-late">ยังไม่มีผู้ถือโควตาบางกลุ่ม — ${n2(p.unassigned_kg_day)} กก./วัน ยังไม่ได้มอบหมาย</div>` : ""}` : ""}</div>`;
+          }).join("") || '<div class="cl-empty">ยังไม่มี</div>'}
+          <form id="mForm" class="cl-form" style="margin-top:10px">
+            <div class="wide"><label>ชื่อมาตรการ</label><input name="title" required value="มาตรการเร่งด่วนรองรับน้ำนมดิบส่วนเกิน"></div>
+            <div><label>ปริมาณ (กก./วัน)</label><input name="total_kg_day" type="number" step="0.01" min="1" required></div>
+            <div><label>เริ่ม</label><input name="start_date" type="date" required></div>
+            <div><label>จำนวนวัน</label><input name="days" type="number" min="1" max="365" value="60"></div>
+            <div><label>สัดส่วนกลุ่มที่ 1 (%)</label><input name="group1_pct" type="number" min="0" max="100" step="0.01" value="80"></div>
+            <div><label>สินค้าที่ใช้แบ่งตามโควตา</label><select name="product_code">${pOpts}</select></div>
+            <div class="wide"><label>ที่มา (มติ)</label><input name="source_ref"></div>
+            <div><button class="cl-btn" type="submit">บันทึกเป็นร่าง</button></div></form></div>
+
+        <div class="cl-card"><h3>ค่าแปลงเป็นน้ำนมดิบเทียบเท่า</h3>
+          <table class="cl-table q-edit">${d.products.map((p) => `<tr data-p="${p.product_code}"><td>${esc(p.name_th)}</td><td><input class="p-f" type="number" step="0.01" min="0.01" value="${Number(p.raw_milk_factor)}"> กก. น้ำนมดิบ ต่อ 1 กก.</td>
+            <td class="cl-muted">${esc(p.factor_note || "")}</td><td><button class="cl-btn ghost" data-act="p-save">บันทึก</button></td></tr>`).join("")}</table></div>`;
+
+      document.getElementById("yearSel").onchange = (e) => { year = e.target.value; render(); };
+      const form = (id, path, ok) => {
+        document.getElementById(id).onsubmit = async (e) => {
+          e.preventDefault();
+          const b = { ...CL.formData(e.target), quota_year: year };
+          Object.keys(b).forEach((k) => { if (b[k] === "") delete b[k]; });
+          if (await CL.act(e.submitter, () => CL.post(path, b), ok)) render();
+        };
+      };
+      form("trForm", "/admin/dairy-import-quota/tranches", "เพิ่มงวดแล้ว");
+      form("hForm", "/admin/dairy-import-quota/holders", "เพิ่มผู้ถือโควตาแล้ว");
+      form("mForm", "/admin/dairy-import-quota/measures", "บันทึกมาตรการ (ร่าง) แล้ว — กด \"ให้มีผล\" เมื่อมีมติ");
+      view.onclick = async (e) => {
+        const b = e.target.closest("[data-act]");
+        if (!b) return;
+        const a = b.dataset.act;
+        let r = null;
+        if (a === "tr-save") {
+          const row = b.closest("[data-tr]");
+          const body = { status: row.querySelector(".t-st").value, deferred_t: row.querySelector(".t-def").value || 0 };
+          const imp = row.querySelector(".t-imp").value;
+          if (imp !== "") body.imported_t = imp;
+          r = await CL.act(b, () => CL.patch(`/admin/dairy-import-quota/tranches/${row.dataset.tr}`, body), "บันทึกแล้ว");
+        } else if (a === "h-toggle") {
+          r = await CL.act(b, () => CL.patch(`/admin/dairy-import-quota/holders/${b.closest("[data-h]").dataset.h}`, { active: b.dataset.on !== "1" }), "บันทึกแล้ว");
+        } else if (a.startsWith("m-")) {
+          if (!window.confirm(a === "m-Active" ? "ให้มาตรการนี้มีผล? ผู้ถือโควตาที่เป็นโรงงานในระบบจะเป็นทางเลือกให้สหกรณ์ทันที" : "สิ้นสุดมาตรการนี้?")) return;
+          r = await CL.act(b, () => CL.patch(`/admin/dairy-import-quota/measures/${b.closest("[data-m]").dataset.m}`, { status: a.slice(2) }), "บันทึกแล้ว");
+        } else if (a === "p-save") {
+          const row = b.closest("[data-p]");
+          r = await CL.act(b, () => CL.put(`/admin/dairy-import-quota/products/${row.dataset.p}`, { raw_milk_factor: row.querySelector(".p-f").value }), "บันทึกแล้ว");
+        }
+        if (r) render();
+      };
+    }
+    render();
+  })();
+  </script>
+</body>
+</html>

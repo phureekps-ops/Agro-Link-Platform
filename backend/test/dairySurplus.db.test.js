@@ -85,6 +85,10 @@ test('surplus milk: detect → recommend → approve → resolve → province (d
   )).rows[0].capacity_id;
   // the local test DB keeps capacities from earlier runs — only this run's factory is open
   await db.query('UPDATE dairy.processor_capacity SET active=false WHERE org_id<>$1 AND active', [factoryId]);
+  // ...and no import-quota surplus measure from earlier runs/demos (grant_dairy_import_quota.sql) adds options here
+  if ((await db.query(`SELECT to_regclass('dairy.absorption_measure') IS NOT NULL AS ok`)).rows[0].ok) {
+    await db.query(`UPDATE dairy.absorption_measure SET status='Closed' WHERE status='Active'`);
+  }
 
   const officerId = crypto.randomUUID();
   await db.query(
@@ -233,5 +237,66 @@ test('surplus milk: detect → recommend → approve → resolve → province (d
 
     await call(COOP, 'POST', `/dairy/surplus-cases/${k2.case_id}/dismiss`, {}, 400);
     assert.equal((await call(COOP, 'POST', `/dairy/surplus-cases/${k2.case_id}/dismiss`, { note: 'ตาชั่งผิด' })).status, 'Dismissed');
+  });
+
+  await t.test('import quota: holders share the surplus measure 80:20; quota holder becomes a coop option; government sees policy options', async () => {
+    if (!(await db.query(`SELECT to_regclass('dairy.import_quota_tranche') IS NOT NULL AS ok`)).rows[0].ok) return; // grant_dairy_import_quota.sql not applied
+    const ADMIN = jwt.sign({ subjectType: 'platform' }, JWT_SECRET);
+    const Y = 2599;
+    await db.query(`UPDATE dairy.absorption_measure SET status='Closed' WHERE status='Active'`); // local DB: earlier runs
+    await db.query('DELETE FROM dairy.import_quota_holder WHERE quota_year=$1', [Y]);
+    await db.query('DELETE FROM dairy.import_quota_tranche WHERE quota_year=$1', [Y]);
+    await call(ADMIN, 'POST', '/admin/dairy-import-quota/tranches', { quota_year: Y, agreement: 'TAFTA_TNZCEP', product_code: 'smp', tranche_no: 1, quantity_t: 700, opens_on: dayOffset(-30) }, 201);
+    const t2 = await call(ADMIN, 'POST', '/admin/dairy-import-quota/tranches', { quota_year: Y, agreement: 'TAFTA_TNZCEP', product_code: 'smp', tranche_no: 2, quantity_t: 300, opens_on: dayOffset(120) }, 201);
+    await call(ADMIN, 'POST', '/admin/dairy-import-quota/tranches', { quota_year: Y, agreement: 'TAFTA_TNZCEP', product_code: 'smp', tranche_no: 2, quantity_t: 1, opens_on: dayOffset(120) }, 409);
+    await call(ADMIN, 'POST', '/admin/dairy-import-quota/holders', { quota_year: Y, holder_name: `โรงงานยูเอชที ${tag}`, org_id: factoryId, entity_group: 1, quantity_t: 600 }, 201);
+    await call(ADMIN, 'POST', '/admin/dairy-import-quota/holders', { quota_year: Y, holder_name: `บริษัทนมนอกระบบ ${tag}`, entity_group: 1, quantity_t: 400 }, 201);
+    await call(ADMIN, 'POST', '/admin/dairy-import-quota/holders', { quota_year: Y, holder_name: `ผู้ใช้นมผงอุตสาหกรรม ${tag}`, entity_group: 2, quantity_t: 200 }, 201);
+    await call(COOP, 'GET', '/admin/dairy-import-quota', undefined, 403);
+    const m = await call(ADMIN, 'POST', '/admin/dairy-import-quota/measures', {
+      title: 'มาตรการเร่งด่วนรับซื้อน้ำนมดิบส่วนเกิน (ทดสอบ)', quota_year: Y, total_kg_day: 5000, start_date: dayOffset(-1), days: 60, group1_pct: 80, status: 'Active',
+    }, 201);
+    const a = await call(ADMIN, 'GET', `/admin/dairy-import-quota?year=${Y}`);
+    const rows = a.progress[0].rows;
+    assert.equal(rows.find((r) => r.org_id === factoryId).kg_per_day, 2400); // 5,000 × 80% × 600/1,000
+    assert.equal(rows.find((r) => r.entity_group === 2).kg_per_day, 1000);
+
+    // the coop's next overflow: the quota holder's factory is an option (other capacity closed, milk can wait 48 h)
+    await db.query('UPDATE dairy.processor_capacity SET active=false WHERE capacity_id=$1', [cap]);
+    await call(COOP, 'PUT', '/dairy/settings', { surplus_hold_hours: 48 });
+    await db.query(`UPDATE dairy.surplus_case SET closed_at = now() - interval '13 hours' WHERE coop_org_id=$1 AND status IN ('Resolved','Dismissed')`, [coopId]);
+    const r = await call(COOP, 'POST', '/dairy/surplus-cases/scan');
+    const k3 = r.cases[0];
+    const q = k3.options.find((o) => o.kind === 'quota_holder');
+    assert.ok(q, JSON.stringify(k3.options.map((o) => o.kind)));
+    assert.equal(q.feasible, true);
+    assert.match(q.target_name, /ผู้ถือโควตานำเข้า กลุ่ม 1/);
+    const ok = await call(COOP, 'POST', `/dairy/surplus-cases/${k3.case_id}/options/${q.option_id}/approve`);
+    const prop = (await db.query('SELECT * FROM dairy.surplus_proposal WHERE proposal_id=$1', [ok.proposal_id])).rows[0];
+    assert.equal(prop.processor_org_id, factoryId);
+    assert.equal(prop.capacity_id, null);
+    const a2 = await call(ADMIN, 'GET', `/admin/dairy-import-quota?year=${Y}`);
+    assert.equal(Number(a2.progress[0].rows.find((x) => x.org_id === factoryId).approved_kg_day), Number(q.kg_per_day));
+
+    // government: quota vs surplus, policy options computed on the measure (5,000 kg/day × 60 days)
+    const g = await call(GOV, 'GET', `/dairy-gov/import-quota?year=${Y}`);
+    assert.equal(g.basis, 'measure');
+    assert.equal(g.active_measure.measure_id, m.measure_id);
+    const defer = g.options.find((o) => o.kind === 'defer_import');
+    assert.equal(defer.recommended_tranche_id, t2.tranche_id);
+    assert.equal(defer.propose_t, 27.27); // 300,000 kg ÷ 11 ÷ 1,000
+    assert.equal(defer.decide_by, dayOffset(90));
+    assert.equal(g.options.find((o) => o.kind === 'domestic_powder').powder_t, 27.27);
+    const ab = g.options.find((o) => o.kind === 'absorb_by_quota_holders');
+    assert.equal(ab.holders.length, 3);
+    assert.equal(ab.unassigned_kg_day, 0);
+    assert.equal(g.decision_points[0].tranche_id, t2.tranche_id);
+    // recording the committee's decision
+    await call(ADMIN, 'PATCH', `/admin/dairy-import-quota/tranches/${t2.tranche_id}`, { status: 'Deferred' }, 400);
+    await call(ADMIN, 'PATCH', `/admin/dairy-import-quota/tranches/${t2.tranche_id}`, { status: 'Deferred', deferred_t: 27.27 });
+    const g2 = await call(GOV, 'GET', `/dairy-gov/import-quota?year=${Y}`);
+    assert.equal(g2.tranches.find((x) => x.tranche_id === t2.tranche_id).net_t, 272.73);
+    await call(COOP, 'GET', `/dairy-gov/import-quota?year=${Y}`, undefined, 403);
+    await call(ADMIN, 'PATCH', `/admin/dairy-import-quota/measures/${m.measure_id}`, { status: 'Closed' });
   });
 });

@@ -1109,6 +1109,25 @@ router.post('/surplus-cases/:id/options/:oid/approve', h(async (req) => db(req, 
     });
     set.offer_id = offer.offer_id; set.proposal_id = prop.proposal_id;
   }
+  if (o.kind === 'quota_holder') {
+    // ผู้ถือโควตานำเข้าต้องรับซื้อตามมาตรการ: สร้างประกาศนมส่วนเกิน + ส่งข้อเสนอให้โรงงานของผู้ถือโควตา (โรงงานกดตอบรับในพอร์ทัลคู่ค้า)
+    const q = (await c.query(
+      `SELECT h.org_id, m.status, m.start_date + m.days - 1 AS end_date FROM dairy.import_quota_holder h
+         JOIN dairy.processor_profile pp ON pp.org_id=h.org_id AND pp.active JOIN dairy.absorption_measure m ON m.measure_id=$2
+        WHERE h.holder_id=$1 AND h.active`, [o.target_id, o.measure_id],
+    )).rows[0];
+    if (!q || q.status !== 'Active') throw conflict('quota_measure_not_active');
+    const s = await core.settings(c, coop);
+    const days = Math.min(90, Math.max(1, Number(o.days)));
+    const offer = await insertRow(c, 'dairy.surplus_offer', {
+      coop_org_id: coop, start_date: bkkToday(), days, kg_per_day: o.kg_per_day, min_price: Number(s.surplus_min_price_per_kg) || 0,
+      note: 'มาตรการรับซื้อน้ำนมดิบส่วนเกินของผู้ถือโควตานำเข้า (จากระบบแนะนำแก้ปัญหานมเกิน)',
+    });
+    const prop = await insertRow(c, 'dairy.surplus_proposal', {
+      offer_id: offer.offer_id, processor_org_id: q.org_id, kg_per_day: o.kg_per_day, price_per_kg: o.price_per_kg ?? 0, proposed_by: 'coop',
+    });
+    set.offer_id = offer.offer_id; set.proposal_id = prop.proposal_id;
+  }
   const opt = await updateRow(c, 'dairy.surplus_option', 'option_id', o.option_id, set);
   if (o.kind === 'gov_help') {
     await c.query(`UPDATE dairy.surplus_case SET status='Escalated', shared_with_gov=true, escalated_at=COALESCE(escalated_at, now()) WHERE case_id=$1`, [k.case_id]);

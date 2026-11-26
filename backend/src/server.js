@@ -115,6 +115,7 @@ const dairyMemberRouter = require('./routes/dairymember');
 const dairyPartnerRouter = require('./routes/dairypartner');
 const { iot: dairyIotRouter, pub: dairyPublicRouter } = require('./routes/dairyiot');
 const dairyGovRouter = require('./routes/dairygov');
+const dairyImportQuota = require('./routes/dairyImportQuota');
 
 const app = express();
 
@@ -212,6 +213,9 @@ app.use('/admin/plot-ai', plotAiRouters.admin);
 app.use('/admin/dairy-directory', dairyDirectoryRouters.admin);
 // coopLending.js — mounted before '/admin' for the same reason as plotai.js/dairydirectory.js.
 app.use('/admin/coop-lending', coopLendingRouters.admin);
+// โควตานำเข้านม × ปัญหานมล้น (db/grant_dairy_import_quota.sql) — ก่อน '/admin' และ '/dairy-gov'
+app.use('/admin/dairy-import-quota', dairyImportQuota.admin);
+app.use('/dairy-gov/import-quota', dairyImportQuota.gov);
 app.use('/savings', coopLendingRouters.savings);
 app.use('/coop-lending', coopLendingRouters.borrower);
 app.use('/farmer-lending', coopLendingRouters.farmer);

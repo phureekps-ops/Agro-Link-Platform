@@ -48,8 +48,8 @@ const CL = (() => {
   const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const baht = (n) => (n == null || n === "" ? "-" : `${Number(n).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`);
   const num = (n, d = 2) => Number(n || 0).toLocaleString("th-TH", { minimumFractionDigits: d, maximumFractionDigits: d });
-  const date = (v) => (v ? new Date(String(v).length === 10 ? `${v}T00:00:00+07:00` : v).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" }) : "-");
-  const dt = (v) => (v ? new Date(v).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-");
+  const date = (v) => (v ? new Date(String(v).length === 10 ? `${v}T00:00:00+07:00` : v).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" }) : "-");
+  const dt = (v) => (v ? new Date(v).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }) : "-");
 
   const PURPOSE = { inputs: "ปัจจัยการผลิต", machinery_service: "ค่าบริการเครื่องจักร", procurement: "รับซื้อผลผลิต", asset: "ซื้อเครื่องจักร/อุปกรณ์" };
   const ITEM_ST = {

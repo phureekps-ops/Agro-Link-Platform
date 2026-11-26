@@ -22,7 +22,7 @@ const ROAD_FACTOR = 1.3; // ระยะทางถนน ≈ ระยะเ�
 const ASSUMED_KM = 150; // ไม่มีพิกัด → ประมาณค่าขนส่งที่ 150 กม. (บอกผู้ใช้ว่าเป็นค่าประมาณ)
 const BUYER_EXTRA_SHARE = 0.2; // สมมติผู้ซื้อตามสัญญารับเพิ่มได้ไม่เกิน 20% ของปริมาณสัญญา
 const LEAD_HOURS = {
-  transfer_center: 3, buyer_extra: 6, own_plant: 12, processor_match: 24, gov_help: 48, directory_buyer: 72, herd_plan: 336,
+  transfer_center: 3, buyer_extra: 6, own_plant: 12, processor_match: 24, quota_holder: 24, gov_help: 48, directory_buyer: 72, herd_plan: 336,
 };
 const ACT_HOURS = { '7d': 72, '30d': 7 * 24, '60d': 14 * 24, '90d': 30 * 24 };
 const HORIZON_DAYS = { today: 1, '7d': 7, '30d': 30, '60d': 60, '90d': 90 };
@@ -190,6 +190,14 @@ function buildOptions(kase, ctx) {
       kg_per_day: Math.min(surplus, Number(k.kg_per_day)), price_per_kg: n(k.price_per_kg), reasons: ['needs_processor_accept'],
     }, k));
   });
+  // 3b) ผู้ถือโควตานำเข้านมที่ต้องรับซื้อตามมาตรการ (grant_dairy_import_quota.sql) — ราคาอ้างอิงราคาสัญญาเดิมของสหกรณ์
+  (ctx.quota_holders || []).forEach((q) => {
+    add(withTransport({
+      kind: 'quota_holder', target_type: 'quota_holder', target_id: q.holder_id, target_name: `${q.name} (ผู้ถือโควตานำเข้า กลุ่ม ${q.entity_group})`,
+      kg_per_day: Math.min(surplus, Number(q.remaining_kg_day)), price_per_kg: ctx.sale_price || null, measure_id: q.measure_id,
+      reasons: ['import_quota_measure', 'needs_processor_accept', 'price_reference_contract'],
+    }, q));
+  });
   // 4) ผู้รับซื้อในทะเบียนตลาดน้ำนม (จังหวัดเดียวกัน ยังไม่ได้เป็นผู้ใช้ระบบ — ต้องติดต่อเอง)
   (ctx.directory || []).forEach((d) => {
     const capKg = n(d.processing_capacity_l_day);
@@ -300,8 +308,10 @@ async function loadContext(c, coop, s, today, centers) {
     ? round2(buyers.reduce((a, b) => a + Number(b.price_per_kg) * Number(b.daily_kg), 0) / buyers.reduce((a, b) => a + Number(b.daily_kg), 0))
     : Number(s.base_price_per_kg) || 0;
   const coopOrigin = centers.find((k) => k.lat != null && k.lng != null) || null;
+  // ผู้ถือโควตานำเข้าที่ยังรับไม่ครบตามมาตรการ (ไม่ได้ติดตั้งตาราง = ไม่มีทางเลือกนี้)
+  const quotaHolders = await require('./dairyImportQuota').holdersForCoop(c, today).catch(() => []); // eslint-disable-line global-require
   return {
-    s, today, buyers, capacities, directory, plant_product: plantProduct, plant_spare_kg: plantSpare, sale_price: salePrice, coopOrigin,
+    s, today, buyers, quota_holders: quotaHolders, capacities, directory, plant_product: plantProduct, plant_spare_kg: plantSpare, sale_price: salePrice, coopOrigin,
     // ที่ว่างในถัง = ความจุ − นมค้างถัง − รอบถัดไปของศูนย์นั้นเอง
     centers: centers.map((k) => {
       const inTank = n(k.measured_tank_kg) !== null ? pos(n(k.measured_tank_kg)) : pos(n(k.accepted_today_kg) - n(k.shipped_today_kg));
@@ -340,13 +350,14 @@ async function writeOptions(c, kase, ctx, now) {
   const all = buildOptions(kase, { ...ctx, origin: usable, hours_left: hoursLeft }).filter((o) => !seen.has(`${o.kind}|${o.target_id || ''}`));
   const ranked = rankOptions(all, kase).filter((o) => !(o.kind === 'gov_help' && seen.has('gov_help|')));
   for (const o of ranked) {
+    const withMeasure = o.measure_id ? ', measure_id' : ''; // คอลัมน์มีเมื่อรัน grant_dairy_import_quota.sql แล้ว
     // eslint-disable-next-line no-await-in-loop
     await c.query(
       `INSERT INTO dairy.surplus_option (case_id, rank, kind, target_type, target_id, target_name, kg_per_day, days, price_per_kg, transport_per_kg,
-         processing_per_kg, net_per_kg, distance_km, lead_hours, feasible, reasons)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+         processing_per_kg, net_per_kg, distance_km, lead_hours, feasible, reasons${withMeasure})
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16${o.measure_id ? ',$17' : ''})`,
       [kase.case_id, o.rank, o.kind, o.target_type, o.target_id, o.target_name, o.kg_per_day, Math.min(90, Math.max(1, o.days)), o.price_per_kg,
-        o.transport_per_kg, o.processing_per_kg, o.net_per_kg, o.distance_km, o.lead_hours, o.feasible, JSON.stringify(o.reasons)],
+        o.transport_per_kg, o.processing_per_kg, o.net_per_kg, o.distance_km, o.lead_hours, o.feasible, JSON.stringify(o.reasons), ...(o.measure_id ? [o.measure_id] : [])],
     );
   }
   return ranked.length;
