@@ -93,7 +93,7 @@
     const editable = ["Draft", "EvidencePending"].includes(i.status);
     const kinds = Object.entries(CL.EVIDENCE).map(([k, v]) => `<option value="${k}" ${(i.missing && i.missing.missingKinds || [])[0] === k ? "selected" : ""}>${esc(v)}</option>`).join("");
     return `<div class="cl-card" data-item="${i.item_id}">
-      <div class="cl-row"><div><b>${esc(i.description)}</b> · ${esc(CL.PURPOSE[i.purpose])} · ${baht(i.amount)}</div><div>${pill(CL.ITEM_ST[i.status])} ${sat}</div></div>
+      <div class="cl-row"><div><b>${esc(i.description)}</b> · ${esc(CL.PURPOSE[i.purpose])} · ${baht(i.amount)}</div><div>${pill(CL.ITEM_ST[i.status])} ${sat} ${i.verification_level != null ? CL.levelBadge(i.verification_level) : ""}${i.tranche_seq ? ` <span class="cl-pill" style="background:#eef1ee;color:#1f4f2c">งวดที่ ${i.tranche_seq}</span>` : ""}</div></div>
       <div class="cl-line">ผู้ขาย ${esc(i.seller_name)} → บัญชี ${i.payout_tail ? `${esc(CL.bankName(i.payout_bank))} xxx-${esc(i.payout_tail)} ${esc(i.payout_name)}` : '<span class="cl-late">ยังไม่ได้เลือก</span>'}
         ${i.farmer_name ? ` · เกษตรกร ${esc(i.farmer_name)} ${i.farmer_confirmed_at ? "✅ ยืนยันแล้ว" : "⏳ รอยืนยันในแอปของเกษตรกร"}` : ""} · ผู้ให้กู้ ${esc(i.lender_name)}</div>
       ${i.sc_due_date && i.status === "EvidenceComplete" ? `<div class="cl-line">สหกรณ์ออมทรัพย์ต้องโอนภายใน <b>${esc(date(i.sc_due_date))}</b>${i.sc_late ? ' <span class="cl-late">— เลยกำหนดแล้ว</span>' : ""}</div>` : ""}

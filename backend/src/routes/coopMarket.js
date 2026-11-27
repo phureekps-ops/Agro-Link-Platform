@@ -4,7 +4,11 @@
  * ผูกเข้ากับ router ของ routes/coopLending.js (ใช้ guard และ helper ชุดเดียวกัน):
  *   /coop-lending/market/*        สหกรณ์การเกษตร (ผู้ขอกู้): ข้อมูลสหกรณ์ โครงการขอกู้ ตอบคำถาม เปรียบเทียบ/โต้ตอบ/รับข้อเสนอ จับคู่ ลงนาม รายงานผล
  *   /savings/market/*             สหกรณ์ออมทรัพย์ / เครดิตยูเนี่ยน (ผู้ให้กู้): ข้อมูลและนโยบายสินเชื่อ ค้นหาโครงการ ถาม ยื่น/แก้/ถอนข้อเสนอ ยืนยันตามอำนาจอนุมัติ ลงนาม
- *   /admin/coop-lending/market/*  ผู้ดูแลแพลตฟอร์ม: ตรวจความครบถ้วนก่อนประกาศ
+ *   /admin/coop-lending/market/*  ผู้ดูแลแพลตฟอร์ม: ตรวจความครบถ้วนก่อนประกาศ ตรวจคุณสมบัติผู้ให้กู้ Go-live Gate ผลตรวจอิสระ
+ *
+ * ชั้นควบคุมตาม Master Blueprint (lib/coopControls.js · db/grant_coop_lending_controls.sql):
+ *   ผู้ให้กู้ต้องผ่านเอกสารคุณสมบัติ 5 ข้อ + ตรวจวงเงิน/สภาพคล่อง/เพดานลูกหนี้รายใหญ่ ก่อนยื่นและยืนยันข้อเสนอ
+ *   สัญญาแบ่งเป็นงวดตามแผนการใช้เงิน — งวดถัดไปเปิดเมื่อผู้ให้กู้หลักตรวจปิดยอดงวดก่อน (ผู้ตรวจ ≠ ผู้อนุมัติ)
  *   /gov/coop-lending/market      กรมส่งเสริมสหกรณ์: ตัวชี้วัดตลาด (อ่านอย่างเดียว ตามขอบเขตจังหวัด)
  *
  * หลังลงนามครบทุกฝ่าย ระบบเปิดวงเงิน (coop_lending.facility) ให้ผู้ให้กู้แต่ละราย แล้วการเบิกจ่าย/โอน/ชำระคืนใช้ระบบเดิม
@@ -13,6 +17,7 @@
 const crypto = require('crypto');
 const M = require('../lib/coopMarket');
 const L = require('../lib/coopLending');
+const C = require('../lib/coopControls');
 const { buildAgreementDocx } = require('../lib/coopAgreementDoc');
 
 const LIVE_OFFER = ['Submitted', 'Countered', 'Accepted', 'Confirmed'];
@@ -24,7 +29,7 @@ const DEBT_ST = ['current', 'late', 'restructured', 'default'];
 
 function attach({ savings, borrower, admin, gov }, H) {
   const {
-    wrap, fail, tx, orgTx, num, text, isUuid, actorOf, verifiedAccount, logAccess, objectStorage, govTx, officerScope,
+    wrap, fail, tx, orgTx, num, text, isUuid, actorOf, verifiedAccount, logAccess, objectStorage, govTx, officerScope, refreshVerification,
   } = H;
   const today = () => L.todayBangkok();
   const ds = (v) => (v ? L.toDateStr(v) : null);
@@ -36,7 +41,8 @@ function attach({ savings, borrower, admin, gov }, H) {
   function cleanFinancials(v) {
     return arr(v, 5).map((f) => ({
       year: parseInt(f.year, 10) || null,
-      ...Object.fromEntries(['total_assets', 'total_liabilities', 'equity', 'share_capital', 'reserve', 'deposits', 'loans', 'investments', 'current_assets', 'current_liabilities', 'revenue', 'net_income']
+      ...Object.fromEntries(['total_assets', 'total_liabilities', 'equity', 'share_capital', 'reserve', 'deposits', 'loans', 'investments', 'current_assets', 'current_liabilities', 'revenue', 'net_income',
+        'liquid_assets', 'liquidity_required']
         .map((k) => [k, f[k] === undefined || f[k] === '' || f[k] === null ? null : num(f[k], k, { min: -1e13 })])),
       ...(f.audit_opinion !== undefined ? { audit_opinion: AUDIT.includes(f.audit_opinion) ? f.audit_opinion : null } : {}),
       ...(f.audited !== undefined ? { audited: f.audited === true } : {}),
@@ -122,15 +128,131 @@ function attach({ savings, borrower, admin, gov }, H) {
                          LEFT JOIN registry.cooperative_profile cp ON cp.org_id = f.borrower_org_id
                          WHERE f.lender_org_id = $1 AND f.status <> 'Closed' ${extra.f}), 0)
             + COALESCE((SELECT SUM(o.amount) FROM coop_lending.loan_offer o JOIN coop_lending.loan_listing ll ON ll.listing_id = o.listing_id
-                         WHERE o.lender_org_id = $1 AND o.status IN ('Submitted','Countered','Accepted','Confirmed') AND o.listing_id <> $2 ${extra.o}), 0) AS v`,
+                         WHERE o.lender_org_id = $1 AND o.status IN ('Submitted','Countered','Accepted','Confirmed') AND o.listing_id <> $2
+                           AND ll.status NOT IN ('Signed','Active','Closed','Withdrawn') ${extra.o}), 0) AS v`,
       [lenderOrgId, listing.listing_id, ...params],
     )).rows[0].v);
+    // ภาระที่เกิดหลังวันที่ของงบล่าสุด (ใช้ประมาณสภาพคล่องหลังปล่อยกู้): ข้อเสนอที่ยังมีผล + วงเงินที่เปิดหลังวันงบ
+    const pending = Number((await c.query(
+      `SELECT COALESCE((SELECT SUM(o.amount) FROM coop_lending.loan_offer o JOIN coop_lending.loan_listing ll ON ll.listing_id = o.listing_id
+                          WHERE o.lender_org_id = $1 AND o.listing_id <> $2 AND o.status IN ('Submitted','Countered','Accepted','Confirmed')
+                          AND ll.status NOT IN ('Signed','Active','Closed','Withdrawn')), 0)
+            + COALESCE((SELECT SUM(f.limit_amount) FROM coop_lending.facility f WHERE f.lender_org_id = $1 AND f.status <> 'Closed'
+                          AND f.created_at::date > COALESCE((SELECT data_as_of FROM coop_lending.lender_profile WHERE org_id = $1), DATE '1900-01-01')), 0) AS v`,
+      [lenderOrgId, listing.listing_id],
+    )).rows[0].v);
     return {
+      pending,
       total: await q({ f: '', o: '' }, []),
       borrower: await q({ f: 'AND f.borrower_org_id = $3', o: 'AND ll.borrower_org_id = $3' }, [listing.borrower_org_id]),
       province: listing.province_code ? await q({ f: 'AND COALESCE(ll.province_code, cp.province_code) = $3', o: 'AND ll.province_code = $3' }, [listing.province_code]) : 0,
       type: await q({ f: 'AND ll.project_type = $3', o: 'AND ll.project_type = $3' }, [listing.project_type]),
     };
+  }
+
+  const NO_LISTING = { listing_id: '00000000-0000-0000-0000-000000000000', borrower_org_id: '00000000-0000-0000-0000-000000000000', project_type: '-', province_code: null };
+  /** Regulatory Compliance Engine (ข้อ 5.2): amount = วงเงินข้อเสนอ (null = ตรวจเฉพาะเอกสารและภาระปัจจุบัน) */
+  async function complianceFor(c, orgId, listing, amount) {
+    const docs = (await c.query('SELECT * FROM coop_lending.lender_compliance WHERE org_id = $1', [orgId])).rows;
+    const ex = await exposure(c, orgId, listing || NO_LISTING);
+    return C.complianceStatus(docs, await lenderProfile(c, orgId), ex, amount, await L.loadSettings(c));
+  }
+  async function requireCompliance(c, orgId, listing, amount) {
+    const r = await complianceFor(c, orgId, listing, amount);
+    if (!r.ok) fail(409, 'compliance_not_passed', { checks: r.checks.filter((x) => x.status !== 'pass') });
+    return r;
+  }
+  /** หนี้จากวงเงินบน AgroLink ที่ยังไม่ปิด (ใช้ตรวจมาตรา 47 ร่วมกับหนี้เดิมที่ผู้ขอกู้กรอก) */
+  async function platformDebt(c, orgId) {
+    return Number((await c.query(`SELECT COALESCE(SUM(limit_amount), 0) AS s FROM coop_lending.facility WHERE borrower_org_id = $1 AND status <> 'Closed'`, [orgId])).rows[0].s);
+  }
+  async function checksFor(c, l, profile) {
+    return M.listingChecks(l, await documents(c, l.listing_id), profile, { platformDebt: await platformDebt(c, l.borrower_org_id) });
+  }
+  async function platformActivity(c, orgId) {
+    const r = (await c.query(
+      `SELECT COUNT(DISTINCT r.farmer_id)::int AS members_on_platform, COUNT(pu.unit_id)::int AS plots, COALESCE(SUM(pu.area_rai), 0)::numeric AS area_rai
+         FROM identity.farmer_org_relationship r LEFT JOIN registry.production_unit pu ON pu.owner_farmer_id = r.farmer_id WHERE r.org_id = $1 AND r.status = 'active'`, [orgId],
+    )).rows[0];
+    const d = (await c.query(`SELECT COUNT(*)::int AS n FROM produce.delivery WHERE buyer_org_id = $1 AND delivered_at > now() - interval '365 days'`, [orgId]).catch(() => ({ rows: [{ n: 0 }] }))).rows[0];
+    return { ...r, area_rai: Number(r.area_rai), deliveries: d.n };
+  }
+  /**
+   * Pilot B: ข้อมูลจริงจากระบบบริหารโคนมแห่งชาติของสหกรณ์ผู้ขอกู้ (หลักฐานระดับ 4 — เครื่องชั่ง/Gateway/ใบรับโรงงาน)
+   * คืน null ถ้าสหกรณ์ไม่ได้ใช้โมดูลโคนมหรือไม่มีรอบรับนมในช่วงนี้
+   */
+  async function dairyEvidence(c, orgId, from = L.addDays(today(), -89), to = today()) {
+    if (!(await c.query(`SELECT to_regclass('dairy.milk_round') IS NOT NULL AS ok`)).rows[0].ok) return null;
+    const r = (await c.query(
+      `SELECT COUNT(*)::int AS rounds, COALESCE(SUM(accepted_kg), 0)::numeric AS accepted_kg, COALESCE(SUM(rejected_kg), 0)::numeric AS rejected_kg,
+              COALESCE(SUM(amount), 0)::numeric AS member_value
+         FROM dairy.milk_round WHERE coop_org_id = $1 AND status = 'Closed' AND round_date BETWEEN $2 AND $3`, [orgId, from, to],
+    )).rows[0];
+    if (!r.rounds) return null;
+    const x = (await c.query(
+      `SELECT COUNT(DISTINCT i.member_id) FILTER (WHERE i.status = 'Accepted')::int AS farms,
+              ROUND(100.0 * COUNT(*) FILTER (WHERE i.source IN ('scale','gateway','api')) / NULLIF(COUNT(*), 0), 1) AS automated_pct
+         FROM dairy.milk_intake i JOIN dairy.milk_round r ON r.round_id = i.round_id WHERE r.coop_org_id = $1 AND r.round_date BETWEEN $2 AND $3`, [orgId, from, to],
+    )).rows[0];
+    const sh = (await c.query(
+      `SELECT COALESCE(SUM(received_kg) FILTER (WHERE status = 'Received'), 0)::numeric AS received_kg, COALESCE(SUM(amount) FILTER (WHERE status = 'Received'), 0)::numeric AS factory_value,
+              COUNT(*) FILTER (WHERE status = 'Rejected')::int AS rejected_shipments, COUNT(*) FILTER (WHERE status <> 'Cancelled')::int AS shipments
+         FROM dairy.shipment WHERE coop_org_id = $1 AND ship_date BETWEEN $2 AND $3`, [orgId, from, to],
+    )).rows[0];
+    const st = (await c.query(`SELECT COUNT(*)::int AS n FROM dairy.settlement_run WHERE coop_org_id = $1 AND status = 'Paid' AND period_end BETWEEN $2 AND $3`, [orgId, from, to])).rows[0];
+    const N = (v) => Number(v);
+    return {
+      source: 'ระบบบริหารโคนมแห่งชาติ (AgroLink)', from, to, days: Math.round((Date.parse(to) - Date.parse(from)) / 864e5) + 1,
+      rounds: r.rounds, accepted_kg: N(r.accepted_kg), rejected_kg: N(r.rejected_kg), member_value: N(r.member_value),
+      farms: x.farms, automated_pct: x.automated_pct == null ? null : N(x.automated_pct),
+      shipments: sh.shipments, factory_received_kg: N(sh.received_kg), factory_value: N(sh.factory_value), rejected_shipments: sh.rejected_shipments,
+      settlements_paid: st.n,
+    };
+  }
+  async function projectFor(c, l, { withDairy = true } = {}) {
+    const dairy = withDairy ? await dairyEvidence(c, l.borrower_org_id) : null;
+    return { score: C.projectScore(l, await documents(c, l.listing_id), { platform: await platformActivity(c, l.borrower_org_id), dairy }), dairy };
+  }
+  /** งวดของสัญญา + ตัวเลขปิดยอดล่าสุด (งวดที่เปิดอยู่คำนวณสด) */
+  async function tranchesOf(c, ag, l) {
+    if (!ag) return [];
+    const rows = (await c.query(
+      `SELECT t.*, o.org_name AS lead_lender_name FROM coop_lending.agreement_tranche t JOIN identity.organization o ON o.org_id = t.lead_lender_org_id
+        WHERE t.agreement_id = $1 ORDER BY t.seq`, [ag.agreement_id],
+    )).rows;
+    const out = [];
+    for (const t of rows) {
+      const items = (await c.query(
+        `SELECT i.* FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id WHERE f.agreement_id = $1 AND i.tranche_seq = $2`,
+        [ag.agreement_id, t.seq],
+      )).rows;
+      const used = L.round2(items.filter((i) => !['Rejected', 'Cancelled', 'Disputed'].includes(i.status)).reduce((a, i) => a + Number(i.amount), 0));
+      const preview = ['Open', 'Submitted', 'Checked'].includes(t.status) ? await reconcile(c, ag, l, t, items, t.borrower_input || {}) : null;
+      out.push({
+        ...t, used, available: L.round2(Number(t.amount) - used), item_count: items.length, preview,
+        delivery_file_id: undefined, has_delivery_file: Boolean(t.delivery_file_id),
+      });
+    }
+    return out;
+  }
+  async function reconcile(c, ag, l, t, items, input) {
+    const overdue = Number((await c.query(
+      `SELECT COUNT(*) AS n FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id
+        WHERE f.agreement_id = $1 AND i.principal_outstanding > 0 AND i.loan_due_date < $2`, [ag.agreement_id, today()],
+    )).rows[0].n);
+    const from = t.opened_at ? L.toDateStr(t.opened_at) : today();
+    const dairy = await dairyEvidence(c, l.borrower_org_id, from, today());
+    return C.trancheReconciliation(t, items, input, { overdue_items: overdue, dairy });
+  }
+  async function performanceFor(c, ag, l) {
+    if (!ag || ag.status !== 'Signed') return null;
+    const items = (await c.query(
+      `SELECT i.status, i.verification_level FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id WHERE f.agreement_id = $1`, [ag.agreement_id],
+    )).rows;
+    const tranches = (await c.query('SELECT status, opened_at FROM coop_lending.agreement_tranche WHERE agreement_id = $1', [ag.agreement_id])).rows;
+    const reports = (await c.query('SELECT revenue, planned_revenue FROM coop_lending.listing_report WHERE listing_id = $1 ORDER BY created_at DESC', [l.listing_id])).rows;
+    const h = await history(c, l.borrower_org_id);
+    return C.performanceScore({ tranches, items, reports, overdue_now: h.overdue_now, late_events: h.late_events, today: today() });
   }
 
   // ======================================================================
@@ -144,7 +266,10 @@ function attach({ savings, borrower, admin, gov }, H) {
         `SELECT COUNT(DISTINCT r.farmer_id)::int AS members_on_platform, COUNT(pu.unit_id)::int AS plots, COALESCE(SUM(pu.area_rai), 0)::numeric AS area_rai
            FROM identity.farmer_org_relationship r LEFT JOIN registry.production_unit pu ON pu.owner_farmer_id = r.farmer_id WHERE r.org_id = $1 AND r.status = 'active'`, [req.org.org_id],
       )).rows[0];
-      return { org: req.org, registry: cp, platform: { ...plots, area_rai: Number(plots.area_rai) }, profile: s.profile, score: s.score };
+      return {
+        org: req.org, registry: cp, platform: { ...plots, area_rai: Number(plots.area_rai) }, profile: s.profile, score: s.score,
+        dairy: await dairyEvidence(c, req.org.org_id), platform_debt: await platformDebt(c, req.org.org_id),
+      };
     }));
   }));
   borrower.put('/market/profile', wrap(async (req, res) => {
@@ -153,7 +278,9 @@ function attach({ savings, borrower, admin, gov }, H) {
       const actor = await actorOf(c, req);
       const gov0 = b.governance || {};
       const v = {
-        coop_kind: ['agriculture', 'settlement', 'fisheries'].includes(b.coop_kind) ? b.coop_kind : 'agriculture',
+        coop_kind: ['agriculture', 'settlement', 'fisheries', 'dairy', 'other'].includes(b.coop_kind) ? b.coop_kind : 'agriculture',
+        max_borrowing: nOrNull(b.max_borrowing, 'max_borrowing'),
+        max_borrowing_ref: text(b.max_borrowing_ref, 'max_borrowing_ref', { max: 200, allowNull: true }),
         registration_no: text(b.registration_no, 'registration_no', { max: 60, allowNull: true }),
         established_year: b.established_year ? parseInt(b.established_year, 10) : null,
         member_count: b.member_count === '' || b.member_count == null ? null : parseInt(b.member_count, 10),
@@ -173,16 +300,17 @@ function attach({ savings, borrower, admin, gov }, H) {
       if (v.member_count !== null && !(v.member_count >= 0)) fail(400, 'invalid_number', { field: 'member_count' });
       const r = (await c.query(
         `INSERT INTO coop_lending.borrower_profile (org_id, coop_kind, registration_no, established_year, member_count, board, signatories, financials, businesses, debts, assets, governance,
-                consent_disclose, consent_at, data_as_of, updated_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, CASE WHEN $13 THEN now() END, $14, $15)
+                consent_disclose, consent_at, data_as_of, updated_by, max_borrowing, max_borrowing_ref)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, CASE WHEN $13 THEN now() END, $14, $15, $16, $17)
          ON CONFLICT (org_id) DO UPDATE SET coop_kind = EXCLUDED.coop_kind, registration_no = EXCLUDED.registration_no, established_year = EXCLUDED.established_year,
            member_count = EXCLUDED.member_count, board = EXCLUDED.board, signatories = EXCLUDED.signatories, financials = EXCLUDED.financials, businesses = EXCLUDED.businesses,
            debts = EXCLUDED.debts, assets = EXCLUDED.assets, governance = EXCLUDED.governance, consent_disclose = EXCLUDED.consent_disclose,
            consent_at = CASE WHEN EXCLUDED.consent_disclose AND NOT coop_lending.borrower_profile.consent_disclose THEN now() WHEN EXCLUDED.consent_disclose THEN coop_lending.borrower_profile.consent_at END,
-           data_as_of = EXCLUDED.data_as_of, updated_at = now(), updated_by = EXCLUDED.updated_by
+           data_as_of = EXCLUDED.data_as_of, updated_at = now(), updated_by = EXCLUDED.updated_by,
+           max_borrowing = EXCLUDED.max_borrowing, max_borrowing_ref = EXCLUDED.max_borrowing_ref
          RETURNING *`,
         [req.org.org_id, v.coop_kind, v.registration_no, v.established_year, v.member_count, v.board, v.signatories, v.financials, v.businesses, v.debts, v.assets, v.governance,
-          v.consent_disclose, v.data_as_of, actor.key],
+          v.consent_disclose, v.data_as_of, actor.key, v.max_borrowing, v.max_borrowing_ref],
       )).rows[0];
       return { profile: r, score: M.creditScore(r, await history(c, req.org.org_id)) };
     });
@@ -306,9 +434,12 @@ function attach({ savings, borrower, admin, gov }, H) {
       const l = await listingFor(c, req.params.id, 'l.borrower_org_id = $2', [req.org.org_id]);
       const docs = await documents(c, l.listing_id);
       const s = await scoreFor(c, req.org.org_id);
+      const ag = await agreementOf(c, l.listing_id);
+      const pj = await projectFor(c, l);
       return {
-        listing: listingOut(l), documents: docs, checks: M.listingChecks(l, docs, s.profile), score: s.score, risk: M.projectRisk(l),
-        offers: await offersOf(c, l.listing_id), questions: await questions(c, l.listing_id, null), agreement: await agreementOf(c, l.listing_id),
+        listing: listingOut(l), documents: docs, checks: await checksFor(c, l, s.profile), score: s.score, risk: M.projectRisk(l),
+        project_score: pj.score, dairy: pj.dairy, tranches: await tranchesOf(c, ag, l), performance: await performanceFor(c, ag, l),
+        offers: await offersOf(c, l.listing_id), questions: await questions(c, l.listing_id, null), agreement: ag,
         reports: (await c.query('SELECT * FROM coop_lending.listing_report WHERE listing_id = $1 ORDER BY created_at DESC', [l.listing_id])).rows,
         facilities: (await c.query(`SELECT f.facility_id, f.limit_amount, f.rate_pct, f.status, o.org_name AS lender_name FROM coop_lending.facility f JOIN identity.organization o ON o.org_id = f.lender_org_id WHERE f.listing_id = $1`, [l.listing_id])).rows,
       };
@@ -327,10 +458,11 @@ function attach({ savings, borrower, admin, gov }, H) {
       const l = await listingFor(c, req.params.id, 'l.borrower_org_id = $2', [req.org.org_id], true);
       if (!['Draft', 'Returned'].includes(l.status)) fail(409, 'listing_not_editable', { status: l.status });
       const s = await scoreFor(c, req.org.org_id);
-      const chk = M.listingChecks(l, await documents(c, l.listing_id), s.profile);
+      const chk = await checksFor(c, l, s.profile);
       if (!chk.ok) fail(400, 'listing_incomplete', { missing: chk.missing });
+      const pj = await projectFor(c, l);
       return listingOut((await c.query(`UPDATE coop_lending.loan_listing SET status = 'Review', score = $2, review_note = NULL, updated_at = now() WHERE listing_id = $1 RETURNING *`,
-        [l.listing_id, JSON.stringify(s.score)])).rows[0]);
+        [l.listing_id, JSON.stringify({ ...s.score, project: pj.score })])).rows[0]);
     }));
   }));
   borrower.post('/market/listings/:id/withdraw', wrap(async (req, res) => {
@@ -468,6 +600,38 @@ function attach({ savings, borrower, admin, gov }, H) {
     res.status(201).json(out);
   }));
 
+  /** ส่งปิดยอดงวด: ระบบสรุปรายการเบิก ผู้ขาย น้ำหนัก ระดับหลักฐาน + ผู้กู้รายงานสินค้าคงเหลือ/ยอดขาย/หลักฐานส่งมอบ */
+  borrower.post('/market/listings/:id/tranches/:seq/submit', wrap(async (req, res) => {
+    const b = req.body || {};
+    res.json(await orgTx(req, async (c) => {
+      const actor = await actorOf(c, req);
+      const l = await listingFor(c, req.params.id, 'l.borrower_org_id = $2', [req.org.org_id]);
+      const ag = (await c.query(`SELECT * FROM coop_lending.loan_agreement WHERE listing_id = $1 AND status = 'Signed'`, [l.listing_id])).rows[0];
+      if (!ag) fail(409, 'agreement_not_signed');
+      const t = (await c.query('SELECT * FROM coop_lending.agreement_tranche WHERE agreement_id = $1 AND seq = $2 FOR UPDATE', [ag.agreement_id, parseInt(req.params.seq, 10) || 0])).rows[0];
+      if (!t) fail(404, 'tranche_not_found');
+      if (t.status !== 'Open') fail(409, 'tranche_not_open', { status: t.status });
+      const input = {
+        inventory_kg: nOrNull(b.inventory_kg, 'inventory_kg'), inventory_value: nOrNull(b.inventory_value, 'inventory_value'),
+        sales_amount: nOrNull(b.sales_amount, 'sales_amount'), note: text(b.note, 'note', { max: 2000, allowNull: true }),
+      };
+      const fileId = b.delivery_file_id ? (await fileOwnedBy(c, b.delivery_file_id, req.org.org_id)).file_id : null;
+      const items = (await c.query(
+        `SELECT i.* FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id WHERE f.agreement_id = $1 AND i.tranche_seq = $2`, [ag.agreement_id, t.seq],
+      )).rows;
+      const rec = await reconcile(c, ag, l, t, items, input);
+      if (!rec.ready) fail(409, 'tranche_not_ready', { blockers: rec.blockers });
+      const r = (await c.query(
+        `UPDATE coop_lending.agreement_tranche SET status = 'Submitted', borrower_input = $3, delivery_file_id = COALESCE($4, delivery_file_id), reconciliation = $5,
+                submitted_by = $6, submitted_at = now(), returned_note = NULL, checked_by = NULL, checked_at = NULL, check_note = NULL
+          WHERE agreement_id = $1 AND seq = $2 RETURNING *`,
+        [ag.agreement_id, t.seq, JSON.stringify(input), fileId, JSON.stringify(rec.summary), actor.key],
+      )).rows[0];
+      await notify(c, t.lead_lender_org_id, 'tranche_review', `โครงการ "${l.title}" ส่งปิดยอดงวดที่ ${t.seq} (${t.name}) — ตรวจและอนุมัติเพื่อเปิดงวดถัดไป`, l.listing_id);
+      return r;
+    }));
+  }));
+
   // ---------------------------------------------------------------- สัญญา
   async function agreementContext(c, l) {
     const ag = (await c.query('SELECT * FROM coop_lending.loan_agreement WHERE listing_id = $1', [l.listing_id])).rows[0];
@@ -526,6 +690,15 @@ function attach({ savings, borrower, admin, gov }, H) {
       await L.logEvent(c, { facilityId: fac.facility_id, actor: 'system', action: 'agreement_signed', detail: { agreement_no: ag.agreement_no, listing_id: l.listing_id } });
       await notify(c, p.lender_org_id, 'agreement', `สัญญา ${ag.agreement_no} ลงนามครบทุกฝ่ายแล้ว — เปิดวงเงิน ${Number(p.amount).toLocaleString('th-TH')} บาท พร้อมเบิกจ่ายตามหลักฐาน`, l.listing_id);
     }
+    // งวดเบิกตามกิจกรรม (ข้อ 7.2): จากแผนการใช้เงิน ตามลำดับ — งวดแรกเปิดทันที ผู้ให้กู้หลัก (วงเงินมากสุด) ตรวจปิดยอดแต่ละงวด
+    const lead = [...parties].sort((a, b) => Number(b.amount) - Number(a.amount))[0].lender_org_id;
+    for (const t of C.tranchePlan(l, ag.total_amount)) {
+      await c.query(
+        `INSERT INTO coop_lending.agreement_tranche (agreement_id, seq, name, amount, timing, status, lead_lender_org_id, opened_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (agreement_id, seq) DO NOTHING`,
+        [agreementId, t.seq, t.name, t.amount, t.timing, t.seq === 1 ? 'Open' : 'Locked', lead, t.seq === 1 ? new Date() : null],
+      );
+    }
     await c.query(`UPDATE coop_lending.loan_agreement SET status = 'Signed', signed_at = now(), start_date = $2 WHERE agreement_id = $1`, [agreementId, start]);
     await c.query(`UPDATE coop_lending.loan_listing SET status = 'Signed', signed_at = now(), updated_at = now() WHERE listing_id = $1`, [l.listing_id]);
     await notify(c, l.borrower_org_id, 'agreement', `สัญญา ${ag.agreement_no} ลงนามครบทุกฝ่ายแล้ว — เบิกจ่ายได้ที่แท็บรายการเบิก/แผนการผลิต`, l.listing_id);
@@ -539,7 +712,8 @@ function attach({ savings, borrower, admin, gov }, H) {
     res.json(await orgTx(req, async (c) => {
       const p = await lenderProfile(c, req.org.org_id);
       const committed = Number((await c.query(`SELECT COALESCE(SUM(limit_amount), 0) AS s FROM coop_lending.facility WHERE lender_org_id = $1 AND status <> 'Closed'`, [req.org.org_id])).rows[0].s);
-      const offered = Number((await c.query(`SELECT COALESCE(SUM(amount), 0) AS s FROM coop_lending.loan_offer WHERE lender_org_id = $1 AND status IN ('Submitted','Countered','Accepted','Confirmed')`, [req.org.org_id])).rows[0].s);
+      const offered = Number((await c.query(`SELECT COALESCE(SUM(o.amount), 0) AS s FROM coop_lending.loan_offer o JOIN coop_lending.loan_listing l ON l.listing_id = o.listing_id
+         WHERE o.lender_org_id = $1 AND o.status IN ('Submitted','Countered','Accepted','Confirmed') AND l.status NOT IN ('Signed','Active','Closed','Withdrawn')`, [req.org.org_id])).rows[0].s);
       return { org: req.org, profile: p, committed, offered };
     }));
   }));
@@ -557,6 +731,7 @@ function attach({ savings, borrower, admin, gov }, H) {
         max_risk_grade: M.GRADES.includes(pol.max_risk_grade) ? pol.max_risk_grade : null,
         limit_per_borrower: nOrNull(pol.limit_per_borrower, 'limit_per_borrower'), limit_per_province: nOrNull(pol.limit_per_province, 'limit_per_province'),
         limit_per_type: Object.fromEntries(Object.keys(M.PROJECT_TYPES).map((k) => [k, nOrNull((pol.limit_per_type || {})[k], `limit_${k}`)]).filter(([, v]) => v !== null)),
+        min_verification_level: [1, 2, 4, 5].includes(Number(pol.min_verification_level)) ? Number(pol.min_verification_level) : null,
       };
       const resolution = b.resolution_file_id ? (await fileOwnedBy(c, b.resolution_file_id, req.org.org_id)).file_id : null;
       const r = (await c.query(
@@ -575,6 +750,28 @@ function attach({ savings, borrower, admin, gov }, H) {
           resolution, JSON.stringify(policy), L.isDate(b.data_as_of) ? b.data_as_of : today(), actor.key],
       )).rows[0];
       return r;
+    }));
+  }));
+  /** คุณสมบัติผู้ให้กู้ (ข้อ 5.2): เอกสาร 5 ข้อที่ผู้ดูแลตรวจ + ผลคำนวณวงเงิน สภาพคล่อง เพดานลูกหนี้รายใหญ่ */
+  savings.get('/market/compliance', wrap(async (req, res) => {
+    res.json(await orgTx(req, async (c) => {
+      const docs = (await c.query('SELECT check_code, status, note, submitted_at, reviewed_at, review_note, valid_until, file_id IS NOT NULL AS has_file FROM coop_lending.lender_compliance WHERE org_id = $1', [req.org.org_id])).rows;
+      return { status: await complianceFor(c, req.org.org_id, null, null), documents: docs.map((d) => ({ ...d, valid_until: ds(d.valid_until) })), doc_checks: C.DOC_CHECKS.map(([code, label, hint]) => ({ code, label, hint })) };
+    }));
+  }));
+  savings.put('/market/compliance/:code', wrap(async (req, res) => {
+    const b = req.body || {};
+    if (!C.DOC_CHECKS.some(([k]) => k === req.params.code)) fail(404, 'check_not_found');
+    res.json(await orgTx(req, async (c) => {
+      const actor = await actorOf(c, req);
+      const f = await fileOwnedBy(c, b.file_id, req.org.org_id);
+      return (await c.query(
+        `INSERT INTO coop_lending.lender_compliance (org_id, check_code, status, file_id, note, submitted_by) VALUES ($1,$2,'Pending',$3,$4,$5)
+         ON CONFLICT (org_id, check_code) DO UPDATE SET status = 'Pending', file_id = EXCLUDED.file_id, note = EXCLUDED.note, submitted_by = EXCLUDED.submitted_by,
+           submitted_at = now(), reviewed_by = NULL, reviewed_at = NULL, review_note = NULL
+         RETURNING check_code, status, note, submitted_at`,
+        [req.org.org_id, req.params.code, f.file_id, text(b.note, 'note', { max: 1000, allowNull: true }), actor.key],
+      )).rows[0];
     }));
   }));
   /** ค้นหาโครงการที่ประกาศ — กรองตามประเภท พื้นที่ วงเงิน ระยะเวลา ชนิดพืช ระดับความเสี่ยง หรือเฉพาะที่ตรงนโยบาย */
@@ -622,7 +819,14 @@ function attach({ savings, borrower, admin, gov }, H) {
       const mine = (await c.query('SELECT * FROM coop_lending.loan_offer WHERE listing_id = $1 AND lender_org_id = $2 ORDER BY created_at DESC', [l.listing_id, req.org.org_id])).rows;
       const comp = (await c.query(`SELECT COUNT(*)::int AS n, COALESCE(SUM(amount), 0)::numeric AS amount FROM coop_lending.loan_offer WHERE listing_id = $1 AND lender_org_id <> $2 AND status IN ('Submitted','Countered','Accepted','Confirmed')`, [l.listing_id, req.org.org_id])).rows[0];
       await logAccess(c, 'read', 'coop_lending.borrower_profile', l.borrower_org_id);
+      const consent = Boolean(s.profile && s.profile.consent_disclose);
+      const pj = await projectFor(c, l, { withDairy: consent });
+      const ag = await agreementOf(c, l.listing_id);
+      const myLive = mine.find((o) => LIVE_OFFER.includes(o.status));
       return {
+        me: req.org.org_id, project_score: pj.score, dairy: pj.dairy,
+        compliance: await complianceFor(c, req.org.org_id, l, myLive ? Number(myLive.amount) : Number(l.min_amount || l.amount_requested)),
+        tranches: await tranchesOf(c, ag, l), performance: await performanceFor(c, ag, l),
         listing: listingOut(l), borrower: { ...borrowerOrg, profile: s.profile && s.profile.consent_disclose ? s.profile : null, platform: { ...platform, area_rai: Number(platform.area_rai) } },
         score: s.score, risk: M.projectRisk(l), documents: await documents(c, l.listing_id), questions: await questions(c, l.listing_id, req.org.org_id),
         my_offers: mine.map((o) => ({ ...o, valid_until: ds(o.valid_until) })), other_offers: { n: comp.n, amount: Number(comp.amount) },
@@ -678,6 +882,7 @@ function attach({ savings, borrower, admin, gov }, H) {
       const t = offerTerms(req.body || {}, l);
       const prof = await lenderProfile(c, req.org.org_id);
       if (!prof) fail(409, 'lender_profile_required');
+      await requireCompliance(c, req.org.org_id, l, t.amount);
       const warnings = M.exposureWarnings(prof, await exposure(c, req.org.org_id, l), t, l);
       const r = (await c.query(
         `INSERT INTO coop_lending.loan_offer (listing_id, lender_org_id, amount, rate_pct, tenor_months, repayment_type, interval_months, grace_months, collateral_required, conditions, valid_until, submitted_by, warnings)
@@ -703,6 +908,7 @@ function attach({ savings, borrower, admin, gov }, H) {
       const o = await lenderOffer(c, req);
       if (!['Submitted', 'Countered'].includes(o.status) || !VISIBLE_TO_LENDERS.includes(o.listing_status)) fail(409, 'offer_not_revisable', { status: o.status });
       const t = offerTerms(req.body || {}, o.listing);
+      await requireCompliance(c, req.org.org_id, o.listing, t.amount);
       const warnings = M.exposureWarnings(await lenderProfile(c, req.org.org_id), await exposure(c, req.org.org_id, o.listing), t, o.listing);
       const r = (await c.query(
         `UPDATE coop_lending.loan_offer SET amount = $2, rate_pct = $3, tenor_months = $4, repayment_type = $5, interval_months = $6, grace_months = $7, collateral_required = $8,
@@ -729,6 +935,7 @@ function attach({ savings, borrower, admin, gov }, H) {
       const o = await lenderOffer(c, req);
       if (o.status !== 'Accepted') fail(409, 'offer_not_accepted', { status: o.status });
       if (o.submitted_by === actor.key) fail(409, 'approver_must_differ_from_preparer');
+      await requireCompliance(c, req.org.org_id, o.listing, Number(o.amount));
       const r = (await c.query(`UPDATE coop_lending.loan_offer SET status = 'Confirmed', confirmed_at = now(), confirmed_by = $2, approval_ref = $3 WHERE offer_id = $1 RETURNING *`,
         [o.offer_id, actor.key, text((req.body || {}).approval_ref, 'approval_ref', { min: 2, max: 120 })])).rows[0];
       await notify(c, o.borrower_org_id, 'offer_update', `ผู้ให้กู้ยืนยันข้อเสนอในโครงการ "${o.title}" ตามอำนาจอนุมัติแล้ว — กด "จับคู่และจัดทำสัญญา" ได้`, o.listing_id);
@@ -767,6 +974,69 @@ function attach({ savings, borrower, admin, gov }, H) {
     }));
   }));
 
+  /** ตรวจปิดยอดงวด (ข้อ 7.3 Dual Authorization): ผู้ตรวจสอบกิจกรรม → ผู้มีอำนาจอนุมัติ (คนละคน) → เปิดงวดถัดไป */
+  async function leadTranche(c, req) {
+    if (!isUuid(req.params.aid)) fail(404, 'agreement_not_found');
+    const t = (await c.query(
+      `SELECT t.*, ag.listing_id FROM coop_lending.agreement_tranche t JOIN coop_lending.loan_agreement ag ON ag.agreement_id = t.agreement_id
+        WHERE t.agreement_id = $1 AND t.seq = $2 FOR UPDATE OF t`, [req.params.aid, parseInt(req.params.seq, 10) || 0],
+    )).rows[0];
+    if (!t) fail(404, 'tranche_not_found');
+    if (t.lead_lender_org_id !== req.org.org_id) fail(403, 'not_lead_lender');
+    const l = (await c.query('SELECT * FROM coop_lending.loan_listing WHERE listing_id = $1', [t.listing_id])).rows[0];
+    return { t, l };
+  }
+  savings.post('/market/agreements/:aid/tranches/:seq/check', wrap(async (req, res) => {
+    res.json(await orgTx(req, async (c) => {
+      const actor = await actorOf(c, req);
+      const { t } = await leadTranche(c, req);
+      if (t.status !== 'Submitted') fail(409, 'tranche_not_submitted', { status: t.status });
+      return (await c.query(`UPDATE coop_lending.agreement_tranche SET status = 'Checked', checked_by = $3, checked_at = now(), check_note = $4 WHERE agreement_id = $1 AND seq = $2 RETURNING *`,
+        [t.agreement_id, t.seq, actor.key, text((req.body || {}).note, 'note', { max: 2000, allowNull: true })])).rows[0];
+    }));
+  }));
+  savings.post('/market/agreements/:aid/tranches/:seq/approve', wrap(async (req, res) => {
+    res.json(await orgTx(req, async (c) => {
+      const actor = await actorOf(c, req);
+      const { t, l } = await leadTranche(c, req);
+      if (t.status !== 'Checked') fail(409, 'tranche_not_checked', { status: t.status });
+      if (t.checked_by === actor.key) fail(409, 'approver_must_differ_from_checker');
+      const r = (await c.query(`UPDATE coop_lending.agreement_tranche SET status = 'Verified', approved_by = $3, approved_at = now() WHERE agreement_id = $1 AND seq = $2 RETURNING *`,
+        [t.agreement_id, t.seq, actor.key])).rows[0];
+      const next = (await c.query(`UPDATE coop_lending.agreement_tranche SET status = 'Open', opened_at = now() WHERE agreement_id = $1 AND seq = $2 AND status = 'Locked' RETURNING *`,
+        [t.agreement_id, t.seq + 1])).rows[0];
+      const facs = (await c.query('SELECT facility_id FROM coop_lending.facility WHERE agreement_id = $1', [t.agreement_id])).rows;
+      for (const f of facs) await L.logEvent(c, { facilityId: f.facility_id, actor: actor.key, action: 'tranche_verified', detail: { seq: t.seq, checked_by: t.checked_by, next_open: next ? next.seq : null } });
+      await notify(c, l.borrower_org_id, 'tranche_review', next
+        ? `ผู้ให้กู้ตรวจปิดยอดงวดที่ ${t.seq} แล้ว — เปิดงวดที่ ${next.seq} (${next.name}) เบิกได้ ${Number(next.amount).toLocaleString('th-TH')} บาท`
+        : `ผู้ให้กู้ตรวจปิดยอดงวดที่ ${t.seq} (งวดสุดท้าย) แล้ว`, l.listing_id);
+      return { tranche: r, next_open: next || null };
+    }));
+  }));
+  savings.post('/market/agreements/:aid/tranches/:seq/return', wrap(async (req, res) => {
+    res.json(await orgTx(req, async (c) => {
+      const { t, l } = await leadTranche(c, req);
+      if (!['Submitted', 'Checked'].includes(t.status)) fail(409, 'tranche_not_submitted', { status: t.status });
+      const note = text((req.body || {}).note, 'note', { min: 3, max: 2000 });
+      const r = (await c.query(`UPDATE coop_lending.agreement_tranche SET status = 'Open', returned_note = $3, checked_by = NULL, checked_at = NULL WHERE agreement_id = $1 AND seq = $2 RETURNING *`,
+        [t.agreement_id, t.seq, note])).rows[0];
+      await notify(c, l.borrower_org_id, 'tranche_review', `ผู้ให้กู้ส่งงวดที่ ${t.seq} กลับให้แก้ไข: ${note}`, l.listing_id);
+      return r;
+    }));
+  }));
+  savings.get('/market/agreements/:aid/tranches/:seq/delivery-file', wrap(async (req, res) => {
+    await orgTx(req, async (c) => {
+      if (!isUuid(req.params.aid)) fail(404, 'agreement_not_found');
+      const t = (await c.query(
+        `SELECT t.delivery_file_id FROM coop_lending.agreement_tranche t WHERE t.agreement_id = $1 AND t.seq = $2
+            AND EXISTS (SELECT 1 FROM coop_lending.agreement_lender al WHERE al.agreement_id = t.agreement_id AND al.lender_org_id = $3)`,
+        [req.params.aid, parseInt(req.params.seq, 10) || 0, req.org.org_id],
+      )).rows[0];
+      if (!t || !t.delivery_file_id) fail(404, 'file_not_found');
+      await sendFile(res, c, t.delivery_file_id);
+    });
+  }));
+
   // ======================================================================
   // ผู้ดูแลแพลตฟอร์ม: ตรวจความครบถ้วนก่อนประกาศ
   // ======================================================================
@@ -782,7 +1052,10 @@ function attach({ savings, borrower, admin, gov }, H) {
       const out = [];
       for (const l of rows) {
         const docs = await documents(c, l.listing_id);
-        out.push({ ...listingOut(l), documents: docs, checks: M.listingChecks(l, docs, await borrowerProfile(c, l.borrower_org_id)) });
+        out.push({
+          ...listingOut(l), documents: docs, checks: await checksFor(c, l, await borrowerProfile(c, l.borrower_org_id)),
+          project_score: l.status === 'Review' ? (await projectFor(c, l)).score : null,
+        });
       }
       return out;
     }));
@@ -792,12 +1065,16 @@ function attach({ savings, borrower, admin, gov }, H) {
       const l = await listingFor(c, req.params.id, 'true', [], true);
       if (l.status !== 'Review') fail(409, 'listing_not_in_review', { status: l.status });
       const s = await scoreFor(c, l.borrower_org_id);
-      const chk = M.listingChecks(l, await documents(c, l.listing_id), s.profile);
+      const chk = await checksFor(c, l, s.profile);
       if (!chk.ok) fail(400, 'listing_incomplete', { missing: chk.missing });
+      // Gate G3: ผู้ขอกู้ผ่านการตรวจของผู้ดูแลแพลตฟอร์ม
+      await c.query('UPDATE coop_lending.borrower_profile SET verified_at = COALESCE(verified_at, now()), verified_by = COALESCE(verified_by, $2) WHERE org_id = $1',
+        [l.borrower_org_id, `platform:${req.subject.subjectId || 'admin'}`]);
+      const pj = await projectFor(c, l);
       const days = Math.min(90, Math.max(7, parseInt((req.body || {}).offer_days, 10) || 30));
       const r = (await c.query(
         `UPDATE coop_lending.loan_listing SET status = 'Listed', listed_at = now(), offers_close_on = $2, score = $3, reviewed_by = $4, review_note = NULL, updated_at = now() WHERE listing_id = $1 RETURNING *`,
-        [l.listing_id, L.addDays(today(), days), JSON.stringify(s.score), `platform:${req.subject.subjectId || 'admin'}`],
+        [l.listing_id, L.addDays(today(), days), JSON.stringify({ ...s.score, project: pj.score }), `platform:${req.subject.subjectId || 'admin'}`],
       )).rows[0];
       await notify(c, l.borrower_org_id, 'listing_review', `โครงการ "${l.title}" ผ่านการตรวจและประกาศแล้ว — รับข้อเสนอถึง ${L.addDays(today(), days)}`, l.listing_id);
       // แจ้งผู้ให้กู้ที่นโยบายสินเชื่อตรงกับโครงการ
@@ -821,6 +1098,87 @@ function attach({ savings, borrower, admin, gov }, H) {
       await notify(c, l.borrower_org_id, 'listing_review', `โครงการ "${l.title}" ถูกส่งกลับให้แก้ไข: ${note}`, l.listing_id);
       return listingOut(r);
     }));
+  }));
+
+  /** ตรวจเอกสารคุณสมบัติผู้ให้กู้ (ข้อ 5.2) */
+  admin.get('/market/compliance', wrap(async (req, res) => {
+    res.json(await adminTx(req, async (c) => {
+      const lenders = (await c.query(
+        `SELECT o.org_id, o.org_name, o.org_type FROM identity.organization o
+          WHERE o.org_type IN ('SavingsCooperative','CreditUnion') AND (EXISTS (SELECT 1 FROM coop_lending.lender_profile lp WHERE lp.org_id = o.org_id)
+             OR EXISTS (SELECT 1 FROM coop_lending.lender_compliance lc WHERE lc.org_id = o.org_id)) ORDER BY o.org_name LIMIT 300`,
+      )).rows;
+      const out = [];
+      for (const x of lenders) {
+        const docs = (await c.query('SELECT check_code, status, note, submitted_at, reviewed_at, review_note, valid_until, file_id IS NOT NULL AS has_file FROM coop_lending.lender_compliance WHERE org_id = $1', [x.org_id])).rows;
+        out.push({ ...x, documents: docs.map((d) => ({ ...d, valid_until: ds(d.valid_until) })), status: await complianceFor(c, x.org_id, null, null) });
+      }
+      return { lenders: out, doc_checks: C.DOC_CHECKS.map(([code, label, hint]) => ({ code, label, hint })) };
+    }));
+  }));
+  admin.post('/market/compliance/:orgId/:code/decide', wrap(async (req, res) => {
+    const b = req.body || {};
+    if (!['Pass', 'Fail'].includes(b.status)) fail(400, 'invalid_status');
+    res.json(await adminTx(req, async (c) => {
+      if (!isUuid(req.params.orgId)) fail(404, 'check_not_found');
+      const r = (await c.query(
+        `UPDATE coop_lending.lender_compliance SET status = $3, review_note = $4, valid_until = $5, reviewed_by = $6, reviewed_at = now()
+          WHERE org_id = $1 AND check_code = $2 RETURNING check_code, status, review_note, valid_until`,
+        [req.params.orgId, req.params.code, b.status, text(b.note, 'note', { max: 1000, allowNull: b.status === 'Pass' }), L.isDate(b.valid_until) ? b.valid_until : null,
+          `platform:${req.subject.subjectId || 'admin'}`],
+      )).rows[0];
+      if (!r) fail(404, 'check_not_found');
+      await notify(c, req.params.orgId, 'compliance', `ผลตรวจเอกสาร "${C.CHECK_LABEL[r.check_code]}": ${b.status === 'Pass' ? 'ผ่าน' : `ไม่ผ่าน — ${r.review_note || ''}`}`, null);
+      return { ...r, valid_until: ds(r.valid_until) };
+    }));
+  }));
+  admin.get('/market/compliance/:orgId/:code/file', wrap(async (req, res) => {
+    await adminTx(req, async (c) => {
+      if (!isUuid(req.params.orgId)) fail(404, 'file_not_found');
+      const r = (await c.query('SELECT file_id FROM coop_lending.lender_compliance WHERE org_id = $1 AND check_code = $2', [req.params.orgId, req.params.code])).rows[0];
+      if (!r || !r.file_id) fail(404, 'file_not_found');
+      await sendFile(res, c, r.file_id);
+    });
+  }));
+  /** Go-live Gate G1–G8 (ข้อ 18) */
+  admin.get('/market/golive', wrap(async (req, res) => {
+    res.json(await adminTx(req, async (c) => {
+      const rows = (await c.query('SELECT * FROM coop_lending.golive_gate')).rows;
+      const lenders = (await c.query(`SELECT DISTINCT org_id FROM coop_lending.lender_compliance`)).rows;
+      let lenderPass = 0;
+      for (const x of lenders) if (C.complianceStatus((await c.query('SELECT * FROM coop_lending.lender_compliance WHERE org_id = $1', [x.org_id])).rows, null, null, null, null).docs_ok) lenderPass += 1;
+      const borrowers = (await c.query('SELECT COUNT(*) FILTER (WHERE verified_at IS NOT NULL)::int AS verified, COUNT(*)::int AS total FROM coop_lending.borrower_profile')).rows[0];
+      const st = C.goLiveStatus(rows);
+      const gw = require('../lib/bankGateway').info ? require('../lib/bankGateway').info() : null;
+      return { ...st, lenders_passed: lenderPass, lenders_total: lenders.length, borrowers, bank: gw };
+    }));
+  }));
+  admin.post('/market/golive/:code', wrap(async (req, res) => {
+    const b = req.body || {};
+    if (!C.GATES.some(([k]) => k === req.params.code)) fail(404, 'gate_not_found');
+    if (!['Pass', 'Fail', 'Pending'].includes(b.status)) fail(400, 'invalid_status');
+    res.json(await adminTx(req, async (c) => (await c.query(
+      `UPDATE coop_lending.golive_gate SET status = $2, note = $3, decided_by = $4, decided_at = now() WHERE code = $1 RETURNING *`,
+      [req.params.code, b.status, text(b.note, 'note', { min: b.status === 'Pending' ? 0 : 3, max: 2000, allowNull: b.status === 'Pending' }), `platform:${req.subject.subjectId || 'admin'}`],
+    )).rows[0]));
+  }));
+  /** ผลตรวจจากบุคคลหรือหน่วยงานอิสระ (หลักฐานระดับ 5) */
+  admin.post('/items/:id/inspection', wrap(async (req, res) => {
+    const b = req.body || {};
+    if (!['pass', 'fail'].includes(b.result)) fail(400, 'invalid_result');
+    const out = await adminTx(req, async (c) => {
+      if (!isUuid(req.params.id)) fail(404, 'item_not_found');
+      const it = (await c.query('SELECT item_id, facility_id FROM coop_lending.disbursement_item WHERE item_id = $1', [req.params.id])).rows[0];
+      if (!it) fail(404, 'item_not_found');
+      const r = (await c.query(
+        `INSERT INTO coop_lending.item_inspection (item_id, inspector, result, note, recorded_by) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+        [it.item_id, text(b.inspector, 'inspector', { min: 2, max: 200 }), b.result, text(b.note, 'note', { max: 2000, allowNull: true }), `platform:${req.subject.subjectId || 'admin'}`],
+      )).rows[0];
+      await L.logEvent(c, { itemId: it.item_id, facilityId: it.facility_id, actor: r.recorded_by, action: `inspection_${b.result}`, detail: { inspector: r.inspector } });
+      const v = await refreshVerification(c, it.item_id);
+      return { inspection: r, verification: v };
+    });
+    res.status(201).json(out);
   }));
 
   // ======================================================================
@@ -863,9 +1221,25 @@ function attach({ savings, borrower, admin, gov }, H) {
            FROM coop_lending.loan_listing l JOIN identity.organization b ON b.org_id = l.borrower_org_id LEFT JOIN registry.province pv ON pv.province_code = l.province_code
           WHERE ${scope} AND l.status NOT IN ('Draft') ORDER BY l.updated_at DESC LIMIT 100`,
       );
+      const controls = (await q(
+        `SELECT (SELECT COUNT(*) FROM coop_lending.agreement_tranche t JOIN coop_lending.loan_agreement ag ON ag.agreement_id = t.agreement_id
+                   JOIN coop_lending.loan_listing l ON l.listing_id = ag.listing_id WHERE ${scope})::int AS tranches,
+                (SELECT COUNT(*) FROM coop_lending.agreement_tranche t JOIN coop_lending.loan_agreement ag ON ag.agreement_id = t.agreement_id
+                   JOIN coop_lending.loan_listing l ON l.listing_id = ag.listing_id WHERE ${scope} AND t.status = 'Verified')::int AS tranches_verified,
+                (SELECT COUNT(*) FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id
+                   JOIN coop_lending.loan_listing l ON l.listing_id = f.listing_id WHERE ${scope} AND i.status = 'Paid')::int AS paid_items,
+                (SELECT COUNT(*) FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id
+                   JOIN coop_lending.loan_listing l ON l.listing_id = f.listing_id WHERE ${scope} AND i.status = 'Paid' AND i.verification_level >= 1)::int AS paid_items_evidenced,
+                (SELECT ROUND(AVG(i.verification_level), 2) FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id
+                   JOIN coop_lending.loan_listing l ON l.listing_id = f.listing_id WHERE ${scope} AND i.status = 'Paid') AS avg_level,
+                (SELECT COUNT(*) FROM coop_lending.disbursement_item i JOIN coop_lending.facility f ON f.facility_id = i.facility_id
+                   JOIN coop_lending.loan_listing l ON l.listing_id = f.listing_id WHERE ${scope} AND i.status IN ('Rejected','Disputed'))::int AS misuse_flags,
+                (SELECT COUNT(*) FROM coop_lending.golive_gate WHERE status = 'Pass')::int AS gates_passed`,
+      ))[0];
       await logAccess(c, 'read', 'coop_lending.loan_listing', null);
       const N = (x) => Number(x);
       return {
+        controls: { ...controls, avg_level: controls.avg_level == null ? null : N(controls.avg_level), evidenced_pct: controls.paid_items ? Math.round((controls.paid_items_evidenced / controls.paid_items) * 1000) / 10 : null },
         national_counts: { savings: 1383, credit_unions: 587, agri: 2988, source: 'กรมส่งเสริมสหกรณ์ ณ 31 ธ.ค. 2567 (สมุดสถิติรายปีประเทศไทย 2568 ตาราง 18.13)' },
         registry: { ...registry, allocatable: N(registry.allocatable) },
         by_status: byStatus.map((r) => ({ ...r, amount: N(r.amount) })),

@@ -3,6 +3,8 @@
  * Backend: /coop-lending/market/* (backend/src/routes/coopMarket.js)
  *   ข้อมูลสหกรณ์ + คะแนนความน่าเชื่อถือ · จัดทำ/ประกาศโครงการขอกู้ 3 ประเภท · ตอบคำถาม · เปรียบเทียบ/โต้ตอบ/เลือกข้อเสนอ
  *   · จับคู่และดาวน์โหลดสัญญา (.docx) · อัปโหลดฉบับลงนาม · รายงานผลการดำเนินงาน
+ *   · งวดเบิกตามกิจกรรม: ส่งปิดยอดงวด (สินค้าคงเหลือ ยอดขาย หลักฐานส่งมอบ) ให้ผู้ให้กู้หลักตรวจก่อนเปิดงวดถัดไป
+ *   · สหกรณ์โคนม: ข้อมูลรับน้ำนมจริงจากระบบบริหารโคนมแห่งชาติใช้เป็นหลักฐานกิจกรรม (ผู้ให้กู้เห็นเมื่อให้ความยินยอม)
  */
 /* global CL */
 window.CoopMarket = (function () {
@@ -36,14 +38,18 @@ window.CoopMarket = (function () {
         · ทะเบียนจากกรมส่งเสริมสหกรณ์: ${d.registry ? `${esc(d.registry.province_name_th || d.registry.province_code || "")} ${d.registry.cooperative_registration_no ? `เลขทะเบียน ${esc(d.registry.cooperative_registration_no)}` : ""}` : "ยังไม่มี"}
         · สมาชิกในระบบ ${d.platform.members_on_platform} ราย ${d.platform.plots} แปลง ${num(d.platform.area_rai, 0)} ไร่</div>
       <div class="cl-card">${CL.scorePanel(d.score)}</div>
+      ${d.dairy ? `<div class="cl-card">${CL.dairyPanel(d.dairy)}<div class="cl-muted">ผู้ให้กู้เห็นข้อมูลชุดนี้ประกอบโครงการเมื่อท่านให้ความยินยอมเปิดเผยข้อมูลด้านล่าง</div></div>` : ""}
       <form id="bpForm">
       <div class="cl-card"><h3>ข้อมูลทั่วไป</h3><div class="cl-form">
-        <div><label>ประเภท</label><select name="coop_kind">${optList([["agriculture", "สหกรณ์การเกษตร"], ["settlement", "สหกรณ์นิคม"], ["fisheries", "สหกรณ์ประมง"]], p.coop_kind)}</select></div>
+        <div><label>ประเภท</label><select name="coop_kind">${optList([["agriculture", "สหกรณ์การเกษตร"], ["dairy", "สหกรณ์โคนม"], ["settlement", "สหกรณ์นิคม"], ["fisheries", "สหกรณ์ประมง"], ["other", "สหกรณ์ประเภทอื่น"]], p.coop_kind)}</select></div>
         <div><label>เลขทะเบียนสหกรณ์</label><input name="registration_no" value="${esc(n0(p.registration_no))}"></div>
         <div><label>ปีที่จัดตั้ง (พ.ศ.)</label><input name="established_year" type="number" value="${esc(n0(p.established_year))}"></div>
         <div><label>จำนวนสมาชิก</label><input name="member_count" type="number" value="${esc(n0(p.member_count))}"></div>
         <div class="wide"><label>คณะกรรมการและผู้จัดการ</label><input name="board" value="${esc(n0(p.board))}"></div>
         <div class="wide"><label>ผู้มีอำนาจลงนาม (ชื่อ ตำแหน่ง)</label><input name="signatories" value="${esc(n0(p.signatories))}"></div>
+        <div><label>วงเงินกู้ยืมที่ที่ประชุมใหญ่อนุมัติ (มาตรา 47)</label><input name="max_borrowing" type="number" value="${esc(n0(p.max_borrowing))}" placeholder="บาท"></div>
+        <div><label>อ้างอิงมติ</label><input name="max_borrowing_ref" value="${esc(n0(p.max_borrowing_ref))}" placeholder="เช่น ประชุมใหญ่สามัญ 1/2569"></div>
+        <div class="wide cl-muted">หนี้เดิมที่กรอกด้านล่าง + วงเงินบน AgroLink ที่ยังไม่ปิด (${baht(d.platform_debt || 0)}) + วงเงินที่ขอใหม่ ต้องไม่เกินวงเงินนี้</div>
         <div><label>ข้อมูล ณ วันที่</label><input name="data_as_of" type="date" value="${esc(p.data_as_of ? String(p.data_as_of).slice(0, 10) : new Date().toISOString().slice(0, 10))}"></div></div></div>
       <div class="cl-card"><h3>งบการเงินย้อนหลัง 3 ปี (บาท)</h3><div style="overflow-x:auto"><table class="cl-table cl-inline"><tr><th>รายการ</th>${years.map((y, i) => `<th><input name="fy${i}" type="number" value="${y.year}" style="width:90px"> </th>`).join("")}</tr>
         ${F.map(([k, l]) => `<tr><td>${l}</td>${years.map((y, i) => `<td><input name="f${i}_${k}" type="number" step="0.01" value="${esc(n0(y[k]))}" style="width:150px"></td>`).join("")}</tr>`).join("")}
@@ -84,7 +90,7 @@ window.CoopMarket = (function () {
       const f = e.target;
       const v = (k) => (f[k] ? f[k].value : "");
       const body = {
-        coop_kind: v("coop_kind"), registration_no: v("registration_no"), established_year: v("established_year"), member_count: v("member_count"), board: v("board"), signatories: v("signatories"), data_as_of: v("data_as_of"),
+        coop_kind: v("coop_kind"), max_borrowing: v("max_borrowing"), max_borrowing_ref: v("max_borrowing_ref"), registration_no: v("registration_no"), established_year: v("established_year"), member_count: v("member_count"), board: v("board"), signatories: v("signatories"), data_as_of: v("data_as_of"),
         financials: [0, 1, 2].map((i) => ({ year: v(`fy${i}`), ...Object.fromEntries([...F.map(([k]) => k), "audit_opinion"].map((k) => [k, v(`f${i}_${k}`)])) })).filter((x) => F.some(([k]) => x[k] !== "")),
         businesses: Object.fromEntries(BUS.map(([k]) => [k, { volume: v(`b_${k}_volume`), value: v(`b_${k}_value`) }])),
         debts: rows.debt.filter((x) => x.creditor), assets: rows.asset.filter((x) => x.kind),
@@ -233,7 +239,10 @@ window.CoopMarket = (function () {
       <div class="cl-card"><h3>เอกสารประกอบ</h3><div class="cl-ev">${d.documents.map((x) => `<a href="#" data-doc="${x.doc_id}">📎 ${esc(DK[x.kind] || x.kind)}: ${esc(x.title)}</a>${editable ? `<span><a href="#" data-deldoc="${x.doc_id}" style="background:none;color:#a1261d">ลบ</a></span>` : ""}`).join("") || '<span class="miss">ยังไม่มีเอกสาร</span>'}</div>
         ${["Matched", "Signed", "Closed", "Withdrawn"].includes(l.status) ? "" : `<div class="cl-actions cl-inline"><select id="docKind">${optList(Object.entries(DK), l.project_type === "investment" ? "quotation" : "resolution")}</select><input id="docTitle" placeholder="ชื่อเอกสาร เช่น มติที่ประชุมใหญ่ 2569"><input type="file" id="docFile" accept="image/*,application/pdf"><button class="cl-btn ghost" data-a="doc">แนบเอกสาร</button></div>`}</div>
 
-      <div class="cl-card"><details class="cl-more" ${editable ? "" : ""}><summary>คะแนนความน่าเชื่อถือและตัวชี้วัดโครงการ (ผู้ให้กู้เห็นชุดเดียวกัน)</summary>${CL.scorePanel(d.score)}<div style="margin-top:8px">${CL.riskPanel(d.risk)}</div></details></div>
+      <div class="cl-card"><details class="cl-more"><summary>คะแนนสหกรณ์ ${CL.gradeBadge(d.score.grade, d.score.score)} · คะแนนโครงการ ${d.project_score ? CL.gradeBadge(d.project_score.grade, d.project_score.score) : ""} (ผู้ให้กู้เห็นชุดเดียวกัน)</summary>${CL.scorePanel(d.score)}
+        <div style="margin-top:10px">${CL.factorPanel("Project Credit Score", d.project_score, "ความเป็นไปได้ 20 · ตลาด 20 · กระแสเงินสด 20 · หลักฐานกิจกรรมจริง 20 · หลักประกันและการควบคุม 10 · ความเสี่ยงด้านราคา 10")}</div>
+        <div style="margin-top:8px">${CL.riskPanel(d.risk)}</div></details></div>
+      ${d.dairy ? `<div class="cl-card">${CL.dairyPanel(d.dairy)}</div>` : ""}
 
       ${d.questions.length ? `<div class="cl-card"><h3>ถาม–ตอบกับผู้ให้กู้</h3>${d.questions.map((q) => `<div class="cl-line" style="border-top:1px solid #eef1ee;padding-top:6px" data-q="${q.question_id}">
           <b>${{ question: "คำถาม", document_request: "ขอเอกสารเพิ่ม", visit_request: "ขอนัดเยี่ยมชม" }[q.kind]}:</b> ${esc(q.question)} <span class="cl-muted">${esc(dt(q.created_at))}</span>
@@ -263,10 +272,27 @@ window.CoopMarket = (function () {
           ฉบับลงนาม <input type="file" id="signFile" accept="application/pdf,image/*"><button class="cl-btn" data-a="sign" ${myAccounts.length ? "" : "disabled"}>อัปโหลดฉบับลงนามของผู้กู้</button></div>` : ""}
         ${ag.status === "Signed" ? `<div class="cl-line">✅ ลงนามครบ ${esc(dt(ag.signed_at))} — วงเงินเปิดแล้ว ${d.facilities.map((f) => `${esc(f.lender_name)} ${baht(f.limit_amount)}`).join(" · ")} · เบิกจ่ายได้ที่แท็บ ${l.project_type === "member_onlending" ? '"สินเชื่อการผลิตรายงวด" และ ' : ""}"รายการเบิก"${l.project_type === "investment" ? ' และ "สินเชื่อเครื่องจักร"' : ""}</div>` : ""}</div>` : ""}
 
+      ${d.tranches && d.tranches.length ? `<div class="cl-card">${CL.tranchePanel(d.tranches, (t) => (t.status === "Open" ? `<form class="cl-form tr-form" data-seq="${t.seq}" style="margin-top:8px">
+          <div><label>สินค้าคงเหลือ (กก.)</label><input name="inventory_kg" type="number" step="0.01"></div><div><label>มูลค่าคงเหลือ (บาท)</label><input name="inventory_value" type="number" step="0.01"></div>
+          <div><label>ยอดขาย/ส่งมอบแล้ว (บาท)</label><input name="sales_amount" type="number" step="0.01"></div><div><label>หลักฐานส่งมอบ/รับสินค้า</label><input name="delivery_file" type="file" accept="image/*,application/pdf"></div>
+          <div class="wide"><label>หมายเหตุ</label><input name="note" placeholder="เช่น แจกจ่ายปัจจัยการผลิตให้สมาชิกครบ 120 ราย"></div><div><button class="cl-btn" type="submit">ส่งปิดยอดงวดนี้</button></div></form>` : ""))}</div>` : ""}
+      ${d.performance ? `<div class="cl-card">${CL.factorPanel("Activity Performance Score (ระหว่างสัญญา)", d.performance, "ผู้ให้กู้ใช้ติดตามและประกอบการพิจารณาเปิดงวดถัดไป")}</div>` : ""}
+
       ${["Signed", "Active", "Closed"].includes(l.status) ? `<div class="cl-card"><h3>รายงานผลการดำเนินงานเทียบแผน</h3>
         <table class="cl-table"><tr><th>งวดรายงาน</th><th class="r">รายได้จริง</th><th class="r">ตามแผน</th><th class="r">ค่าใช้จ่าย</th><th>หมายเหตุ</th></tr>${d.reports.map((r) => `<tr><td>${esc(r.period_label)}</td><td class="r">${r.revenue != null ? num(r.revenue) : "-"}</td><td class="r">${r.planned_revenue != null ? num(r.planned_revenue) : "-"}</td><td class="r">${r.cost != null ? num(r.cost) : "-"}</td><td>${esc(r.note || "")}</td></tr>`).join("") || '<tr><td colspan="5" class="cl-empty">ยังไม่มี</td></tr>'}</table>
         <form id="repForm" class="cl-form" style="margin-top:8px"><div><label>งวด</label><input name="period_label" placeholder="ไตรมาส 1/2570" required></div><div><label>รายได้จริง</label><input name="revenue" type="number"></div><div><label>รายได้ตามแผน</label><input name="planned_revenue" type="number"></div><div><label>ค่าใช้จ่าย</label><input name="cost" type="number"></div><div class="wide"><label>หมายเหตุ</label><input name="note"></div><div><button class="cl-btn" type="submit">ส่งรายงาน</button></div></form></div>` : ""}`;
 
+    ctx.view.querySelectorAll(".tr-form").forEach((tf) => {
+      tf.onsubmit = async (e) => {
+        e.preventDefault();
+        const f = tf.delivery_file.files[0];
+        const v = (k) => (tf[k].value === "" ? null : tf[k].value);
+        const r = await CL.act(e.submitter, async () => CL.post(`/coop-lending/market/listings/${l.listing_id}/tranches/${tf.dataset.seq}/submit`, {
+          inventory_kg: v("inventory_kg"), inventory_value: v("inventory_value"), sales_amount: v("sales_amount"), note: v("note"), delivery_file_id: f ? await CL.upload(f) : undefined,
+        }), "ส่งปิดยอดแล้ว — รอผู้ให้กู้หลักตรวจและอนุมัติเปิดงวดถัดไป");
+        if (r) renderDetail();
+      };
+    });
     const rep = document.getElementById("repForm");
     if (rep) rep.onsubmit = async (e) => { e.preventDefault(); if (await CL.act(e.submitter, () => CL.post(`/coop-lending/market/listings/${l.listing_id}/reports`, CL.formData(rep)), "ส่งรายงานแล้ว")) renderDetail(); };
     ctx.view.onclick = async (e) => {

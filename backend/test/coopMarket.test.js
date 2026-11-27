@@ -4,33 +4,49 @@ const M = require('../src/lib/coopMarket');
 
 const strong = {
   financials: [
-    { year: 2567, total_assets: 100e6, total_liabilities: 55e6, current_assets: 30e6, current_liabilities: 18e6, net_income: 3.5e6, audit_opinion: 'unqualified' },
-    { year: 2566, net_income: 3e6 }, { year: 2565, net_income: 2e6 },
+    { year: 2567, total_assets: 100e6, total_liabilities: 45e6, current_assets: 30e6, current_liabilities: 18e6, net_income: 3.5e6, revenue: 40e6, audit_opinion: 'unqualified' },
+    { year: 2566, net_income: 3e6, revenue: 36e6 }, { year: 2565, net_income: 2e6 },
   ],
+  businesses: { collect: { value: 20e6 }, credit: { value: 15e6 }, supply: { value: 5e6 } }, established_year: 2540, member_count: 800,
   governance: { standard_grade: 'excellent' }, debts: [{ creditor: 'กองทุนพัฒนาสหกรณ์', status: 'current' }], data_as_of: '2026-06-30', consent_disclose: true,
+  max_borrowing: 20e6,
 };
 
-test('credit score: transparent factors, grade bands, stale data and bad history lower the score', () => {
+test('credit score: 5 groups 25/25/20/15/15, grade bands A/B/C/D, stale data and bad history lower the score', () => {
   const s = M.creditScore(strong, { facilities: 2 }, '2026-11-26');
   assert.equal(s.score, 100);
   assert.equal(s.grade, 'A');
-  assert.equal(s.factors.length, 8);
   assert.ok(s.factors.every((f) => f.points <= f.max));
+  const groupMax = {};
+  s.factors.forEach((f) => { groupMax[f.group] = (groupMax[f.group] || 0) + f.max; });
+  assert.deepEqual(groupMax, { financial: 25, capacity: 25, governance: 20, repayment: 15, business: 15 });
   const weak = M.creditScore({ ...strong, debts: [{ status: 'default' }], governance: { standard_grade: 'pass', unresolved_issues: 'ยังไม่แก้ข้อสังเกตผู้สอบบัญชี' } }, { overdue_now: 2 }, '2026-11-26');
   assert.equal(weak.factors.find((f) => f.key === 'debts').points, 0);
-  assert.equal(weak.factors.find((f) => f.key === 'governance').points, 0);
+  assert.equal(weak.factors.find((f) => f.key === 'standard').points, 3);
+  assert.equal(weak.factors.find((f) => f.key === 'issues').points, 0);
   assert.equal(weak.factors.find((f) => f.key === 'platform').points, 0);
-  assert.equal(weak.grade, 'B'); // 100 − 15 − 10 − 10 = 65
+  assert.equal(weak.score, 76); // 100 − มาตรฐาน 5 − ข้อสังเกต 4 − หนี้เดิม 8 − ประวัติในระบบ 7
+  assert.equal(weak.grade, 'B');
   const stale = M.creditScore({ ...strong, data_as_of: '2024-01-01' }, { facilities: 1 }, '2026-11-26');
   assert.equal(stale.score, 95);
   assert.ok(stale.stale);
-  assert.equal(M.creditScore({}, {}, '2026-11-26').grade, 'E');
+  const empty = M.creditScore({}, {}, '2026-11-26');
+  assert.equal(empty.grade, 'D');
+  assert.ok(empty.score < 55);
+  assert.equal(M.gradeOf(85)[1], 'A');
+  assert.equal(M.gradeOf(84)[1], 'B');
+  assert.equal(M.gradeOf(55)[1], 'C');
+  assert.equal(M.gradeOf(54)[1], 'D');
 });
 
 test('listing checks by project type; policy match; exposure warnings', () => {
   const base = { amount_requested: 1000000, tenor_months: 12, use_plan: [{ item: 'ปุ๋ย', amount: 1000000 }], repayment_plan: 'ชำระหลังขายผลผลิตเดือน ธ.ค.', certified_at: 'x', resolution_file_id: 'f' };
-  const ok = M.listingChecks({ ...base, project_type: 'member_onlending', details: { members_count: 40, per_member_limit: 25000, production_plan: 'ข้าวนาปี' } }, [], strong);
+  const onl = { ...base, project_type: 'member_onlending', details: { members_count: 40, per_member_limit: 25000, production_plan: 'ข้าวนาปี' } };
+  const ok = M.listingChecks(onl, [], strong);
   assert.equal(ok.ok, true);
+  // มาตรา 47: ต้องระบุวงเงินกู้ยืมที่ที่ประชุมใหญ่อนุมัติ และหนี้เดิม + วงเงินที่ขอต้องไม่เกิน
+  assert.deepEqual(M.listingChecks(onl, [], { ...strong, max_borrowing: null }).missing.map((m) => m.code), ['max_borrowing']);
+  assert.deepEqual(M.listingChecks(onl, [], { ...strong, max_borrowing: 5e6 }, { platformDebt: 4.5e6 }).missing.map((m) => m.code), ['over_max_borrowing']);
   const proc = M.listingChecks({ ...base, project_type: 'procurement', details: {} }, [], strong);
   assert.deepEqual(proc.missing.map((m) => m.code), ['commodity', 'volume_t', 'period', 'reference_price', 'end_buyers']);
   const inv = M.listingChecks({ ...base, project_type: 'investment', use_plan: [{ item: 'เครื่อง', amount: 500 }], details: { business_plan: 'x', projections: [{ year: '1', net_cash: 1 }] }, certified_at: null }, [], { ...strong, consent_disclose: false });

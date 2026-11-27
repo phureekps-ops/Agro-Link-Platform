@@ -3,6 +3,8 @@
  * Backend: /savings/market/* (backend/src/routes/coopMarket.js)
  *   ค้นหาโครงการ (กรองตามประเภท พื้นที่ วงเงิน ระยะเวลา ชนิดพืช ระดับความเสี่ยง หรือเฉพาะที่ตรงนโยบาย) · ดูข้อมูลผู้ขอกู้โดยละเอียด
  *   · ถาม–ตอบ/ขอเอกสาร/นัดเยี่ยม · ยื่น/แก้/ถอนข้อเสนอ (แจ้งเตือนเพดาน) · ยืนยันตามอำนาจอนุมัติ · ดาวน์โหลดและลงนามสัญญา
+ *   · คุณสมบัติผู้ให้กู้ 8 ข้อ (เอกสาร 5 ข้อผู้ดูแลตรวจ + วงเงิน/สภาพคล่อง/เพดานลูกหนี้รายใหญ่) — ไม่ผ่านครบ ยื่นข้อเสนอไม่ได้
+ *   · ผู้ให้กู้หลัก: ตรวจปิดยอดงวด (ผู้ตรวจสอบ) → อนุมัติเปิดงวดถัดไป (ผู้มีอำนาจ คนละคน)
  */
 /* global CL */
 window.LenderMarket = (function () {
@@ -99,9 +101,13 @@ window.LenderMarket = (function () {
           <div class="cl-line"><b>การกำกับดูแล</b> ${esc({ excellent: "ดีเลิศ", very_good: "ดีมาก", good: "ดี", pass: "ผ่าน", fail: "ไม่ผ่าน" }[(bp.governance || {}).standard_grade] || "-")} ${(bp.governance || {}).unresolved_issues ? `<span class="cl-late">ข้อบกพร่องค้าง: ${esc(bp.governance.unresolved_issues)}</span>` : ""}</div>`
     : '<div class="cl-muted">ผู้ขอกู้ยังไม่ได้ให้ความยินยอมเปิดเผยข้อมูลโดยละเอียด</div>'}</div>
 
+      <div class="cl-card">${CL.factorPanel("Project Credit Score", d.project_score, "ความเป็นไปได้ 20 · ตลาด 20 · กระแสเงินสด 20 · หลักฐานกิจกรรมจริง 20 · หลักประกันและการควบคุม 10 · ความเสี่ยงด้านราคา 10 — ข้อมูลประกอบ ผู้ให้กู้ตัดสินใจตามระเบียบของตน")}</div>
+      ${d.dairy ? `<div class="cl-card">${CL.dairyPanel(d.dairy)}</div>` : ""}
+
       <div class="cl-card"><h3>ถาม–ตอบ</h3>${d.questions.map((q) => `<div class="cl-line" style="border-top:1px solid #eef1ee;padding-top:6px">${q.mine ? "<b>เรา</b>" : "ผู้ให้กู้รายหนึ่ง"}: ${esc(q.question)} <span class="cl-muted">${esc(dt(q.created_at))}</span>${q.answer ? `<div>↳ ${esc(q.answer)}</div>` : '<div class="cl-muted">รอผู้ขอกู้ตอบ</div>'}</div>`).join("") || '<div class="cl-muted">ยังไม่มี</div>'}
         ${open ? `<div class="cl-actions cl-inline"><select id="qKind">${optList([["question", "คำถาม"], ["document_request", "ขอเอกสารเพิ่มเติม"], ["visit_request", "ขอนัดเยี่ยมชมสหกรณ์"]], "question")}</select><input id="qText" style="min-width:340px" placeholder="พิมพ์คำถาม"><button class="cl-btn ghost" data-a="ask">ส่ง</button></div>` : ""}</div>
 
+      ${open ? `<div class="cl-card">${CL.compliancePanel(d.compliance)}${d.compliance && !d.compliance.ok ? '<div class="cl-muted">ส่งเอกสารคุณสมบัติที่แท็บ "ข้อมูลและนโยบายสินเชื่อ" — ผู้ดูแลแพลตฟอร์มตรวจก่อนยื่นข้อเสนอได้</div>' : ""}</div>` : ""}
       <div class="cl-card"><h3>ข้อเสนอของเรา</h3>
         <div class="cl-muted">ยอดผูกพันของเรา (วงเงินที่เปิดแล้ว + ข้อเสนอที่ยังมีผล): รวม ${baht(ex.total)} · กับผู้กู้รายนี้ ${baht(ex.borrower)} · จังหวัดนี้ ${baht(ex.province)} · ประเภทนี้ ${baht(ex.type)}${prof.allocatable_amount != null ? ` · เงินที่จัดสรรได้ ${baht(prof.allocatable_amount)}` : ""}</div>
         ${d.my_offers.map((o) => `<div class="cl-line" style="border-top:1px solid #eef1ee;padding-top:6px" data-o="${o.offer_id}">${pill(CL.OFFER_ST[o.status])} ${baht(o.amount)} · ${Number(o.rate_pct)}% · ${o.tenor_months} เดือน · ${o.repayment_type === "bullet" ? "ต้นครั้งเดียว" : `ผ่อนทุก ${o.interval_months} ด.`}
@@ -126,6 +132,14 @@ window.LenderMarket = (function () {
         <div class="cl-actions"><button class="cl-btn blue" data-a="docx" data-ag="${ag.agreement_id}">⬇️ ดาวน์โหลดชุดเอกสารสัญญา (.docx)</button></div>
         ${ag.status === "Drafted" && !myParty.signed ? `<div class="cl-actions cl-inline">ฉบับลงนามของเรา <input type="file" id="signFile" accept="application/pdf,image/*"><button class="cl-btn" data-a="sign" data-ag="${ag.agreement_id}">อัปโหลดฉบับลงนาม</button></div>` : ""}
         ${ag.status === "Signed" ? `<div class="cl-line">✅ ลงนามครบ — วงเงินเปิดแล้ว ติดตามรายการเบิกที่แท็บ "รายการรอโอน" และ "วงเงินที่อนุมัติ"</div>` : ""}
+        ${d.tranches && d.tranches.length ? `<div style="margin-top:10px">${CL.tranchePanel(d.tranches, (t) => {
+    if (d.tranches[0].lead_lender_org_id !== d.me) return "";
+    const file = t.has_delivery_file ? `<button class="cl-btn ghost" data-a="trfile" data-seq="${t.seq}">📎 หลักฐานส่งมอบ</button>` : "";
+    if (t.status === "Submitted") return `<div class="cl-actions cl-inline">${file}<input class="tr-note" placeholder="บันทึกผลตรวจ" style="min-width:260px"><button class="cl-btn" data-a="trcheck" data-seq="${t.seq}">ตรวจแล้ว ถูกต้อง</button><button class="cl-btn bad" data-a="trreturn" data-seq="${t.seq}">ส่งกลับให้แก้</button></div>`;
+    if (t.status === "Checked") return `<div class="cl-actions cl-inline">${file}<span class="cl-muted">ผู้ตรวจสอบบันทึกแล้ว — ผู้มีอำนาจอนุมัติ (คนละคน) กดอนุมัติเพื่อเปิดงวดถัดไป</span><button class="cl-btn" data-a="trapprove" data-seq="${t.seq}">อนุมัติ เปิดงวดถัดไป</button><input class="tr-note" placeholder="เหตุผลส่งกลับ"><button class="cl-btn bad" data-a="trreturn" data-seq="${t.seq}">ส่งกลับ</button></div>`;
+    return file ? `<div class="cl-actions">${file}</div>` : "";
+  })}</div>` : ""}
+        ${d.performance ? `<div style="margin-top:10px">${CL.factorPanel("Activity Performance Score", d.performance)}</div>` : ""}
         ${d.reports.length ? `<div class="cl-line" style="margin-top:8px"><b>รายงานผลจากผู้กู้</b></div><table class="cl-table"><tr><th>งวด</th><th class="r">รายได้จริง</th><th class="r">ตามแผน</th><th>หมายเหตุ</th></tr>${d.reports.map((r) => `<tr><td>${esc(r.period_label)}</td><td class="r">${r.revenue != null ? num(r.revenue) : "-"}</td><td class="r">${r.planned_revenue != null ? num(r.planned_revenue) : "-"}</td><td>${esc(r.note || "")}</td></tr>`).join("")}</table>` : ""}</div>` : ""}`;
 
     const of = document.getElementById("offerForm");
@@ -151,6 +165,14 @@ window.LenderMarket = (function () {
       if (a === "revise") { document.getElementById("offerForm").style.display = ""; return; }
       if (a === "withdraw") { if (!window.confirm("ถอนข้อเสนอนี้?")) return; r = await CL.act(b, () => CL.post(`/savings/market/offers/${oid.o}/withdraw`), "ถอนแล้ว"); }
       if (a === "confirm") r = await CL.act(b, () => CL.post(`/savings/market/offers/${oid.o}/confirm`, { approval_ref: b.parentElement.querySelector(".ap-ref").value }), "ยืนยันแล้ว — รอผู้ขอกู้จับคู่และจัดทำสัญญา");
+      if (a.startsWith("tr") && ag) {
+        const seq = b.dataset.seq; const base = `/savings/market/agreements/${ag.agreement_id}/tranches/${seq}`;
+        const note = (b.parentElement.querySelector(".tr-note") || {}).value || "";
+        if (a === "trfile") { CL.openFile(`${base}/delivery-file`); return; }
+        if (a === "trcheck") r = await CL.act(b, () => CL.post(`${base}/check`, { note }), "บันทึกผลตรวจแล้ว — รอผู้มีอำนาจอนุมัติ");
+        if (a === "trapprove") { if (!window.confirm(`อนุมัติปิดยอดงวดที่ ${seq} และเปิดงวดถัดไป?`)) return; r = await CL.act(b, () => CL.post(`${base}/approve`), (x) => (x.next_open ? `ปิดยอดแล้ว — เปิดงวดที่ ${x.next_open.seq}` : "ปิดยอดงวดสุดท้ายแล้ว")); }
+        if (a === "trreturn") r = await CL.act(b, () => CL.post(`${base}/return`, { note }), "ส่งกลับแล้ว");
+      }
       if (a === "docx") { await CL.download(`/savings/market/agreements/${b.dataset.ag}/docx`, `สัญญา-${ag.agreement_no}.docx`); return; }
       if (a === "sign") {
         const f = document.getElementById("signFile").files[0];
@@ -180,7 +202,17 @@ window.LenderMarket = (function () {
     const pol = p.policy || {};
     const f = (p.financials || [])[0] || {};
     const thisYear = new Date().getFullYear() + 543 - 1;
-    ctx.view.innerHTML = `<form id="lpForm">
+    const cp = await CL.get("/savings/market/compliance");
+    const docOf = (code) => cp.documents.find((x) => x.check_code === code);
+    const ST = { Pending: "⏳ รอตรวจ", Pass: "✅ ผ่าน", Fail: "❌ ไม่ผ่าน" };
+    ctx.view.innerHTML = `
+      <div class="cl-card">${CL.compliancePanel(cp.status)}
+        <h3 style="margin-top:12px">ส่งเอกสารคุณสมบัติ (ผู้ดูแลแพลตฟอร์มตรวจ)</h3>
+        <table class="cl-table">${cp.doc_checks.map((k) => { const x = docOf(k.code); return `<tr data-chk="${k.code}"><td><b>${esc(k.label)}</b><div class="cl-muted">${esc(k.hint || "")}</div></td>
+          <td>${x ? `${ST[x.status]}${x.review_note ? `<div class="cl-muted">${esc(x.review_note)}</div>` : ""}${x.valid_until ? `<div class="cl-muted">ใช้ได้ถึง ${esc(date(x.valid_until))}</div>` : ""}` : '<span class="cl-muted">ยังไม่ส่ง</span>'}</td>
+          <td class="cl-inline"><input type="file" class="chk-file" accept="application/pdf,image/*"><input class="chk-note" placeholder="หมายเหตุ เช่น ฉบับแก้ไข 2568"><button type="button" class="cl-btn ghost" data-chk-send="1">${x ? "ส่งฉบับใหม่" : "ส่ง"}</button></td></tr>`; }).join("")}</table>
+        <div class="cl-muted">วงเงิน สภาพคล่อง และเพดานลูกหนี้รายใหญ่ ระบบคำนวณจากข้อมูลด้านล่างทุกครั้งที่ยื่นและยืนยันข้อเสนอ</div></div>
+      <form id="lpForm">
       <div class="cl-card" style="background:#f4faf5">ข้อมูลนี้ใช้ (1) ให้ผู้ขอกู้ทราบนโยบายสินเชื่อของสหกรณ์ (2) แจ้งเตือนเมื่อมีโครงการตรงนโยบาย (3) เตือนเมื่อข้อเสนอเกินเงินที่จัดสรรได้หรือเกินเพดาน
         · วงเงินผูกพันปัจจุบัน ${baht(d.committed)} · ข้อเสนอที่ยังมีผล ${baht(d.offered)}</div>
       <div class="cl-card"><h3>ข้อมูลทั่วไปและฐานะการเงิน (${esc(d.org.org_type === "CreditUnion" ? "สหกรณ์เครดิตยูเนี่ยน" : "สหกรณ์ออมทรัพย์")})</h3><div class="cl-form">
@@ -190,7 +222,8 @@ window.LenderMarket = (function () {
         <div class="wide"><label>ผู้มีอำนาจลงนาม</label><input name="signatories" value="${esc(n0(p.signatories))}"></div>
         <div class="wide"><label>ผู้ติดต่อ</label><input name="contact" value="${esc(n0(p.contact))}"></div>
         <div><label>ปีบัญชี</label><input name="f_year" type="number" value="${esc(f.year || thisYear)}"></div>
-        ${[["total_assets", "สินทรัพย์รวม"], ["share_capital", "ทุนเรือนหุ้น"], ["deposits", "เงินรับฝาก"], ["reserve", "ทุนสำรอง"], ["loans", "เงินให้กู้"], ["investments", "เงินลงทุน"], ["net_income", "กำไรสุทธิ"]].map(([k, l]) => `<div><label>${l}</label><input name="f_${k}" type="number" value="${esc(n0(f[k]))}"></div>`).join("")}
+        ${[["total_assets", "สินทรัพย์รวม"], ["share_capital", "ทุนเรือนหุ้น"], ["deposits", "เงินรับฝาก"], ["reserve", "ทุนสำรอง"], ["loans", "เงินให้กู้"], ["investments", "เงินลงทุน"], ["net_income", "กำไรสุทธิ"],
+          ["liquid_assets", "สินทรัพย์สภาพคล่อง"], ["liquidity_required", "สภาพคล่องที่ต้องดำรงตามเกณฑ์"]].map(([k, l]) => `<div><label>${l}</label><input name="f_${k}" type="number" value="${esc(n0(f[k]))}"></div>`).join("")}
         <div><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="f_audited" ${f.audited ? "checked" : ""} style="width:auto"> ผ่านการสอบบัญชีแล้ว</label></div></div></div>
       <div class="cl-card"><h3>สภาพคล่องและเงินทุนที่จัดสรรได้</h3><div class="cl-form">
         <div><label>วงเงินที่พร้อมให้สหกรณ์อื่นกู้ (บาท) — กำหนดโดยสหกรณ์</label><input name="allocatable_amount" type="number" value="${esc(n0(p.allocatable_amount))}"></div>
@@ -202,7 +235,8 @@ window.LenderMarket = (function () {
         <div><label>วงเงินต่อรายต่ำสุด</label><input name="min_amount" type="number" value="${esc(n0(pol.min_amount))}"></div><div><label>วงเงินต่อรายสูงสุด</label><input name="max_amount" type="number" value="${esc(n0(pol.max_amount))}"></div>
         <div><label>ระยะเวลาสั้นสุด (เดือน)</label><input name="min_tenor_months" type="number" value="${esc(n0(pol.min_tenor_months))}"></div><div><label>ระยะเวลายาวสุด (เดือน)</label><input name="max_tenor_months" type="number" value="${esc(n0(pol.max_tenor_months))}"></div>
         <div><label>ดอกเบี้ยต่ำสุด (%)</label><input name="rate_min" type="number" step="0.01" value="${esc(n0(pol.rate_min))}"></div><div><label>ดอกเบี้ยสูงสุด (%)</label><input name="rate_max" type="number" step="0.01" value="${esc(n0(pol.rate_max))}"></div>
-        <div><label>ระดับความเสี่ยงที่รับได้</label><select name="max_risk_grade"><option value="">ไม่จำกัด</option>${optList(["A", "B", "C", "D", "E"].map((g) => [g, `เกรด ${g} ขึ้นไป`]), pol.max_risk_grade)}</select></div>
+        <div><label>ระดับความเสี่ยงที่รับได้</label><select name="max_risk_grade"><option value="">ไม่จำกัด</option>${optList(["A", "B", "C", "D"].map((g) => [g, `เกรด ${g} ขึ้นไป`]), pol.max_risk_grade)}</select></div>
+        <div><label>ระดับหลักฐานขั้นต่ำก่อนโอนเงิน</label><select name="min_verification_level"><option value="">ไม่กำหนด</option>${optList([["1", "L1 เอกสารที่สหกรณ์ส่ง"], ["2", "L2 ยืนยันกับคู่ค้า/สมาชิก"], ["4", "L4 IoT/ภาคสนาม/ดาวเทียม"], ["5", "L5 ผู้ตรวจอิสระ"]], pol.min_verification_level ? String(pol.min_verification_level) : "")}</select></div>
         <div class="wide"><label>จังหวัดที่สนใจ (ไม่เลือก = ทั้งประเทศ)</label><select name="provinces" multiple size="5">${optList(CL.PROVINCES, null).replace(/<option value="([^"]+)"/g, (m, code) => ((pol.provinces || []).includes(code) ? `<option value="${code}" selected` : m))}</select></div>
         <div><label>ชนิดพืช (คั่นด้วย ,)</label><input name="commodities" value="${esc((pol.commodities || []).join(", "))}"></div>
         <div><label>หลักประกันที่ยอมรับ (คั่นด้วย ,)</label><input name="collateral" value="${esc((pol.collateral || []).join(", "))}" placeholder="ที่ดิน, เครื่องจักร, ผู้ค้ำประกัน"></div></div></div>
@@ -219,16 +253,25 @@ window.LenderMarket = (function () {
       const rf = document.getElementById("resFile").files[0];
       const body = {
         registration_no: v("registration_no"), province_code: v("province_code"), member_count: v("member_count"), signatories: v("signatories"), contact: v("contact"),
-        financials: [{ year: v("f_year"), audited: fm.f_audited.checked, ...Object.fromEntries(["total_assets", "share_capital", "deposits", "reserve", "loans", "investments", "net_income"].map((k) => [k, v(`f_${k}`)])) }],
+        financials: [{ year: v("f_year"), audited: fm.f_audited.checked, ...Object.fromEntries(["total_assets", "share_capital", "deposits", "reserve", "loans", "investments", "net_income", "liquid_assets", "liquidity_required"].map((k) => [k, v(`f_${k}`)])) }],
         allocatable_amount: v("allocatable_amount"), liquidity_note: v("liquidity_note"), approval_authority: v("approval_authority"), data_as_of: v("data_as_of"),
         policy: {
           project_types: Object.keys(CL.PTYPE).filter((k) => fm[`pt_${k}`].checked), min_amount: v("min_amount"), max_amount: v("max_amount"), min_tenor_months: v("min_tenor_months"), max_tenor_months: v("max_tenor_months"),
-          rate_min: v("rate_min"), rate_max: v("rate_max"), max_risk_grade: v("max_risk_grade"), provinces: [...fm.provinces.selectedOptions].map((o) => o.value),
+          rate_min: v("rate_min"), rate_max: v("rate_max"), max_risk_grade: v("max_risk_grade"), min_verification_level: v("min_verification_level"), provinces: [...fm.provinces.selectedOptions].map((o) => o.value),
           commodities: v("commodities").split(",").map((s) => s.trim()).filter(Boolean), collateral: v("collateral").split(",").map((s) => s.trim()).filter(Boolean),
           limit_per_borrower: v("limit_per_borrower"), limit_per_province: v("limit_per_province"), limit_per_type: Object.fromEntries(Object.keys(CL.PTYPE).map((k) => [k, v(`lt_${k}`)])),
         },
       };
       const r = await CL.act(e.submitter, async () => CL.put("/savings/market/profile", { ...body, resolution_file_id: rf ? await CL.upload(rf) : undefined }), "บันทึกแล้ว");
+      if (r) renderProfile(ctx);
+    };
+    ctx.view.onclick = async (e) => {
+      const b = e.target.closest("[data-chk-send]");
+      if (!b) return;
+      const row = b.closest("[data-chk]");
+      const fl = row.querySelector(".chk-file").files[0];
+      if (!fl) { CL.toast("เลือกไฟล์ก่อน", true); return; }
+      const r = await CL.act(b, async () => CL.put(`/savings/market/compliance/${row.dataset.chk}`, { file_id: await CL.upload(fl), note: row.querySelector(".chk-note").value }), "ส่งแล้ว — รอผู้ดูแลแพลตฟอร์มตรวจ");
       if (r) renderProfile(ctx);
     };
   }

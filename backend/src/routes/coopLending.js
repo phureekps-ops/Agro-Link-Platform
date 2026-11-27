@@ -22,6 +22,7 @@ const {
   requireAuth, requireOrganizationOrStaff, resolveEffectiveOrgSubject, requireFarmer, requirePlatform, requireGovernmentOfficer,
 } = require('../middleware/auth');
 const L = require('../lib/coopLending');
+const C = require('../lib/coopControls');
 const bank = require('../lib/bankGateway');
 const objectStorage = require('../lib/storage');
 
@@ -182,6 +183,25 @@ async function openTransferFor(c, itemId, kind) {
   )).rows[0];
 }
 
+/**
+ * ระดับความน่าเชื่อถือของหลักฐาน (Master Blueprint ข้อ 8.2) — คำนวณใหม่ทุกครั้งที่หลักฐานเปลี่ยน
+ * ต้องเรียกหลังสถานะ/ข้อมูลของรายการเปลี่ยน (แนบไฟล์ ส่งตรวจ เกษตรกรยืนยัน จ่ายผู้ขาย ผู้ตรวจอิสระ)
+ */
+async function refreshVerification(c, itemId) {
+  const it = (await c.query('SELECT * FROM coop_lending.disbursement_item WHERE item_id = $1', [itemId])).rows[0];
+  if (!it) return null;
+  const ev = Number((await c.query('SELECT COUNT(*) AS n FROM coop_lending.evidence WHERE item_id = $1', [itemId])).rows[0].n);
+  const insp = (await c.query('SELECT inspector, result FROM coop_lending.item_inspection WHERE item_id = $1 ORDER BY created_at DESC LIMIT 1', [itemId])).rows[0] || null;
+  const field = [];
+  if (it.source_type === 'produce_delivery' && it.source_id) {
+    const d = (await c.query('SELECT inspected_at, moisture_pct FROM produce.delivery WHERE delivery_id = $1', [it.source_id])).rows[0];
+    if (d && d.inspected_at) it.farmer_confirmed_at = it.farmer_confirmed_at || d.inspected_at; // ผู้รับซื้อบันทึกผลชั่ง/ตรวจในระบบ = ยืนยันกับคู่ค้า
+  }
+  const v = C.verificationLevel(it, { evidence: ev, sellerPaidByBank: it.status === 'Paid', fieldData: field, inspection: insp });
+  await c.query('UPDATE coop_lending.disbursement_item SET verification_level = $2, verification = $3 WHERE item_id = $1', [itemId, v.level, JSON.stringify(v)]);
+  return v;
+}
+
 /** ผลหลังธนาคารยืนยันว่าโอนสำเร็จ — แยกตามชนิดการโอน */
 async function settleTransfer(c, t, actor) {
   const settings = await L.loadSettings(c);
@@ -212,6 +232,7 @@ async function settleTransfer(c, t, actor) {
       await c.query(`UPDATE coop_lending.disbursement_item SET status = 'Paid', paid_at = now(), ac_penalty = $2, updated_at = now() WHERE item_id = $1`,
         [it.item_id, it.t_penalty]);
       await L.logEvent(c, { itemId: it.item_id, facilityId: it.facility_id, actor: actor.key, action: 'paid_to_seller', detail: { transfer_id: t.transfer_id, bank_ref: t.bank_ref, ac_penalty: Number(it.t_penalty) } });
+      await refreshVerification(c, it.item_id);
     }
   } else if (t.kind === 'repayment') {
     const facility = (await c.query('SELECT * FROM coop_lending.facility WHERE facility_id = $1 FOR UPDATE', [t.facility_id])).rows[0];
@@ -314,6 +335,11 @@ async function approveTransfer(c, req, transferId) {
   if (from.verification_status !== 'Verified' || to.verification_status !== 'Verified') fail(409, 'account_not_verified');
   await precheckTransfer(c, t);
   const gw = bank.driver();
+  // Master Blueprint ข้อ 18: ไม่สั่งโอนผ่านธนาคารจริงจนกว่าจะผ่าน Go-live Gate ครบ (โหมดทดสอบไม่บังคับ)
+  if (gw.name !== 'sandbox') {
+    const gl = await goLiveFor(c, t.facility_id);
+    if (!gl.ok) fail(409, 'golive_gate_not_passed', { gates: gl.gates.filter((g) => g.status !== 'pass').map((g) => g.code) });
+  }
   const r = await gw.transfer({
     from, to, amount: Number(t.amount), memo: t.memo, idempotencyKey: t.idempotency_key,
   });
@@ -339,6 +365,17 @@ async function approveTransfer(c, req, transferId) {
   }
   await L.logEvent(c, { facilityId: t.facility_id, assetLoanId: t.asset_loan_id, actor: actor.key, action: `transfer_${status.toLowerCase()}:${t.kind}`, detail: { transfer_id: t.transfer_id, bank_ref: r.bank_ref, failure_reason: r.failure_reason } });
   return updated;
+}
+
+/** Go-live: gate ทั้งระบบ + G2 (ผู้ให้กู้ผ่านเอกสารคุณสมบัติครบ) + G3 (ผู้ขอกู้ผ่านการตรวจ) ของวงเงินนี้ */
+async function goLiveFor(c, facilityId) {
+  const rows = (await c.query('SELECT * FROM coop_lending.golive_gate')).rows;
+  if (!facilityId) return C.goLiveStatus(rows);
+  const f = (await c.query('SELECT lender_org_id, borrower_org_id FROM coop_lending.facility WHERE facility_id = $1', [facilityId])).rows[0];
+  const docs = (await c.query('SELECT * FROM coop_lending.lender_compliance WHERE org_id = $1', [f.lender_org_id])).rows;
+  const lenderOk = C.complianceStatus(docs, null, null, null, null).docs_ok;
+  const bp = (await c.query('SELECT verified_at FROM coop_lending.borrower_profile WHERE org_id = $1', [f.borrower_org_id])).rows[0];
+  return C.goLiveStatus(rows, { lenderOk, borrowerOk: Boolean(bp && bp.verified_at) });
 }
 
 async function cancelTransfer(c, req, transferId) {
@@ -405,6 +442,7 @@ function decorateItem(i) {
     loan_due_date: i.loan_due_date ? L.toDateStr(i.loan_due_date) : null,
     sc_late: i.status === 'EvidenceComplete' && sc && today > sc,
     ac_late: i.status === 'Funded' && ac && today > ac,
+    verification_label: C.LEVELS[Number(i.verification_level) || 0],
   };
 }
 
@@ -723,8 +761,12 @@ savings.post('/transfers/prepare', wrap(async (req, res) => {
     const settings = await L.loadSettings(c);
     const today = L.todayBangkok();
     const lines = [];
+    // นโยบายผู้ให้กู้: ระดับหลักฐานขั้นต่ำก่อนโอน (ข้อ 8.2)
+    const lp = (await c.query('SELECT policy FROM coop_lending.lender_profile WHERE org_id = $1', [req.org.org_id])).rows[0];
+    const minLevel = lp && lp.policy && Number(lp.policy.min_verification_level) > 0 ? Number(lp.policy.min_verification_level) : 0;
     for (const it of items) {
       if (it.status !== 'EvidenceComplete') fail(409, 'item_not_ready', { item_id: it.item_id, status: it.status });
+      if (minLevel && Number(it.verification_level) < minLevel) fail(409, 'below_verification_level', { item_id: it.item_id, level: Number(it.verification_level), required: minLevel });
       if (it.satellite_result === 'review' && !it.satellite_ack_by) fail(409, 'satellite_review_not_acknowledged', { item_id: it.item_id });
       if (it.price_check && it.price_check.flag && !it.satellite_ack_by) fail(409, 'price_check_not_acknowledged', { item_id: it.item_id });
       if (it.plan_id) {
@@ -1167,16 +1209,36 @@ borrower.post('/items', wrap(async (req, res) => {
       if (s + amount > Number(f.per_seller_limit)) fail(409, 'over_per_seller_limit', { available: L.round2(Number(f.per_seller_limit) - s) });
     }
 
+    // สัญญาจากตลาดสินเชื่อ: เบิกได้เฉพาะงวดที่เปิดอยู่ ไม่เกินเงินของงวด (งวดถัดไปเปิดเมื่อผู้ให้กู้ตรวจปิดยอดงวดก่อน)
+    let trancheSeq = null;
+    if (f.agreement_id) {
+      const trs = (await c.query('SELECT * FROM coop_lending.agreement_tranche WHERE agreement_id = $1 ORDER BY seq FOR UPDATE', [f.agreement_id])).rows;
+      if (trs.length) {
+        const open = trs.find((t) => t.status === 'Open');
+        if (!open) {
+          const cur = trs.find((t) => t.status !== 'Verified');
+          fail(409, 'no_open_tranche', { tranche: cur ? cur.name : null, status: cur ? cur.status : 'all_verified' });
+        }
+        const spent = Number((await c.query(
+          `SELECT COALESCE(SUM(i.amount), 0) AS s FROM coop_lending.disbursement_item i JOIN coop_lending.facility ff ON ff.facility_id = i.facility_id
+            WHERE ff.agreement_id = $1 AND i.tranche_seq = $2 AND i.status NOT IN ('Rejected','Cancelled','Disputed')`, [f.agreement_id, open.seq],
+        )).rows[0].s);
+        const left = L.round2(Number(open.amount) - spent);
+        if (amount > left + 0.004) fail(409, 'over_tranche_amount', { available: left, tranche: open.name });
+        trancheSeq = open.seq;
+      }
+    }
+
     let payout = null;
     if (b.payout_account_id) payout = await verifiedAccount(c, b.payout_account_id, sellerType, sellerId, ['payout']);
     const item = (await c.query(
       `INSERT INTO coop_lending.disbursement_item (facility_id, borrower_org_id, lender_org_id, purpose, farmer_id, seller_type, seller_id, seller_name,
-              payout_account_id, amount, description, source_type, source_id, doc_no, service_date, service_area_rai, created_by, plan_id, stage_seq)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
+              payout_account_id, amount, description, source_type, source_id, doc_no, service_date, service_area_rai, created_by, plan_id, stage_seq, tranche_seq)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
       [f.facility_id, req.org.org_id, f.lender_org_id, purpose, farmerId, sellerType, sellerId, name, payout ? payout.account_id : null, amount,
         text(b.description, 'description', { min: 3, max: 500 }), sourceType, sourceId, text(b.doc_no, 'doc_no', { max: 60, allowNull: true }),
         b.service_date && L.isDate(b.service_date) ? b.service_date : null, b.service_area_rai ? num(b.service_area_rai, 'service_area_rai', { min: 0.01, max: 100000 }) : null, actor.key,
-        plan ? plan.plan_id : null, stage ? stage.seq : null],
+        plan ? plan.plan_id : null, stage ? stage.seq : null, trancheSeq],
     )).rows[0];
     await setPlots(c, item, b.unit_ids);
     // โครงการรับซื้อจากตลาดสินเชื่อ: ตรวจราคาต่อ กก. เทียบราคาอ้างอิงในประกาศ (ต่างเกิน 15% ต้องให้ผู้ให้กู้รับทราบก่อนโอน)
@@ -1191,8 +1253,9 @@ borrower.post('/items', wrap(async (req, res) => {
         item.price_check = pc;
       }
     }
-    await L.logEvent(c, { itemId: item.item_id, facilityId: f.facility_id, actor: actor.key, action: 'item_created', detail: { amount } });
-    return item;
+    await L.logEvent(c, { itemId: item.item_id, facilityId: f.facility_id, actor: actor.key, action: 'item_created', detail: { amount, tranche_seq: trancheSeq } });
+    const v = await refreshVerification(c, item.item_id);
+    return { ...item, verification_level: v.level, verification: v };
   });
   res.status(201).json(out);
 }));
@@ -1240,7 +1303,8 @@ borrower.patch('/items/:id', wrap(async (req, res) => {
 borrower.post('/items/:id/evidence', wrap(async (req, res) => {
   if (!isUuid(req.params.id)) fail(404, 'item_not_found');
   const b = req.body || {};
-  const kinds = ['invoice', 'delivery_note', 'work_photo', 'weighing_slip', 'contract', 'down_payment_slip', 'serial_photo', 'ownership_doc', 'insurance', 'other'];
+  const kinds = ['invoice', 'delivery_note', 'work_photo', 'weighing_slip', 'quality_slip', 'purchase_receipt', 'acceptance_report', 'contract', 'down_payment_slip',
+    'serial_photo', 'ownership_doc', 'insurance', 'other'];
   if (!kinds.includes(b.kind)) fail(400, 'invalid_kind');
   if (!isUuid(b.file_id)) fail(400, 'file_required');
   const out = await orgTx(req, async (c) => {
@@ -1261,6 +1325,7 @@ borrower.post('/items/:id/evidence', wrap(async (req, res) => {
     )).rows[0];
     await L.logEvent(c, { itemId: it.item_id, facilityId: it.facility_id, actor: actor.key, action: 'evidence_added', detail: { kind: b.kind, file_id: file.file_id } });
     if (it.status === 'EvidencePending') await L.evaluateItem(c, it.item_id, actor.key);
+    await refreshVerification(c, it.item_id);
     return e;
   });
   res.status(201).json(out);
@@ -1282,7 +1347,9 @@ borrower.post('/items/:id/submit', wrap(async (req, res) => {
     await c.query(`UPDATE coop_lending.disbursement_item SET status = 'EvidencePending', submitted_at = now(), returned_reason = NULL, updated_at = now() WHERE item_id = $1`, [it.item_id]);
     await L.checkSatellite(c, it);
     await L.logEvent(c, { itemId: it.item_id, facilityId: it.facility_id, actor: actor.key, action: 'submitted' });
-    return L.evaluateItem(c, it.item_id, actor.key);
+    const ev = await L.evaluateItem(c, it.item_id, actor.key);
+    const v = await refreshVerification(c, it.item_id);
+    return { ...ev, verification_level: v.level, verification: v };
   });
   res.json(out);
 }));
@@ -1535,7 +1602,9 @@ for (const ACTION of ['confirm', 'dispute']) farmer.post(`/items/:id/${ACTION}`,
       if (!['Draft', 'EvidencePending'].includes(it.status) || it.farmer_confirmed_at) fail(409, 'not_awaiting_confirmation');
       await c.query('UPDATE coop_lending.disbursement_item SET farmer_confirmed_at = now(), farmer_note = $2, updated_at = now() WHERE item_id = $1', [it.item_id, note]);
       await L.logEvent(c, { itemId: it.item_id, facilityId: it.facility_id, actor, action: 'farmer_confirmed', detail: { note } });
-      return L.evaluateItem(c, it.item_id, actor);
+      const ev = await L.evaluateItem(c, it.item_id, actor);
+      await refreshVerification(c, it.item_id);
+      return ev;
     }
     if (!['Draft', 'EvidencePending', 'EvidenceComplete'].includes(it.status)) fail(409, 'cannot_dispute_now', { status: it.status });
     if (await openTransferFor(c, it.item_id, 'disbursement')) {
@@ -1579,6 +1648,8 @@ admin.put('/settings', wrap(async (req, res) => {
   if (b.sc_sla_days !== undefined) sets.sc_sla_days = num(b.sc_sla_days, 'sc_sla_days', { min: 1, max: 30 });
   if (b.ac_sla_days !== undefined) sets.ac_sla_days = num(b.ac_sla_days, 'ac_sla_days', { min: 1, max: 30 });
   if (b.late_penalty_pct !== undefined) sets.late_penalty_pct = num(b.late_penalty_pct, 'late_penalty_pct', { min: 0, max: 30 });
+  if (b.large_exposure_pct !== undefined) sets.large_exposure_pct = num(b.large_exposure_pct, 'large_exposure_pct', { min: 0.1, max: 100 });
+  if (b.large_exposure_min_assets !== undefined) sets.large_exposure_min_assets = num(b.large_exposure_min_assets, 'large_exposure_min_assets', { min: 0 });
   const keys = Object.keys(sets);
   if (!keys.length) fail(400, 'nothing_to_update');
   res.json(await adminTx(req, async (c) => (await c.query(
@@ -2020,9 +2091,9 @@ gov.get('/transactions.csv', wrap(async (req, res) => {
 
 // ตลาดสินเชื่อระหว่างสหกรณ์ (routes/coopMarket.js) — ใช้ helper ชุดเดียวกัน
 require('./coopMarket').attach({ savings, borrower, admin, gov }, {
-  wrap, fail, HttpError, tx, orgTx, num, text, isUuid, actorOf, verifiedAccount, logAccess, objectStorage, govTx, officerScope,
+  wrap, fail, HttpError, tx, orgTx, num, text, isUuid, actorOf, verifiedAccount, logAccess, objectStorage, govTx, officerScope, refreshVerification, goLiveFor,
 });
 
 module.exports = {
-  savings, borrower, farmer, admin, gov, _internal: { approveTransfer, settleTransfer },
+  savings, borrower, farmer, admin, gov, _internal: { approveTransfer, settleTransfer, refreshVerification },
 };

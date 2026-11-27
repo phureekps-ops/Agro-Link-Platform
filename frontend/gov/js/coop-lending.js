@@ -156,6 +156,12 @@
           ${gTot ? `<div style="margin-top:8px"><b>ระดับความเสี่ยงของโครงการที่ยื่น</b><div class="g-stack">${m.grades.map((g) => `<i style="flex:${g.n};background:${GC[g.grade] || "#999"}" title="เกรด ${g.grade}: ${g.n}"></i>`).join("")}</div>
             <div class="g-legend">${m.grades.map((g) => `<span style="--c:${GC[g.grade] || "#999"}">เกรด ${g.grade} ${g.n}</span>`).join("")}</div></div>` : ""}
           <div class="g-note">รอตรวจ ${st("Review")} · ประกาศ/มีข้อเสนอ ${st("Listed") + st("Offered")} · รอลงนาม ${st("Matched")}</div></div>
+        ${m.controls ? `<div class="cl-card"><b>การควบคุมการใช้เงิน (No Verification, No Disbursement)</b>
+          <div class="g-kpi"><span>งวดเบิกที่ผู้ให้กู้ตรวจปิดยอดแล้ว</span><b>${m.controls.tranches_verified} / ${m.controls.tranches} งวด</b></div>
+          <div class="g-kpi"><span>รายการจ่ายผู้ขายที่มีหลักฐาน · ระดับหลักฐานเฉลี่ย (1–5)</span><b>${pctTxt(m.controls.evidenced_pct)} · ${m.controls.avg_level ?? "—"}</b></div>
+          <div class="g-kpi"><span>รายการถูกปฏิเสธ/โต้แย้ง (สัญญาณใช้เงินผิดวัตถุประสงค์)</span><b>${m.controls.misuse_flags}</b></div>
+          <div class="g-kpi"><span>Go-live Gate ที่ผ่าน (ทั้งแพลตฟอร์ม)</span><b>${m.controls.gates_passed} / 8</b></div>
+          <div class="g-note">ระดับหลักฐาน: 1 เอกสาร · 2 ยืนยันกับคู่ค้า/สมาชิก · 3 ธุรกรรมธนาคาร · 4 IoT/ภาคสนาม/ดาวเทียม/ระบบโคนม · 5 ผู้ตรวจอิสระ</div></div>` : ""}
       </div>
       <div class="cl-card" style="overflow-x:auto">${m.listings.length ? `<table class="cl-table"><tr><th>โครงการ</th><th>ผู้ขอกู้</th><th>ประเภท</th><th class="r">วงเงิน</th><th>เกรด</th><th class="r">ข้อเสนอ</th><th>สถานะ</th><th>ผู้ให้กู้ตามสัญญา</th></tr>
         ${m.listings.map((l) => `<tr><td>${esc(l.title)}</td><td>${esc(l.borrower_name)}<div class="cl-muted">${esc(l.province_name_th || "")}</div></td><td>${esc(PT[l.project_type])}</td><td class="r">${baht(l.amount_requested)}</td>

@@ -102,6 +102,11 @@ const CL = (() => {
     offer_not_accepted: "ข้อเสนอนี้ยังไม่ถูกผู้ขอกู้เลือก", lender_profile_required: "กรอกข้อมูลและนโยบายสินเชื่อของสหกรณ์ก่อนยื่นข้อเสนอ", agreement_not_signable: "สัญญานี้ลงนามครบแล้วหรือถูกยกเลิก",
     price_check_not_acknowledged: "ราคารับซื้อต่างจากราคาอ้างอิงเกิน 15% — เปิดดูแล้วกด \"รับทราบ\" ก่อน", counter_empty: "ระบุเงื่อนไขที่ต้องการอย่างน้อยหนึ่งข้อ", invalid_project_type: "เลือกประเภทโครงการ",
     listing_not_in_review: "โครงการไม่ได้อยู่ในสถานะรอตรวจสอบ",
+    compliance_not_passed: "สหกรณ์ยังไม่ผ่านการตรวจคุณสมบัติผู้ให้กู้", no_open_tranche: "สัญญานี้ยังไม่มีงวดที่เปิดให้เบิก — งวดก่อนหน้ารอผู้ให้กู้ตรวจปิดยอด",
+    over_tranche_amount: "เกินเงินของงวดนี้", tranche_not_ready: "ยังปิดยอดงวดไม่ได้", tranche_not_open: "งวดนี้ไม่ได้เปิดอยู่", tranche_not_submitted: "งวดนี้ยังไม่ได้ส่งปิดยอด",
+    tranche_not_checked: "งวดนี้ยังไม่ผ่านผู้ตรวจสอบ", approver_must_differ_from_checker: "ผู้อนุมัติต้องเป็นคนละคนกับผู้ตรวจสอบงวดนี้", not_lead_lender: "เฉพาะผู้ให้กู้หลักของสัญญาเป็นผู้ตรวจปิดยอดงวด",
+    agreement_not_signed: "สัญญายังลงนามไม่ครบ", below_verification_level: "หลักฐานของรายการนี้ยังไม่ถึงระดับที่ผู้ให้กู้กำหนด",
+    golive_gate_not_passed: "ยังไม่ผ่านเงื่อนไขก่อนเปิดใช้งานจริง (Go-live Gate) — ระบบไม่สั่งโอนผ่านธนาคารจริง", check_not_found: "ไม่พบรายการตรวจ",
     invalid_text: "ข้อความสั้นหรือยาวเกินไป", invalid_number: "ตัวเลขไม่ถูกต้อง", only_admin_can_manage_staff: "เฉพาะผู้ดูแลหรือผู้จัดการเท่านั้นที่จัดการเจ้าหน้าที่ได้",
   };
   function errText(err) {
@@ -117,6 +122,9 @@ const CL = (() => {
     if (b.ratio_pct !== undefined) msg += ` (${b.ratio_pct}% เกิน ${b.max_ratio_pct}%)`;
     if (b.field) msg += ` [${b.field}]`;
     if (Array.isArray(b.missing)) msg += `: ${b.missing.map((m) => m.label).join(", ")}`;
+    if (Array.isArray(b.blockers)) msg += `: ${b.blockers.join(" · ")}`;
+    if (Array.isArray(b.checks)) msg += `: ${b.checks.map((c) => `${c.label} (${c.detail})`).join(" · ")}`;
+    if (b.required_level !== undefined) msg += ` (ต้องการระดับ ${b.required_level} ปัจจุบัน ${b.level})`;
     return msg;
   }
   function toast(msg, bad) {
@@ -187,6 +195,8 @@ const CL = (() => {
       .cl-flag { background:#fde8e6; color:#7a1d16; border-radius:8px; padding:6px 10px; font-size:13px; margin-top:6px; }
       .cl-ev { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; } .cl-ev a, .cl-ev span { font-size:12.5px; background:#eef6f0; border-radius:8px; padding:3px 9px; color:#1f4f2c; text-decoration:none; }
       .cl-ev .miss { background:#fff2cc; color:#6b4a00; }
+      .cl-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; } .cl-kpi { background:#f4f7f4; border-radius:10px; padding:8px 10px; }
+      .cl-kpi b { display:block; font-size:17px; color:#1f4f2c; } .cl-kpi span { font-size:12px; color:#6b7a70; }
       .cl-toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(30px); opacity:0; color:#fff; padding:11px 18px; border-radius:12px; font-size:14px; max-width:92vw; transition:all .25s; z-index:50; box-shadow:0 6px 24px rgba(0,0,0,.2); }
       .cl-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
       .cl-empty { color:#7b867e; font-size:14px; padding:6px 0; }
@@ -234,15 +244,64 @@ const CL = (() => {
     Confirmed: ["ผู้ให้กู้ยืนยันแล้ว", "#1f6b38", "#ddf3e4"], Declined: ["ไม่ถูกเลือก", "#6b7a70", "#eef1ee"], Withdrawn: ["ถอนแล้ว", "#6b7a70", "#eef1ee"],
     Expired: ["สิ้นผล", "#6b7a70", "#eef1ee"], Superseded: ["จับคู่กับรายอื่นแล้ว", "#6b7a70", "#eef1ee"],
   };
-  const GRADE_C = { A: "#1f6b38", B: "#4a8a2e", C: "#8a5a00", D: "#b35a00", E: "#a1261d" };
+  const GRADE_C = { A: "#1f6b38", B: "#4a8a2e", C: "#8a5a00", D: "#a1261d", E: "#a1261d" };
   const gradeBadge = (g, sc) => (g ? `<span class="cl-pill" style="color:#fff;background:${GRADE_C[g]}">เกรด ${g}${sc != null ? ` · ${sc}` : ""}</span>` : '<span class="cl-pill" style="background:#eef1ee;color:#6b7a70">ยังไม่มีคะแนน</span>');
   function scorePanel(sc) {
     if (!sc) return "";
     return `<div class="cl-row"><div><b>คะแนนความน่าเชื่อถือ</b> ${gradeBadge(sc.grade, sc.score)}</div><div class="cl-muted">ข้อมูล ณ ${esc(date(sc.data_as_of))} · ความครบถ้วนของข้อมูล ${sc.completeness_pct}%</div></div>
       ${sc.note ? `<div class="cl-flag">${esc(sc.note)}</div>` : ""}
+      ${sc.guidance ? `<div class="cl-line">${esc(sc.guidance)}</div>` : ""}
+      ${sc.groups ? `<div class="cl-kpis" style="margin-top:6px">${sc.groups.map((g) => `<div class="cl-kpi"><b>${g.points}/${g.max}</b><span>${esc(g.label)}</span></div>`).join("")}</div>` : ""}
       <table class="cl-table" style="margin-top:6px"><tr><th>ปัจจัย</th><th>ค่า</th><th class="r">คะแนน</th><th>หมายเหตุ</th></tr>
       ${sc.factors.map((f) => `<tr><td>${esc(f.label)}</td><td>${esc(f.value ?? "—")}</td><td class="r"><b>${f.points}</b>/${f.max}</td><td class="cl-muted">${esc(f.note || "")}</td></tr>`).join("")}</table>
-      <div class="cl-muted">คำนวณจากข้อมูลที่สหกรณ์บันทึกและประวัติในระบบ — เป็นข้อมูลประกอบ ผู้ให้กู้ตัดสินใจตามระเบียบของตน</div>`;
+      <div class="cl-muted">เกรด A ≥ 85 · B 70–84 · C 55–69 · D < 55 — คำนวณจากข้อมูลที่สหกรณ์บันทึกและประวัติในระบบ เป็นข้อมูลประกอบ ผู้ให้กู้ตัดสินใจตามระเบียบของตน</div>`;
+  }
+  /** Project Credit Score / Activity Performance Score: { score, grade, guidance, factors } */
+  function factorPanel(title, sc, foot) {
+    if (!sc) return "";
+    return `<div class="cl-row"><div><b>${esc(title)}</b> ${gradeBadge(sc.grade, sc.score)}</div><div class="cl-muted">${esc(sc.guidance || "")}</div></div>
+      <table class="cl-table" style="margin-top:6px"><tr><th>ปัจจัย</th><th class="r">คะแนน</th><th>ที่มา</th></tr>
+      ${sc.factors.map((f) => `<tr><td>${esc(f.label)}</td><td class="r"><b>${f.points}</b>/${f.max}</td><td class="cl-muted">${esc(f.note || "")}</td></tr>`).join("")}</table>${foot ? `<div class="cl-muted">${esc(foot)}</div>` : ""}`;
+  }
+  const LEVEL_C = ["#a1261d", "#8a5a00", "#4a8a2e", "#1f6b38", "#0b5394", "#6b3fa0"];
+  const LEVEL_TH = ["ยังไม่มีหลักฐาน", "เอกสารที่สหกรณ์ส่ง", "ยืนยันกับคู่ค้า/สมาชิก", "ธุรกรรมธนาคาร", "IoT/ภาคสนาม", "ผู้ตรวจอิสระ"];
+  const levelBadge = (lv) => { const v = Number(lv) || 0; return `<span class="cl-pill" title="ระดับความน่าเชื่อถือของหลักฐาน" style="color:#fff;background:${LEVEL_C[v]}">หลักฐาน L${v} · ${LEVEL_TH[v]}</span>`; };
+  const CHK_ICON = { pass: "✅", fail: "❌", pending: "⏳" };
+  function compliancePanel(st) {
+    if (!st) return "";
+    return `<div class="cl-row"><div><b>คุณสมบัติผู้ให้กู้</b> ${st.ok ? '<span class="cl-pill" style="background:#ddf3e4;color:#1f6b38">ผ่านครบ</span>' : `<span class="cl-pill" style="background:#fde8e6;color:#a1261d">ผ่าน ${st.passed}/${st.checks.length}</span>`}</div></div>
+      <table class="cl-table" style="margin-top:6px">${st.checks.map((c) => `<tr><td>${CHK_ICON[c.status]} ${esc(c.label)}</td><td class="cl-muted">${esc(c.detail || "")}</td></tr>`).join("")}</table>`;
+  }
+  function dairyPanel(d) {
+    if (!d) return "";
+    return `<div class="cl-row"><div><b>🥛 ข้อมูลจริงจาก${esc(d.source)}</b> <span class="cl-pill" style="background:#e3eefb;color:#0b5394">หลักฐานระดับ 4</span></div><div class="cl-muted">${esc(date(d.from))} – ${esc(date(d.to))} (${d.days} วัน)</div></div>
+      <div class="cl-kpis" style="margin-top:6px">
+        <div class="cl-kpi"><b>${num(d.accepted_kg, 0)}</b><span>กก. รับจากสมาชิก (${d.rounds} รอบ)</span></div>
+        <div class="cl-kpi"><b>${num(d.farms, 0)}</b><span>ฟาร์มที่ส่งนม</span></div>
+        <div class="cl-kpi"><b>${num(d.factory_received_kg, 0)}</b><span>กก. โรงงานรับ (${d.shipments} เที่ยว${d.rejected_shipments ? ` · ถูกปฏิเสธ ${d.rejected_shipments}` : ""})</span></div>
+        <div class="cl-kpi"><b>${baht(d.factory_value)}</b><span>มูลค่าขายโรงงาน</span></div>
+        <div class="cl-kpi"><b>${d.automated_pct == null ? "—" : `${num(d.automated_pct, 1)}%`}</b><span>รายการจากเครื่องชั่ง/Gateway</span></div>
+        <div class="cl-kpi"><b>${d.settlements_paid}</b><span>งวดจ่ายค่านมสมาชิกแล้ว</span></div></div>`;
+  }
+  const TRANCHE_ST = { Locked: ["ยังไม่เปิด", "#6b7a70", "#eef1ee"], Open: ["เปิดให้เบิก", "#0b5394", "#e3eefb"], Submitted: ["ส่งปิดยอด — รอผู้ตรวจ", "#8a5a00", "#fff2cc"],
+    Checked: ["ตรวจแล้ว — รอผู้อนุมัติ", "#6b3fa0", "#efe6fa"], Verified: ["ปิดยอดแล้ว", "#1f6b38", "#ddf3e4"] };
+  /** ตารางงวด + สรุปปิดยอด; actions(t) คืน HTML ปุ่ม/ฟอร์มของแต่ละงวด */
+  function tranchePanel(trs, actions) {
+    if (!trs || !trs.length) return "";
+    return `<h3>งวดเบิกตามกิจกรรม</h3><div class="cl-muted">เบิกได้ทีละงวด — งวดถัดไปเปิดเมื่อผู้ให้กู้หลักตรวจปิดยอดงวดก่อน (ผู้ตรวจสอบและผู้อนุมัติคนละคน) · ผู้ให้กู้หลัก: ${esc(trs[0].lead_lender_name)}</div>
+      ${trs.map((t) => {
+    const r = t.reconciliation || (t.preview && t.preview.summary);
+    const blk = t.preview && t.status === "Open" ? t.preview.blockers : [];
+    return `<div class="cl-card" style="margin:8px 0 0;background:#fafcfa" data-seq="${t.seq}"><div class="cl-row"><div><b>งวดที่ ${t.seq}</b> ${esc(t.name)} · ${baht(t.amount)}${t.timing ? ` · ${esc(t.timing)}` : ""}</div><div>${pill(TRANCHE_ST[t.status])}</div></div>
+      <div class="cl-line">เบิกแล้ว ${baht(t.used)} · คงเหลือ ${baht(t.available)} · ${t.item_count} รายการ${r ? ` · จ่ายผู้ขายแล้ว ${r.paid_items}/${r.items} · ผู้ขาย ${r.sellers} ราย${r.weighed_kg ? ` · รับซื้อ ${num(r.weighed_kg, 0)} กก.` : ""} · ระดับหลักฐานต่ำสุด L${r.min_level} เฉลี่ย ${r.avg_level}` : ""}</div>
+      ${r && (r.inventory_kg != null || r.sales_amount != null) ? `<div class="cl-line">ผู้กู้รายงาน: สินค้าคงเหลือ ${r.inventory_kg != null ? `${num(r.inventory_kg, 0)} กก.` : "-"}${r.inventory_value != null ? ` (${baht(r.inventory_value)})` : ""} · ยอดขาย ${r.sales_amount != null ? baht(r.sales_amount) : "-"}</div>` : ""}
+      ${r && r.dairy ? `<div class="cl-line">🥛 ระหว่างงวด: รับนม ${num(r.dairy.accepted_kg, 0)} กก. · โรงงานรับ ${num(r.dairy.factory_received_kg, 0)} กก. · ${baht(r.dairy.factory_value)}</div>` : ""}
+      ${t.borrower_input && t.borrower_input.note ? `<div class="cl-muted">หมายเหตุผู้กู้: ${esc(t.borrower_input.note)}</div>` : ""}
+      ${t.check_note ? `<div class="cl-muted">ผู้ตรวจสอบ: ${esc(t.check_note)}</div>` : ""}
+      ${t.returned_note && t.status === "Open" ? `<div class="cl-flag">ผู้ให้กู้ส่งกลับ: ${esc(t.returned_note)}</div>` : ""}
+      ${blk.length ? `<div class="cl-ev">${blk.map((b) => `<span class="miss">${esc(b)}</span>`).join("")}</div>` : ""}
+      ${actions ? actions(t) : ""}</div>`;
+  }).join("")}`;
   }
   function riskPanel(r) {
     if (!r || !r.indicators.length) return "";
@@ -264,6 +323,7 @@ const CL = (() => {
 
   return {
     PTYPE, LISTING_ST, OFFER_ST, gradeBadge, scorePanel, riskPanel, download, PROVINCES,
+    factorPanel, levelBadge, compliancePanel, dairyPanel, tranchePanel, TRANCHE_ST,
     PLAN_ST, STAGE_ST, planTrack, satNotes,
     init, get, post, patch, put, upload, esc, baht, num, date, dt, PURPOSE, ITEM_ST, TR_ST, TR_KIND, SAT, EVIDENCE, BANKS, bankName, pill,
     errText, toast, act, formData, bankOptions, accLabel, sandboxBanner, openFile,

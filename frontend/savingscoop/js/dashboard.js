@@ -97,7 +97,7 @@
     return `<div class="cl-card" data-item="${i.item_id}">
       <div class="cl-row"><div>${selectable && i.status === "EvidenceComplete" ? `<input type="checkbox" class="pick" value="${i.item_id}" data-fac="${i.facility_id}" ${needAck ? "disabled title=\"ต้องรับทราบผลดาวเทียมก่อน\"" : ""}> ` : ""}
         <b>${esc(i.borrower_name)}</b> → ${esc(i.seller_name)} · ${esc(CL.PURPOSE[i.purpose])}</div>
-        <div>${pill(CL.ITEM_ST[i.status])} ${sat}</div></div>
+        <div>${pill(CL.ITEM_ST[i.status])} ${sat} ${i.verification_level != null ? CL.levelBadge(i.verification_level) : ""}${i.tranche_seq ? ` <span class="cl-pill" style="background:#eef1ee;color:#1f4f2c">งวดที่ ${i.tranche_seq}</span>` : ""}</div></div>
       <div class="cl-line">${esc(i.description)} · <b>${baht(i.amount)}</b>${i.farmer_name ? ` · เกษตรกร ${esc(i.farmer_name)}${i.farmer_confirmed_at ? " ✅ ยืนยันแล้ว" : ""}` : ""}${i.doc_no ? ` · เอกสาร ${esc(i.doc_no)}` : ""}</div>
       <div class="cl-line">บัญชีรับเงินผู้ขาย: ${esc(CL.bankName(i.payout_bank))} xxx-${esc(i.payout_tail || "")} ${esc(i.payout_name || "")}${late ? ` · ${late}` : ""}${i.status === "Funded" ? ` · สหกรณ์การเกษตรต้องจ่ายผู้ขายภายใน ${esc(date(i.ac_due_date))}` : ""}</div>
       ${i.plots && i.plots.length ? `<div class="cl-line cl-muted">แปลง: ${i.plots.map((p) => `${esc(p.commodity_code)} ${p.area_rai} ไร่`).join(", ")}</div>` : ""}
