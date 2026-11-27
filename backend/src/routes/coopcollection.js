@@ -81,8 +81,28 @@ router.use(requireCooperativeOrg);
  */
 
 /**
+ * สหกรณ์โคนม = มีข้อมูลในระบบโคนม (สมาชิก ศูนย์รวบรวม รอบรับนม) หรือทีม AgroLink ผูกไว้ในทะเบียนตลาดน้ำนม
+ * หรือกรอกประเภท "สหกรณ์โคนม" ในข้อมูลผู้ขอกู้ — ใช้ซ่อนเมนูแพลตฟอร์มบริหารโคนมจากสหกรณ์การเกษตรทั่วไป
+ * (ตรวจทีละตารางที่มีอยู่จริง เผื่อฐานข้อมูลที่ยังไม่ได้รัน migration ของโคนม/สินเชื่อ)
+ */
+const DAIRY_SIGNALS = [
+  ['dairy.member', 'SELECT 1 FROM dairy.member WHERE coop_org_id = $1'],
+  ['dairy.collection_center', 'SELECT 1 FROM dairy.collection_center WHERE coop_org_id = $1'],
+  ['dairy.milk_round', 'SELECT 1 FROM dairy.milk_round WHERE coop_org_id = $1'],
+  ['dairy.market_directory', 'SELECT 1 FROM dairy.market_directory WHERE linked_org_id = $1'],
+  ['coop_lending.borrower_profile', "SELECT 1 FROM coop_lending.borrower_profile WHERE org_id = $1 AND coop_kind = 'dairy'"],
+];
+async function isDairyCoop(client, orgId) {
+  const present = (await client.query('SELECT t, to_regclass(t) IS NOT NULL AS ok FROM unnest($1::text[]) AS t', [DAIRY_SIGNALS.map(([t]) => t)])).rows
+    .filter((r) => r.ok).map((r) => r.t);
+  const parts = DAIRY_SIGNALS.filter(([t]) => present.includes(t)).map(([, q]) => `EXISTS (${q})`);
+  if (!parts.length) return false;
+  return (await client.query(`SELECT (${parts.join(' OR ')}) AS v`, [orgId])).rows[0].v;
+}
+
+/**
  * GET /coop/dashboard — same shape as GET /buyer/dashboard, plus an
- * open-lot count.
+ * open-lot count and is_dairy (แสดงเมนูแพลตฟอร์มบริหารโคนมเฉพาะสหกรณ์โคนม).
  */
 router.get('/dashboard', async (req, res, next) => {
   const { subjectId } = req.subject;
@@ -106,6 +126,7 @@ router.get('/dashboard', async (req, res, next) => {
         [subjectId],
       );
       await logAccess(client, 'read', 'produce.delivery', subjectId);
+      const isDairy = await isDairyCoop(client, subjectId);
 
       const statusCounts = { delivered: 0, accepted: 0, rejected: 0, settled: 0 };
       counts.rows.forEach((r) => { statusCounts[r.status] = r.count; });
@@ -117,6 +138,7 @@ router.get('/dashboard', async (req, res, next) => {
         needs_action_count: statusCounts.delivered + statusCounts.accepted,
         total_settled_amount: settledTotal.rows[0].total,
         open_lots: openLots.rows[0].count,
+        is_dairy: isDairy,
       };
     });
 

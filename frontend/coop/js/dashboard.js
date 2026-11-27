@@ -5486,6 +5486,9 @@ async function init() {
   try {
     const d = await AgroLinkCoopAPI.get("/coop/dashboard");
     renderSummary(d);
+    // เมนูแพลตฟอร์มบริหารโคนมแห่งชาติ แสดงเฉพาะสหกรณ์โคนม (ซ่อนจากสหกรณ์การเกษตรทั่วไป)
+    const navDairy = document.getElementById("navDairy");
+    if (navDairy && d.is_dairy) navDairy.style.display = "";
   } catch (err) {
     if (err.message === "kyb_not_verified") {
       showKybPendingNotice(err.body.org_name, err.body.kyb_status);
