@@ -232,6 +232,7 @@ app.use('/dairy/market-directory', dairyDirectoryRouters.coop);
 const cropTraceRouters = require('./routes/cropTrace');
 app.use('/coop/trace', cropTraceRouters.coop);
 app.use('/public/trace', cropTraceRouters.pub);
+app.use('/public/certificate', cropTraceRouters.cert);
 app.use('/coop', coopCollectionRouter);
 // government.js — Provincial/National government officer portal
 // (identity.government_officer, see grant_staff_and_government_access.

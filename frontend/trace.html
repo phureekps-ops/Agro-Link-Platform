@@ -71,6 +71,7 @@
         ${o.harvest_from ? `<p class="sub" style="margin-top:10px">รับซื้อผลผลิต ${date(o.harvest_from)}${o.harvest_to && date(o.harvest_to) !== date(o.harvest_from) ? ` – ${date(o.harvest_to)}` : ""}${o.grades.length ? ` · เกรด ${esc(o.grades.join(", "))}` : ""}</p>` : ""}
       </div>
       <div class="card"><b>เส้นทางของผลผลิต</b><ol class="tl">${p.steps.map((s) => `<li><b>${esc(s.title)}</b><div class="d">${s.from ? date(s.from) : ""}${s.to && date(s.to) !== date(s.from) ? ` – ${date(s.to)}` : ""}${s.detail ? `${s.from ? " · " : ""}${esc(s.detail)}` : ""}</div></li>`).join("")}</ol></div>
+      ${(p.certificates || []).length ? `<div class="card"><b>📜 ใบรับรองแหล่งที่มา</b>${p.certificates.map((c) => `<div style="margin-top:6px"><a class="code" href="certificate.html?no=${encodeURIComponent(c.cert_no)}">${esc(c.cert_no)}</a> · ${date(c.issued_at)} · ${c.status === "Revoked" ? '<span style="color:#a1261d">ยกเลิกแล้ว</span>' : '<span class="ok">มีผล</span>'}</div>`).join("")}</div>` : ""}
       <p class="note">${esc(p.note)}</p>`;
   }
   document.getElementById("f").onsubmit = (e) => { e.preventDefault(); const c = document.getElementById("q").value.trim(); if (c) { history.replaceState(null, "", `?c=${encodeURIComponent(c)}`); load(c); } };

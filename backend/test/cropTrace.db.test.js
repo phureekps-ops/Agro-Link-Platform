@@ -162,4 +162,50 @@ test('crop traceability: farmer plot → delivery → lot → drying → milling
     await call(coop.token, 'POST', `/coop/trace/code/${FG.trace_code}/public`, { public_trace: true });
     await call(null, 'GET', `/public/trace/${FG.trace_code}`);
   });
+
+  await t.test('certificate of origin: issue (closed lot / completed batch only) → PDF + public verification, hash chain, immutable, live change check, revoke', async () => {
+    await call(coop.token, 'POST', `/coop/trace/code/${batch.trace_code}/certificate`, {}, 400);
+    const L3 = await lot(coop.id, `ล็อตยังไม่ปิด ${tag}`);
+    assert.equal((await call(coop.token, 'POST', `/coop/trace/code/${L3.trace_code}/certificate`, {}, 409)).error, 'lot_not_closed');
+    await call(other.token, 'POST', `/coop/trace/code/${FG.trace_code}/certificate`, {}, 404);
+    const c1 = await call(coop.token, 'POST', `/coop/trace/code/${FG.trace_code}/certificate`, {}, 201);
+    assert.match(c1.cert_no, /^OC-[0-9A-HJKMNP-TV-Z]{8}$/);
+    assert.equal(c1.verify_url, `https://trace.example/certificate.html?no=${c1.cert_no}`);
+    const v = await call(null, 'GET', `/public/certificate/${c1.cert_no.toLowerCase()}`);
+    assert.equal(v.status, 'Issued');
+    assert.equal(v.hash_ok, true);
+    assert.deepEqual(v.changed_since_issue, []);
+    const core = v.payload.core;
+    assert.deepEqual([core.origin.farmers, core.origin.plots, core.origin.area_rai, core.origin.plots_satellite_confirmed, core.subject.quantity_ton], [2, 2, 23, 1, 3.2]);
+    assert.equal(core.chain.plot_fingerprints.length, 2);
+    assert.ok(core.chain.plot_fingerprints.every((x) => /^[0-9a-f]{64}$/.test(x)));
+    const raw = JSON.stringify(v);
+    for (const secret of [f1.name, f2.name, f1.fid, f1.unit, '103.49', 'ห้างค้าปลีก']) assert.ok(!raw.includes(secret), `certificate leaks ${secret}`);
+    const pdf = await fetch(`${base}/public/certificate/${c1.cert_no}/pdf`);
+    assert.equal(pdf.status, 200);
+    assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+    assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 4).toString(), '%PDF');
+    assert.equal((await fetch(`${base}/coop/trace/certificates/${c1.cert_no}/pdf`, { headers: { Authorization: `Bearer ${coop.token}` } })).status, 200);
+    assert.ok((await call(null, 'GET', `/public/trace/${FG.trace_code}`)).certificates.some((x) => x.cert_no === c1.cert_no));
+    // ใบถัดไปของสหกรณ์เดียวกันต่อสายแฮชจากใบก่อน
+    const c2 = await call(coop.token, 'POST', `/coop/trace/code/${L1.trace_code}/certificate`, {}, 201);
+    assert.equal(c2.prev_sha256, c1.payload_sha256);
+    assert.deepEqual((await call(coop.token, 'GET', `/coop/trace/code/${L1.trace_code}/certificates`)).map((x) => x.cert_no), [c2.cert_no]);
+    // แก้ข้อมูลที่รับรองแล้วในฐานข้อมูลไม่ได้
+    await assert.rejects(db.query(`UPDATE traceability.origin_certificate SET payload = payload || '{"x":1}' WHERE cert_no = $1`, [c1.cert_no]), /immutable/);
+    // ข้อมูลสายการผลิตเปลี่ยนหลังออกใบ → หน้าตรวจสอบบอกว่าเปลี่ยนอะไร
+    await deliver(f2.unit, L1.lot_id, 0.5, 20, '2026-11-12T09:00:00+07:00');
+    const v2 = await call(null, 'GET', `/public/certificate/${c2.cert_no}`);
+    assert.equal(v2.hash_ok, true);
+    assert.ok(v2.changed_since_issue.some((x) => x.field === 'origin.raw_ton'), JSON.stringify(v2.changed_since_issue));
+    // ยกเลิก
+    await call(coop.token, 'POST', `/coop/trace/certificates/${c2.cert_no}/revoke`, { reason: 'สั้น' }, 400);
+    await call(other.token, 'POST', `/coop/trace/certificates/${c2.cert_no}/revoke`, { reason: 'ไม่ใช่ของเรา ลองยกเลิก' }, 404);
+    const rv = await call(coop.token, 'POST', `/coop/trace/certificates/${c2.cert_no}/revoke`, { reason: 'ผลผลิตบางส่วนบันทึกผิดล็อต ออกใบใหม่แทน' });
+    assert.equal(rv.status, 'Revoked');
+    assert.equal((await call(null, 'GET', `/public/certificate/${c2.cert_no}`)).status, 'Revoked');
+    await call(coop.token, 'POST', `/coop/trace/certificates/${c2.cert_no}/revoke`, { reason: 'ยกเลิกซ้ำอีกครั้ง' }, 404);
+    await assert.rejects(db.query(`UPDATE traceability.origin_certificate SET status = 'Issued', revoked_at = NULL WHERE cert_no = $1`, [c2.cert_no]), /reinstated|check/);
+    await call(null, 'GET', '/public/certificate/OC-ZZZZZZZZ', undefined, 404);
+  });
 });

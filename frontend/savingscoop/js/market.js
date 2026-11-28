@@ -143,6 +143,33 @@ window.LenderMarket = (function () {
         ${d.performance ? `<div style="margin-top:10px">${CL.factorPanel("Activity Performance Score", d.performance)}</div>` : ""}
         ${d.reports.length ? `<div class="cl-line" style="margin-top:8px"><b>รายงานผลจากผู้กู้</b></div><table class="cl-table"><tr><th>งวด</th><th class="r">รายได้จริง</th><th class="r">ตามแผน</th><th>หมายเหตุ</th></tr>${d.reports.map((r) => `<tr><td>${esc(r.period_label)}</td><td class="r">${r.revenue != null ? num(r.revenue) : "-"}</td><td class="r">${r.planned_revenue != null ? num(r.planned_revenue) : "-"}</td><td>${esc(r.note || "")}</td></tr>`).join("")}</table>` : ""}</div>` : ""}`;
 
+    // คำขอปรับโครงสร้างหนี้ของสัญญานี้ — ผู้ให้กู้ทุกรายต้องอนุมัติพร้อมเลขมติ
+    CL.get("/savings/market/restructure").then((all) => {
+      const list = all.filter((r) => r.listing_id === l.listing_id);
+      if (!list.length) return;
+      const box = document.createElement("div");
+      box.className = "cl-card";
+      const draw = (rows) => {
+        box.innerHTML = `<h3>🔁 คำขอปรับโครงสร้างหนี้</h3><div class="cl-muted">ผู้ให้กู้ทุกรายต้องอนุมัติ — ระบบคิดดอกเบี้ยถึงวันอนุมัติตามเงื่อนไขเดิม แล้วเลื่อนวันครบกำหนด/ปรับอัตรา และออกบันทึกแก้ไขเพิ่มเติมสัญญา</div>
+          ${rows.map((r) => CL.restructureCard(r, "/savings", (x) => {
+    const mine = x.lenders.find((y) => y.lender_org_id === (d.me || ""));
+    return x.status === "Pending" && (!mine || !mine.decision) ? `<form class="cl-form rs-dec" data-rid="${x.request_id}" style="margin-top:8px">
+              <div><label>เลขที่มติ/บันทึกอนุมัติ (ถ้าอนุมัติ)</label><input name="approval_ref"></div><div class="wide"><label>หมายเหตุ (บังคับถ้าไม่อนุมัติ)</label><input name="note"></div>
+              <div class="cl-inline"><button class="cl-btn" data-dec="Approved">อนุมัติ</button><button class="cl-btn bad" data-dec="Rejected">ไม่อนุมัติ</button></div></form>` : "";
+  })).join("")}`;
+      };
+      draw(list);
+      CL.restructureDocs(box, "/savings");
+      box.addEventListener("click", async (e) => {
+        const b = e.target.closest("[data-dec]"); if (!b) return;
+        e.preventDefault(); e.stopPropagation();
+        const f = b.closest(".rs-dec");
+        const r = await CL.act(b, () => CL.post(`/savings/market/restructure/${f.dataset.rid}/decide`, { decision: b.dataset.dec, approval_ref: f.approval_ref.value || null, note: f.note.value || null }),
+          (x) => (x.status === "Approved" ? "อนุมัติครบทุกราย — ปรับโครงสร้างหนี้มีผลแล้ว" : "บันทึกแล้ว"));
+        if (r) CL.get("/savings/market/restructure").then((a) => draw(a.filter((x) => x.listing_id === l.listing_id)));
+      });
+      ctx.view.appendChild(box);
+    }).catch(() => {});
     // เตือนภัยล่วงหน้าและสัญญาณที่ต้องตรวจสอบของสหกรณ์ผู้กู้ (เห็นเมื่อมีวงเงินกับผู้กู้รายนี้แล้ว)
     CL.get("/savings/market/risk").then((all) => {
       const list = all.filter((a) => a.borrower_org_id === l.borrower_org_id);

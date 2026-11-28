@@ -10,9 +10,11 @@ const qrcode = require('qrcode-generator');
 const { withSessionContext, withServiceRole } = require('../db/pool');
 const { requireAuth, requireOrganization } = require('../middleware/auth');
 const T = require('../lib/cropTrace');
+const OC = require('../lib/originCert');
 
 const PUBLIC_SITE = (process.env.PUBLIC_SITE_URL || 'https://www.agrolinkthai.com').replace(/\/+$/, '');
 const publicUrl = (code) => `${PUBLIC_SITE}/trace.html?c=${encodeURIComponent(code)}`;
+const certUrl = (no) => `${PUBLIC_SITE}/certificate.html?no=${encodeURIComponent(no)}`;
 const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const h = (fn) => (req, res, next) => fn(req, res).catch(next);
 
@@ -116,6 +118,74 @@ coop.post('/code/:code/public', h(async (req, res) => {
   res.status(out.status).json(out.body);
 }));
 
+// ---- ใบรับรองแหล่งที่มา (grant_origin_certificate.sql) ----
+const CERT_COLS = 'cert_no, trace_code, subject_type, status, issued_by, issued_at, revoked_at, revoked_reason, payload_sha256, prev_sha256';
+coop.post('/code/:code/certificate', h(async (req, res) => {
+  const out = await db(req, async (c) => {
+    const r = await T.resolveCode(c, req.params.code);
+    if (!r || r.org_id !== req.orgId) return { status: 404, body: { error: 'trace_code_not_found' } };
+    if (r.type === 'batch') return { status: 400, body: { error: 'certificate_for_lot_or_product_only' } };
+    const ready = r.type === 'lot'
+      ? (await c.query('SELECT status = \'Closed\' AS ok FROM produce.lot WHERE lot_id = $1', [r.id])).rows[0].ok
+      : (await c.query(`SELECT b.status = 'Completed' AS ok FROM processing.finished_good fg JOIN processing.batch b ON b.batch_id = fg.batch_id WHERE fg.finished_good_id = $1`, [r.id])).rows[0].ok;
+    if (!ready) return { status: 409, body: { error: r.type === 'lot' ? 'lot_not_closed' : 'batch_not_completed' } };
+    const t = await T.loadTrace(c, { type: r.type, id: r.id, code: r.code }, req.orgId);
+    if (!t || !t.deliveries.length) return { status: 409, body: { error: 'no_origin_data' } };
+    await c.query('BEGIN');
+    try {
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`origin_cert:${req.orgId}`]); // ต่อสายแฮชตามลำดับ
+      const core = await OC.buildCore(c, t, req.orgId);
+      const prev = (await c.query('SELECT payload_sha256 FROM traceability.origin_certificate WHERE org_id = $1 ORDER BY issued_at DESC, cert_id DESC LIMIT 1', [req.orgId])).rows[0];
+      const certNo = (await c.query("SELECT traceability.new_trace_code('OC') AS no")).rows[0].no;
+      const issuedAt = new Date(Math.floor(Date.now() / 1000) * 1000).toISOString();
+      const payload = { cert_no: certNo, issued_at: issuedAt, issuer: 'AgroLink Traceability', core, prev_sha256: prev ? prev.payload_sha256 : null };
+      const row = (await c.query(
+        `INSERT INTO traceability.origin_certificate (cert_no, org_id, subject_type, subject_id, trace_code, payload, payload_sha256, prev_sha256, issued_by, issued_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING ${CERT_COLS}`,
+        [certNo, req.orgId, r.type, r.id, r.code, JSON.stringify(payload), OC.sha256(payload), payload.prev_sha256, `org:${req.orgId}`, issuedAt],
+      )).rows[0];
+      await c.query('COMMIT');
+      return { status: 201, body: { ...row, verify_url: certUrl(certNo) } };
+    } catch (err) { await c.query('ROLLBACK'); throw err; }
+  });
+  res.status(out.status).json(out.body);
+}));
+coop.get('/code/:code/certificates', h(async (req, res) => {
+  res.json(await db(req, async (c) => {
+    const r = await T.resolveCode(c, req.params.code);
+    if (!r || r.org_id !== req.orgId) return [];
+    return (await c.query(`SELECT ${CERT_COLS} FROM traceability.origin_certificate WHERE trace_code = $1 AND org_id = $2 ORDER BY issued_at DESC`, [r.code, req.orgId]))
+      .rows.map((x) => ({ ...x, verify_url: certUrl(x.cert_no) }));
+  }));
+}));
+coop.post('/certificates/:no/revoke', h(async (req, res) => {
+  const no = OC.normCertNo(req.params.no);
+  const reason = String((req.body || {}).reason || '').trim().replace(/\s+/g, ' ');
+  if (reason.length < 5 || reason.length > 500) { res.status(400).json({ error: 'reason_required' }); return; }
+  const row = await db(req, async (c) => (await c.query(
+    `UPDATE traceability.origin_certificate SET status = 'Revoked', revoked_at = now(), revoked_by = $3, revoked_reason = $4
+      WHERE cert_no = $1 AND org_id = $2 AND status = 'Issued' RETURNING ${CERT_COLS}`, [no, req.orgId, `org:${req.orgId}`, reason],
+  )).rows[0]);
+  if (!row) { res.status(404).json({ error: 'certificate_not_found_or_revoked' }); return; }
+  res.json(row);
+}));
+
+async function certPdf(c, no, orgId) {
+  const cert = (await c.query(`SELECT * FROM traceability.origin_certificate WHERE cert_no = $1 ${orgId ? 'AND org_id = $2' : ''}`, orgId ? [no, orgId] : [no])).rows[0];
+  if (!cert) return null;
+  return { cert, pdf: await OC.renderPdf(cert, { verifyUrl: certUrl(cert.cert_no) }) };
+}
+const sendPdf = (res, x) => {
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${x.cert.cert_no}.pdf"`);
+  res.send(x.pdf);
+};
+coop.get('/certificates/:no/pdf', h(async (req, res) => {
+  const x = await db(req, (c) => certPdf(c, OC.normCertNo(req.params.no), req.orgId));
+  if (!x) { res.status(404).json({ error: 'certificate_not_found' }); return; }
+  sendPdf(res, x);
+}));
+
 // =================================================================== สาธารณะ (ไม่ต้องเข้าสู่ระบบ)
 const pub = express.Router();
 async function publicResolve(c, raw) {
@@ -143,11 +213,46 @@ pub.get('/:code', h(async (req, res) => {
       `INSERT INTO traceability.public_scan (trace_code, scan_date, scans) VALUES ($1, (now() AT TIME ZONE 'Asia/Bangkok')::date, 1)
        ON CONFLICT (trace_code, scan_date) DO UPDATE SET scans = traceability.public_scan.scans + 1`, [r.code],
     );
-    return { ...T.publicView(t, await coopOf(c, r.org_id)), url: publicUrl(r.code) };
+    const hasCert = (await c.query("SELECT to_regclass('traceability.origin_certificate') IS NOT NULL AS ok")).rows[0].ok;
+    const certificates = hasCert ? (await c.query(
+      `SELECT cert_no, status, issued_at, revoked_at FROM traceability.origin_certificate WHERE trace_code = $1 ORDER BY issued_at DESC LIMIT 10`, [r.code],
+    )).rows.map((x) => ({ ...x, verify_url: certUrl(x.cert_no) })) : [];
+    return { ...T.publicView(t, await coopOf(c, r.org_id)), url: publicUrl(r.code), certificates };
   });
   if (!out) { res.status(404).json({ error: 'trace_code_not_found' }); return; }
   res.setHeader('Cache-Control', 'no-store');
   res.json(out);
 }));
 
-module.exports = { coop, pub, publicUrl };
+// ---- ตรวจสอบใบรับรอง (สาธารณะ) ----
+const cert = express.Router();
+cert.get('/:no/pdf', h(async (req, res) => {
+  const no = OC.normCertNo(req.params.no);
+  if (!OC.CERT_RE.test(no)) { res.status(404).json({ error: 'certificate_not_found' }); return; }
+  const x = await withServiceRole((c) => certPdf(c, no, null));
+  if (!x) { res.status(404).json({ error: 'certificate_not_found' }); return; }
+  sendPdf(res, x);
+}));
+cert.get('/:no', h(async (req, res) => {
+  const no = OC.normCertNo(req.params.no);
+  if (!OC.CERT_RE.test(no)) { res.status(404).json({ error: 'certificate_not_found' }); return; }
+  const out = await withServiceRole(async (c) => {
+    const x = (await c.query('SELECT * FROM traceability.origin_certificate WHERE cert_no = $1', [no])).rows[0];
+    if (!x) return null;
+    // 1) แฮชของข้อมูลที่เก็บไว้ยังตรงกับที่บันทึกตอนออก  2) ข้อมูลสายการผลิตปัจจุบันยังตรงกับที่รับรองหรือไม่
+    const hashOk = OC.sha256(x.payload) === x.payload_sha256;
+    let changed = null;
+    const t = await T.loadTrace(c, { type: x.subject_type, id: x.subject_id, code: x.trace_code }, x.org_id);
+    if (t) changed = OC.liveDiff(x.payload.core, await OC.buildCore(c, t, x.org_id));
+    return {
+      cert_no: x.cert_no, status: x.status, issued_at: x.issued_at, revoked_at: x.revoked_at, revoked_reason: x.revoked_reason,
+      payload: x.payload, payload_sha256: x.payload_sha256, prev_sha256: x.prev_sha256, hash_ok: hashOk, changed_since_issue: changed,
+      trace_url: publicUrl(x.trace_code), pdf_path: `/public/certificate/${x.cert_no}/pdf`,
+    };
+  });
+  if (!out) { res.status(404).json({ error: 'certificate_not_found' }); return; }
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(out);
+}));
+
+module.exports = { coop, pub, cert, publicUrl, certUrl };

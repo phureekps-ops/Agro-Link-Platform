@@ -125,6 +125,45 @@ window.CoopMarket = (function () {
       if (await CL.act(b, () => CL.post(`/coop-lending/market/risk/${card.dataset.alert}/explain`, { note: card.querySelector(".rx-note").value }), "ส่งคำชี้แจงแล้ว — แจ้งผู้ให้กู้และผู้ดูแลแพลตฟอร์ม")) riskBox(box, listingId);
     };
   }
+  /** ปรับโครงสร้างหนี้ (สัญญาที่ลงนามแล้วและมีเงินต้นคงค้าง) */
+  async function restructureBox(box, listingId) {
+    if (!box) return;
+    let d;
+    try { d = await CL.get(`/coop-lending/market/listings/${listingId}/restructure`); } catch (err) { box.remove(); return; }
+    if (!d.eligible && !d.requests.length) { box.remove(); return; }
+    const st = d.state;
+    const pending = d.requests.some((r) => r.status === "Pending");
+    box.innerHTML = `<h3>🔁 ปรับโครงสร้างหนี้</h3>
+      ${st ? `<div class="cl-line">เงินต้นคงค้าง ${baht(st.outstanding)}${st.overdue ? ` · <span class="cl-late">เลยกำหนด ${baht(st.overdue)}</span>` : ""} · ครบกำหนดเร็วสุด ${esc(date(st.earliest_due))} · ดอกเบี้ย ${st.facilities.map((f) => `${esc(f.lender_name)} ${num(f.rate_pct, 3)}%${f.status === "Suspended" ? " (วงเงินถูกระงับ)" : ""}`).join(", ")}</div>` : ""}
+      <div class="cl-muted">ขอขยายวันครบกำหนดชำระเงินต้น (ไม่เกิน ${d.max_months || 36} เดือน) และขอลดอัตราดอกเบี้ยได้ ผู้ให้กู้ทุกรายในสัญญาต้องอนุมัติ ดอกเบี้ยจนถึงวันอนุมัติคิดตามเงื่อนไขเดิม เมื่อมีผลแล้ววงเงินที่ถูกระงับเพราะค้างชำระจะกลับมาใช้ได้</div>
+      ${d.eligible && !pending ? `<form id="rsForm" class="cl-form" style="margin-top:8px">
+        <div><label>วันครบกำหนดใหม่</label><input type="date" name="new_due_date" required></div>
+        <div><label>อัตราดอกเบี้ยใหม่ (% ต่อปี · เว้นว่าง = คงเดิม)</label><input type="number" name="new_rate_pct" step="0.001" min="0"></div>
+        <div><label>มติที่ประชุม/หนังสือขอ (ถ้ามี)</label><input type="file" name="doc" accept="application/pdf,image/*"></div>
+        <div class="wide"><label>เหตุผล</label><input name="reason" required minlength="10" placeholder="เช่น ราคาข้าวตกต่ำ สมาชิกขายผลผลิตได้ช้ากว่าแผน"></div>
+        <div class="wide"><label>แผนการชำระหนี้ใหม่</label><input name="repayment_plan" required minlength="10" placeholder="เช่น ชำระหลังขายข้าวนาปรัง พ.ค. 2570 เป็น 2 งวด"></div>
+        <div><button class="cl-btn" type="submit">ยื่นคำขอปรับโครงสร้างหนี้</button></div></form>` : ""}
+      ${d.requests.map((r) => CL.restructureCard(r, "/coop-lending", (x) => (x.status === "Pending" ? `<div class="cl-actions"><button class="cl-btn ghost" data-rs-withdraw="${x.request_id}">ถอนคำขอ</button></div>` : ""))).join("")}`;
+    CL.restructureDocs(box, "/coop-lending");
+    const f = box.querySelector("#rsForm");
+    if (f) {
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const file = f.doc.files[0];
+        const r = await CL.act(e.submitter, async () => CL.post(`/coop-lending/market/listings/${listingId}/restructure`, {
+          new_due_date: f.new_due_date.value, new_rate_pct: f.new_rate_pct.value === "" ? null : f.new_rate_pct.value, reason: f.reason.value, repayment_plan: f.repayment_plan.value,
+          file_id: file ? await CL.upload(file) : undefined,
+        }), "ยื่นคำขอแล้ว — แจ้งผู้ให้กู้ทุกรายแล้ว");
+        if (r) restructureBox(box, listingId);
+      };
+    }
+    box.onclick = async (e) => {
+      const w = e.target.closest("[data-rs-withdraw]");
+      if (!w) return;
+      e.stopPropagation();
+      if (await CL.act(w, () => CL.post(`/coop-lending/market/restructure/${w.dataset.rsWithdraw}/withdraw`), "ถอนคำขอแล้ว")) restructureBox(box, listingId);
+    };
+  }
   /** ผู้มีผลประโยชน์ร่วม: กรรมการ/ผู้จัดการ และกิจการที่เกี่ยวข้อง — ใช้ตรวจการซื้อขายกับผู้เกี่ยวข้อง */
   async function relatedParties(box) {
     if (!box) return;
@@ -333,7 +372,7 @@ window.CoopMarket = (function () {
       ${["Signed", "Active", "Closed"].includes(l.status) ? `<div class="cl-card"><h3>รายงานผลการดำเนินงานเทียบแผน</h3>
         <table class="cl-table"><tr><th>งวดรายงาน</th><th class="r">รายได้จริง</th><th class="r">ตามแผน</th><th class="r">ค่าใช้จ่าย</th><th class="r">ผู้ซื้อค้างชำระ</th><th>หมายเหตุ</th></tr>${d.reports.map((r) => `<tr><td>${esc(r.period_label)}</td><td class="r">${r.revenue != null ? num(r.revenue) : "-"}</td><td class="r">${r.planned_revenue != null ? num(r.planned_revenue) : "-"}</td><td class="r">${r.cost != null ? num(r.cost) : "-"}</td><td class="r">${r.buyer_overdue != null ? num(r.buyer_overdue) : "-"}</td><td>${esc(r.note || "")}</td></tr>`).join("") || '<tr><td colspan="6" class="cl-empty">ยังไม่มี</td></tr>'}</table>
         <form id="repForm" class="cl-form" style="margin-top:8px"><div><label>งวด</label><input name="period_label" placeholder="ไตรมาส 1/2570" required></div><div><label>รายได้จริง</label><input name="revenue" type="number"></div><div><label>รายได้ตามแผน</label><input name="planned_revenue" type="number"></div><div><label>ค่าใช้จ่าย</label><input name="cost" type="number"></div><div><label>ผู้ซื้อค้างชำระ (บาท)</label><input name="buyer_overdue" type="number" min="0" step="0.01"></div><div class="wide"><label>หมายเหตุ</label><input name="note"></div><div><button class="cl-btn" type="submit">ส่งรายงาน</button></div></form></div>` : ""}
-      <div class="cl-card" id="riskL"></div>`;
+      <div class="cl-card" id="riskL"></div><div class="cl-card" id="rsBox"></div>`;
 
     ctx.view.querySelectorAll(".tr-form").forEach((tf) => {
       tf.onsubmit = async (e) => {
@@ -347,6 +386,7 @@ window.CoopMarket = (function () {
       };
     });
     riskBox(document.getElementById("riskL"), l.listing_id);
+    restructureBox(document.getElementById("rsBox"), l.listing_id);
     const rep = document.getElementById("repForm");
     if (rep) rep.onsubmit = async (e) => { e.preventDefault(); if (await CL.act(e.submitter, () => CL.post(`/coop-lending/market/listings/${l.listing_id}/reports`, CL.formData(rep)), "ส่งรายงานแล้ว")) renderDetail(); };
     ctx.view.onclick = async (e) => {

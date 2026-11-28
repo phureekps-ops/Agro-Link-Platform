@@ -2107,6 +2107,10 @@ require('./coopRisk').attach({ savings, borrower, admin, gov }, {
 require('./coopRegistry').attach({ savings, borrower, admin, gov }, {
   wrap, fail, tx, orgTx, text, isUuid, actorOf, objectStorage, govTx, officerScope,
 });
+// ปรับโครงสร้างหนี้ของสัญญาในตลาด — routes/coopRestructure.js
+require('./coopRestructure').attach({ savings, borrower, admin, gov }, {
+  wrap, fail, tx, orgTx, text, isUuid, actorOf, objectStorage, govTx, officerScope,
+});
 
 module.exports = {
   savings, borrower, farmer, admin, gov, _internal: { approveTransfer, settleTransfer, refreshVerification },

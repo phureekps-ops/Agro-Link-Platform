@@ -369,4 +369,62 @@ test('marketplace: borrower lists → admin review → lender compliance → off
     const gs = await call(GOV, 'GET', '/gov/coop-lending/market/risk-summary');
     assert.ok(gs.some((r) => r.category === 'fraud' && r.n >= 1));
   });
+
+  await t.test('debt restructuring: borrower requests longer term/lower rate → every lender approves with a resolution ref → accrue, extend, re-rate, unsuspend → amendment .docx', async () => {
+    const day = (n) => new Date(Date.now() + 7 * 3600e3 + n * 864e5).toISOString().slice(0, 10);
+    const facs = (await call(coop.token, 'GET', '/coop-lending/facilities')).filter((f) => f.listing_id === listing.listing_id);
+    const fs = facs.find((f) => f.lender_name === sav.name);
+    const fc = facs.find((f) => f.lender_name === cu.name);
+    // จำลองเงินกู้ที่เบิกแล้ว: รายการของผู้ให้กู้รายแรกเลยกำหนด 10 วันและวงเงินถูกระงับ
+    const paid = (await db.query(`SELECT item_id, facility_id FROM coop_lending.disbursement_item WHERE facility_id = ANY($1) AND status = 'Paid'`, [[fs.facility_id, fc.facility_id]])).rows;
+    for (const it of paid) {
+      await db.query(`UPDATE coop_lending.disbursement_item SET principal_outstanding = amount, funded_at = now() - interval '40 days', interest_accrued_to = $2, loan_due_date = $3 WHERE item_id = $1`,
+        [it.item_id, day(-40), it.facility_id === fs.facility_id ? day(-10) : day(20)]);
+    }
+    await db.query(`UPDATE coop_lending.facility SET status = 'Suspended', suspended_reason = 'เงินกู้ค้างชำระเกินวันผ่อนผัน 7 วัน' WHERE facility_id = $1`, [fs.facility_id]);
+    const st = await call(coop.token, 'GET', `/coop-lending/market/listings/${listing.listing_id}/restructure`);
+    assert.equal(st.eligible, true);
+    assert.deepEqual([st.state.outstanding, st.state.overdue, st.state.earliest_due, st.state.max_rate], [1700000, 1000000, day(-10), 5]);
+    const body = (o) => ({ new_due_date: day(180), reason: 'ราคาข้าวตกต่ำ สมาชิกขายผลผลิตได้ช้ากว่าแผน', repayment_plan: 'ชำระคืนหลังขายข้าวนาปรังเดือน พ.ค. 2570 เป็น 2 งวด', ...o });
+    const url = `/coop-lending/market/listings/${listing.listing_id}/restructure`;
+    assert.equal((await call(coop.token, 'POST', url, body({ new_due_date: day(-1) }), 400)).error, 'new_due_date_not_future');
+    assert.equal((await call(coop.token, 'POST', url, body({ new_rate_pct: 6 }), 400)).error, 'rate_higher_than_current');
+    assert.equal((await call(coop.token, 'POST', url, body({ new_due_date: day(1200) }), 400)).error, 'new_due_date_too_far');
+    const fileRes = await call(coop.token, 'POST', '/storage/upload', { purpose: 'coop_lending_evidence', filename: 'mati.png', content_type: 'image/png', file_base64: png(), uploaded_by: 'test' }, 201);
+    const rq = await call(coop.token, 'POST', url, body({ new_rate_pct: 4, file_id: fileRes.file_id }), 201);
+    assert.equal(rq.status, 'Pending');
+    assert.deepEqual(rq.lenders.map((x) => x.decision), [null, null]);
+    await call(coop.token, 'POST', url, body(), 409);
+    assert.ok((await call(sav.token, 'GET', '/savings/notices')).some((n) => /ขอปรับโครงสร้างหนี้/.test(n.message)));
+    assert.ok((await call(sav.token, 'GET', '/savings/market/restructure')).some((x) => x.request_id === rq.request_id && x.has_file));
+    assert.equal((await fetch(`${base}/savings/market/restructure/${rq.request_id}/file`, { headers: { Authorization: `Bearer ${sav.token}` } })).status, 200);
+    await call(sav.token, 'POST', `/savings/market/restructure/${rq.request_id}/decide`, { decision: 'Approved' }, 400); // ต้องอ้างเลขมติ
+    const v1 = await call(sav.token, 'POST', `/savings/market/restructure/${rq.request_id}/decide`, { decision: 'Approved', approval_ref: 'มติ คกก. 11/2569' });
+    assert.equal(v1.status, 'Pending');
+    await call(coop.token, 'GET', `/coop-lending/market/restructure/${rq.request_id}/amendment.docx`, undefined, 409);
+    const v2 = await call(U2, 'POST', `/savings/market/restructure/${rq.request_id}/decide`, { decision: 'Approved', approval_ref: 'บันทึกอนุมัติ 21/2569' });
+    assert.equal(v2.status, 'Approved');
+    const after = (await db.query('SELECT item_id, loan_due_date::text AS due, interest_unpaid FROM coop_lending.disbursement_item WHERE item_id = ANY($1)', [paid.map((x) => x.item_id)])).rows;
+    assert.ok(after.every((x) => x.due === day(180)));
+    assert.ok(after.every((x) => Number(x.interest_unpaid) > 0), 'interest accrued up to today on the old terms');
+    const fr = (await db.query('SELECT facility_id, rate_pct, status FROM coop_lending.facility WHERE facility_id = ANY($1)', [[fs.facility_id, fc.facility_id]])).rows;
+    assert.ok(fr.every((f) => Number(f.rate_pct) === 4 && f.status === 'Active'));
+    assert.ok((await db.query(`SELECT 1 FROM coop_lending.event WHERE action = 'restructured' AND item_id = ANY($1)`, [paid.map((x) => x.item_id)])).rows.length === paid.length);
+    for (const tk of [coop.token, cu.token]) {
+      const d = await fetch(`${base}/${tk === coop.token ? 'coop-lending' : 'savings'}/market/restructure/${rq.request_id}/amendment.docx`, { headers: { Authorization: `Bearer ${tk}` } });
+      assert.equal(d.status, 200);
+      assert.equal(Buffer.from(await d.arrayBuffer()).subarray(0, 2).toString(), 'PK');
+    }
+    assert.ok((await call(coop.token, 'GET', '/coop-lending/notices')).some((n) => /ปรับโครงสร้างหนี้สัญญา .* มีผลแล้ว/.test(n.message)));
+    // คำขอถัดไป: ผู้ให้กู้รายใดไม่อนุมัติ = ตก · ผู้กู้ถอนได้
+    const rq2 = await call(coop.token, 'POST', url, body({ new_due_date: day(300) }), 201);
+    await call(cu.token, 'POST', `/savings/market/restructure/${rq2.request_id}/decide`, { decision: 'Rejected', note: 'สั้น' }, 400);
+    assert.equal((await call(cu.token, 'POST', `/savings/market/restructure/${rq2.request_id}/decide`, { decision: 'Rejected', note: 'ขอดูผลขายข้าวนาปรังก่อน' })).status, 'Rejected');
+    await call(sav.token, 'POST', `/savings/market/restructure/${rq2.request_id}/decide`, { decision: 'Approved', approval_ref: 'มติ 12/2569' }, 409);
+    const rq3 = await call(coop.token, 'POST', url, body({ new_due_date: day(300) }), 201);
+    assert.equal((await call(coop.token, 'POST', `/coop-lending/market/restructure/${rq3.request_id}/withdraw`)).status, 'Withdrawn');
+    assert.deepEqual((await call(coop.token, 'GET', url)).requests.map((x) => x.status), ['Withdrawn', 'Rejected', 'Approved']);
+    assert.ok((await call(ADMIN, 'GET', '/admin/coop-lending/market/restructure')).some((x) => x.request_id === rq.request_id));
+    assert.ok((await call(GOV, 'GET', '/gov/coop-lending/market/restructure-summary')).some((x) => x.status === 'Approved' && x.n >= 1));
+  });
 });

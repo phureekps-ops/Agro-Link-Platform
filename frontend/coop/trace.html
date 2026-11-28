@@ -103,6 +103,7 @@
     }
     history.replaceState(null, "", `?${type === "farmer" ? "farmer" : "code"}=${encodeURIComponent(type === "farmer" ? code : t.start.code)}`);
     render(t);
+    if (["lot", "finished_good"].includes(t.start.type)) loadCerts(t.start.code, t.start.type);
   }
 
   function render(t) {
@@ -134,6 +135,7 @@
       </div>
       ${st === "finished_good" ? (() => { const f = t.finished_goods[0]; return qrBlock(f.trace_code, f.product_name, f.public_trace, t.scans[f.trace_code]); })() : ""}
       ${st === "lot" ? (() => { const l = t.lots[0]; return qrBlock(l.trace_code, l.lot_note || l.commodity_name, l.public_trace, t.scans[l.trace_code]); })() : ""}
+      ${st === "lot" || st === "finished_good" ? '<div id="certBox" style="margin-top:12px"></div>' : ""}
     </div>
 
     <div class="tr-card"><h2>⬅️ ต้นทาง: สมาชิกและแปลง (${t.deliveries.length} รายการส่งผลผลิต)</h2>
@@ -174,6 +176,48 @@
     const pr = e.target.closest("[data-print]");
     if (pr) printLabels(pr.dataset.print, pr.dataset.label);
   };
+
+  // ---- ใบรับรองแหล่งที่มา ----
+  const CST = { Issued: '<span class="pill ok">มีผล</span>', Revoked: '<span class="pill bad">ยกเลิกแล้ว</span>' };
+  async function loadCerts(code, type) {
+    const box = $("certBox"); if (!box) return;
+    let list = [];
+    try { list = await API.get(`/coop/trace/code/${encodeURIComponent(code)}/certificates`); } catch (err) { box.innerHTML = ""; return; }
+    box.innerHTML = `<h3>📜 ใบรับรองแหล่งที่มา</h3>
+      <p class="tr-note">ออกได้เมื่อ${type === "lot" ? "ปิดล็อตแล้ว" : "รอบแปรรูปเสร็จแล้ว"} · ระบบเก็บภาพนิ่งของข้อมูล ณ วันออกพร้อมลายนิ้วมือ SHA-256 ผู้ซื้อตรวจได้จาก QR บนใบรับรอง
+        ว่าใบยังมีผลและข้อมูลไม่ถูกแก้ · ไม่มีข้อมูลส่วนบุคคลของสมาชิก · ไม่ใช่การรับรองมาตรฐานจากหน่วยงานรัฐ</p>
+      <button class="tr-btn" data-cert-issue="${esc(code)}">📜 ออกใบรับรองแหล่งที่มา</button>
+      ${list.length ? `<table class="tr-table" style="margin-top:8px"><tr><th>เลขที่</th><th>ออกเมื่อ</th><th>สถานะ</th><th></th></tr>${list.map((x) => `<tr><td class="code">${esc(x.cert_no)}</td><td>${date(x.issued_at)}</td>
+        <td>${CST[x.status]}${x.revoked_reason ? `<div class="tr-note">${esc(x.revoked_reason)}</div>` : ""}</td>
+        <td><button class="tr-btn ghost" data-cert-pdf="${esc(x.cert_no)}">⬇️ PDF</button> <a href="${esc(x.verify_url)}" target="_blank" rel="noopener">หน้าตรวจสอบ</a>
+          ${x.status === "Issued" ? ` <button class="tr-btn ghost" data-cert-revoke="${esc(x.cert_no)}">ยกเลิก</button>` : ""}</td></tr>`).join("")}</table>` : ""}`;
+    box.onclick = async (e) => {
+      e.stopPropagation();
+      const iss = e.target.closest("[data-cert-issue]");
+      if (iss) {
+        if (!confirm("ออกใบรับรองจากข้อมูล ณ ตอนนี้? ใบที่ออกแล้วแก้ไม่ได้ ถ้าข้อมูลผิดต้องยกเลิกแล้วออกใหม่")) return;
+        iss.disabled = true;
+        try { await API.post(`/coop/trace/code/${encodeURIComponent(code)}/certificate`, {}); } catch (err) {
+          alert({ lot_not_closed: "ต้องปิดล็อตก่อน", batch_not_completed: "รอบแปรรูปยังไม่เสร็จ", no_origin_data: "ยังไม่มีข้อมูลการรับซื้อจากสมาชิก" }[err.message] || err.message);
+        }
+        loadCerts(code, type); return;
+      }
+      const pdf = e.target.closest("[data-cert-pdf]");
+      if (pdf) {
+        const res = await fetch(`${API_BASE}/coop/trace/certificates/${encodeURIComponent(pdf.dataset.certPdf)}/pdf`, { headers: { Authorization: `Bearer ${API.getSession().access_token}` } });
+        if (!res.ok) { alert("ดาวน์โหลดไม่สำเร็จ"); return; }
+        const a = document.createElement("a"); a.href = URL.createObjectURL(await res.blob()); a.download = `${pdf.dataset.certPdf}.pdf`; document.body.appendChild(a); a.click(); a.remove();
+        return;
+      }
+      const rv = e.target.closest("[data-cert-revoke]");
+      if (rv) {
+        const reason = prompt("เหตุผลที่ยกเลิก (อย่างน้อย 5 ตัวอักษร) — ผู้ตรวจสอบจะเห็นข้อความนี้");
+        if (!reason) return;
+        try { await API.post(`/coop/trace/certificates/${encodeURIComponent(rv.dataset.certRevoke)}/revoke`, { reason }); } catch (err) { alert(err.message === "reason_required" ? "ระบุเหตุผลอย่างน้อย 5 ตัวอักษร" : err.message); }
+        loadCerts(code, type);
+      }
+    };
+  }
 
   /** ฉลาก QR ขนาด 50×30 มม. เรียงบน A4 — ตั้งจำนวนได้ */
   function printLabels(code, label) {

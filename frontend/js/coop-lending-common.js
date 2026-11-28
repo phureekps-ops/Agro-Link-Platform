@@ -108,6 +108,10 @@ const CL = (() => {
     agreement_not_signed: "สัญญายังลงนามไม่ครบ", below_verification_level: "หลักฐานของรายการนี้ยังไม่ถึงระดับที่ผู้ให้กู้กำหนด",
     golive_gate_not_passed: "ยังไม่ผ่านเงื่อนไขก่อนเปิดใช้งานจริง (Go-live Gate) — ระบบไม่สั่งโอนผ่านธนาคารจริง", check_not_found: "ไม่พบรายการตรวจ",
     alert_not_found: "ไม่พบเรื่องนี้ หรือยังไม่เปิดให้ชี้แจง",
+    restructure_already_pending: "มีคำขอปรับโครงสร้างหนี้ที่รอพิจารณาอยู่แล้ว", new_due_date_not_future: "วันครบกำหนดใหม่ต้องหลังวันนี้",
+    new_due_date_not_later: "วันครบกำหนดใหม่ต้องหลังวันครบกำหนดเดิมที่เร็วที่สุด", new_due_date_too_far: "ขยายได้ไม่เกิน 36 เดือนจากวันนี้", invalid_new_due_date: "ระบุวันครบกำหนดใหม่",
+    rate_higher_than_current: "อัตราดอกเบี้ยใหม่ต้องไม่สูงกว่าอัตราเดิม", nothing_outstanding: "ไม่มีเงินต้นคงค้าง", restructure_not_pending: "คำขอนี้พิจารณาไปแล้ว",
+    restructure_not_approved: "คำขอยังไม่ได้รับอนุมัติครบ", invalid_decision: "เลือกอนุมัติหรือไม่อนุมัติ",
     query_too_short: "พิมพ์อย่างน้อย 2 ตัวอักษร", claim_already_pending: "มีคำขอยืนยันทะเบียนที่รอตรวจอยู่แล้ว", org_already_linked: "บัญชีนี้เชื่อมกับทะเบียนสหกรณ์แล้ว",
     directory_already_linked: "รายการนี้เชื่อมกับบัญชีอื่นแล้ว — ติดต่อผู้ดูแลแพลตฟอร์ม", org_type_mismatch: "ประเภทสหกรณ์ในทะเบียนไม่ตรงกับประเภทบัญชี", already_yours: "รายการนี้เชื่อมกับบัญชีของท่านแล้ว",
     file_required: "กรุณาแนบไฟล์", claim_not_pending: "คำขอนี้พิจารณาไปแล้ว", directory_not_active: "สหกรณ์นี้ไม่ได้อยู่ในสถานะดำเนินการ",
@@ -407,6 +411,27 @@ const CL = (() => {
       : `<div class="cl-line">✅ งบที่กรอกตรงกับ${esc(rc.official_source || "ข้อมูลทางการ")} ปี ${rc.compared_years.join(", ")}</div>`)
     : `<div class="cl-muted">มีงบทางการปี ${rc.official_years.join(", ")} แต่ยังเทียบไม่ได้ (ผู้ขอกู้ไม่ได้กรอกปีเดียวกัน หรือยังไม่ยินยอมเปิดเผยข้อมูล)</div>`) : ""}`;
   }
+  // ---- ปรับโครงสร้างหนี้ (grant_coop_lending_restructure.sql) ----
+  const RS_ST = { Pending: ["รอผู้ให้กู้พิจารณา", "#8a5a00", "#fff2cc"], Approved: ["มีผลแล้ว", "#1f6b38", "#ddf3e4"], Rejected: ["ไม่อนุมัติ", "#a1261d", "#fde8e6"], Withdrawn: ["ถอนคำขอ", "#6b7a70", "#eef1ee"] };
+  /** การ์ดคำขอหนึ่งรายการ — prefix '/coop-lending' หรือ '/savings' (ใช้ลิงก์เอกสาร) · actions(r) คืน HTML เพิ่ม */
+  function restructureCard(r, prefix, actions) {
+    const snap = r.applied_snapshot;
+    return `<div class="cl-card" style="margin:8px 0 0;background:#fafcfa" data-rs="${r.request_id}">
+      <div class="cl-row"><div><b>ขอขยายวันครบกำหนดเป็น ${esc(date(r.new_due_date))}</b>${r.new_rate_pct != null ? ` · อัตราดอกเบี้ยใหม่ ${num(r.new_rate_pct, 3)}% ต่อปี` : ""}</div><div>${pill(RS_ST[r.status])}</div></div>
+      <div class="cl-line">ยื่นเมื่อ ${esc(dt(r.created_at))} · เงินต้นคงค้าง ${baht(r.outstanding)}${r.overdue ? ` (เลยกำหนด ${baht(r.overdue)})` : ""}</div>
+      <div class="cl-line">เหตุผล: ${esc(r.reason)}</div><div class="cl-line">แผนชำระใหม่: ${esc(r.repayment_plan)}</div>
+      <table class="cl-table">${r.lenders.map((x) => `<tr><td>${esc(x.org_name)}</td><td>${x.decision ? pill(x.decision === "Approved" ? ["อนุมัติ", "#1f6b38", "#ddf3e4"] : ["ไม่อนุมัติ", "#a1261d", "#fde8e6"]) : '<span class="cl-muted">ยังไม่พิจารณา</span>'}</td>
+        <td class="cl-muted">${esc(x.approval_ref || "")} ${esc(x.note || "")}</td></tr>`).join("")}</table>
+      ${snap ? `<div class="cl-line">มีผล: เลื่อนวันครบกำหนด ${snap.items.length} รายการ เงินต้น ${baht(snap.principal)}${snap.rates.length ? ` · ปรับอัตราดอกเบี้ย ${snap.rates.length} วงเงิน` : ""}${snap.reactivated_facilities.length ? ` · ปลดระงับวงเงิน ${snap.reactivated_facilities.length} วงเงิน` : ""} · คิดดอกเบี้ยตามเงื่อนไขเดิมถึง ${esc(date(snap.accrued_to))}</div>` : ""}
+      <div class="cl-actions">${r.has_file ? `<button class="cl-btn ghost" data-rs-file="${r.request_id}">📎 มติ/หนังสือขอ</button>` : ""}${r.status === "Approved" ? `<button class="cl-btn blue" data-rs-doc="${r.request_id}">⬇️ บันทึกแก้ไขเพิ่มเติมสัญญา (.docx)</button>` : ""}</div>
+      ${actions ? actions(r) : ""}</div>`;
+  }
+  function restructureDocs(box, prefix) {
+    box.addEventListener("click", (e) => {
+      const f = e.target.closest("[data-rs-file]"); if (f) { openFile(`${prefix}/market/restructure/${f.dataset.rsFile}/file`); return; }
+      const d = e.target.closest("[data-rs-doc]"); if (d) download(`${prefix}/market/restructure/${d.dataset.rsDoc}/amendment.docx`, "restructure-amendment.docx");
+    });
+  }
   /** ดาวน์โหลดไฟล์จาก API ด้วย token ของพอร์ทัล */
   async function download(path, filename) {
     const s = api.getSession();
@@ -423,7 +448,7 @@ const CL = (() => {
 
   return {
     PTYPE, LISTING_ST, OFFER_ST, gradeBadge, scorePanel, riskPanel, download, PROVINCES,
-    factorPanel, levelBadge, compliancePanel, dairyPanel, tranchePanel, TRANCHE_ST, alertsPanel, ALERT_ST, ALERT_CAT, ALERT_NOTE, COOP_TYPE, DIR_ST, CLAIM_ST, FIN_TH, finTable, registryCard, registryCheckPanel,
+    factorPanel, levelBadge, compliancePanel, dairyPanel, tranchePanel, TRANCHE_ST, alertsPanel, ALERT_ST, ALERT_CAT, ALERT_NOTE, COOP_TYPE, DIR_ST, CLAIM_ST, FIN_TH, finTable, registryCard, registryCheckPanel, RS_ST, restructureCard, restructureDocs,
     PLAN_ST, STAGE_ST, planTrack, satNotes,
     init, get, post, patch, put, upload, esc, baht, num, date, dt, PURPOSE, ITEM_ST, TR_ST, TR_KIND, SAT, EVIDENCE, BANKS, bankName, pill,
     errText, toast, act, formData, bankOptions, accLabel, sandboxBanner, openFile,

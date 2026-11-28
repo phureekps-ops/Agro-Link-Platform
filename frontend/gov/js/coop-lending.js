@@ -134,6 +134,8 @@
     // เตือนภัยล่วงหน้า (9.3) / สัญญาณทุจริต (10.3) — ยังไม่ได้รัน grant_coop_lending_risk.sql ก็แสดงส่วนอื่นได้ตามปกติ
     const rs = await CL.get(`/gov/coop-lending/market/risk-summary${province ? `?province=${encodeURIComponent(province)}` : ""}`).catch(() => null);
     const rsum = (cat, sts) => (rs || []).filter((x) => x.category === cat && sts.includes(x.status)).reduce((a, x) => a + x.n, 0);
+    const rx = await CL.get(`/gov/coop-lending/market/restructure-summary${province ? `?province=${encodeURIComponent(province)}` : ""}`).catch(() => null);
+    const rxOf = (st) => (rx || []).find((x) => x.status === st) || { n: 0, outstanding: 0 };
     const r = m.registry; const f = m.flow; const nc = m.national_counts;
     const cmeter = (v) => `<div class="g-meter"><i style="width:${Math.max(1, Math.min(100, v))}%;background:#4a86c5"></i></div>`;
     const cov = (a, b) => `${a.toLocaleString("th-TH")} / ${b.toLocaleString("th-TH")} แห่ง (${b ? Math.round((a / b) * 1000) / 10 : 0}%)`;
@@ -167,6 +169,7 @@
           ${rs ? `<div class="g-kpi"><span>เตือนภัยล่วงหน้าที่เปิดอยู่ (ยอดรับซื้อ/ราคา/รายงาน/รายได้/การโอน)</span><b>${rsum("early_warning", ["Open", "Investigating"])} เรื่อง</b></div>
           <div class="g-kpi"><span>สัญญาณที่ต้องตรวจสอบ: รอตรวจ · กำลังสอบสวน · ปิดแล้ว</span><b>${rsum("fraud", ["Open"])} · ${rsum("fraud", ["Investigating"])} · ${rsum("fraud", ["Resolved", "Dismissed"])}</b></div>
           <div class="g-note">${esc(CL.ALERT_NOTE)}</div>` : ""}
+          ${rx ? `<div class="g-kpi"><span>สัญญาที่ปรับโครงสร้างหนี้แล้ว · รอพิจารณา</span><b>${rxOf("Approved").n} (${baht(rxOf("Approved").outstanding)}) · ${rxOf("Pending").n}</b></div>` : ""}
           <div class="g-note">ระดับหลักฐาน: 1 เอกสาร · 2 ยืนยันกับคู่ค้า/สมาชิก · 3 ธุรกรรมธนาคาร · 4 IoT/ภาคสนาม/ดาวเทียม/ระบบโคนม · 5 ผู้ตรวจอิสระ</div></div>` : ""}
       </div>
       <div class="cl-card" style="overflow-x:auto">${m.listings.length ? `<table class="cl-table"><tr><th>โครงการ</th><th>ผู้ขอกู้</th><th>ประเภท</th><th class="r">วงเงิน</th><th>เกรด</th><th class="r">ข้อเสนอ</th><th>สถานะ</th><th>ผู้ให้กู้ตามสัญญา</th></tr>

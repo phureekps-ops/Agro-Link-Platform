@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ตรวจสอบใบรับรองแหล่งที่มา</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --g9: #1b3a1f; --g7: #2e7d32; --g1: #eef6ef; --gr: #6b7a70; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", system-ui, sans-serif; background: #f4f7f4; color: #1d2a20; }
+  header { background: var(--g9); color: #fff; padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+  header img { height: 28px; } header b { font-size: 16px; }
+  main { max-width: 680px; margin: 0 auto; padding: 16px 14px 40px; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 10px rgba(27,58,31,.08); padding: 18px; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 4px 0; color: var(--g9); }
+  .sub { color: var(--gr); font-size: 13.5px; }
+  .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; letter-spacing: .4px; }
+  .hash { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; word-break: break-all; color: #45524a; }
+  .verdict { border-radius: 14px; padding: 14px 16px; font-weight: 700; font-size: 17px; }
+  .v-ok { background: #ddf3e4; color: #1f6b38; } .v-bad { background: #fde8e6; color: #a1261d; } .v-warn { background: #fff2cc; color: #7a5200; }
+  .verdict small { display: block; font-weight: 400; font-size: 13px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; } td { padding: 6px 4px; border-bottom: 1px solid #eef1ee; vertical-align: top; } td:first-child { color: var(--gr); width: 40%; }
+  ol { margin: 6px 0 0; padding-left: 20px; } li { margin-bottom: 6px; } li .d { color: var(--gr); font-size: 12.5px; }
+  form { display: flex; gap: 8px; } input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid #cfd8d1; border-radius: 10px; font: inherit; }
+  button, .btn { flex: none; white-space: nowrap; background: var(--g7); color: #fff; border: 0; border-radius: 10px; padding: 10px 16px; font: inherit; font-weight: 600; text-decoration: none; display: inline-block; }
+  .note { font-size: 12px; color: var(--gr); line-height: 1.6; }
+</style>
+</head>
+<body>
+  <header><img src="assets/agrolink-logo.png" alt="" onerror="this.remove()"><b>AgroLink · ตรวจสอบใบรับรองแหล่งที่มา</b></header>
+  <main>
+    <div id="out"></div>
+    <div class="card"><form id="f"><input id="q" placeholder="เลขที่ใบรับรอง เช่น OC-7K2M9QXA" autocomplete="off"><button type="submit">ตรวจสอบ</button></form></div>
+    <p class="note">วิธีตรวจ: เปิดหน้านี้จาก QR บนใบรับรอง หรือพิมพ์เลขที่ใบรับรอง แล้วเทียบ "ลายนิ้วมือข้อมูล (SHA-256)" กับที่พิมพ์บนเอกสาร ถ้าตรงกันแปลว่าเป็นใบจริงและข้อมูลไม่ถูกแก้
+      ใบรับรองออกโดยสหกรณ์ผ่านแพลตฟอร์ม AgroLink จากข้อมูลที่สหกรณ์บันทึก ไม่ใช่การรับรองมาตรฐานจากหน่วยงานรัฐ และไม่แสดงข้อมูลส่วนบุคคลของสมาชิก</p>
+  </main>
+<script>
+(function () {
+  const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname)) ? "http://localhost:4000" : "https://agrolink-backend-vhv6.onrender.com";
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (v, d = 2) => (v == null ? "-" : Number(v).toLocaleString("th-TH", { maximumFractionDigits: d }));
+  const date = (v) => (v ? new Date(v).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" }) : "");
+  const out = document.getElementById("out");
+  async function load(no) {
+    out.innerHTML = '<div class="card">กำลังตรวจสอบ…</div>';
+    let v;
+    try {
+      const res = await fetch(`${API_BASE}/public/certificate/${encodeURIComponent(no)}`);
+      if (res.status === 404) { out.innerHTML = `<div class="card"><div class="verdict v-bad">✖ ไม่พบใบรับรองเลขที่ ${esc(no)}<small>ตรวจเลขที่อีกครั้ง — ถ้าเลขถูกต้องแต่ไม่พบ เอกสารนี้อาจไม่ได้ออกจากระบบ AgroLink</small></div></div>`; return; }
+      if (!res.ok) throw new Error(res.status);
+      v = await res.json();
+    } catch (err) { out.innerHTML = '<div class="card">เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง</div>'; return; }
+    const c = v.payload.core; const o = c.origin;
+    const verdict = v.status === "Revoked"
+      ? `<div class="verdict v-bad">✖ ใบรับรองนี้ถูกยกเลิกแล้ว<small>เมื่อ ${date(v.revoked_at)}: ${esc(v.revoked_reason || "")}</small></div>`
+      : !v.hash_ok ? '<div class="verdict v-bad">✖ ข้อมูลใบรับรองไม่ตรงกับลายนิ้วมือที่บันทึกไว้<small>อย่าใช้เอกสารนี้ และแจ้งสหกรณ์หรือ AgroLink</small></div>'
+        : `<div class="verdict v-ok">✔ ใบรับรองนี้มีผลและข้อมูลไม่ถูกแก้ไข<small>ออกเมื่อ ${date(v.issued_at)}</small></div>`;
+    const changed = v.changed_since_issue && v.changed_since_issue.length
+      ? `<div class="verdict v-warn" style="margin-top:10px">⚠ ข้อมูลในระบบเปลี่ยนไปหลังออกใบรับรอง<small>${v.changed_since_issue.map((x) => esc(x.label)).join(", ")} — ใบรับรองแสดงข้อมูล ณ วันที่ออก ควรสอบถามสหกรณ์</small></div>` : "";
+    document.title = `${v.cert_no} — ใบรับรองแหล่งที่มา AgroLink`;
+    out.innerHTML = `<div class="card"><div class="sub">ใบรับรองแหล่งที่มา · <span class="code">${esc(v.cert_no)}</span></div>
+        <h1>${esc(c.subject.product || c.subject.code)}</h1>${verdict}${changed}</div>
+      <div class="card"><table>
+        <tr><td>รหัสสินค้า/ล็อต</td><td><a class="code" href="${esc(v.trace_url)}">${esc(c.subject.code)}</a></td></tr>
+        ${c.subject.quantity_ton != null ? `<tr><td>ปริมาณ</td><td>${num(c.subject.quantity_ton, 3)} ตัน</td></tr>` : ""}
+        <tr><td>สหกรณ์</td><td>${esc(c.cooperative.name || "-")}${c.cooperative.province ? ` จ.${esc(c.cooperative.province)}` : ""}${c.cooperative.registration_no ? `<div class="sub">เลขทะเบียน ${esc(c.cooperative.registration_no)}</div>` : ""}</td></tr>
+        <tr><td>เกษตรกรสมาชิก</td><td>${o.farmers} ครอบครัว</td></tr>
+        <tr><td>แปลงเพาะปลูก</td><td>${o.plots} แปลง รวม ${num(o.area_rai)} ไร่${o.provinces.length ? ` (${esc(o.provinces.join(", "))})` : ""}</td></tr>
+        <tr><td>ตรวจด้วยภาพดาวเทียม</td><td>ยืนยันชนิดพืช ${o.plots_satellite_confirmed} จาก ${o.plots} แปลง${o.plots_satellite_mismatch ? ` · เห็นพืชอื่น/ไม่พบพืช ${o.plots_satellite_mismatch} แปลง` : ""}</td></tr>
+        <tr><td>ช่วงรับซื้อผลผลิต</td><td>${date(o.harvest_from)}${o.harvest_to && date(o.harvest_to) !== date(o.harvest_from) ? ` – ${date(o.harvest_to)}` : ""}${o.grades.length ? ` · เกรด ${esc(o.grades.join(", "))}` : ""}</td></tr>
+      </table></div>
+      <div class="card"><b>เส้นทางของผลผลิต</b><ol>${c.steps.map((s) => `<li>${esc(s.title)}<div class="d">${s.from ? date(s.from) : ""}${s.to && date(s.to) !== date(s.from) ? ` – ${date(s.to)}` : ""}${s.detail ? `${s.from ? " · " : ""}${esc(s.detail)}` : ""}</div></li>`).join("")}</ol></div>
+      <div class="card"><b>ลายนิ้วมือข้อมูล (SHA-256)</b><div class="hash">${esc(v.payload_sha256)}</div>
+        ${v.prev_sha256 ? `<div class="sub" style="margin-top:8px">ต่อจากใบก่อนหน้าของสหกรณ์</div><div class="hash">${esc(v.prev_sha256)}</div>` : ""}
+        <div class="sub" style="margin-top:8px">ลายนิ้วมือแปลงที่มา ${c.chain.plot_fingerprints.length} แปลง (พิสูจน์ชุดแปลงโดยไม่เปิดเผยตำแหน่ง)</div>
+        <p style="margin:12px 0 0"><a class="btn" href="${API_BASE}${esc(v.pdf_path)}" target="_blank" rel="noopener">⬇️ ดาวน์โหลดใบรับรอง (PDF)</a></p></div>`;
+  }
+  document.getElementById("f").onsubmit = (e) => { e.preventDefault(); const n = document.getElementById("q").value.trim(); if (n) { history.replaceState(null, "", `?no=${encodeURIComponent(n)}`); load(n); } };
+  const n = new URLSearchParams(location.search).get("no");
+  if (n) { document.getElementById("q").value = n; load(n); }
+}());
+</script>
+</body>
+</html>
