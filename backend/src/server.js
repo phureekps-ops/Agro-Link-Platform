@@ -227,6 +227,11 @@ app.use('/dairy/market-directory', dairyDirectoryRouters.coop);
 // portal is conceptually distinct even though it reuses the same
 // produce.delivery machinery under the hood (see the route file's own
 // doc comment).
+// cropTrace.js — ตรวจสอบย้อนกลับสายพืชผล (grant_crop_traceability.sql): '/coop/trace' ต้อง mount ก่อน '/coop'
+// และหน้า QR สาธารณะ '/public/trace' (ไม่ต้องเข้าสู่ระบบ — แสดงเฉพาะข้อมูลที่ไม่ระบุตัวบุคคล)
+const cropTraceRouters = require('./routes/cropTrace');
+app.use('/coop/trace', cropTraceRouters.coop);
+app.use('/public/trace', cropTraceRouters.pub);
 app.use('/coop', coopCollectionRouter);
 // government.js — Provincial/National government officer portal
 // (identity.government_officer, see grant_staff_and_government_access.

@@ -539,7 +539,7 @@ router.get('/lots', async (req, res, next) => {
         statusFilter = 'AND l.status = $2';
       }
       const result = await client.query(
-        `SELECT l.lot_id, l.commodity_code, l.quality_grade, l.status, l.lot_note,
+        `SELECT l.lot_id, l.trace_code, l.commodity_code, l.quality_grade, l.status, l.lot_note,
                 l.created_at, l.closed_at,
                 COUNT(d.delivery_id)::int AS delivery_count,
                 COALESCE(SUM(d.quantity_ton), 0)::numeric AS total_quantity_ton
@@ -1505,7 +1505,8 @@ router.get('/processing/finished-goods', async (req, res, next) => {
       const result = await client.query(
         `SELECT s.finished_good_id, s.batch_id, s.product_name, s.is_primary_product,
                 s.produced_quantity_ton, s.dispatched_quantity_ton, s.quantity_on_hand_ton, s.recorded_at,
-                b.output_product_name AS batch_output_product_name, b.status AS batch_status
+                b.output_product_name AS batch_output_product_name, b.status AS batch_status,
+                (SELECT fg.trace_code FROM processing.finished_good fg WHERE fg.finished_good_id = s.finished_good_id) AS trace_code
            FROM processing.v_finished_good_stock s
            JOIN processing.batch b ON b.batch_id = s.batch_id
           WHERE s.org_id = $1

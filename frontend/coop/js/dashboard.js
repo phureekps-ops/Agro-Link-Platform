@@ -524,6 +524,7 @@ function lotCard(l) {
       <div class="detail-line">สินค้า: ${escapeHtml(l.commodity_code)}${l.quality_grade ? " · เกรด " + escapeHtml(l.quality_grade) : ""}</div>
       <div class="detail-line">จำนวนรายการ: ${l.delivery_count} รายการ · น้ำหนักรวม ${Number(l.total_quantity_ton).toLocaleString("th-TH")} ตัน</div>
       <div class="detail-line muted">เปิดเมื่อ ${thaiDate(l.created_at)}${l.closed_at ? " · ปิดเมื่อ " + thaiDate(l.closed_at) : ""}</div>
+      ${l.trace_code ? `<div class="detail-line">รหัสติดตาม <a href="trace.html?code=${encodeURIComponent(l.trace_code)}" style="font-family:monospace;font-weight:700">${escapeHtml(l.trace_code)}</a> · ดูย้อนกลับ/พิมพ์ QR</div>` : ""}
       ${l.status === "Open" ? `<div class="action-row"><button type="button" class="btn btn-ghost btn-sm" data-close-lot="${l.lot_id}">ปิดล็อต</button></div>` : ""}
     </div>
   `;
@@ -1080,6 +1081,7 @@ function finishedGoodCard(fg) {
       </div>
       <div class="detail-line muted">จากชุด: ${escapeHtml(fg.batch_output_product_name)}${fg.batch_status !== "Completed" ? " (" + escapeHtml(BATCH_STATUS_LABEL_TH[fg.batch_status] || fg.batch_status) + ")" : ""}</div>
       <div class="detail-line">ผลิตแล้ว ${Number(fg.produced_quantity_ton).toLocaleString("th-TH")} ตัน · นำออกแล้ว ${Number(fg.dispatched_quantity_ton).toLocaleString("th-TH")} ตัน</div>
+      ${fg.trace_code ? `<div class="detail-line">รหัสติดตาม <a href="trace.html?code=${encodeURIComponent(fg.trace_code)}" style="font-family:monospace;font-weight:700">${escapeHtml(fg.trace_code)}</a> · ดูย้อนกลับ/พิมพ์ฉลาก QR</div>` : ""}
       ${fg.quantity_on_hand_ton > 0 ? `
         <div class="action-row">
           <input type="number" min="0.001" step="0.001" class="reject-reason-input" data-dispatch-qty-for="${fg.finished_good_id}" placeholder="ปริมาณที่นำออก (ตัน)" />

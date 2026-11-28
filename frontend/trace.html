@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ตรวจสอบแหล่งที่มาสินค้าเกษตร</title>
+<meta name="description" content="สแกน QR บนบรรจุภัณฑ์เพื่อดูว่าผลผลิตมาจากแปลงไหน สหกรณ์ใด ผ่านขั้นตอนใดบ้าง" />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --g9: #1b3a1f; --g7: #2e7d32; --g1: #eef6ef; --gr: #6b7a70; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", system-ui, sans-serif; background: #f4f7f4; color: #1d2a20; }
+  header { background: var(--g9); color: #fff; padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+  header img { height: 28px; } header b { font-size: 16px; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 14px 40px; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 10px rgba(27,58,31,.08); padding: 18px; margin-bottom: 14px; }
+  h1 { font-size: 21px; margin: 0 0 4px; color: var(--g9); }
+  .sub { color: var(--gr); font-size: 13.5px; }
+  .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; letter-spacing: .5px; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .kpi { background: var(--g1); border-radius: 12px; padding: 10px 12px; } .kpi b { display: block; font-size: 19px; color: var(--g9); } .kpi span { font-size: 12.5px; color: var(--gr); }
+  .ok { color: #1f6b38; font-weight: 600; }
+  ol.tl { list-style: none; margin: 8px 0 0; padding: 0; position: relative; }
+  ol.tl li { position: relative; padding: 0 0 16px 30px; }
+  ol.tl li::before { content: ""; position: absolute; left: 7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--g7); }
+  ol.tl li:not(:last-child)::after { content: ""; position: absolute; left: 12px; top: 18px; bottom: 0; width: 2px; background: #cfe0d1; }
+  ol.tl b { display: block; } ol.tl .d { font-size: 12.5px; color: var(--gr); }
+  form { display: flex; gap: 8px; } input { flex: 1; padding: 11px 12px; border: 1px solid #cfd8d1; border-radius: 10px; font: inherit; }
+  button { flex: none; white-space: nowrap; background: var(--g7); color: #fff; border: 0; border-radius: 10px; padding: 10px 16px; font: inherit; font-weight: 600; }
+  input { min-width: 0; }
+  .note { font-size: 12px; color: var(--gr); line-height: 1.6; }
+  .bad { color: #a1261d; }
+</style>
+</head>
+<body>
+  <header><img src="assets/agrolink-logo.png" alt="" onerror="this.remove()"><b>AgroLink · ตรวจสอบแหล่งที่มา</b></header>
+  <main>
+    <div id="out"></div>
+    <div class="card"><form id="f"><input id="q" placeholder="ใส่รหัสบนฉลาก เช่น FG-7K2M9QXA" autocomplete="off"><button type="submit">ตรวจสอบ</button></form></div>
+    <p class="note">AgroLink เป็นแพลตฟอร์มของบริษัท ภักดี คอร์ปอเรชั่น จำกัด สำหรับสหกรณ์และเกษตรกร ข้อมูลในหน้านี้มาจากการบันทึกของสหกรณ์ — ไม่แสดงชื่อหรือที่ตั้งแปลงของสมาชิกแต่ละราย</p>
+  </main>
+<script>
+(function () {
+  const API_BASE = (["localhost", "127.0.0.1"].includes(window.location.hostname)) ? "http://localhost:4000" : "https://agrolink-backend-vhv6.onrender.com";
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (v, d = 2) => Number(v || 0).toLocaleString("th-TH", { maximumFractionDigits: d });
+  const date = (v) => (v ? new Date(v).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" }) : "");
+  const out = document.getElementById("out");
+  async function load(code) {
+    out.innerHTML = '<div class="card">กำลังตรวจสอบ…</div>';
+    let p;
+    try {
+      const res = await fetch(`${API_BASE}/public/trace/${encodeURIComponent(code)}`);
+      if (res.status === 404) { out.innerHTML = `<div class="card"><b class="bad">ไม่พบรหัส ${esc(code)}</b><p class="sub">ตรวจรหัสบนฉลากอีกครั้ง หรือสหกรณ์อาจปิดการแสดงข้อมูลของสินค้านี้</p></div>`; return; }
+      if (!res.ok) throw new Error(res.status);
+      p = await res.json();
+    } catch (err) { out.innerHTML = '<div class="card bad">เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง</div>'; return; }
+    document.title = `${p.product || p.code} — AgroLink`;
+    const o = p.origin;
+    out.innerHTML = `<div class="card"><div class="sub">${p.kind === "finished_good" ? "สินค้า" : "ล็อตผลผลิต"} · <span class="code">${esc(p.code)}</span></div>
+        <h1>${esc(p.product || "")}</h1>
+        ${p.cooperative ? `<div>ผลิตและรวบรวมโดย <b>${esc(p.cooperative.name)}</b>${p.cooperative.province ? ` จ.${esc(p.cooperative.province)}` : ""}</div>` : ""}
+        <div class="kpis">
+          <div class="kpi"><b>${o.farmers}</b><span>ครอบครัวเกษตรกรสมาชิก</span></div>
+          <div class="kpi"><b>${num(o.area_rai)} ไร่</b><span>จาก ${o.plots} แปลง</span></div>
+          <div class="kpi"><b class="${o.plots_confirmed ? "ok" : ""}">${o.plots_confirmed} / ${o.plots}</b><span>แปลงที่ภาพดาวเทียมยืนยันชนิดพืช</span></div>
+          <div class="kpi"><b>${esc(o.provinces.join(", ") || "-")}</b><span>จังหวัดแหล่งปลูก</span></div>
+        </div>
+        ${o.harvest_from ? `<p class="sub" style="margin-top:10px">รับซื้อผลผลิต ${date(o.harvest_from)}${o.harvest_to && date(o.harvest_to) !== date(o.harvest_from) ? ` – ${date(o.harvest_to)}` : ""}${o.grades.length ? ` · เกรด ${esc(o.grades.join(", "))}` : ""}</p>` : ""}
+      </div>
+      <div class="card"><b>เส้นทางของผลผลิต</b><ol class="tl">${p.steps.map((s) => `<li><b>${esc(s.title)}</b><div class="d">${s.from ? date(s.from) : ""}${s.to && date(s.to) !== date(s.from) ? ` – ${date(s.to)}` : ""}${s.detail ? `${s.from ? " · " : ""}${esc(s.detail)}` : ""}</div></li>`).join("")}</ol></div>
+      <p class="note">${esc(p.note)}</p>`;
+  }
+  document.getElementById("f").onsubmit = (e) => { e.preventDefault(); const c = document.getElementById("q").value.trim(); if (c) { history.replaceState(null, "", `?c=${encodeURIComponent(c)}`); load(c); } };
+  const c = new URLSearchParams(location.search).get("c");
+  if (c) { document.getElementById("q").value = c; load(c); }
+}());
+</script>
+</body>
+</html>

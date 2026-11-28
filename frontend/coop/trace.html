@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ตรวจสอบย้อนกลับ (พอร์ทัลสหกรณ์)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  body { margin: 0; }
+  .tr-wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; box-sizing: border-box; }
+  .tr-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px; }
+  .tr-card h2 { margin: 0 0 4px; font-size: 17px; color: var(--green-900); }
+  .tr-card h3 { margin: 14px 0 6px; font-size: 15px; color: var(--green-900); }
+  .tr-note { font-size: 12.5px; color: var(--gray-500); margin: 0 0 10px; }
+  .tr-back { color: #fff; opacity: .85; text-decoration: none; font-size: 13px; margin-right: 12px; }
+  .tr-search { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tr-search input { flex: 1; min-width: 240px; padding: 10px 12px; border: 1px solid var(--gray-300); border-radius: 10px; font: inherit; }
+  .tr-btn { background: var(--green-700, #2e7d32); color: #fff; border: 0; border-radius: 10px; padding: 9px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  .tr-btn.ghost { background: #eef1ee; color: #1b3a1f; }
+  .tr-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .tr-table th { text-align: left; font-size: 12px; color: var(--gray-500); font-weight: 600; padding: 7px 8px; border-bottom: 1px solid var(--gray-300); }
+  .tr-table td { padding: 7px 8px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  .tr-table td.r, .tr-table th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .tr-table tr.pick { cursor: pointer; } .tr-table tr.pick:hover td { background: var(--green-100, #eaf5ec); }
+  .tr-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+  .tr-kpi { background: #f6faf6; border-radius: 12px; padding: 10px 12px; } .tr-kpi b { display: block; font-size: 18px; color: var(--green-900); } .tr-kpi span { font-size: 12px; color: var(--gray-500); }
+  .tr-chain { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+  .tr-step { border: 1px solid #dfe8df; border-radius: 12px; padding: 10px; font-size: 13px; position: relative; background: #fbfdfb; }
+  .tr-step b { display: block; color: var(--green-900); margin-bottom: 2px; } .tr-step.on { border-color: #2e7d32; box-shadow: 0 0 0 2px #cfe8d2; }
+  .tr-step:not(:last-child)::after { content: "→"; position: absolute; right: -10px; top: 40%; color: #8aa08d; font-weight: 700; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  .ok { background: #ddf3e4; color: #1f6b38; } .bad { background: #fde8e6; color: #a1261d; } .unk { background: #eef1ee; color: #6b7a70; }
+  .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; letter-spacing: .5px; }
+  .tr-qr { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .tr-qr img { width: 120px; height: 120px; border: 1px solid #eef1ee; border-radius: 8px; }
+  @media (max-width: 760px) { .tr-chain { grid-template-columns: 1fr 1fr; } .tr-step::after { display: none; } }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><a class="tr-back" href="dashboard.html">← พอร์ทัลสหกรณ์</a>🔎 ตรวจสอบย้อนกลับ (Traceability)</div>
+    <div class="who"><span class="name" id="orgName"></span><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+  </header>
+  <div class="tr-wrap">
+    <div class="tr-card">
+      <h2>ค้นหาสายการผลิต</h2>
+      <p class="tr-note">ใส่รหัสล็อต (LT-) รอบแปรรูป (PB-) สินค้าสำเร็จรูป (FG-) หรือชื่อ/รหัสสมาชิก — ดูย้อนกลับถึงแปลงและสมาชิก และตามไปข้างหน้าถึงสินค้าและเที่ยวขนส่ง
+        · สินค้าและล็อตมี QR ให้พิมพ์ติดบรรจุภัณฑ์ ผู้ซื้อสแกนแล้วเห็นแหล่งที่มาโดยไม่เห็นข้อมูลส่วนบุคคลของสมาชิก</p>
+      <form class="tr-search" id="sForm"><input id="sQ" placeholder="เช่น FG-7K2M9QXA หรือ ชื่อสมาชิก"><button class="tr-btn" type="submit">ค้นหา</button></form>
+      <div id="sRes" style="margin-top:10px">กำลังโหลด…</div>
+    </div>
+    <div id="view"></div>
+  </div>
+<script src="js/api.js"></script>
+<script>
+/* global AgroLinkCoopAPI, API_BASE */
+(function () {
+  const API = AgroLinkCoopAPI;
+  if (!API.requireSessionOrRedirect()) return;
+  const session = API.getSession();
+  document.getElementById("orgName").textContent = session.org_name || (session.organization && session.organization.org_name) || "";
+  document.getElementById("logoutBtn").addEventListener("click", () => API.logout());
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (v, d = 2) => (v == null ? "-" : Number(v).toLocaleString("th-TH", { maximumFractionDigits: d }));
+  const date = (v) => (v ? new Date(v).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" }) : "-");
+  const TYPE = { lot: "ล็อตรวบรวม", batch: "รอบแปรรูป", finished_good: "สินค้าสำเร็จรูป", farmer: "สมาชิก" };
+  const PROC = { Milling: "สี/โม่", Drying: "อบแห้ง", Sorting: "คัดแยก", Packaging: "บรรจุภัณฑ์", Other: "อื่นๆ" };
+  const BST = { InProgress: "กำลังดำเนินการ", Completed: "เสร็จแล้ว", Cancelled: "ยกเลิก" };
+  const SST = { Pending: "รอออกเดินทาง", InTransit: "กำลังขนส่ง", Delivered: "ส่งถึงแล้ว" };
+  const MV = { receive: "รับเข้าคลัง", transfer: "ย้าย", release: "นำออก" };
+  const CROP = { rice: "ข้าว", maize: "ข้าวโพด", cassava: "มันสำปะหลัง", sugarcane: "อ้อย", vegetable: "ผัก", perennial: "ไม้ยืนต้น", fallow: "ไม่พบพืช" };
+  const qrUrl = (code) => `${API_BASE}/public/trace/${encodeURIComponent(code)}/qr.svg`;
+
+  function satBadge(d) {
+    const seen = d.confirmed_crop || d.predicted_crop;
+    if (d.sat_check === "confirmed") return `<span class="pill ok">ดาวเทียมยืนยัน: ${esc(CROP[seen] || seen)}</span>`;
+    if (d.sat_check === "mismatch") return `<span class="pill bad">ดาวเทียมเห็น: ${esc(CROP[seen] || seen)}</span>`;
+    return seen ? `<span class="pill unk">ดาวเทียมยังไม่แน่ใจ (${esc(CROP[seen] || seen)})</span>` : '<span class="pill unk">ยังไม่มีผลดาวเทียม</span>';
+  }
+
+  async function search(q) {
+    let rows;
+    try { rows = await API.get(`/coop/trace/search${q ? `?q=${encodeURIComponent(q)}` : ""}`); } catch (err) { $("sRes").innerHTML = `<div class="tr-note">โหลดไม่สำเร็จ: ${esc(err.message)}</div>`; return; }
+    $("sRes").innerHTML = rows.length ? `<table class="tr-table"><tr><th>ประเภท</th><th>รหัส</th><th>รายการ</th><th class="r">ปริมาณ (ตัน)</th><th>วันที่</th></tr>
+      ${rows.map((r) => `<tr class="pick" data-t="${r.type}" data-c="${esc(r.code)}"><td>${esc(TYPE[r.type])}</td><td>${r.type === "farmer" ? esc(r.status || "") : `<span class="code">${esc(r.code)}</span>`}</td><td>${esc(r.label)}</td><td class="r">${num(r.quantity_ton, 3)}</td><td>${date(r.at)}</td></tr>`).join("")}</table>`
+      : '<div class="tr-note">ไม่พบ — ตรวจรหัสอีกครั้ง (ระบบอ่าน O/0 และ I/L/1 แทนกันได้)</div>';
+  }
+  $("sRes").onclick = (e) => { const r = e.target.closest("[data-c]"); if (r) open(r.dataset.t, r.dataset.c); };
+  $("sForm").onsubmit = (e) => {
+    e.preventDefault();
+    const q = $("sQ").value.trim();
+    if (/^(LT|PB|FG)[-\s]?[0-9A-Z]{8}$/i.test(q)) open("code", q); else search(q);
+  };
+
+  async function open(type, code) {
+    $("view").innerHTML = '<div class="tr-card">กำลังโหลด…</div>';
+    let t;
+    try { t = await API.get(type === "farmer" ? `/coop/trace/farmer/${code}` : `/coop/trace/code/${encodeURIComponent(code)}`); } catch (err) {
+      $("view").innerHTML = `<div class="tr-card">${err.status === 404 ? "ไม่พบรหัสนี้ในสหกรณ์ของท่าน" : esc(err.message)}</div>`; return;
+    }
+    history.replaceState(null, "", `?${type === "farmer" ? "farmer" : "code"}=${encodeURIComponent(type === "farmer" ? code : t.start.code)}`);
+    render(t);
+  }
+
+  function render(t) {
+    if (t.empty) { $("view").innerHTML = `<div class="tr-card">${esc(t.farmer ? t.farmer.full_name : "")} ยังไม่เคยส่งผลผลิตให้สหกรณ์</div>`; return; }
+    const s = t.summary;
+    const st = t.start.type;
+    const title = st === "farmer" ? `สมาชิก: ${t.farmer.full_name}${t.farmer.farmer_code ? ` (${t.farmer.farmer_code})` : ""}`
+      : `${TYPE[st]} <span class="code">${esc(t.start.code)}</span>`;
+    const lotCode = Object.fromEntries(t.lots.map((l) => [l.lot_id, l.trace_code]));
+    const fgCode = Object.fromEntries(t.finished_goods.map((f) => [f.finished_good_id, f]));
+    const step = (key, label, val, on) => `<div class="tr-step${on ? " on" : ""}"><b>${label}</b>${val}</div>`;
+    const qrBlock = (code, label, pub, scans) => `<div class="tr-qr">${pub ? `<img src="${qrUrl(code)}" alt="QR ${esc(code)}">` : '<div class="tr-note">ปิดหน้าสาธารณะอยู่</div>'}
+      <div><div><span class="code">${esc(code)}</span> · ${esc(label)}</div>
+        <div class="tr-note">หน้าสาธารณะ: ${pub ? `<a href="${esc(t.public_base + code)}" target="_blank" rel="noopener">${esc(t.public_base + code)}</a> · สแกนแล้ว ${scans || 0} ครั้ง` : "ปิดอยู่ — QR จะเปิดไม่ได้"}</div>
+        ${pub ? `<button class="tr-btn" data-print="${esc(code)}" data-label="${esc(label)}">🖨️ พิมพ์ฉลาก QR</button> ` : ""}<button class="tr-btn ghost" data-pub="${esc(code)}" data-on="${pub ? "0" : "1"}">${pub ? "ปิดหน้าสาธารณะ" : "เปิดหน้าสาธารณะ"}</button></div></div>`;
+    $("view").innerHTML = `<div class="tr-card"><h2>${title}</h2>
+      <div class="tr-chain">
+        ${step("farm", "🌾 แปลง/สมาชิก", `${s.farmers} ราย · ${s.plots} แปลง · ${num(s.area_rai)} ไร่`, st === "farmer")}
+        ${step("lot", "📦 ล็อตรวบรวม", `${t.lots.length} ล็อต · ${num(s.raw_ton, 3)} ตัน`, st === "lot")}
+        ${step("wh", "🏬 คลัง/อบแห้ง", `${s.dried_lots} ล็อตมีบันทึกความชื้น${s.final_moisture != null ? ` · สุดท้าย ${s.final_moisture}%` : ""}`, false)}
+        ${step("proc", "🏭 แปรรูป → สินค้า", `${t.batches.length} รอบ · ${t.finished_goods.length} รายการสินค้า`, st === "batch" || st === "finished_good")}
+        ${step("ship", "🚚 ปลายทาง", `${t.shipments.length} เที่ยวขนส่ง · ${t.dispatches.length} ครั้งนำออก`, false)}
+      </div>
+      <div class="tr-kpis">
+        <div class="tr-kpi"><b>${s.plots_confirmed} / ${s.plots}</b><span>แปลงที่ดาวเทียมยืนยันชนิดพืช</span></div>
+        <div class="tr-kpi"><b>${s.plots_mismatch}</b><span>แปลงที่ดาวเทียมเห็นพืชอื่น/ไม่มีพืช</span></div>
+        <div class="tr-kpi"><b>${esc(s.provinces.join(", ") || "-")}</b><span>จังหวัดของแปลง/สมาชิก</span></div>
+        <div class="tr-kpi"><b>${date(s.delivered_from)} – ${date(s.delivered_to)}</b><span>ช่วงรับซื้อ${s.avg_moisture_in != null ? ` · ความชื้นเฉลี่ย ${s.avg_moisture_in}%` : ""}</span></div>
+      </div>
+      ${st === "finished_good" ? (() => { const f = t.finished_goods[0]; return qrBlock(f.trace_code, f.product_name, f.public_trace, t.scans[f.trace_code]); })() : ""}
+      ${st === "lot" ? (() => { const l = t.lots[0]; return qrBlock(l.trace_code, l.lot_note || l.commodity_name, l.public_trace, t.scans[l.trace_code]); })() : ""}
+    </div>
+
+    <div class="tr-card"><h2>⬅️ ต้นทาง: สมาชิกและแปลง (${t.deliveries.length} รายการส่งผลผลิต)</h2>
+      <table class="tr-table"><tr><th>สมาชิก</th><th>แปลง</th><th>ผลดาวเทียม</th><th class="r">ตัน</th><th class="r">ความชื้น</th><th>เกรด</th><th>วันที่ส่ง</th><th>ล็อต</th></tr>
+      ${t.deliveries.map((d) => `<tr><td>${esc(d.farmer_name || "-")}<div class="tr-note">${esc(d.farmer_code || "")} ${esc(d.province_name_th || "")}</div>${d.farmer_id && st !== "farmer" ? `<a href="#" data-farmer="${d.farmer_id}">ตามไปข้างหน้า →</a>` : ""}</td>
+        <td>${d.area_rai != null ? `${num(d.area_rai)} ไร่` : "-"}${d.lat != null ? `<div class="tr-note"><a href="https://www.google.com/maps?q=${d.lat},${d.lon}" target="_blank" rel="noopener">${d.lat}, ${d.lon}</a></div>` : ""}</td>
+        <td>${satBadge(d)}</td><td class="r">${num(d.quantity_ton, 3)}</td><td class="r">${d.moisture_pct != null ? `${d.moisture_pct}%` : "-"}</td><td>${esc(d.quality_grade || "-")}</td><td>${date(d.delivered_at)}</td><td><a href="#" data-code="${esc(lotCode[d.lot_id])}" class="code">${esc(lotCode[d.lot_id] || "")}</a></td></tr>`).join("") || '<tr><td colspan="8" class="tr-note">ไม่มีรายการ</td></tr>'}</table>
+      <p class="tr-note" style="margin-top:6px">พิกัดเป็นจุดกึ่งกลางแปลง · ผลดาวเทียมมาจาก AI ติดตามแปลงรอบล่าสุด (แปลงที่ดาวเทียมเห็นพืชอื่นควรตรวจว่าผลผลิตมาจากแปลงนี้จริง)</p></div>
+
+    <div class="tr-card"><h2>📦 ล็อตและคลัง</h2>
+      ${t.lots.map((l) => `<h3><a href="#" data-code="${esc(l.trace_code)}" class="code">${esc(l.trace_code)}</a> ${esc(l.lot_note || "")} <span class="pill ${l.status === "Open" ? "unk" : "ok"}">${l.status === "Open" ? "เปิดอยู่" : "ปิดแล้ว"}</span></h3>
+        <div class="tr-note">${esc(l.commodity_name || l.commodity_code)}${l.quality_grade ? ` เกรด ${esc(l.quality_grade)}` : ""} · ${num(l.quantity_ton, 3)} ตัน จาก ${l.delivery_count} รายการ · เปิด ${date(l.created_at)}${l.closed_at ? ` ปิด ${date(l.closed_at)}` : ""}
+          ${l.drying ? ` · ความชื้น ${l.drying.first_moisture}% → ${l.drying.last_moisture}% (${l.drying.readings} ครั้ง ${date(l.drying.first_at)}–${date(l.drying.last_at)})` : ""}</div>
+        ${l.movements.length ? `<table class="tr-table"><tr><th>วันที่</th><th>รายการ</th><th>คลัง/ช่อง</th><th class="r">ตัน</th><th class="r">ความชื้น</th></tr>${l.movements.map((m) => `<tr><td>${date(m.recorded_at)}</td><td>${esc(MV[m.movement_type] || m.movement_type)}</td><td>${esc(m.facility_name || "")} ${esc(m.from_bin || "")}${m.from_bin && m.to_bin ? " → " : ""}${esc(m.to_bin || "")}</td><td class="r">${num(m.quantity_ton, 3)}</td><td class="r">${m.moisture_pct != null ? `${m.moisture_pct}%` : "-"}</td></tr>`).join("")}</table>` : ""}`).join("") || '<div class="tr-note">ไม่มี</div>'}</div>
+
+    <div class="tr-card"><h2>🏭 แปรรูปและสินค้า</h2>
+      ${t.batches.map((b) => `<h3><span class="code">${esc(b.trace_code)}</span> ${esc(PROC[b.process_type] || b.process_type)}: ${esc(b.output_product_name)} <span class="pill ${b.status === "Completed" ? "ok" : b.status === "Cancelled" ? "bad" : "unk"}">${esc(BST[b.status] || b.status)}</span></h3>
+        <div class="tr-note">${esc(b.facility_name || "")} · เริ่ม ${date(b.started_at)}${b.completed_at ? ` เสร็จ ${date(b.completed_at)}` : ""} · วัตถุดิบ ${num(b.input_quantity_ton, 3)} ตัน → ผลผลิต ${num(b.output_quantity_ton, 3)} ตัน${b.yield_pct != null ? ` (${b.yield_pct}%)` : ""}
+          · จากล็อต ${b.inputs.map((i) => `<a href="#" data-code="${esc(lotCode[i.lot_id] || "")}" class="code">${esc(lotCode[i.lot_id] || "?")}</a> ${num(i.quantity_ton, 3)} ตัน`).join(", ")}</div>`).join("") || '<div class="tr-note">ยังไม่เข้ารอบแปรรูป</div>'}
+      ${t.finished_goods.length ? `<table class="tr-table" style="margin-top:8px"><tr><th>สินค้า</th><th>รหัส</th><th class="r">ผลิต (ตัน)</th><th class="r">นำออก (ตัน)</th><th>หน้าสาธารณะ</th></tr>
+        ${t.finished_goods.map((f) => `<tr><td>${f.is_primary_product ? "🌾" : "•"} ${esc(f.product_name)}</td><td><a href="#" data-code="${esc(f.trace_code)}" class="code">${esc(f.trace_code)}</a></td><td class="r">${num(f.quantity_ton, 3)}</td><td class="r">${num(f.dispatched_ton, 3)}</td><td>${f.public_trace ? `เปิด · สแกน ${t.scans[f.trace_code] || 0}` : "ปิด"}</td></tr>`).join("")}</table>` : ""}</div>
+
+    <div class="tr-card"><h2>➡️ ปลายทาง</h2>
+      ${t.shipments.length ? `<table class="tr-table"><tr><th>ปลายทาง</th><th>สถานะ</th><th>ออกเดินทาง</th><th>ส่งถึง</th><th>รายการ</th></tr>${t.shipments.map((x) => `<tr><td>${esc(x.destination)}</td><td>${esc(SST[x.status] || x.status)}</td><td>${date(x.dispatched_at || x.scheduled_at)}</td><td>${date(x.delivered_at)}</td>
+        <td>${x.items.map((i) => `${i.item_type === "Lot" ? `ล็อต ${esc(lotCode[i.lot_id] || "")}` : esc(fgCode[i.finished_good_id] ? fgCode[i.finished_good_id].product_name : "สินค้า")} ${num(i.quantity_ton, 3)} ตัน`).join("<br>")}</td></tr>`).join("")}</table>` : '<div class="tr-note">ยังไม่มีเที่ยวขนส่ง</div>'}
+      ${t.dispatches.length ? `<h3>นำออกจากสต็อก</h3><table class="tr-table">${t.dispatches.map((d) => `<tr><td>${date(d.recorded_at)}</td><td>${esc(fgCode[d.finished_good_id] ? fgCode[d.finished_good_id].product_name : "")}</td><td class="r">${num(d.quantity_ton, 3)} ตัน</td><td>${esc(d.note || "")}</td></tr>`).join("")}</table>` : ""}
+      ${st === "farmer" ? '<p class="tr-note">ใช้หน้านี้เมื่อต้องเรียกคืนสินค้า: ทุกล็อต สินค้า และเที่ยวขนส่งที่มีผลผลิตของสมาชิกรายนี้ปนอยู่</p>' : ""}</div>`;
+  }
+
+  $("view").onclick = async (e) => {
+    const c = e.target.closest("[data-code]"); if (c && c.dataset.code) { e.preventDefault(); open("code", c.dataset.code); window.scrollTo(0, 0); return; }
+    const f = e.target.closest("[data-farmer]"); if (f) { e.preventDefault(); open("farmer", f.dataset.farmer); window.scrollTo(0, 0); return; }
+    const p = e.target.closest("[data-pub]");
+    if (p) {
+      try { await API.post(`/coop/trace/code/${encodeURIComponent(p.dataset.pub)}/public`, { public_trace: p.dataset.on === "1" }); open("code", p.dataset.pub); } catch (err) { alert(err.message); }
+      return;
+    }
+    const pr = e.target.closest("[data-print]");
+    if (pr) printLabels(pr.dataset.print, pr.dataset.label);
+  };
+
+  /** ฉลาก QR ขนาด 50×30 มม. เรียงบน A4 — ตั้งจำนวนได้ */
+  function printLabels(code, label) {
+    const nLabels = Math.max(1, Math.min(200, parseInt(prompt("จำนวนฉลากที่ต้องการพิมพ์", "24"), 10) || 0));
+    if (!nLabels) return;
+    const org = $("orgName").textContent;
+    const one = `<div class="lb"><img src="${qrUrl(code)}"><div><b>${esc(label)}</b><div>${esc(org)}</div><div class="c">${esc(code)}</div><div class="s">สแกนดูแหล่งที่มา · AgroLink</div></div></div>`;
+    const w = window.open("", "_blank");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>ฉลาก ${esc(code)}</title><style>
+      @page { size: A4; margin: 8mm; } body { font-family: "Noto Sans Thai", sans-serif; margin: 0; }
+      .grid { display: grid; grid-template-columns: repeat(3, 62mm); gap: 3mm; }
+      .lb { width: 62mm; height: 30mm; border: 0.3mm dashed #bbb; box-sizing: border-box; padding: 2mm; display: flex; gap: 2mm; align-items: center; overflow: hidden; font-size: 7.5pt; line-height: 1.25; }
+      .lb img { width: 26mm; height: 26mm; flex: none; } .lb b { font-size: 8.5pt; } .c { font-family: monospace; font-weight: 700; font-size: 8.5pt; margin-top: 1mm; } .s { color: #666; font-size: 6.5pt; }
+    </style></head><body><div class="grid">${one.repeat(nLabels)}</div><script>window.onload = () => setTimeout(() => window.print(), 300);<\/script></body></html>`);
+    w.document.close();
+  }
+
+  const params = new URLSearchParams(location.search);
+  search("");
+  if (params.get("code")) open("code", params.get("code"));
+  else if (params.get("farmer")) open("farmer", params.get("farmer"));
+}());
+</script>
+</body>
+</html>
