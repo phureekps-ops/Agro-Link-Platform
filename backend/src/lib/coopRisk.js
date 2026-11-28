@@ -6,6 +6,7 @@
  * หลักการ (ข้อ 10.3): ทุกสัญญาณเป็น "เรื่องที่ต้องตรวจสอบ" ไม่ใช่ข้อสรุปว่ามีการทุจริต ต้องมีผู้ตรวจสอบและให้ผู้เกี่ยวข้องชี้แจงก่อนเสมอ
  */
 const L = require('./coopLending');
+const CR = require('./coopRegistry');
 
 const n = (v) => (v === null || v === undefined || v === '' || Number.isNaN(Number(v)) ? null : Number(v));
 const r2 = (v) => Math.round((Number(v) + Number.EPSILON) * 100) / 100;
@@ -17,7 +18,7 @@ const LIVE = (i) => !['Rejected', 'Cancelled'].includes(i.status);
 
 const DEFAULTS = {
   ew_purchase_below_pct: 70, ew_price_drop_pct: 15, ew_report_days: 100, ew_revenue_below_pct: 70, ew_inventory_gap_pct: 20,
-  fraud_split_days: 90, fraud_new_member_days: 30, fraud_yield_factor: 1.5,
+  fraud_split_days: 90, fraud_new_member_days: 30, fraud_yield_factor: 1.5, fraud_official_diff_pct: 5,
 };
 const cfg = (s) => ({ ...DEFAULTS, ...Object.fromEntries(Object.entries(s || {}).filter(([k, v]) => k in DEFAULTS && n(v) !== null).map(([k, v]) => [k, Number(v)])) });
 
@@ -37,6 +38,7 @@ const CODES = {
   fr_shared_account: ['fraud', 'บัญชีรับเงินที่ไม่ใช่ของผู้ขาย'],
   fr_backdated_edit: ['fraud', 'แก้ไขข้อมูลงบการเงินย้อนหลัง'],
   fr_split_listing: ['fraud', 'แตกโครงการเพื่อเลี่ยงเพดานวงเงิน'],
+  fr_official_mismatch: ['fraud', 'งบการเงินที่กรอกไม่ตรงกับข้อมูลทางการ'],
 };
 function sig(code, severity, key, detail, ref = {}) {
   const [category, title] = CODES[code];
@@ -295,6 +297,17 @@ function fraudSignals(f) {
       out.push(sig('fr_split_listing', over ? 'high' : 'warning', `${org}:${type}`,
         `${ls.length} โครงการประเภทเดียวกันภายใน ${s.fraud_split_days} วัน รวม ${fmt(sum)} บาท${over ? ` เกินวงเงินกู้ยืมที่เหลือตามมติที่ประชุมใหญ่ (${fmt(capacity)} บาท หลังหักหนี้เดิม)` : ''}`,
         { ...ref, listing_id: ls[ls.length - 1].listing_id }));
+    }
+  }
+  // 8) งบที่กรอกไม่ตรงกับงบจากแหล่งทางการ (ทะเบียนสหกรณ์ล่วงหน้า — grant_coop_registry.sql)
+  if (f.official && f.official.rows && f.official.rows.length) {
+    const mm = CR.compareOfficial(p.financials || [], f.official.rows, s.fraud_official_diff_pct);
+    if (mm.length) {
+      const big = mm.some((x) => x.diff_pct >= Math.max(10, s.fraud_official_diff_pct * 2));
+      const x = mm[0];
+      out.push(sig('fr_official_mismatch', big ? 'high' : 'warning', `${org}`,
+        `งบที่สหกรณ์กรอกต่างจาก${f.official.source ? ` ${f.official.source}` : 'ข้อมูลทางการ'} ${mm.length} รายการ เช่น ปี ${x.year} ${x.label} กรอก ${fmt(x.declared)} แต่ข้อมูลทางการ ${fmt(x.official)} (ต่างร้อยละ ${fmt(x.diff_pct, 1)}) — เกณฑ์ร้อยละ ${s.fraud_official_diff_pct}`,
+        { ...ref, detail_changes: mm.slice(0, 10).map((m) => ({ year: m.year, field: m.field, label: `${m.label} (ทางการ → กรอก)`, from: m.official, to: m.declared, pct: m.diff_pct })) }));
     }
   }
   return out;

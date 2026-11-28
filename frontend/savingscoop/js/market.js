@@ -92,6 +92,7 @@ window.LenderMarket = (function () {
         <div class="cl-ev" style="margin-top:8px">${d.documents.map((x) => `<a href="#" data-doc="${x.doc_id}">📎 ${esc(x.title)}</a>`).join("") || '<span class="miss">ไม่มีเอกสารแนบ</span>'}</div></div>
 
       <div class="cl-card"><h3>ข้อมูลผู้ขอกู้</h3>${CL.scorePanel(d.score)}
+        ${CL.registryCheckPanel(d.registry_check)}
         ${bp ? `<div class="cl-line" style="margin-top:10px">เลขทะเบียน ${esc(bp.registration_no || "-")} · จัดตั้ง ${esc(bp.established_year || "-")} · สมาชิก ${esc(bp.member_count ?? "-")} คน · สมาชิกในระบบ ${d.borrower.platform.members_on_platform} ราย ${d.borrower.platform.plots} แปลง ${num(d.borrower.platform.area_rai, 0)} ไร่</div>
           <div class="cl-line">ผู้มีอำนาจลงนาม: ${esc(bp.signatories || "-")}</div>
           <div style="margin-top:8px">${finTable(bp.financials)}</div>
@@ -214,7 +215,7 @@ window.LenderMarket = (function () {
     const cp = await CL.get("/savings/market/compliance");
     const docOf = (code) => cp.documents.find((x) => x.check_code === code);
     const ST = { Pending: "⏳ รอตรวจ", Pass: "✅ ผ่าน", Fail: "❌ ไม่ผ่าน" };
-    ctx.view.innerHTML = `
+    ctx.view.innerHTML = `<div class="cl-card" id="rgBox"></div>
       <div class="cl-card">${CL.compliancePanel(cp.status)}
         <h3 style="margin-top:12px">ส่งเอกสารคุณสมบัติ (ผู้ดูแลแพลตฟอร์มตรวจ)</h3>
         <table class="cl-table">${cp.doc_checks.map((k) => { const x = docOf(k.code); return `<tr data-chk="${k.code}"><td><b>${esc(k.label)}</b><div class="cl-muted">${esc(k.hint || "")}</div></td>
@@ -255,6 +256,7 @@ window.LenderMarket = (function () {
         ${Object.entries(CL.PTYPE).map(([k, v]) => `<div><label>${esc(v)}</label><input name="lt_${k}" type="number" value="${esc(n0((pol.limit_per_type || {})[k]))}"></div>`).join("")}
         <div><label>ข้อมูล ณ วันที่</label><input name="data_as_of" type="date" value="${esc(p.data_as_of ? String(p.data_as_of).slice(0, 10) : new Date().toISOString().slice(0, 10))}"></div>
         <div><button class="cl-btn" type="submit">บันทึก</button></div></div></div></form>`;
+    CL.registryCard(document.getElementById("rgBox"), "/savings");
     document.getElementById("lpForm").onsubmit = async (e) => {
       e.preventDefault();
       const fm = e.target;

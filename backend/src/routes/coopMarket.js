@@ -834,6 +834,8 @@ function attach({ savings, borrower, admin, gov }, H) {
         policy: M.policyMatch(prof ? prof.policy : {}, l, s.score.grade), exposure: await exposure(c, req.org.org_id, l), lender_profile: prof,
         agreement: await agreementOf(c, l.listing_id),
         reports: (await c.query('SELECT * FROM coop_lending.listing_report WHERE listing_id = $1 ORDER BY created_at DESC', [l.listing_id])).rows,
+        // ทะเบียนสหกรณ์ล่วงหน้า: เชื่อมกับทะเบียนทางการแล้วหรือไม่ และงบที่กรอกตรงกับงบทางการหรือไม่ (เทียบเมื่อผู้กู้ยินยอมเปิดเผย)
+        registry_check: await require('./coopRegistry').registryCheck(c, l.borrower_org_id, consent && s.profile ? s.profile.financials : []), // eslint-disable-line global-require
       };
     }));
   }));

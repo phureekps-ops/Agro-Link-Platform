@@ -1653,7 +1653,7 @@ admin.put('/settings', wrap(async (req, res) => {
   // เกณฑ์เตือนภัยล่วงหน้าและสัญญาณทุจริต (grant_coop_lending_risk.sql)
   const RISK_KEYS = {
     ew_purchase_below_pct: [1, 100], ew_price_drop_pct: [1, 90], ew_report_days: [7, 400], ew_revenue_below_pct: [1, 100],
-    ew_inventory_gap_pct: [1, 90], fraud_split_days: [7, 365], fraud_new_member_days: [0, 365], fraud_yield_factor: [1, 5],
+    ew_inventory_gap_pct: [1, 90], fraud_split_days: [7, 365], fraud_new_member_days: [0, 365], fraud_yield_factor: [1, 5], fraud_official_diff_pct: [0.5, 50],
   };
   Object.entries(RISK_KEYS).forEach(([k, [min, max]]) => { if (b[k] !== undefined) sets[k] = num(b[k], k, { min, max }); });
   const keys = Object.keys(sets);
@@ -2102,6 +2102,10 @@ require('./coopMarket').attach({ savings, borrower, admin, gov }, {
 // เตือนภัยล่วงหน้า (Blueprint 9.3) และสัญญาณทุจริต (10.3) — routes/coopRisk.js
 require('./coopRisk').attach({ savings, borrower, admin, gov }, {
   wrap, fail, tx, orgTx, text, isUuid, actorOf, govTx, officerScope,
+});
+// ทะเบียนสหกรณ์ล่วงหน้า: นำเข้า ยืนยันสิทธิ์ ความครอบคลุม — routes/coopRegistry.js
+require('./coopRegistry').attach({ savings, borrower, admin, gov }, {
+  wrap, fail, tx, orgTx, text, isUuid, actorOf, objectStorage, govTx, officerScope,
 });
 
 module.exports = {

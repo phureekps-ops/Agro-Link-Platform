@@ -61,8 +61,13 @@ async function sweep(c, { today = L.todayBangkok() } = {}) {
   const crops = (await has('ai.crop_profile'))
     ? Object.fromEntries((await c.query('SELECT crop_code, max_yield_t_per_rai FROM ai.crop_profile')).rows.map((r) => [r.crop_code, r.max_yield_t_per_rai])) : {};
   const hasRel = await has('identity.farmer_org_relationship');
+  const hasReg = await has('registry.coop_directory_financial');
   for (const org of borrowers) {
-    const profile = (await c.query('SELECT signatories, debts, max_borrowing FROM coop_lending.borrower_profile WHERE org_id = $1', [org])).rows[0] || {};
+    const profile = (await c.query('SELECT signatories, debts, max_borrowing, financials FROM coop_lending.borrower_profile WHERE org_id = $1', [org])).rows[0] || {};
+    const official = hasReg ? {
+      rows: (await c.query('SELECT f.* FROM registry.coop_directory_financial f JOIN registry.coop_directory d ON d.directory_id = f.directory_id WHERE d.org_id = $1', [org])).rows,
+    } : null;
+    if (official && official.rows.length) official.source = official.rows[0].source_label;
     const related = (await c.query('SELECT * FROM coop_lending.related_party WHERE borrower_org_id = $1', [org])).rows;
     const items = (await c.query(
       `SELECT i.*, f.listing_id, so.tax_id AS seller_tax_id, ba.bank_code, ba.account_no, ba.account_name,
@@ -97,7 +102,7 @@ async function sweep(c, { today = L.todayBangkok() } = {}) {
     }
     const listings = (await c.query('SELECT listing_id, status, project_type, amount_requested, created_at, listed_at FROM coop_lending.loan_listing WHERE borrower_org_id = $1', [org])).rows;
     const history = (await c.query('SELECT * FROM coop_lending.profile_history WHERE org_id = $1 ORDER BY changed_at', [org])).rows;
-    signals.push(...R.fraudSignals({ borrower: { org_id: org, profile }, related, items, farmers, listings, history, settings, today }));
+    signals.push(...R.fraudSignals({ borrower: { org_id: org, profile }, related, items, farmers, listings, history, official, settings, today }));
   }
 
   // ------------------------------------------------ บันทึก/อัปเดต แล้วแจ้งผู้เกี่ยวข้องเฉพาะเรื่องใหม่หรือเรื่องที่กลับมาอีก

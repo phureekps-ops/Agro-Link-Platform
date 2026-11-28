@@ -12,7 +12,7 @@
 <body>
   <header class="app-header">
     <div class="brand"><a class="cl-back" href="dashboard.html">← ผู้ดูแลระบบ</a>🏦 ตั้งค่าสินเชื่อระหว่างสหกรณ์</div>
-    <div class="who"><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+    <div class="who"><a class="cl-back" href="coop-registry.html">📇 ทะเบียนสหกรณ์</a><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
   </header>
   <div class="cl-wrap"><div id="riskBox"></div><div id="ctrlBox"></div><div id="marketBox"></div><div id="view"><div class="cl-empty">กำลังโหลด…</div></div></div>
   <script src="js/api.js"></script>
@@ -53,6 +53,7 @@
           <div><label>ตรวจการแตกโครงการภายใน (วัน)</label><input name="fraud_split_days" type="number" min="7" max="365" value="${s.fraud_split_days ?? 90}"></div>
           <div><label>ผู้ขายที่เพิ่งเป็นสมาชิกก่อนขายไม่เกิน (วัน)</label><input name="fraud_new_member_days" type="number" min="0" max="365" value="${s.fraud_new_member_days ?? 30}"></div>
           <div><label>ส่วนเผื่อผลผลิตสูงสุดต่อไร่ (เท่า)</label><input name="fraud_yield_factor" type="number" step="0.01" min="1" max="5" value="${Number(s.fraud_yield_factor ?? 1.5)}"></div>
+          <div><label>งบที่กรอกต่างจากงบทางการเกิน (%)</label><input name="fraud_official_diff_pct" type="number" step="0.1" min="0.5" max="50" value="${Number(s.fraud_official_diff_pct ?? 5)}"></div>
           <div><button class="cl-btn" type="submit">บันทึก</button></div></form>
           <div class="cl-muted" style="margin-top:6px">การเปลี่ยนค่าตั้งมีผลกับรายการที่เกิดหลังจากนี้ — ควรตรวจกับข้อกฎหมาย/ระเบียบนายทะเบียนสหกรณ์ก่อนเปิดใช้จริง</div></div>
         <div class="cl-card"><h3>บัญชีรับค่าธรรมเนียมของแพลตฟอร์ม</h3>

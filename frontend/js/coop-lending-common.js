@@ -107,7 +107,13 @@ const CL = (() => {
     tranche_not_checked: "งวดนี้ยังไม่ผ่านผู้ตรวจสอบ", approver_must_differ_from_checker: "ผู้อนุมัติต้องเป็นคนละคนกับผู้ตรวจสอบงวดนี้", not_lead_lender: "เฉพาะผู้ให้กู้หลักของสัญญาเป็นผู้ตรวจปิดยอดงวด",
     agreement_not_signed: "สัญญายังลงนามไม่ครบ", below_verification_level: "หลักฐานของรายการนี้ยังไม่ถึงระดับที่ผู้ให้กู้กำหนด",
     golive_gate_not_passed: "ยังไม่ผ่านเงื่อนไขก่อนเปิดใช้งานจริง (Go-live Gate) — ระบบไม่สั่งโอนผ่านธนาคารจริง", check_not_found: "ไม่พบรายการตรวจ",
-    alert_not_found: "ไม่พบเรื่องนี้ หรือยังไม่เปิดให้ชี้แจง", parties_required: "ระบุรายชื่อผู้เกี่ยวข้อง", invalid_tax_id: "เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก",
+    alert_not_found: "ไม่พบเรื่องนี้ หรือยังไม่เปิดให้ชี้แจง",
+    query_too_short: "พิมพ์อย่างน้อย 2 ตัวอักษร", claim_already_pending: "มีคำขอยืนยันทะเบียนที่รอตรวจอยู่แล้ว", org_already_linked: "บัญชีนี้เชื่อมกับทะเบียนสหกรณ์แล้ว",
+    directory_already_linked: "รายการนี้เชื่อมกับบัญชีอื่นแล้ว — ติดต่อผู้ดูแลแพลตฟอร์ม", org_type_mismatch: "ประเภทสหกรณ์ในทะเบียนไม่ตรงกับประเภทบัญชี", already_yours: "รายการนี้เชื่อมกับบัญชีของท่านแล้ว",
+    file_required: "กรุณาแนบไฟล์", claim_not_pending: "คำขอนี้พิจารณาไปแล้ว", directory_not_active: "สหกรณ์นี้ไม่ได้อยู่ในสถานะดำเนินการ",
+    provision_borrower_types_only: "จัดตั้งบัญชีได้เฉพาะสหกรณ์การเกษตร ประมง นิคม (ออมทรัพย์/เครดิตยูเนี่ยนสมัครเองแล้วยืนยันสิทธิ์)", tax_id_in_use: "เลขผู้เสียภาษีนี้มีบัญชีในระบบแล้ว — ใช้ \"เชื่อมกับบัญชี\" แทน",
+    missing_columns: "ไฟล์ขาดคอลัมน์ที่จำเป็น", import_not_pending: "การนำเข้านี้ยืนยันหรือยกเลิกไปแล้ว", invalid_kind: "เลือกชนิดไฟล์", missing_file: "เลือกไฟล์",
+    xls_not_supported: "ไม่รองรับ .xls รุ่นเก่า — บันทึกเป็น .xlsx หรือ .csv", invalid_xlsx: "อ่านไฟล์ Excel ไม่ได้", too_many_rows: "แถวเกิน 5,000 — แบ่งไฟล์", no_data_rows: "ไฟล์ไม่มีข้อมูล", empty_file: "ไฟล์ว่าง", parties_required: "ระบุรายชื่อผู้เกี่ยวข้อง", invalid_tax_id: "เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก",
     invalid_text: "ข้อความสั้นหรือยาวเกินไป", invalid_number: "ตัวเลขไม่ถูกต้อง", only_admin_can_manage_staff: "เฉพาะผู้ดูแลหรือผู้จัดการเท่านั้นที่จัดการเจ้าหน้าที่ได้",
   };
   function errText(err) {
@@ -330,6 +336,77 @@ const CL = (() => {
       ${open.map(row).join("") || `<div class="cl-empty">${esc(empty)}</div>`}
       ${closed.length ? `<details class="cl-more"><summary>เรื่องที่ปิดแล้วหรือไม่พบเงื่อนไขแล้ว (${closed.length})</summary>${closed.map(row).join("")}</details>` : ""}`;
   }
+  // ---- ทะเบียนสหกรณ์ล่วงหน้า (grant_coop_registry.sql) ----
+  const COOP_TYPE = { agriculture: "สหกรณ์การเกษตร", fisheries: "สหกรณ์ประมง", settlement: "สหกรณ์นิคม", store: "สหกรณ์ร้านค้า", service: "สหกรณ์บริการ", savings: "สหกรณ์ออมทรัพย์", credit_union: "สหกรณ์เครดิตยูเนี่ยน" };
+  const DIR_ST = { active: ["ดำเนินการ", "#1f6b38", "#ddf3e4"], dissolving: ["ระหว่างชำระบัญชี", "#8a5a00", "#fff2cc"], dissolved: ["เลิก/ถอนชื่อ", "#6b7a70", "#eef1ee"] };
+  const CLAIM_ST = { Pending: ["รอผู้ดูแลตรวจ", "#8a5a00", "#fff2cc"], Approved: ["ยืนยันแล้ว", "#1f6b38", "#ddf3e4"], Rejected: ["ไม่ผ่าน", "#a1261d", "#fde8e6"], Withdrawn: ["ถอนคำขอ", "#6b7a70", "#eef1ee"] };
+  const FIN_TH = { total_assets: "สินทรัพย์รวม", total_liabilities: "หนี้สินรวม", equity: "ทุนของสหกรณ์", share_capital: "ทุนเรือนหุ้น", reserve: "ทุนสำรอง", current_assets: "สินทรัพย์หมุนเวียน", current_liabilities: "หนี้สินหมุนเวียน", revenue: "รายได้รวม", net_income: "กำไรสุทธิ" };
+  function finTable(rows) {
+    if (!rows || !rows.length) return "";
+    const cols = Object.keys(FIN_TH).filter((k) => rows.some((r) => r[k] != null));
+    return `<table class="cl-table"><tr><th>ปีบัญชี</th>${cols.map((k) => `<th class="r">${esc(FIN_TH[k])}</th>`).join("")}<th>แหล่งข้อมูล</th></tr>
+      ${rows.map((r) => `<tr><td>${esc(r.year)}</td>${cols.map((k) => `<td class="r">${r[k] != null ? num(r[k], 0) : "-"}</td>`).join("")}<td class="cl-muted">${esc(r.source_label || "")}</td></tr>`).join("")}</table>`;
+  }
+  /** การ์ด "ทะเบียนสหกรณ์" ในพอร์ทัลสหกรณ์ — prefix '/coop-lending' (ผู้ขอกู้) หรือ '/savings' (ผู้ให้กู้) */
+  async function registryCard(box, prefix) {
+    if (!box) return;
+    let m;
+    try { m = await get(`${prefix}/registry/mine`); } catch (err) { box.remove(); return; }
+    if (!m.installed) { box.remove(); return; }
+    const e = m.entry;
+    const pending = m.claims.find((c) => c.status === "Pending");
+    const last = m.claims[0];
+    box.innerHTML = `<h3>📇 ทะเบียนสหกรณ์</h3>${e ? `
+      <div class="cl-row"><div><b>${esc(e.coop_name)}</b> · ${esc(COOP_TYPE[e.coop_type])} · เลขทะเบียน ${esc(e.registration_no || "-")} · ${esc(e.province_name_th || "")}${e.district ? ` อ.${esc(e.district)}` : ""}</div><div>${pill(DIR_ST[e.status])} <span class="cl-pill" style="background:#ddf3e4;color:#1f6b38">✅ เชื่อมกับบัญชีนี้แล้ว</span></div></div>
+      <div class="cl-muted">แหล่งข้อมูล: ${esc(e.source_label)}${e.established_year ? ` · จดทะเบียนปี ${e.established_year}` : ""}${e.member_count != null ? ` · สมาชิก ${num(e.member_count, 0)} คน` : ""}</div>
+      ${m.financials.length ? `<div class="cl-line" style="margin-top:6px"><b>งบการเงินจากแหล่งทางการ</b> — ผู้ให้กู้เห็นการเทียบกับงบที่สหกรณ์กรอก ตัวเลขที่ต่างกันมากจะถูกตรวจสอบ</div>${finTable(m.financials)}` : ""}`
+    : `<div class="cl-muted">เชื่อมบัญชีกับทะเบียนสหกรณ์ทางการ (ข้อมูลที่ผู้ดูแลแพลตฟอร์มนำเข้า ${num(m.directory_size, 0)} แห่ง) เพื่อให้ผู้ให้กู้มั่นใจว่าเป็นสหกรณ์จริงที่จดทะเบียน — ค้นหาด้วยชื่อหรือเลขทะเบียน แล้วแนบหนังสือมอบอำนาจหรือมติคณะกรรมการ</div>
+      ${pending ? `<div class="cl-line" style="margin-top:8px">คำขอ: <b>${esc(pending.coop_name)}</b> (${esc(pending.registration_no || "-")}) ${pill(CLAIM_ST.Pending)} <button class="cl-btn ghost" data-rw="${pending.claim_id}">ถอนคำขอ</button></div>`
+    : `${last && last.status === "Rejected" ? `<div class="cl-flag">คำขอล่าสุด (${esc(last.coop_name)}) ไม่ผ่าน: ${esc(last.decision_note || "")}</div>` : ""}
+        <div class="cl-inline" style="margin-top:8px"><input id="rgQ" placeholder="ชื่อสหกรณ์ หรือเลขทะเบียน" style="min-width:280px"><button class="cl-btn" data-rs="1">ค้นหา</button></div><div id="rgRes"></div>`}`}`;
+    box.onclick = async (ev) => {
+      ev.stopPropagation();
+      const w = ev.target.closest("[data-rw]");
+      if (w) { if (await act(w, () => post(`${prefix}/registry/claims/${w.dataset.rw}/withdraw`), "ถอนคำขอแล้ว")) registryCard(box, prefix); return; }
+      if (ev.target.closest("[data-rs]")) {
+        const q = box.querySelector("#rgQ").value.trim();
+        const res = box.querySelector("#rgRes");
+        let list;
+        try { list = await get(`${prefix}/registry/search?q=${encodeURIComponent(q)}`); } catch (err) { toast(errText(err), true); return; }
+        res.innerHTML = list.length ? `<table class="cl-table" style="margin-top:6px">${list.map((x) => `<tr><td><b>${esc(x.coop_name)}</b>${x.tax_match ? ' <span class="cl-pill" style="background:#ddf3e4;color:#1f6b38">เลขผู้เสียภาษีตรงกับบัญชีนี้</span>' : ""}<div class="cl-muted">${esc(COOP_TYPE[x.coop_type])} · ${esc(x.registration_no || "-")} · ${esc(x.province_name_th || "")}${x.district ? ` อ.${esc(x.district)}` : ""}</div></td>
+            <td>${pill(DIR_ST[x.status])}</td><td>${x.linked ? '<span class="cl-muted">มีบัญชียืนยันแล้ว</span>' : `<button class="cl-btn" data-rc="${x.directory_id}" data-n="${esc(x.coop_name)}">นี่คือสหกรณ์ของเรา</button>`}</td></tr>`).join("")}</table>`
+          : '<div class="cl-empty">ไม่พบ — ลองค้นด้วยเลขทะเบียน หรือแจ้งผู้ดูแลแพลตฟอร์มถ้ายังไม่มีในทะเบียน</div>';
+        return;
+      }
+      const c = ev.target.closest("[data-rc]");
+      if (c) {
+        box.querySelector("#rgRes").innerHTML = `<form class="cl-form" id="rgForm" style="margin-top:8px"><div class="wide"><b>ยืนยันสิทธิ์: ${esc(c.dataset.n)}</b></div>
+          <div><label>ผู้ติดต่อ</label><input name="contact_name" required></div><div><label>ตำแหน่ง</label><input name="contact_position" placeholder="ผู้จัดการ / ประธานกรรมการ"></div>
+          <div><label>หนังสือมอบอำนาจหรือมติคณะกรรมการ</label><input type="file" name="doc" accept="application/pdf,image/*" required></div>
+          <div class="wide"><label>หมายเหตุถึงผู้ดูแล</label><input name="note"></div><div><button class="cl-btn" type="submit">ส่งคำขอ</button></div></form>`;
+        box.querySelector("#rgForm").onsubmit = async (fe) => {
+          fe.preventDefault();
+          const f = fe.target;
+          const r = await act(fe.submitter, async () => post(`${prefix}/registry/claims`, {
+            directory_id: c.dataset.rc, contact_name: f.contact_name.value, contact_position: f.contact_position.value || null, note: f.note.value || null, file_id: await upload(f.doc.files[0]),
+          }), "ส่งคำขอแล้ว — รอผู้ดูแลแพลตฟอร์มตรวจ");
+          if (r) registryCard(box, prefix);
+        };
+      }
+    };
+  }
+  /** ผู้ให้กู้: ผู้ขอกู้เชื่อมทะเบียนทางการแล้วหรือไม่ และงบที่กรอกตรงกับงบทางการหรือไม่ */
+  function registryCheckPanel(rc) {
+    if (!rc) return "";
+    if (!rc.linked) return '<div class="cl-line">📇 ทะเบียนสหกรณ์: <span class="cl-late">ผู้ขอกู้ยังไม่ได้ยืนยันกับทะเบียนสหกรณ์ทางการ</span></div>';
+    const mm = rc.mismatches || [];
+    return `<div class="cl-line">📇 ทะเบียนสหกรณ์: ✅ ${esc(rc.coop_name)} · เลขทะเบียน ${esc(rc.registration_no || "-")} · ${pill(DIR_ST[rc.status])} <span class="cl-muted">(${esc(rc.source_label)})</span></div>
+      ${rc.official_years.length ? (rc.compared_years.length
+    ? (mm.length ? `<div class="cl-flag">งบที่ผู้ขอกู้กรอกต่างจาก${esc(rc.official_source || "ข้อมูลทางการ")} ${mm.length} รายการ (เกณฑ์ ${num(rc.threshold_pct, 1)}%)</div>
+          <table class="cl-table"><tr><th>ปี</th><th>รายการ</th><th class="r">ที่กรอก</th><th class="r">ข้อมูลทางการ</th><th class="r">ต่าง</th></tr>${mm.map((x) => `<tr><td>${esc(x.year)}</td><td>${esc(x.label)}</td><td class="r">${num(x.declared, 0)}</td><td class="r">${num(x.official, 0)}</td><td class="r">${num(x.diff_pct, 1)}%</td></tr>`).join("")}</table>`
+      : `<div class="cl-line">✅ งบที่กรอกตรงกับ${esc(rc.official_source || "ข้อมูลทางการ")} ปี ${rc.compared_years.join(", ")}</div>`)
+    : `<div class="cl-muted">มีงบทางการปี ${rc.official_years.join(", ")} แต่ยังเทียบไม่ได้ (ผู้ขอกู้ไม่ได้กรอกปีเดียวกัน หรือยังไม่ยินยอมเปิดเผยข้อมูล)</div>`) : ""}`;
+  }
   /** ดาวน์โหลดไฟล์จาก API ด้วย token ของพอร์ทัล */
   async function download(path, filename) {
     const s = api.getSession();
@@ -346,7 +423,7 @@ const CL = (() => {
 
   return {
     PTYPE, LISTING_ST, OFFER_ST, gradeBadge, scorePanel, riskPanel, download, PROVINCES,
-    factorPanel, levelBadge, compliancePanel, dairyPanel, tranchePanel, TRANCHE_ST, alertsPanel, ALERT_ST, ALERT_CAT, ALERT_NOTE,
+    factorPanel, levelBadge, compliancePanel, dairyPanel, tranchePanel, TRANCHE_ST, alertsPanel, ALERT_ST, ALERT_CAT, ALERT_NOTE, COOP_TYPE, DIR_ST, CLAIM_ST, FIN_TH, finTable, registryCard, registryCheckPanel,
     PLAN_ST, STAGE_ST, planTrack, satNotes,
     init, get, post, patch, put, upload, esc, baht, num, date, dt, PURPOSE, ITEM_ST, TR_ST, TR_KIND, SAT, EVIDENCE, BANKS, bankName, pill,
     errText, toast, act, formData, bankOptions, accLabel, sandboxBanner, openFile,

@@ -34,7 +34,7 @@ window.CoopMarket = (function () {
     const bus = p.businesses || {};
     const g = p.governance || {};
     ctx.view.innerHTML = `
-      <div class="cl-card" id="riskAll"></div>
+      <div class="cl-card" id="riskAll"></div><div class="cl-card" id="rgBox"></div>
       <div class="cl-card" style="background:#f4faf5">ข้อมูลนี้ผู้ให้กู้ใช้ประกอบการพิจารณาทุกโครงการที่ท่านประกาศ (ฐานข้อมูลผู้ขอกู้) — ควรปรับปรุงอย่างน้อยทุกปีบัญชี และทุกครั้งก่อนประกาศโครงการใหม่
         · ทะเบียนจากกรมส่งเสริมสหกรณ์: ${d.registry ? `${esc(d.registry.province_name_th || d.registry.province_code || "")} ${d.registry.cooperative_registration_no ? `เลขทะเบียน ${esc(d.registry.cooperative_registration_no)}` : ""}` : "ยังไม่มี"}
         · สมาชิกในระบบ ${d.platform.members_on_platform} ราย ${d.platform.plots} แปลง ${num(d.platform.area_rai, 0)} ไร่</div>
@@ -102,6 +102,7 @@ window.CoopMarket = (function () {
       if (r) renderProfile(ctx);
     };
     riskBox(document.getElementById("riskAll"), null);
+    CL.registryCard(document.getElementById("rgBox"), "/coop-lending");
     relatedParties(document.getElementById("rpBox"));
   }
 

@@ -172,6 +172,21 @@
       <div class="cl-card" style="overflow-x:auto">${m.listings.length ? `<table class="cl-table"><tr><th>โครงการ</th><th>ผู้ขอกู้</th><th>ประเภท</th><th class="r">วงเงิน</th><th>เกรด</th><th class="r">ข้อเสนอ</th><th>สถานะ</th><th>ผู้ให้กู้ตามสัญญา</th></tr>
         ${m.listings.map((l) => `<tr><td>${esc(l.title)}</td><td>${esc(l.borrower_name)}<div class="cl-muted">${esc(l.province_name_th || "")}</div></td><td>${esc(PT[l.project_type])}</td><td class="r">${baht(l.amount_requested)}</td>
           <td>${esc(l.grade || "-")}</td><td class="r">${l.offers}</td><td>${esc(LST[l.status] || l.status)}</td><td>${esc(l.lenders || "-")}</td></tr>`).join("")}</table>` : '<div class="cl-empty">ยังไม่มีโครงการที่ประกาศ</div>'}</div>`;
+    // ทะเบียนสหกรณ์ล่วงหน้า: สหกรณ์ในจังหวัดที่เข้าร่วม/ยังไม่เข้าร่วม (เมื่อผู้ดูแลนำเข้าทะเบียนแล้ว)
+    const cv = await CL.get(`/gov/coop-lending/registry/coverage${province ? `?province=${encodeURIComponent(province)}` : ""}`).catch(() => null);
+    if (cv && cv.installed && cv.by_type.length) {
+      const el = document.createElement("div");
+      el.className = "cl-card";
+      const ORDER = ["agriculture", "fisheries", "settlement", "savings", "credit_union", "store", "service"];
+      const rows = ORDER.map((k) => cv.by_type.find((x) => x.coop_type === k)).filter(Boolean);
+      el.innerHTML = `<b>ความครอบคลุมเทียบทะเบียนสหกรณ์${province ? " (จังหวัดนี้)" : " (ทั้งประเทศ)"}</b>${cv.source ? `<div class="g-note">ทะเบียน: ${esc(cv.source.source_label)}</div>` : ""}
+        <table class="cl-table" style="margin-top:6px"><tr><th>ประเภท</th><th class="r">ดำเนินการ</th><th class="r">มีบัญชีใน AgroLink</th><th class="r">อยู่ในตลาดสินเชื่อ</th><th style="width:30%"></th></tr>
+        ${rows.map((x) => `<tr><td>${esc(CL.COOP_TYPE[x.coop_type])}</td><td class="r">${x.active.toLocaleString("th-TH")}</td><td class="r">${x.linked.toLocaleString("th-TH")}</td><td class="r">${x.in_market.toLocaleString("th-TH")}</td>
+          <td>${cmeter(x.active ? (x.linked / x.active) * 100 : 0)}</td></tr>`).join("")}</table>
+        ${cv.not_joined.length ? `<details class="cl-more"><summary>สหกรณ์ที่ยังไม่เข้าร่วม (${cv.not_joined.length}${cv.not_joined.length >= 300 ? "+" : ""} แห่ง เรียงตามจำนวนสมาชิก) — ใช้ประชาสัมพันธ์/ชวนเข้าร่วม</summary>
+          <table class="cl-table">${cv.not_joined.map((x) => `<tr><td>${esc(x.coop_name)}<div class="cl-muted">${esc(x.registration_no || "-")}</div></td><td>${esc(CL.COOP_TYPE[x.coop_type])}</td><td>${esc(x.province_name_th || "")}${x.district ? ` อ.${esc(x.district)}` : ""}</td><td class="r">${x.member_count != null ? `${x.member_count.toLocaleString("th-TH")} คน` : "-"}</td></tr>`).join("")}</table></details>` : ""}`;
+      box.appendChild(el);
+    }
   }
   async function downloadCsv(btn) {
     btn.disabled = true;

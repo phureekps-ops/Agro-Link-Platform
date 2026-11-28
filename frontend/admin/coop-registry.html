@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgroLink — ทะเบียนสหกรณ์ (ผู้ดูแลระบบ)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  .cl-back { color:#fff; opacity:.85; text-decoration:none; font-size:13px; margin-right:12px; }
+  .v-new { color:#0b5394; } .v-update { color:#8a5a00; } .v-same { color:#6b7a70; } .v-error { color:#a1261d; font-weight:600; }
+  .rg-pv { max-height:420px; overflow:auto; border:1px solid #eef1ee; border-radius:10px; margin-top:8px; }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><a class="cl-back" href="coop-lending.html">← สินเชื่อระหว่างสหกรณ์</a>📇 ทะเบียนสหกรณ์</div>
+    <div class="who"><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+  </header>
+  <div class="cl-wrap"><div id="statBox"></div><div id="claimBox"></div><div id="importBox"></div><div id="listBox"></div><div id="detailBox"></div></div>
+  <script src="js/api.js"></script>
+  <script src="../js/coop-lending-common.js"></script>
+  <script>
+  /* global AgroLinkAdminAPI, CL */
+  (function () {
+    const API = AgroLinkAdminAPI;
+    if (API.requireSessionOrRedirect && !API.requireSessionOrRedirect()) return;
+    CL.init(API);
+    const { esc, num, pill } = CL;
+    const B = "/admin/coop-lending/registry";
+    document.getElementById("logoutBtn").onclick = () => API.logout();
+    const $ = (id) => document.getElementById(id);
+    const VERDICT = { new: "เพิ่มใหม่", update: "แก้ไข", same: "ไม่เปลี่ยน", error: "ข้าม (ผิดพลาด)" };
+    const ISSUE = {
+      missing_value: "ไม่มีข้อมูล", unknown_province: "ไม่รู้จักจังหวัด", unknown_type: "ไม่รู้ประเภทสหกรณ์ (ใส่คอลัมน์ประเภท หรือเลือกประเภทเริ่มต้น)", invalid_tax_id: "เลขผู้เสียภาษีไม่ครบ 13 หลัก (ไม่บันทึกช่องนี้)",
+      invalid_year: "ปีไม่ถูกต้อง", invalid_number: "ตัวเลขไม่ถูกต้อง", unknown_status: "ไม่รู้สถานะ (ถือว่าดำเนินการ)", no_identifier: "ไม่มีเลขทะเบียน/เลขผู้เสียภาษี (จับคู่ด้วยชื่อ+จังหวัด)",
+      duplicate_in_file: "ซ้ำกับแถวก่อนหน้าในไฟล์", identifier_conflict: "เลขทะเบียน/เลขผู้เสียภาษีขัดกับข้อมูลเดิม", similar_name_exists: "มีชื่อเดียวกันในจังหวัดนี้แล้ว",
+      not_in_directory: "ไม่พบในทะเบียน (นำเข้ารายชื่อก่อน)", no_figures: "ไม่มีตัวเลขงบ", balance_mismatch: "สินทรัพย์ ≠ หนี้สิน + ทุน", name_differs: "ชื่อไม่ตรงกับทะเบียน", too_long: "ยาวเกิน",
+    };
+    const FIELD = { province: "จังหวัด", year: "ปีบัญชี", audit_opinion: "ความเห็นผู้สอบบัญชี", coop_name: "ชื่อ", coop_type: "ประเภท", registration_no: "เลขทะเบียน", tax_id: "เลขผู้เสียภาษี", province_code: "จังหวัด", district: "อำเภอ", established_year: "ปีจดทะเบียน", member_count: "สมาชิก", status: "สถานะ", ...CL.FIN_TH };
+    const issueTxt = (x) => `${ISSUE[x.code] || x.code}${x.field ? ` [${FIELD[x.field] || x.field}]` : ""}${x.value ? `: ${x.value}` : ""}${x.first_row ? ` (แถว ${x.first_row})` : ""}${x.existing ? ` (เดิม ${x.existing})` : ""}`;
+    let filters = { q: "", province: "", type: "", linked: "", page: 0 };
+
+    async function renderStats() {
+      const r = await CL.get(`${B}?page=0&linked=yes&type=store`).catch(() => null); // นับรวมอยู่ใน counts ไม่ขึ้นกับตัวกรอง
+      if (!r) { $("statBox").innerHTML = '<div class="cl-card cl-late">ยังไม่ได้รัน grant_coop_registry.sql บนฐานข้อมูล</div>'; return false; }
+      const sum = (k, types) => r.counts.filter((x) => !types || types.includes(x.coop_type)).reduce((a, x) => a + x[k], 0);
+      const BT = ["agriculture", "fisheries", "settlement"]; const LT = ["savings", "credit_union"];
+      $("statBox").innerHTML = `<div class="cl-stats">
+        <div class="cl-stat"><div class="v">${num(sum("total"), 0)}</div><div class="l">สหกรณ์ในทะเบียน</div></div>
+        <div class="cl-stat"><div class="v">${num(sum("linked", BT), 0)} / ${num(sum("active", BT), 0)}</div><div class="l">ผู้ขอกู้ (เกษตร/ประมง/นิคม) ที่มีบัญชี / ดำเนินการ</div></div>
+        <div class="cl-stat"><div class="v">${num(sum("linked", LT), 0)} / ${num(sum("active", LT), 0)}</div><div class="l">ผู้ให้กู้ (ออมทรัพย์/เครดิตยูเนี่ยน) ที่มีบัญชี / ดำเนินการ</div></div>
+        <div class="cl-stat"><div class="v">${num(r.financials.coops, 0)}</div><div class="l">สหกรณ์ที่มีงบทางการ (${num(r.financials.rows, 0)} ปีบัญชี)</div></div>
+        <div class="cl-stat${r.pending_claims ? " warn" : ""}"><div class="v">${r.pending_claims}</div><div class="l">คำขอยืนยันสิทธิ์รอตรวจ</div></div></div>`;
+      return true;
+    }
+
+    // ---- คำขอยืนยันสิทธิ์ ----
+    async function renderClaims() {
+      const list = await CL.get(`${B}/claims?status=Pending`);
+      $("claimBox").innerHTML = list.length ? `<div class="cl-card"><h3>คำขอยืนยันสิทธิ์รอตรวจ (${list.length})</h3>
+        <div class="cl-muted">ตรวจหนังสือมอบอำนาจ/มติ และดูว่าเลขผู้เสียภาษีของบัญชีตรงกับทะเบียนหรือไม่ — อนุมัติแล้วบัญชีจะเชื่อมกับรายการ และเติมเลขทะเบียนในโปรไฟล์ที่ยังว่าง</div>
+        ${list.map((x) => `<div class="cl-card" style="margin:8px 0 0;background:#fafcfa" data-claim="${x.claim_id}"><div class="cl-row"><div><b>${esc(x.org_name)}</b> ขอยืนยันเป็น <b>${esc(x.coop_name)}</b></div><div>${x.tax_match ? '<span class="cl-pill" style="background:#ddf3e4;color:#1f6b38">เลขผู้เสียภาษีตรงกัน</span>' : '<span class="cl-pill" style="background:#fff2cc;color:#8a5a00">เลขผู้เสียภาษีไม่ตรง/ไม่มี</span>'}</div></div>
+          <div class="cl-line">${esc(CL.COOP_TYPE[x.coop_type])} · ทะเบียน ${esc(x.registration_no || "-")} · ${esc(x.province_name_th || "")} · บัญชี: ${esc(x.org_tax_id || "-")} / ทะเบียน: ${esc(x.directory_tax_id || "-")}</div>
+          <div class="cl-line">ผู้ติดต่อ ${esc(x.contact_name)}${x.contact_position ? ` (${esc(x.contact_position)})` : ""} · ${esc(CL.dt(x.created_at))}${x.note ? ` · ${esc(x.note)}` : ""}</div>
+          <div class="cl-inline" style="margin-top:6px"><button class="cl-btn ghost" data-ck="file">📎 เปิดเอกสาร</button><input class="ck-note" placeholder="หมายเหตุ (บังคับถ้าไม่ผ่าน)" style="min-width:260px">
+            <button class="cl-btn" data-ck="Approved">อนุมัติและเชื่อมบัญชี</button><button class="cl-btn bad" data-ck="Rejected">ไม่ผ่าน</button></div></div>`).join("")}</div>` : "";
+      $("claimBox").onclick = async (e) => {
+        const b = e.target.closest("[data-ck]"); if (!b) return;
+        const card = b.closest("[data-claim]");
+        if (b.dataset.ck === "file") { CL.openFile(`${B}/claims/${card.dataset.claim}/file`); return; }
+        if (await CL.act(b, () => CL.post(`${B}/claims/${card.dataset.claim}/decide`, { status: b.dataset.ck, note: card.querySelector(".ck-note").value || null }), "บันทึกแล้ว")) refresh();
+      };
+    }
+
+    // ---- นำเข้าไฟล์ ----
+    function renderImport() {
+      $("importBox").innerHTML = `<div class="cl-card"><h3>📥 นำเข้าไฟล์ทะเบียน / งบการเงินทางการ</h3>
+        <div class="cl-muted">รองรับ .xlsx / .csv (UTF-8 หรือ TIS-620) / .json ไม่เกิน 3 MB 5,000 แถว · หัวคอลัมน์ภาษาไทยหรืออังกฤษ · ระบบตรวจทุกแถวและแสดงผลก่อน แล้วจึงกดยืนยันบันทึก ·
+          นำเข้าไฟล์เดิมซ้ำได้ (แถวที่ไม่เปลี่ยนจะข้าม ช่องว่างไม่ลบค่าเดิม) · แบบฟอร์ม: <a href="#" data-tpl="directory">รายชื่อสหกรณ์</a> · <a href="#" data-tpl="financials">งบการเงิน</a></div>
+        <form id="impForm" class="cl-form" style="margin-top:8px">
+          <div><label>ชนิดข้อมูล</label><select name="kind"><option value="directory">รายชื่อสหกรณ์ (ทะเบียน)</option><option value="financials">งบการเงินจากแหล่งทางการ</option></select></div>
+          <div class="wide"><label>แหล่งข้อมูล (แสดงให้ผู้ใช้เห็น)</label><input name="source_label" required placeholder="เช่น กรมส่งเสริมสหกรณ์ ทะเบียนสหกรณ์ ณ 30 ก.ย. 2569 / งบการเงินที่ผู้สอบบัญชีรับรอง (กรมตรวจบัญชีสหกรณ์)"></div>
+          <div><label>ข้อมูล ณ วันที่</label><input name="as_of" type="date"></div>
+          <div><label>ประเภทเริ่มต้น (ถ้าไฟล์ไม่มีคอลัมน์ประเภท)</label><select name="default_type"><option value="">— อ่านจากชื่อสหกรณ์ —</option>${Object.entries(CL.COOP_TYPE).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></div>
+          <div><label>ไฟล์</label><input type="file" name="file" accept=".xlsx,.csv,.json,text/csv" required></div>
+          <div><button class="cl-btn" type="submit">ตรวจไฟล์</button></div></form><div id="pvBox"></div><div id="histBox"></div></div>`;
+      $("importBox").querySelectorAll("[data-tpl]").forEach((a) => { a.onclick = (e) => { e.preventDefault(); CL.download(`${B}/template/${a.dataset.tpl}`, `coop-${a.dataset.tpl}-template.csv`); }; });
+      $("impForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const f = e.target; const file = f.file.files[0];
+        if (!file) return;
+        if (file.size > 3 * 1024 * 1024) { CL.toast("ไฟล์ใหญ่เกิน 3 MB", true); return; }
+        const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(file); });
+        let pv;
+        try {
+          e.submitter.disabled = true;
+          pv = await CL.post(`${B}/imports/preview`, { kind: f.kind.value, filename: file.name, content_base64: b64, source_label: f.source_label.value, as_of: f.as_of.value || null, default_type: f.default_type.value || null });
+        } catch (err) {
+          const d = err && err.body;
+          CL.toast(`${CL.errText(err)}${d && d.missing ? `: ${d.missing.map((m) => FIELD[m] || m).join(", ")}` : ""}`, true);
+          return;
+        } finally { e.submitter.disabled = false; }
+        renderPreview(pv);
+      };
+      renderHistory();
+    }
+    function renderPreview(pv) {
+      const s = pv.summary;
+      const show = pv.rows.filter((r) => r.verdict !== "same" || r.warnings.length).slice(0, 500);
+      $("pvBox").innerHTML = `<div class="cl-card" style="margin-top:10px;background:#fafcfa"><h3>ผลตรวจ: ${esc(pv.filename)} (${esc(pv.format)})</h3>
+        <div class="cl-line">${s.row_count} แถว · <span class="v-new">เพิ่มใหม่ ${s.new_count}</span> · <span class="v-update">แก้ไข ${s.update_count}</span> · <span class="v-same">ไม่เปลี่ยน ${s.same_count}</span> · <span class="v-error">ข้าม ${s.error_count}</span> · มีคำเตือน ${s.warning_count}</div>
+        <div class="cl-muted">คอลัมน์ที่ใช้: ${Object.entries(pv.columns).map(([k, v]) => `${esc(FIELD[k] || k)} ← "${esc(v)}"`).join(" · ")}${pv.unknown_columns.length ? ` · ไม่ใช้: ${pv.unknown_columns.map(esc).join(", ")}` : ""}</div>
+        ${pv.same_file_committed_at ? `<div class="cl-flag">ไฟล์นี้เคยนำเข้าแล้วเมื่อ ${esc(CL.dt(pv.same_file_committed_at))}</div>` : ""}
+        <div class="rg-pv"><table class="cl-table"><tr><th>แถว</th><th>ผล</th><th>ข้อมูล</th><th>รายละเอียด</th></tr>${show.map((r) => `<tr><td>${r.row_no}</td><td class="v-${r.verdict}">${VERDICT[r.verdict]}${r.linked ? " 🔗" : ""}</td>
+          <td>${esc(r.data.coop_name || r.data.registration_no || r.data.tax_id || "")}${pv.kind === "financials" ? ` · ปี ${esc(r.data.year || "-")}` : ` · ${esc(CL.COOP_TYPE[r.data.coop_type] || "")} · ${esc(r.data.registration_no || "")}`}</td>
+          <td>${r.errors.map((x) => `<div class="v-error">${esc(issueTxt(x))}</div>`).join("")}${r.warnings.map((x) => `<div class="v-update">${esc(issueTxt(x))}</div>`).join("")}${r.changes.map((x) => `<div class="cl-muted">${esc(FIELD[x.field] || x.field)}: ${esc(x.from ?? "-")} → ${esc(x.to)}</div>`).join("")}</td></tr>`).join("") || '<tr><td colspan="4" class="cl-empty">ทุกแถวไม่เปลี่ยน</td></tr>'}</table></div>
+        <div class="cl-actions" style="margin-top:8px"><button class="cl-btn" data-pv="commit" ${s.new_count + s.update_count ? "" : "disabled"}>ยืนยันบันทึก ${s.new_count + s.update_count} แถว</button><button class="cl-btn ghost" data-pv="discard">ยกเลิก</button></div></div>`;
+      $("pvBox").onclick = async (e) => {
+        const b = e.target.closest("[data-pv]"); if (!b) return;
+        const r = await CL.act(b, () => CL.post(`${B}/imports/${pv.import_id}/${b.dataset.pv}`), (x) => (x.counts ? `บันทึกแล้ว — เพิ่ม ${x.counts.inserted} · แก้ไข ${x.counts.updated} · ไม่เปลี่ยน ${x.counts.same} · ข้าม ${x.counts.skipped_error}` : "ยกเลิกแล้ว"));
+        if (r) { $("pvBox").innerHTML = ""; refresh(); }
+      };
+    }
+    async function renderHistory() {
+      const h = await CL.get(`${B}/imports`).catch(() => []);
+      $("histBox").innerHTML = h.length ? `<details class="cl-more"><summary>ประวัติการนำเข้า (${h.length})</summary><table class="cl-table">${h.map((x) => `<tr><td>${esc(CL.dt(x.created_at))}</td><td>${x.kind === "financials" ? "งบการเงิน" : "รายชื่อ"}</td><td>${esc(x.filename)}</td><td>${esc(x.source_label)}</td>
+        <td>${x.status === "Committed" && x.result ? `เพิ่ม ${x.result.counts.inserted} · แก้ ${x.result.counts.updated}` : "ตรวจแล้ว ยังไม่ยืนยัน"}</td></tr>`).join("")}</table></details>` : "";
+    }
+
+    // ---- ค้นหา ----
+    async function renderList() {
+      const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v !== "" && v !== 0)).toString();
+      const r = await CL.get(`${B}?${qs}`);
+      const opt = (v, t, cur) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(t)}</option>`;
+      $("listBox").innerHTML = `<div class="cl-card"><h3>รายชื่อในทะเบียน (${num(r.total, 0)})</h3>
+        <div class="cl-inline"><input id="fQ" placeholder="ชื่อ / เลขทะเบียน / เลขผู้เสียภาษี" value="${esc(filters.q)}" style="min-width:260px">
+          <select id="fP">${opt("", "ทุกจังหวัด", filters.province)}${r.provinces.map((p) => opt(p.province_code, `${p.province_name_th} (${p.n})`, filters.province)).join("")}</select>
+          <select id="fT">${opt("", "ทุกประเภท", filters.type)}${Object.entries(CL.COOP_TYPE).map(([k, v]) => opt(k, v, filters.type)).join("")}</select>
+          <select id="fL">${opt("", "ทั้งหมด", filters.linked)}${opt("yes", "มีบัญชีในระบบแล้ว", filters.linked)}${opt("no", "ยังไม่มีบัญชี", filters.linked)}</select><button class="cl-btn" id="fGo">ค้นหา</button></div>
+        <table class="cl-table" style="margin-top:8px"><tr><th>สหกรณ์</th><th>ประเภท</th><th>จังหวัด</th><th class="r">สมาชิก</th><th>สถานะ</th><th>บัญชีในระบบ</th></tr>
+        ${r.rows.map((x) => `<tr data-open="${x.directory_id}" style="cursor:pointer"><td><b>${esc(x.coop_name)}</b><div class="cl-muted">${esc(x.registration_no || "-")} · ${esc(x.tax_id || "-")}</div></td><td>${esc(CL.COOP_TYPE[x.coop_type])}</td>
+          <td>${esc(x.province_name_th || "")}${x.district ? `<div class="cl-muted">${esc(x.district)}</div>` : ""}</td><td class="r">${x.member_count != null ? num(x.member_count, 0) : "-"}</td><td>${pill(CL.DIR_ST[x.status])}</td>
+          <td>${x.org_id ? `🔗 ${esc(x.linked_org_name)}` : '<span class="cl-muted">ยังไม่มี</span>'}</td></tr>`).join("") || '<tr><td colspan="6" class="cl-empty">ไม่พบ — นำเข้าไฟล์ทะเบียนก่อน</td></tr>'}</table>
+        <div class="cl-actions">${filters.page > 0 ? '<button class="cl-btn ghost" data-pg="-1">← ก่อนหน้า</button>' : ""}${(filters.page + 1) * 100 < r.total ? '<button class="cl-btn ghost" data-pg="1">ถัดไป →</button>' : ""}</div></div>`;
+      const go = () => { filters = { q: $("fQ").value.trim(), province: $("fP").value, type: $("fT").value, linked: $("fL").value, page: 0 }; renderList(); };
+      $("fGo").onclick = go;
+      $("fQ").onkeydown = (e) => { if (e.key === "Enter") go(); };
+      $("listBox").onclick = (e) => {
+        const pg = e.target.closest("[data-pg]"); if (pg) { filters.page += Number(pg.dataset.pg); renderList(); return; }
+        const o = e.target.closest("[data-open]"); if (o) renderDetail(o.dataset.open);
+      };
+    }
+    async function renderDetail(id) {
+      const d = await CL.get(`${B}/${id}`);
+      const e = d.entry;
+      const BT = ["agriculture", "fisheries", "settlement"];
+      $("detailBox").innerHTML = `<div class="cl-card" id="dCard"><div class="cl-row"><h3>${esc(e.coop_name)}</h3><div>${pill(CL.DIR_ST[e.status])}</div></div>
+        <div class="cl-line">${esc(CL.COOP_TYPE[e.coop_type])} · ทะเบียน ${esc(e.registration_no || "-")} · เลขผู้เสียภาษี ${esc(e.tax_id || "-")} · ${esc(e.province_name_th || "")}${e.district ? ` อ.${esc(e.district)}` : ""}${e.established_year ? ` · จดทะเบียน ${e.established_year}` : ""}${e.member_count != null ? ` · สมาชิก ${num(e.member_count, 0)}` : ""}</div>
+        <div class="cl-muted">แหล่งข้อมูล ${esc(e.source_label)} · ปรับปรุง ${esc(CL.dt(e.updated_at))}</div>
+        ${e.org_id ? `<div class="cl-line" style="margin-top:8px">🔗 เชื่อมกับบัญชี <b>${esc(e.linked_org_name)}</b> (${esc({ claim: "ยืนยันสิทธิ์", admin_link: "ผู้ดูแลเชื่อม", provisioned: "จัดตั้งจากทะเบียน" }[e.link_method] || "")} ${esc(CL.dt(e.linked_at))})
+            <button class="cl-btn bad" data-dl="unlink">ยกเลิกการเชื่อม</button></div>`
+    : `<div class="cl-line" style="margin-top:8px"><b>ยังไม่มีบัญชีในระบบ</b></div>
+          ${d.candidates.length ? `<div class="cl-muted">บัญชีที่น่าจะเป็นสหกรณ์นี้:</div><table class="cl-table">${d.candidates.map((c) => `<tr><td>${esc(c.org_name)} · ${esc(c.tax_id)}${c.tax_match ? " ✅ เลขผู้เสียภาษีตรง" : ""} · KYB ${esc(c.kyb_status)}</td><td><button class="cl-btn" data-dl="link" data-org="${c.org_id}">เชื่อมกับบัญชีนี้</button></td></tr>`).join("")}</table>` : ""}
+          ${BT.includes(e.coop_type) && e.status === "active" ? `<div class="cl-inline" style="margin-top:6px">${e.tax_id ? "" : '<input id="pvTax" placeholder="เลขผู้เสียภาษี 13 หลัก">'}<button class="cl-btn" data-dl="provision">จัดตั้งบัญชีสหกรณ์จากทะเบียนนี้</button><span class="cl-muted">สร้างบัญชีสหกรณ์การเกษตร (ผ่าน KYB) พร้อมข้อมูลจังหวัด/เลขทะเบียน</span></div>` : ""}
+          ${!BT.includes(e.coop_type) ? '<div class="cl-muted">ออมทรัพย์/เครดิตยูเนี่ยน: ให้สหกรณ์สมัครที่หน้าสมัครผู้ให้บริการ แล้วยืนยันสิทธิ์ในแท็บข้อมูลและนโยบายสินเชื่อ</div>' : ""}`}
+        ${d.financials.length ? `<h3 style="margin-top:12px">งบการเงินจากแหล่งทางการ</h3>${CL.finTable(d.financials)}` : ""}
+        ${d.check ? `<div style="margin-top:8px">${CL.registryCheckPanel(d.check)}</div>` : ""}
+        ${d.claims.length ? `<details class="cl-more"><summary>คำขอยืนยันสิทธิ์ (${d.claims.length})</summary><table class="cl-table">${d.claims.map((c) => `<tr><td>${esc(c.org_name)}</td><td>${pill(CL.CLAIM_ST[c.status])}</td><td>${esc(CL.dt(c.created_at))}</td><td>${esc(c.decision_note || "")}</td></tr>`).join("")}</table></details>` : ""}</div>`;
+      $("dCard").scrollIntoView({ behavior: "smooth" });
+      $("dCard").onclick = async (ev) => {
+        const b = ev.target.closest("[data-dl]"); if (!b) return;
+        const a = b.dataset.dl;
+        const r = a === "provision" ? await CL.act(b, () => CL.post(`${B}/${id}/provision`, { tax_id: $("pvTax") ? $("pvTax").value : null }), (x) => `จัดตั้งบัญชี ${x.org_name} แล้ว`)
+          : await CL.act(b, () => CL.post(`${B}/${id}/link`, { org_id: a === "unlink" ? null : b.dataset.org }), "บันทึกแล้ว");
+        if (r) { refresh(); renderDetail(id); }
+      };
+    }
+    function refresh() { renderStats(); renderClaims(); renderList(); renderHistory(); }
+    renderStats().then((ok) => { if (!ok) return; renderClaims(); renderImport(); renderList(); });
+  }());
+  </script>
+</body>
+</html>
