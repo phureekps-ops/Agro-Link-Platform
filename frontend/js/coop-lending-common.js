@@ -107,6 +107,7 @@ const CL = (() => {
     tranche_not_checked: "งวดนี้ยังไม่ผ่านผู้ตรวจสอบ", approver_must_differ_from_checker: "ผู้อนุมัติต้องเป็นคนละคนกับผู้ตรวจสอบงวดนี้", not_lead_lender: "เฉพาะผู้ให้กู้หลักของสัญญาเป็นผู้ตรวจปิดยอดงวด",
     agreement_not_signed: "สัญญายังลงนามไม่ครบ", below_verification_level: "หลักฐานของรายการนี้ยังไม่ถึงระดับที่ผู้ให้กู้กำหนด",
     golive_gate_not_passed: "ยังไม่ผ่านเงื่อนไขก่อนเปิดใช้งานจริง (Go-live Gate) — ระบบไม่สั่งโอนผ่านธนาคารจริง", check_not_found: "ไม่พบรายการตรวจ",
+    alert_not_found: "ไม่พบเรื่องนี้ หรือยังไม่เปิดให้ชี้แจง", parties_required: "ระบุรายชื่อผู้เกี่ยวข้อง", invalid_tax_id: "เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก",
     invalid_text: "ข้อความสั้นหรือยาวเกินไป", invalid_number: "ตัวเลขไม่ถูกต้อง", only_admin_can_manage_staff: "เฉพาะผู้ดูแลหรือผู้จัดการเท่านั้นที่จัดการเจ้าหน้าที่ได้",
   };
   function errText(err) {
@@ -307,6 +308,28 @@ const CL = (() => {
     if (!r || !r.indicators.length) return "";
     return `<table class="cl-table"><tr><th>ตัวชี้วัดโครงการ</th><th>ค่า</th><th></th><th>เกณฑ์</th></tr>${r.indicators.map((i) => `<tr><td>${esc(i.label)}</td><td>${esc(typeof i.value === "number" ? num(i.value) : i.value ?? "—")}</td><td>${i.ok ? "✅" : "⚠️"}</td><td class="cl-muted">${esc(i.note)}</td></tr>`).join("")}</table>`;
   }
+  // ---- เตือนภัยล่วงหน้า (Blueprint 9.3) และสัญญาณทุจริต (10.3) ----
+  const ALERT_ST = { Open: ["รอตรวจสอบ", "#8a5a00", "#fff2cc"], Investigating: ["กำลังสอบสวน", "#a1261d", "#fde8e6"], Resolved: ["ดำเนินการแล้ว", "#1f6b38", "#ddf3e4"], Dismissed: ["ตรวจแล้วไม่พบปัญหา", "#6b7a70", "#eef1ee"] };
+  const ALERT_CAT = { early_warning: "⚠️ เตือนภัยล่วงหน้า", fraud: "🔎 สัญญาณที่ต้องตรวจสอบ" };
+  const ALERT_NOTE = "ทุกรายการเป็นสัญญาณที่ระบบตรวจพบและต้องตรวจสอบ ไม่ใช่ข้อสรุปว่ามีการทุจริต — ผู้ดูแลแพลตฟอร์มสอบสวน สหกรณ์ผู้กู้ชี้แจงได้ทุกเรื่อง";
+  /** alerts จาก GET .../market/risk · actions(a) คืน HTML ปุ่ม/ฟอร์มต่อรายการ (ผู้ดูแล/ผู้กู้) */
+  function alertsPanel(alerts, { title = "เตือนภัยล่วงหน้าและสัญญาณที่ต้องตรวจสอบ", actions, showBorrower = false, empty = "ไม่พบสัญญาณความเสี่ยง" } = {}) {
+    const list = alerts || [];
+    const open = list.filter((a) => ["Open", "Investigating"].includes(a.status) && a.active !== false);
+    const row = (a) => `<div class="cl-card" style="margin:8px 0 0;background:${a.severity === "high" && open.includes(a) ? "#fff7f6" : "#fafcfa"}" data-alert="${a.alert_id}">
+      <div class="cl-row"><div>${a.severity === "high" ? "🔴" : "🟠"} <b>${esc(a.title)}</b> <span class="cl-muted">· ${esc(ALERT_CAT[a.category] || "")}${showBorrower ? ` · ${esc(a.borrower_name)}` : ""}${a.listing_title ? ` · ${esc(a.listing_title)}` : ""}</span></div>
+        <div>${pill(ALERT_ST[a.status])}${a.active === false ? ' <span class="cl-pill" style="background:#eef1ee;color:#6b7a70">ไม่พบเงื่อนไขแล้ว</span>' : ""}</div></div>
+      <div class="cl-line">${esc(a.detail)}</div>
+      ${a.extra && a.extra.changes ? `<table class="cl-table">${a.extra.changes.map((x) => `<tr><td>ปี ${esc(x.year)}</td><td>${esc(x.label || x.field)}</td><td class="r">${num(x.from, 0)} → ${num(x.to, 0)}</td><td class="r">${num(x.pct, 1)}%</td></tr>`).join("")}</table>` : ""}
+      <div class="cl-muted">พบครั้งแรก ${esc(dt(a.first_seen_at))} · ล่าสุด ${esc(dt(a.last_seen_at))}</div>
+      ${a.borrower_note ? `<div class="cl-line">💬 ผู้กู้ชี้แจง (${esc(dt(a.borrower_note_at))}): ${esc(a.borrower_note)}</div>` : ""}
+      ${a.decision_note ? `<div class="cl-line">🏛️ ผู้ดูแลแพลตฟอร์ม: ${esc(a.decision_note)}</div>` : ""}
+      ${actions ? actions(a) : ""}</div>`;
+    const closed = list.filter((a) => !open.includes(a));
+    return `<h3>🚨 ${esc(title)} ${open.length ? `(${open.length} เรื่องเปิดอยู่)` : ""}</h3><div class="cl-muted">${esc(ALERT_NOTE)}</div>
+      ${open.map(row).join("") || `<div class="cl-empty">${esc(empty)}</div>`}
+      ${closed.length ? `<details class="cl-more"><summary>เรื่องที่ปิดแล้วหรือไม่พบเงื่อนไขแล้ว (${closed.length})</summary>${closed.map(row).join("")}</details>` : ""}`;
+  }
   /** ดาวน์โหลดไฟล์จาก API ด้วย token ของพอร์ทัล */
   async function download(path, filename) {
     const s = api.getSession();
@@ -323,7 +346,7 @@ const CL = (() => {
 
   return {
     PTYPE, LISTING_ST, OFFER_ST, gradeBadge, scorePanel, riskPanel, download, PROVINCES,
-    factorPanel, levelBadge, compliancePanel, dairyPanel, tranchePanel, TRANCHE_ST,
+    factorPanel, levelBadge, compliancePanel, dairyPanel, tranchePanel, TRANCHE_ST, alertsPanel, ALERT_ST, ALERT_CAT, ALERT_NOTE,
     PLAN_ST, STAGE_ST, planTrack, satNotes,
     init, get, post, patch, put, upload, esc, baht, num, date, dt, PURPOSE, ITEM_ST, TR_ST, TR_KIND, SAT, EVIDENCE, BANKS, bankName, pill,
     errText, toast, act, formData, bankOptions, accLabel, sandboxBanner, openFile,

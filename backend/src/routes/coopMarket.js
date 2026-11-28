@@ -589,9 +589,10 @@ function attach({ savings, borrower, admin, gov }, H) {
       if (!['Signed', 'Active', 'Closed'].includes(l.status)) fail(409, 'listing_not_signed');
       const fileId = b.file_id ? (await fileOwnedBy(c, b.file_id, req.org.org_id)).file_id : null;
       const r = (await c.query(
-        `INSERT INTO coop_lending.listing_report (listing_id, period_label, revenue, cost, planned_revenue, note, file_id, reported_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+        `INSERT INTO coop_lending.listing_report (listing_id, period_label, revenue, cost, planned_revenue, note, file_id, reported_by, buyer_overdue) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
         [l.listing_id, text(b.period_label, 'period_label', { min: 2, max: 40 }), nOrNull(b.revenue, 'revenue', { min: -1e13 }), nOrNull(b.cost, 'cost', { min: -1e13 }),
-          nOrNull(b.planned_revenue, 'planned_revenue', { min: -1e13 }), text(b.note, 'note', { max: 2000, allowNull: true }), fileId, actor.key],
+          nOrNull(b.planned_revenue, 'planned_revenue', { min: -1e13 }), text(b.note, 'note', { max: 2000, allowNull: true }), fileId, actor.key,
+          nOrNull(b.buyer_overdue, 'buyer_overdue', { min: 0 })],
       )).rows[0];
       const lenders = (await c.query('SELECT DISTINCT lender_org_id FROM coop_lending.facility WHERE listing_id = $1', [l.listing_id])).rows;
       for (const x of lenders) await notify(c, x.lender_org_id, 'agreement', `ผู้กู้ส่งรายงานผลการดำเนินงาน ${r.period_label} ของโครงการ "${l.title}"`, l.listing_id);

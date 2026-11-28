@@ -277,4 +277,96 @@ test('marketplace: borrower lists → admin review → lender compliance → off
     assert.equal(gl.gates.length, 8);
     assert.ok(gl.lenders_passed >= 2);
   });
+
+  await t.test('early warning (9.3) + fraud signals (10.3): sweep → lender sees all, borrower sees fraud only once investigated → explain → close; no duplicate alerts', async () => {
+    const facs = (await call(coop.token, 'GET', '/coop-lending/facilities')).filter((f) => f.listing_id === listing.listing_id);
+    const fc = facs.find((f) => f.lender_name === cu.name);
+    // ผู้มีผลประโยชน์ร่วม: ประธานเป็นหุ้นส่วนร้านปัจจัยการผลิตที่สหกรณ์ซื้อ
+    await call(coop.token, 'PUT', '/coop-lending/market/related-parties', { parties: [{ person_name: 'นายประธาน', related_tax_id: '12345' }] }, 400);
+    const rp = await call(coop.token, 'PUT', '/coop-lending/market/related-parties', { parties: [{ person_name: 'นายประธาน ใจดี', role: 'ประธานกรรมการ', related_name: supplier.name }] });
+    assert.equal(rp.length, 1);
+    assert.equal((await call(coop.token, 'GET', '/coop-lending/market/related-parties'))[0].related_name, supplier.name);
+    // ยอดเท่ากันกับผู้ขายรายเดิมในวันเดียวกัน (เลขเอกสารต่างกัน)
+    await call(coop.token, 'POST', '/coop-lending/items', {
+      facility_id: fc.facility_id, purpose: 'inputs', source_type: 'manual', seller_type: 'organization', seller_id: supplier.id, amount: 500000, description: 'ปุ๋ยงวด 2 ชุดสอง',
+    }, 201);
+    // รายงานผล: รายได้ต่ำกว่าแผน และผู้ซื้อค้างชำระ
+    const rep = await call(coop.token, 'POST', `/coop-lending/market/listings/${listing.listing_id}/reports`, { period_label: 'ไตรมาส 1', revenue: 100000, planned_revenue: 500000, buyer_overdue: 60000 }, 201);
+    assert.equal(Number(rep.buyer_overdue), 60000);
+    // แก้งบปีที่แจ้งแล้วหลังขอกู้ (กำไรสุทธิ 2 ล้าน → 3 ล้าน)
+    await call(coop.token, 'PUT', '/coop-lending/market/profile', {
+      registration_no: 'สร 123', member_count: 820, signatories: 'นายประธาน กรรมการ', consent_disclose: true, board: 'คณะกรรมการ 9 คน',
+      financials: [{ year: 2567, total_assets: 80e6, total_liabilities: 40e6, current_assets: 25e6, current_liabilities: 15e6, net_income: 3e6, audit_opinion: 'unqualified' },
+        { year: 2566, net_income: 1.5e6 }, { year: 2565, net_income: 1.1e6 }],
+      governance: { standard_grade: 'good' }, debts: [{ creditor: 'ธ.ก.ส.', outstanding: 5e6, status: 'current' }], assets: [{ kind: 'โกดัง', value: 3e6 }],
+      coop_kind: 'dairy', max_borrowing: 20e6, max_borrowing_ref: 'มติที่ประชุมใหญ่ 1/2569',
+    });
+    // แตกโครงการ: อีก 2 โครงการประเภทเดียวกัน 7 ล้าน + 7 ล้าน (รวม 17 ล้าน > วงเงินกู้ยืมคงเหลือ 15 ล้าน)
+    for (const k of [1, 2]) {
+      await call(coop.token, 'POST', '/coop-lending/market/listings', {
+        project_type: 'member_onlending', title: `สินเชื่อปัจจัยการผลิตสมาชิก ชุดที่ ${k}`, amount_requested: 7000000, tenor_months: 12,
+        use_plan: [{ item: 'ปัจจัยการผลิต', amount: 7000000 }], details: { members_count: 200 },
+      }, 201);
+    }
+    await call(ADMIN, 'PUT', '/admin/coop-lending/settings', { ew_report_days: 1000 }, 400);
+    assert.equal((await call(ADMIN, 'PUT', '/admin/coop-lending/settings', { ew_report_days: 90, fraud_yield_factor: 1.5 })).ew_report_days, 90);
+
+    const sw = await call(ADMIN, 'POST', '/admin/coop-lending/market/risk/sweep');
+    assert.ok(sw.created >= 6, JSON.stringify(sw));
+    const all = await call(ADMIN, 'GET', '/admin/coop-lending/market/risk');
+    assert.ok(all.swept_at);
+    const mineAll = all.alerts.filter((a) => a.borrower_org_id === coop.id);
+    const has = (list, code) => list.some((a) => a.code === code);
+    for (const code of ['fr_related_party', 'fr_duplicate_invoice', 'fr_backdated_edit', 'fr_split_listing', 'ew_inflow_below', 'ew_buyer_default']) {
+      assert.ok(has(mineAll, code), `missing ${code}: ${mineAll.map((a) => a.code).join(',')}`);
+    }
+    const split = mineAll.find((a) => a.code === 'fr_split_listing');
+    assert.equal(split.severity, 'high');
+    assert.deepEqual(mineAll.find((a) => a.code === 'fr_backdated_edit').extra.changes.map((x) => [x.year, x.field, x.to]), [[2567, 'net_income', 3e6]]);
+    assert.ok(all.codes.fr_related_party);
+    assert.ok((await call(ADMIN, 'GET', '/admin/coop-lending/market/risk?category=fraud')).alerts.every((a) => a.category === 'fraud'));
+
+    // ผู้ให้กู้เห็นทุกสัญญาณของผู้กู้ที่ตนมีวงเงินด้วย และได้รับแจ้ง
+    const lenderView = await call(sav.token, 'GET', '/savings/market/risk');
+    assert.ok(has(lenderView, 'fr_related_party') && has(lenderView, 'ew_inflow_below'));
+    assert.ok((await call(sav.token, 'GET', '/savings/notices')).some((x) => x.kind === 'risk_alert' && /สัญญาณที่ต้องตรวจสอบ/.test(x.message)));
+    assert.equal((await call(sav.token, 'GET', `/savings/market/risk?listing_id=${listing.listing_id}`)).every((a) => a.listing_id === listing.listing_id), true);
+    // ผู้กู้: เห็นเตือนภัยล่วงหน้าทันที แต่ยังไม่เห็นสัญญาณทุจริตจนกว่าผู้ดูแลเปิดการสอบสวน
+    let bv = await call(coop.token, 'GET', '/coop-lending/market/risk');
+    assert.ok(has(bv, 'ew_inflow_below'));
+    assert.ok(!bv.some((a) => a.category === 'fraud'));
+    const bn = await call(coop.token, 'GET', '/coop-lending/notices');
+    assert.ok(bn.some((x) => x.kind === 'risk_alert' && /เตือนภัยล่วงหน้า/.test(x.message)));
+    assert.ok(!bn.some((x) => x.kind === 'risk_alert' && /ผู้มีผลประโยชน์ร่วม/.test(x.message)));
+    const rel = mineAll.find((a) => a.code === 'fr_related_party');
+    await call(coop.token, 'POST', `/coop-lending/market/risk/${rel.alert_id}/explain`, { note: 'ซื้อตามราคาตลาด' }, 404);
+    await call(ADMIN, 'POST', `/admin/coop-lending/market/risk/${rel.alert_id}/decide`, { status: 'Closed' }, 400);
+    await call(ADMIN, 'POST', `/admin/coop-lending/market/risk/${rel.alert_id}/decide`, { status: 'Investigating', note: 'ขอใบเสนอราคาเปรียบเทียบ 3 ราย' });
+    bv = await call(coop.token, 'GET', '/coop-lending/market/risk');
+    assert.ok(bv.some((a) => a.alert_id === rel.alert_id && a.status === 'Investigating'));
+    assert.ok((await call(coop.token, 'GET', '/coop-lending/notices')).some((x) => x.kind === 'risk_alert' && /ขอให้ชี้แจง/.test(x.message)));
+    const ex = await call(coop.token, 'POST', `/coop-lending/market/risk/${rel.alert_id}/explain`, { note: 'ที่ประชุมกรรมการอนุมัติ ประธานงดออกเสียง แนบใบเสนอราคา 3 ราย' });
+    assert.match(ex.borrower_note, /งดออกเสียง/);
+    assert.ok((await call(sav.token, 'GET', '/savings/notices')).some((x) => x.kind === 'risk_alert' && /ผู้กู้ชี้แจง/.test(x.message)));
+    await call(ADMIN, 'POST', `/admin/coop-lending/market/risk/${rel.alert_id}/decide`, { status: 'Dismissed', note: 'สั้น' }, 400);
+    const closed = await call(ADMIN, 'POST', `/admin/coop-lending/market/risk/${rel.alert_id}/decide`, { status: 'Dismissed', note: 'ราคาไม่สูงกว่าตลาด มีมติกรรมการ' });
+    assert.equal(closed.status, 'Dismissed');
+
+    // ตรวจซ้ำ: ไม่สร้างซ้ำ ไม่แจ้งซ้ำ และเรื่องที่ปิดว่าไม่พบปัญหาไม่ถูกเปิดใหม่
+    const before = (await db.query(`SELECT COUNT(*)::int AS n FROM coop_lending.dunning_notice WHERE kind = 'risk_alert'`)).rows[0].n;
+    const sw2 = await call(ADMIN, 'POST', '/admin/coop-lending/market/risk/sweep');
+    assert.equal(sw2.created, 0);
+    assert.equal(sw2.reopened, 0);
+    assert.equal((await db.query(`SELECT COUNT(*)::int AS n FROM coop_lending.dunning_notice WHERE kind = 'risk_alert'`)).rows[0].n, before);
+    assert.equal((await db.query('SELECT status FROM coop_lending.risk_alert WHERE alert_id = $1', [rel.alert_id])).rows[0].status, 'Dismissed');
+    // ส่งรายงานใหม่ที่ตามแผน → สัญญาณรายได้ต่ำของรายงานเดิมไม่ active
+    await call(coop.token, 'POST', `/coop-lending/market/listings/${listing.listing_id}/reports`, { period_label: 'ไตรมาส 2', revenue: 520000, planned_revenue: 500000 }, 201);
+    const sw3 = await call(ADMIN, 'POST', '/admin/coop-lending/market/risk/sweep');
+    assert.ok(sw3.cleared >= 2, JSON.stringify(sw3));
+    const inflow = (await db.query(`SELECT active FROM coop_lending.risk_alert WHERE code = 'ew_inflow_below' AND borrower_org_id = $1`, [coop.id])).rows;
+    assert.ok(inflow.length === 1 && inflow[0].active === false);
+    // กรมส่งเสริมสหกรณ์เห็นจำนวนตามจังหวัด
+    const gs = await call(GOV, 'GET', '/gov/coop-lending/market/risk-summary');
+    assert.ok(gs.some((r) => r.category === 'fraud' && r.n >= 1));
+  });
 });

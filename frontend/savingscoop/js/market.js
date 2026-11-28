@@ -142,6 +142,15 @@ window.LenderMarket = (function () {
         ${d.performance ? `<div style="margin-top:10px">${CL.factorPanel("Activity Performance Score", d.performance)}</div>` : ""}
         ${d.reports.length ? `<div class="cl-line" style="margin-top:8px"><b>รายงานผลจากผู้กู้</b></div><table class="cl-table"><tr><th>งวด</th><th class="r">รายได้จริง</th><th class="r">ตามแผน</th><th>หมายเหตุ</th></tr>${d.reports.map((r) => `<tr><td>${esc(r.period_label)}</td><td class="r">${r.revenue != null ? num(r.revenue) : "-"}</td><td class="r">${r.planned_revenue != null ? num(r.planned_revenue) : "-"}</td><td>${esc(r.note || "")}</td></tr>`).join("")}</table>` : ""}</div>` : ""}`;
 
+    // เตือนภัยล่วงหน้าและสัญญาณที่ต้องตรวจสอบของสหกรณ์ผู้กู้ (เห็นเมื่อมีวงเงินกับผู้กู้รายนี้แล้ว)
+    CL.get("/savings/market/risk").then((all) => {
+      const list = all.filter((a) => a.borrower_org_id === l.borrower_org_id);
+      if (!list.length) return;
+      const box = document.createElement("div");
+      box.className = "cl-card";
+      box.innerHTML = CL.alertsPanel(list, { title: `เตือนภัยล่วงหน้าและสัญญาณที่ต้องตรวจสอบ — ${d.borrower.org_name || "สหกรณ์ผู้กู้"}` });
+      ctx.view.appendChild(box);
+    }).catch(() => {});
     const of = document.getElementById("offerForm");
     if (of) {
       of.onsubmit = async (e) => {

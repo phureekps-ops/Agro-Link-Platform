@@ -34,6 +34,7 @@ window.CoopMarket = (function () {
     const bus = p.businesses || {};
     const g = p.governance || {};
     ctx.view.innerHTML = `
+      <div class="cl-card" id="riskAll"></div>
       <div class="cl-card" style="background:#f4faf5">ข้อมูลนี้ผู้ให้กู้ใช้ประกอบการพิจารณาทุกโครงการที่ท่านประกาศ (ฐานข้อมูลผู้ขอกู้) — ควรปรับปรุงอย่างน้อยทุกปีบัญชี และทุกครั้งก่อนประกาศโครงการใหม่
         · ทะเบียนจากกรมส่งเสริมสหกรณ์: ${d.registry ? `${esc(d.registry.province_name_th || d.registry.province_code || "")} ${d.registry.cooperative_registration_no ? `เลขทะเบียน ${esc(d.registry.cooperative_registration_no)}` : ""}` : "ยังไม่มี"}
         · สมาชิกในระบบ ${d.platform.members_on_platform} ราย ${d.platform.plots} แปลง ${num(d.platform.area_rai, 0)} ไร่</div>
@@ -64,7 +65,8 @@ window.CoopMarket = (function () {
         <div class="wide"><label>ข้อบกพร่องที่ยังไม่ได้แก้ไข (ถ้ามี)</label><input name="unresolved_issues" value="${esc(n0(g.unresolved_issues))}"></div></div></div>
       <div class="cl-card"><label style="display:flex;gap:8px;align-items:flex-start;font-size:14px"><input type="checkbox" name="consent_disclose" ${p.consent_disclose ? "checked" : ""} style="width:auto;margin-top:4px">
         สหกรณ์ยินยอมเปิดเผยข้อมูลในหน้านี้แก่สหกรณ์ผู้ให้กู้ที่ลงทะเบียนในระบบ เพื่อประกอบการพิจารณาโครงการขอกู้ของสหกรณ์ (ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล — ไม่เปิดเผยข้อมูลรายบุคคลของสมาชิก)</label>
-        <div class="cl-actions"><button class="cl-btn" type="submit">บันทึกและคำนวณคะแนน</button></div></div></form>`;
+        <div class="cl-actions"><button class="cl-btn" type="submit">บันทึกและคำนวณคะแนน</button></div></div></form>
+      <div class="cl-card" id="rpBox"></div>`;
     const rows = { debt: p.debts || [], asset: p.assets || [] };
     const draw = () => {
       document.getElementById("debtRows").innerHTML = rows.debt.map((x, i) => `<div class="cl-inline" style="margin-bottom:6px" data-row="debt" data-i="${i}"><input class="r-creditor" placeholder="เจ้าหนี้ เช่น กองทุนพัฒนาสหกรณ์ ธ.ก.ส." value="${esc(n0(x.creditor))}" style="min-width:260px">
@@ -98,6 +100,55 @@ window.CoopMarket = (function () {
       };
       const r = await CL.act(e.submitter, () => CL.put("/coop-lending/market/profile", body), (x) => `บันทึกแล้ว — คะแนน ${x.score.score} เกรด ${x.score.grade}`);
       if (r) renderProfile(ctx);
+    };
+    riskBox(document.getElementById("riskAll"), null);
+    relatedParties(document.getElementById("rpBox"));
+  }
+
+  // ======================================================== เตือนภัยล่วงหน้า / สัญญาณที่ต้องตรวจสอบ (ผู้กู้ชี้แจงได้)
+  async function riskBox(box, listingId) {
+    if (!box) return;
+    let list;
+    try { list = await CL.get(`/coop-lending/market/risk${listingId ? `?listing_id=${listingId}` : ""}`); } catch (err) { box.remove(); return; }
+    if (!list.length) { box.remove(); return; }
+    box.innerHTML = CL.alertsPanel(list, {
+      title: listingId ? "เตือนภัยล่วงหน้าของโครงการนี้" : "เตือนภัยล่วงหน้าและเรื่องที่ขอให้ชี้แจง",
+      actions: (a) => (["Open", "Investigating"].includes(a.status) ? `<div class="cl-inline" style="margin-top:6px"><input class="rx-note" placeholder="ชี้แจงข้อเท็จจริง/แนวทางแก้ไข" style="min-width:320px" value="">
+        <button class="cl-btn" data-rx="1">${a.borrower_note ? "ชี้แจงเพิ่ม" : "ส่งคำชี้แจง"}</button></div>` : ""),
+    });
+    box.onclick = async (e) => {
+      const b = e.target.closest("[data-rx]");
+      if (!b) return;
+      e.stopPropagation();
+      const card = b.closest("[data-alert]");
+      if (await CL.act(b, () => CL.post(`/coop-lending/market/risk/${card.dataset.alert}/explain`, { note: card.querySelector(".rx-note").value }), "ส่งคำชี้แจงแล้ว — แจ้งผู้ให้กู้และผู้ดูแลแพลตฟอร์ม")) riskBox(box, listingId);
+    };
+  }
+  /** ผู้มีผลประโยชน์ร่วม: กรรมการ/ผู้จัดการ และกิจการที่เกี่ยวข้อง — ใช้ตรวจการซื้อขายกับผู้เกี่ยวข้อง */
+  async function relatedParties(box) {
+    if (!box) return;
+    let rows;
+    try { rows = await CL.get("/coop-lending/market/related-parties"); } catch (err) { box.remove(); return; }
+    const draw = () => {
+      box.innerHTML = `<h3>ผู้มีผลประโยชน์ร่วม</h3><div class="cl-muted">แจ้งกรรมการ ผู้จัดการ และกิจการที่บุคคลเหล่านี้เป็นเจ้าของ/หุ้นส่วน — ระบบจะเตือนผู้ให้กู้เมื่อมีการซื้อขายกับผู้เกี่ยวข้อง เพื่อให้ตรวจว่าผ่านการอนุมัติและราคาเป็นธรรม (ไม่ได้ห้ามซื้อขาย)</div>
+        ${rows.map((x, i) => `<div class="cl-inline" style="margin-top:6px" data-rp="${i}"><input class="p-name" placeholder="ชื่อ-สกุล" value="${esc(n0(x.person_name))}"><input class="p-role" placeholder="ตำแหน่ง" value="${esc(n0(x.role))}">
+          <input class="p-org" placeholder="กิจการที่เกี่ยวข้อง (ชื่อร้าน/บริษัท)" value="${esc(n0(x.related_name))}" style="min-width:220px"><input class="p-tax" placeholder="เลขผู้เสียภาษี 13 หลัก" value="${esc(n0(x.related_tax_id))}">
+          <button type="button" class="cl-btn bad" data-rpdel="${i}">ลบ</button></div>`).join("") || '<div class="cl-muted" style="margin-top:6px">ยังไม่ได้แจ้ง</div>'}
+        <div class="cl-actions"><button type="button" class="cl-btn ghost" data-rpadd="1">+ เพิ่มรายชื่อ</button><button type="button" class="cl-btn" data-rpsave="1">บันทึกรายชื่อ</button></div>`;
+    };
+    const collect = () => { rows = [...box.querySelectorAll("[data-rp]")].map((r) => ({ person_name: r.querySelector(".p-name").value.trim(), role: r.querySelector(".p-role").value.trim() || null, related_name: r.querySelector(".p-org").value.trim() || null, related_tax_id: r.querySelector(".p-tax").value.trim() || null })); };
+    draw();
+    box.onclick = async (e) => {
+      e.stopPropagation();
+      if (e.target.closest("[data-rpadd]")) { collect(); rows.push({}); draw(); return; }
+      const d = e.target.closest("[data-rpdel]");
+      if (d) { collect(); rows.splice(Number(d.dataset.rpdel), 1); draw(); return; }
+      const sv = e.target.closest("[data-rpsave]");
+      if (sv) {
+        collect();
+        const r = await CL.act(sv, () => CL.put("/coop-lending/market/related-parties", { parties: rows.filter((x) => x.person_name) }), (x) => `บันทึกแล้ว ${x.length} รายชื่อ`);
+        if (r) { rows = r; draw(); }
+      }
     };
   }
 
@@ -279,8 +330,9 @@ window.CoopMarket = (function () {
       ${d.performance ? `<div class="cl-card">${CL.factorPanel("Activity Performance Score (ระหว่างสัญญา)", d.performance, "ผู้ให้กู้ใช้ติดตามและประกอบการพิจารณาเปิดงวดถัดไป")}</div>` : ""}
 
       ${["Signed", "Active", "Closed"].includes(l.status) ? `<div class="cl-card"><h3>รายงานผลการดำเนินงานเทียบแผน</h3>
-        <table class="cl-table"><tr><th>งวดรายงาน</th><th class="r">รายได้จริง</th><th class="r">ตามแผน</th><th class="r">ค่าใช้จ่าย</th><th>หมายเหตุ</th></tr>${d.reports.map((r) => `<tr><td>${esc(r.period_label)}</td><td class="r">${r.revenue != null ? num(r.revenue) : "-"}</td><td class="r">${r.planned_revenue != null ? num(r.planned_revenue) : "-"}</td><td class="r">${r.cost != null ? num(r.cost) : "-"}</td><td>${esc(r.note || "")}</td></tr>`).join("") || '<tr><td colspan="5" class="cl-empty">ยังไม่มี</td></tr>'}</table>
-        <form id="repForm" class="cl-form" style="margin-top:8px"><div><label>งวด</label><input name="period_label" placeholder="ไตรมาส 1/2570" required></div><div><label>รายได้จริง</label><input name="revenue" type="number"></div><div><label>รายได้ตามแผน</label><input name="planned_revenue" type="number"></div><div><label>ค่าใช้จ่าย</label><input name="cost" type="number"></div><div class="wide"><label>หมายเหตุ</label><input name="note"></div><div><button class="cl-btn" type="submit">ส่งรายงาน</button></div></form></div>` : ""}`;
+        <table class="cl-table"><tr><th>งวดรายงาน</th><th class="r">รายได้จริง</th><th class="r">ตามแผน</th><th class="r">ค่าใช้จ่าย</th><th class="r">ผู้ซื้อค้างชำระ</th><th>หมายเหตุ</th></tr>${d.reports.map((r) => `<tr><td>${esc(r.period_label)}</td><td class="r">${r.revenue != null ? num(r.revenue) : "-"}</td><td class="r">${r.planned_revenue != null ? num(r.planned_revenue) : "-"}</td><td class="r">${r.cost != null ? num(r.cost) : "-"}</td><td class="r">${r.buyer_overdue != null ? num(r.buyer_overdue) : "-"}</td><td>${esc(r.note || "")}</td></tr>`).join("") || '<tr><td colspan="6" class="cl-empty">ยังไม่มี</td></tr>'}</table>
+        <form id="repForm" class="cl-form" style="margin-top:8px"><div><label>งวด</label><input name="period_label" placeholder="ไตรมาส 1/2570" required></div><div><label>รายได้จริง</label><input name="revenue" type="number"></div><div><label>รายได้ตามแผน</label><input name="planned_revenue" type="number"></div><div><label>ค่าใช้จ่าย</label><input name="cost" type="number"></div><div><label>ผู้ซื้อค้างชำระ (บาท)</label><input name="buyer_overdue" type="number" min="0" step="0.01"></div><div class="wide"><label>หมายเหตุ</label><input name="note"></div><div><button class="cl-btn" type="submit">ส่งรายงาน</button></div></form></div>` : ""}
+      <div class="cl-card" id="riskL"></div>`;
 
     ctx.view.querySelectorAll(".tr-form").forEach((tf) => {
       tf.onsubmit = async (e) => {
@@ -293,6 +345,7 @@ window.CoopMarket = (function () {
         if (r) renderDetail();
       };
     });
+    riskBox(document.getElementById("riskL"), l.listing_id);
     const rep = document.getElementById("repForm");
     if (rep) rep.onsubmit = async (e) => { e.preventDefault(); if (await CL.act(e.submitter, () => CL.post(`/coop-lending/market/listings/${l.listing_id}/reports`, CL.formData(rep)), "ส่งรายงานแล้ว")) renderDetail(); };
     ctx.view.onclick = async (e) => {

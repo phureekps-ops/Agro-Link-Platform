@@ -1650,6 +1650,12 @@ admin.put('/settings', wrap(async (req, res) => {
   if (b.late_penalty_pct !== undefined) sets.late_penalty_pct = num(b.late_penalty_pct, 'late_penalty_pct', { min: 0, max: 30 });
   if (b.large_exposure_pct !== undefined) sets.large_exposure_pct = num(b.large_exposure_pct, 'large_exposure_pct', { min: 0.1, max: 100 });
   if (b.large_exposure_min_assets !== undefined) sets.large_exposure_min_assets = num(b.large_exposure_min_assets, 'large_exposure_min_assets', { min: 0 });
+  // เกณฑ์เตือนภัยล่วงหน้าและสัญญาณทุจริต (grant_coop_lending_risk.sql)
+  const RISK_KEYS = {
+    ew_purchase_below_pct: [1, 100], ew_price_drop_pct: [1, 90], ew_report_days: [7, 400], ew_revenue_below_pct: [1, 100],
+    ew_inventory_gap_pct: [1, 90], fraud_split_days: [7, 365], fraud_new_member_days: [0, 365], fraud_yield_factor: [1, 5],
+  };
+  Object.entries(RISK_KEYS).forEach(([k, [min, max]]) => { if (b[k] !== undefined) sets[k] = num(b[k], k, { min, max }); });
   const keys = Object.keys(sets);
   if (!keys.length) fail(400, 'nothing_to_update');
   res.json(await adminTx(req, async (c) => (await c.query(
@@ -2092,6 +2098,10 @@ gov.get('/transactions.csv', wrap(async (req, res) => {
 // ตลาดสินเชื่อระหว่างสหกรณ์ (routes/coopMarket.js) — ใช้ helper ชุดเดียวกัน
 require('./coopMarket').attach({ savings, borrower, admin, gov }, {
   wrap, fail, HttpError, tx, orgTx, num, text, isUuid, actorOf, verifiedAccount, logAccess, objectStorage, govTx, officerScope, refreshVerification, goLiveFor,
+});
+// เตือนภัยล่วงหน้า (Blueprint 9.3) และสัญญาณทุจริต (10.3) — routes/coopRisk.js
+require('./coopRisk').attach({ savings, borrower, admin, gov }, {
+  wrap, fail, tx, orgTx, text, isUuid, actorOf, govTx, officerScope,
 });
 
 module.exports = {

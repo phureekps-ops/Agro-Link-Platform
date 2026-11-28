@@ -14,7 +14,7 @@
     <div class="brand"><a class="cl-back" href="dashboard.html">← ผู้ดูแลระบบ</a>🏦 ตั้งค่าสินเชื่อระหว่างสหกรณ์</div>
     <div class="who"><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
   </header>
-  <div class="cl-wrap"><div id="ctrlBox"></div><div id="marketBox"></div><div id="view"><div class="cl-empty">กำลังโหลด…</div></div></div>
+  <div class="cl-wrap"><div id="riskBox"></div><div id="ctrlBox"></div><div id="marketBox"></div><div id="view"><div class="cl-empty">กำลังโหลด…</div></div></div>
   <script src="js/api.js"></script>
   <script src="../js/coop-lending-common.js"></script>
   <script>
@@ -44,6 +44,15 @@
           <div><label>ค่าปรับ/ดอกเบี้ยผิดนัด (% ต่อปี)</label><input name="late_penalty_pct" type="number" step="0.01" min="0" max="30" value="${Number(s.late_penalty_pct)}"></div>
           <div><label>เพดานลูกหนี้รายใหญ่ (% ของทุนเรือนหุ้น + ทุนสำรองของผู้ให้กู้)</label><input name="large_exposure_pct" type="number" step="0.01" min="0.1" max="100" value="${Number(s.large_exposure_pct ?? 10)}"></div>
           <div><label>ใช้เพดานนี้กับผู้ให้กู้ที่มีสินทรัพย์ตั้งแต่ (บาท)</label><input name="large_exposure_min_assets" type="number" min="0" value="${Number(s.large_exposure_min_assets ?? 5000000000)}"></div>
+          <div class="wide"><b>เกณฑ์เตือนภัยล่วงหน้าและสัญญาณทุจริต</b></div>
+          <div><label>เตือนเมื่อรับซื้อจริงต่ำกว่าแผน (% ของแผน ณ วันตรวจ)</label><input name="ew_purchase_below_pct" type="number" step="0.01" min="1" max="100" value="${Number(s.ew_purchase_below_pct ?? 70)}"></div>
+          <div><label>เตือนเมื่อราคารับซื้อเฉลี่ยต่ำกว่าราคาอ้างอิง (%)</label><input name="ew_price_drop_pct" type="number" step="0.01" min="1" max="90" value="${Number(s.ew_price_drop_pct ?? 15)}"></div>
+          <div><label>เตือนเมื่อไม่ส่งรายงานผลเกิน (วัน)</label><input name="ew_report_days" type="number" min="7" max="400" value="${s.ew_report_days ?? 100}"></div>
+          <div><label>เตือนเมื่อรายได้ต่ำกว่าประมาณการ (% ของประมาณการ)</label><input name="ew_revenue_below_pct" type="number" step="0.01" min="1" max="100" value="${Number(s.ew_revenue_below_pct ?? 70)}"></div>
+          <div><label>เตือนเมื่อสินค้าคงเหลือ + ยอดขายขาดจากเงินรับซื้อเกิน (%)</label><input name="ew_inventory_gap_pct" type="number" step="0.01" min="1" max="90" value="${Number(s.ew_inventory_gap_pct ?? 20)}"></div>
+          <div><label>ตรวจการแตกโครงการภายใน (วัน)</label><input name="fraud_split_days" type="number" min="7" max="365" value="${s.fraud_split_days ?? 90}"></div>
+          <div><label>ผู้ขายที่เพิ่งเป็นสมาชิกก่อนขายไม่เกิน (วัน)</label><input name="fraud_new_member_days" type="number" min="0" max="365" value="${s.fraud_new_member_days ?? 30}"></div>
+          <div><label>ส่วนเผื่อผลผลิตสูงสุดต่อไร่ (เท่า)</label><input name="fraud_yield_factor" type="number" step="0.01" min="1" max="5" value="${Number(s.fraud_yield_factor ?? 1.5)}"></div>
           <div><button class="cl-btn" type="submit">บันทึก</button></div></form>
           <div class="cl-muted" style="margin-top:6px">การเปลี่ยนค่าตั้งมีผลกับรายการที่เกิดหลังจากนี้ — ควรตรวจกับข้อกฎหมาย/ระเบียบนายทะเบียนสหกรณ์ก่อนเปิดใช้จริง</div></div>
         <div class="cl-card"><h3>บัญชีรับค่าธรรมเนียมของแพลตฟอร์ม</h3>
@@ -137,6 +146,43 @@
         if (await CL.act(c, () => CL.post(`${base}/decide`, { status: c.dataset.ca, note: row.querySelector(".c-note").value || null, valid_until: row.querySelector(".c-until").value || null }), "บันทึกแล้ว")) renderControls();
       };
     }
+    // ---- เตือนภัยล่วงหน้า (9.3) และสัญญาณทุจริต (10.3) ----
+    const rbox = document.getElementById("riskBox");
+    const rf = { status: "", category: "" };
+    async function renderRisk() {
+      let r;
+      try { r = await CL.get(`/admin/coop-lending/market/risk?status=${rf.status}&category=${rf.category}`); } catch (err) { rbox.innerHTML = ""; return; }
+      const cnt = (cat, st) => r.counts.filter((x) => x.category === cat && (!st || st.includes(x.status))).reduce((a, x) => a + x.n, 0);
+      const opt = (v, t, cur) => `<option value="${v}"${v === cur ? " selected" : ""}>${t}</option>`;
+      rbox.innerHTML = `<div class="cl-card">
+        <div class="cl-stats">
+          <div class="cl-stat${cnt("early_warning", ["Open", "Investigating"]) ? " warn" : ""}"><div class="v">${cnt("early_warning", ["Open", "Investigating"])}</div><div class="l">เตือนภัยล่วงหน้าที่เปิดอยู่</div></div>
+          <div class="cl-stat${cnt("fraud", ["Open"]) ? " warn" : ""}"><div class="v">${cnt("fraud", ["Open"])}</div><div class="l">สัญญาณทุจริตรอตรวจ</div></div>
+          <div class="cl-stat"><div class="v">${cnt("fraud", ["Investigating"])}</div><div class="l">กำลังสอบสวน</div></div>
+          <div class="cl-stat"><div class="v">${cnt("early_warning", ["Resolved", "Dismissed"]) + cnt("fraud", ["Resolved", "Dismissed"])}</div><div class="l">ปิดเรื่องแล้ว</div></div>
+        </div>
+        <div class="cl-inline" style="margin:6px 0"><select id="rfCat">${opt("", "ทุกประเภท", rf.category)}${opt("early_warning", "เตือนภัยล่วงหน้า", rf.category)}${opt("fraud", "สัญญาณทุจริต", rf.category)}</select>
+          <select id="rfSt">${opt("", "ทุกสถานะ", rf.status)}${Object.entries(CL.ALERT_ST).map(([k, v]) => opt(k, v[0], rf.status)).join("")}</select>
+          <button class="cl-btn" id="rSweep">ตรวจทันที</button><span class="cl-muted">ตรวจอัตโนมัติทุก 6 ชั่วโมง · ล่าสุด ${esc(CL.dt(r.swept_at))}</span></div>
+        ${CL.alertsPanel(r.alerts, {
+    title: "เตือนภัยล่วงหน้าและสัญญาณทุจริต", showBorrower: true,
+    actions: (a) => `<div class="cl-inline" style="margin-top:6px"><input class="r-note" placeholder="บันทึกผลตรวจ/เหตุผล (บังคับเมื่อปิดเรื่อง)" style="min-width:260px">
+            ${a.status === "Open" ? '<button class="cl-btn" data-rd="Investigating">เปิดสอบสวน · ขอให้ผู้กู้ชี้แจง</button>' : ""}
+            ${["Open", "Investigating"].includes(a.status) ? '<button class="cl-btn" data-rd="Resolved">ปิดเรื่อง — ดำเนินการแล้ว</button><button class="cl-btn ghost" data-rd="Dismissed">ตรวจแล้วไม่พบปัญหา</button>' : ""}</div>`,
+  })}</div>`;
+      document.getElementById("rfCat").onchange = (e) => { rf.category = e.target.value; renderRisk(); };
+      document.getElementById("rfSt").onchange = (e) => { rf.status = e.target.value; renderRisk(); };
+      document.getElementById("rSweep").onclick = async (e) => {
+        if (await CL.act(e.target, () => CL.post("/admin/coop-lending/market/risk/sweep"), (x) => `ตรวจแล้ว — พบ ${x.signals} สัญญาณ · ใหม่ ${x.created} · เปิดใหม่ ${x.reopened} · ไม่พบเงื่อนไขแล้ว ${x.cleared}`)) renderRisk();
+      };
+      rbox.onclick = async (e) => {
+        const b = e.target.closest("[data-rd]");
+        if (!b) return;
+        const card = b.closest("[data-alert]");
+        if (await CL.act(b, () => CL.post(`/admin/coop-lending/market/risk/${card.dataset.alert}/decide`, { status: b.dataset.rd, note: card.querySelector(".r-note").value || null }), "บันทึกแล้ว")) renderRisk();
+      };
+    }
+    renderRisk();
     renderControls();
     renderMarket();
     render().catch((err) => { view.innerHTML = `<div class="cl-card cl-late">โหลดไม่สำเร็จ: ${esc(CL.errText(err))}</div>`; });

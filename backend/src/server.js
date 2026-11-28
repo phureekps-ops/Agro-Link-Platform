@@ -294,6 +294,8 @@ require('./lib/dairySurplus').start();
 // Dairy gateway offline alerts every 60 s (grant_dairy_iot_gateway.sql; skipped in NODE_ENV=test).
 require('./lib/dairyIot').start();
 require('./lib/coopLending').start();
+// Coop-lending early-warning / fraud-signal sweep every 6 h (grant_coop_lending_risk.sql; skipped in NODE_ENV=test).
+require('./routes/coopRisk').start();
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
